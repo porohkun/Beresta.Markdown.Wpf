@@ -11,4 +11,17 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
     }
+
+    /// <summary>
+    /// Ссылки своей схемы перехватываются здесь; всё остальное остаётся необработанным и уходит
+    /// наружу системным обработчиком.
+    /// </summary>
+    private void OnMarkdownLink(object sender, MarkdownLinkEventArgs e)
+    {
+        if (!e.Href.StartsWith("demo:", StringComparison.Ordinal))
+            return;
+
+        MessageBox.Show(this, e.Href, "Своя ссылка");
+        e.Handled = true;
+    }
 }

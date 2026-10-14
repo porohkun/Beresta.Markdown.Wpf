@@ -29,7 +29,6 @@ public sealed class MarkdownTemplateSelector : DataTemplateSelector
             CodeBlockVm => provider.CodeBlockTemplate,
             QuoteVm => provider.QuoteTemplate,
             ListVm => provider.ListTemplate,
-            ListItemVm => provider.ListItemTemplate,
             TableVm => provider.TableTemplate,
             ThematicBreakVm => provider.HorizontalRuleTemplate,
             BlankLineVm => provider.BlankLineTemplate,

@@ -2,10 +2,9 @@
 
 using System.Windows;
 using System.Windows.Controls;
-using Styling;
 using ViewModels;
 
-public sealed class MdTablePresenter : ContentControl
+public sealed class MdTablePresenter : Control
 {
     public static readonly DependencyProperty TableProperty =
         DependencyProperty.Register(
@@ -28,12 +27,7 @@ public sealed class MdTablePresenter : ContentControl
             typeof(MdTablePresenter),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
-    public static readonly DependencyProperty TableStyleProperty =
-        DependencyProperty.Register(
-            nameof(TableStyle),
-            typeof(MdTableStyle),
-            typeof(MdTablePresenter),
-            new FrameworkPropertyMetadata(new MdTableStyle(), OnAnyPropertyChanged));
+    private Grid? _grid;
 
     public MdTablePresenter()
     {
@@ -58,10 +52,13 @@ public sealed class MdTablePresenter : ContentControl
         set => SetValue(HeaderTemplateProperty, value);
     }
 
-    public MdTableStyle TableStyle
+    public override void OnApplyTemplate()
     {
-        get => (MdTableStyle)GetValue(TableStyleProperty);
-        set => SetValue(TableStyleProperty, value);
+        base.OnApplyTemplate();
+
+        _grid = GetTemplateChild("PART_Grid") as Grid;
+
+        Build();
     }
 
     private static void OnAnyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -69,30 +66,26 @@ public sealed class MdTablePresenter : ContentControl
 
     private void Build()
     {
-        if (Table is null)
+        if (Table is null || _grid == null)
         {
-            Content = null;
             return;
         }
 
-        var grid = new Grid
-        {
-            SnapsToDevicePixels = true
-        };
+        _grid.Children.Clear();
+        _grid.RowDefinitions.Clear();
+        _grid.ColumnDefinitions.Clear();
 
         for (var c = 0; c < Table.ColumnCount; c++)
-        {
-            grid.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        }
+            _grid.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
 
         for (var r = 0; r < Table.Rows.Count; r++)
         {
-            grid.RowDefinitions.Add(new() { Height = GridLength.Auto });
+            _grid.RowDefinitions.Add(new() { Height = GridLength.Auto });
 
             var row = Table.Rows[r];
             for (var c = 0; c < Table.ColumnCount; c++)
             {
-                var cell = c < row.Cells.Count ? row.Cells[c] : new(TableStyle, []);
+                var cell = c < row.Cells.Count ? row.Cells[c] : new([]);
 
                 var presenter = new ContentPresenter
                 {
@@ -102,10 +95,8 @@ public sealed class MdTablePresenter : ContentControl
 
                 Grid.SetRow(presenter, r);
                 Grid.SetColumn(presenter, c);
-                grid.Children.Add(presenter);
+                _grid.Children.Add(presenter);
             }
         }
-
-        Content = grid;
     }
 }

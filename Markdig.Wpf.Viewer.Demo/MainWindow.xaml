@@ -13,6 +13,8 @@
         <local:MainWindowViewModel/>
     </Window.DataContext>
     <ScrollViewer>
-        <markdigWpfViewer:MarkdownViewer Markdown="{Binding Text}" Margin="8"/>
+        <markdigWpfViewer:MarkdownViewer Markdown="{Binding Text}"
+                                         Margin="8"
+                                         markdigWpfViewer:MarkdownLink.Navigate="OnMarkdownLink"/>
     </ScrollViewer>
 </Window>

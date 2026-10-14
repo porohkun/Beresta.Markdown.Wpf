@@ -1,7 +1,6 @@
 ﻿namespace MarkdigWpfViewer.ViewModels;
 
 using Abstractions;
-using Styling;
 
-public sealed record ParagraphVm(MdParagraphStyle Style, IReadOnlyList<InlineVm> Inlines)
+public sealed record ParagraphVm(IReadOnlyList<InlineVm> Inlines)
     : IMdBlockVm;

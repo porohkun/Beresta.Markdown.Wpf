@@ -1,7 +1,6 @@
 ﻿namespace MarkdigWpfViewer.ViewModels;
 
 using Abstractions;
-using Styling;
 
-public sealed record QuoteVm(MdQuoteStyle Style, IReadOnlyList<IMdBlockVm> Blocks)
+public sealed record QuoteVm(IReadOnlyList<IMdBlockVm> Blocks)
     : IMdBlockVm;

@@ -1,9 +1,6 @@
 ﻿namespace MarkdigWpfViewer.ViewModels;
 
 using Abstractions;
-using Styling;
 
-public sealed record TableCellVm(
-    MdTableStyle Style,
-    IReadOnlyList<InlineVm> Inlines)
+public sealed record TableCellVm(IReadOnlyList<InlineVm> Inlines)
     : IMdBlockVm;

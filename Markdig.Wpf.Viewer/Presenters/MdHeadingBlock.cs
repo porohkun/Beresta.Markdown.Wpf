@@ -1,8 +1,6 @@
 ﻿namespace MarkdigWpfViewer.Presenters;
 
 using System.Windows;
-using Abstractions;
-using Styling;
 
 public sealed class MdHeadingBlock : MdTextBlock
 {
@@ -18,7 +16,4 @@ public sealed class MdHeadingBlock : MdTextBlock
         get => (int)GetValue(LevelProperty);
         set => SetValue(LevelProperty, value);
     }
-
-    private IMdStyleProvider Provider =>
-        MarkdownStyling.GetStyleProvider(this)!;
 }
