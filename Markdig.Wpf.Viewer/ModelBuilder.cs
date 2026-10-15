@@ -146,7 +146,7 @@ internal sealed class ModelBuilder
             }
 
             var line = leaf.Lines.Lines[i];
-            inlines.Add(new RunVm(line.Slice.ToString()) { Source = GetLineSpan(line.Line) });
+            inlines.Add(new RunVm(line.Slice.ToString().TrimEnd('\r')) { Source = GetLineSpan(line.Line) });
         }
 
         return inlines;
@@ -183,9 +183,10 @@ internal sealed class ModelBuilder
         return string.IsNullOrWhiteSpace(firstToken) ? null : firstToken;
     }
 
+    /// <summary>Строки блока через <c>\n</c>, какими бы ни были переводы строк исходника.</summary>
     private static string GetLeafText(LeafBlock block)
     {
-        return block.Lines.ToString().TrimEnd('\r', '\n') ?? string.Empty;
+        return block.Lines.ToString().Replace("\r\n", "\n").Replace('\r', '\n').TrimEnd('\n');
     }
 
     private static Uri? TryCreateUri(string? value)
@@ -362,8 +363,8 @@ internal sealed class ModelBuilder
                     AddText(literal.Content.ToString(), state, output, node);
                     break;
 
-                case LineBreakInline:
-                    output.Add(Stamp(new LineBreakVm(), node));
+                case LineBreakInline lineBreak:
+                    output.Add(Stamp(new LineBreakVm(lineBreak.IsHard), node));
                     break;
 
                 case CodeInline code:

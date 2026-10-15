@@ -115,6 +115,20 @@ public override object? CreateState(NodeVm node) => node is NoteVm ? new NoteSta
 `SelectionLength`, `SelectedText` и событие `SelectionChanged`. Позиции — в текстовой карте
 `TextMap`: в её сквозном тексте `TextMap.Text` и ищут.
 
+`IsSelectionEnabled="False"` выключает выделение: выделенное снимается, а мышь, `Ctrl+A` и
+`Select` больше ничего не выделяют.
+
+Где кусок карты на экране, говорят `GetRangeRects(range)` — прямоугольники по строкам — и
+`GetRangeBounds(range)` — их общая рамка, обе в координатах вьюера. Так ставят панельку рядом с
+выделением:
+
+```csharp
+var bounds = viewer.GetRangeBounds(new(viewer.SelectionStart, viewer.SelectionLength));
+```
+
+Прямоугольники есть только у блоков, которые сейчас созданы: кусок вне них даёт пустой список и
+`Rect.Empty`.
+
 `Decorations` подсвечивает свои куски карты под выделением — так рисуются найденное или правки:
 
 ```csharp
@@ -127,6 +141,42 @@ viewer.Decorations = matches
 в карту свой текст и вложенные блоки; без него он неделимый и выделяется целиком, а копируется
 текстом из `IMdCopyText`, если реализует его. Внутри элемента с `MdSelection.IsInteractive="True"`
 выделение не начинается — кнопки и поля ввода узнаются и так.
+
+## Копирование
+
+`Ctrl+C` и `Copy()` кладут в буфер обмена выделенное сразу в двух видах, а программа, куда
+вставляют, берёт понятный ей:
+
+| Формат | Что в нём |
+|---|---|
+| обычный текст | голый текст, как он виден на экране |
+| `MdDataFormats.Markdown` (`text/markdown`) | разметка выделенного байтами UTF-8: кусок одной строки — с начертаниями и ссылками, несколько блоков — ещё и с заголовками, списками, цитатами, блоками кода и таблицами; виджет расширения, выделенный целиком, — своим исходником |
+
+```csharp
+if (Clipboard.GetData(MdDataFormats.Markdown) is MemoryStream stream)
+{
+    var markdown = Encoding.UTF8.GetString(stream.ToArray());
+}
+```
+
+Разметка выделенного записывается заново, поэтому ссылки по метке становятся обычными, а
+`_курсив_` — `*курсивом*`. Без копирования её отдаёт `SelectedMarkdown`.
+
+Перед записью вьюер поднимает стандартное `DataObject.Copying`. Обработчик на вьюере или любом
+его предке может дописать свой формат или отменить копирование через `e.CancelCommand()`:
+
+```csharp
+DataObject.AddCopyingHandler(viewer, (_, e) => e.DataObject.SetData(DataFormats.Html, html));
+```
+
+`IsCopyEnabled="False"` отдаёт `Ctrl+C` приложению: вьюер команду `Copy` не берёт, и она уходит к
+привязке выше, где приложение само решает, что класть в буфер. `Copy()` при этом работает.
+
+```xml
+<Window.CommandBindings>
+    <CommandBinding Command="Copy" Executed="OnCopy" />
+</Window.CommandBindings>
+```
 
 ## Строки исходника и две панели
 

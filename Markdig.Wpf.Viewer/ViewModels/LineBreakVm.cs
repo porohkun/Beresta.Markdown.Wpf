@@ -1,4 +1,4 @@
 ﻿namespace MarkdigWpfViewer.ViewModels;
 
-/// <summary>Жёсткий перенос строки.</summary>
-public sealed record LineBreakVm : InlineVm;
+/// <summary>Перенос строки; жёсткий в исходнике помечен обратной чертой или двумя пробелами.</summary>
+public sealed record LineBreakVm(bool IsHard = false) : InlineVm;

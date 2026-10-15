@@ -1,7 +1,9 @@
 ﻿namespace MarkdigWpfViewer;
 
 using System.Collections.Specialized;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -68,6 +70,22 @@ public sealed class MarkdownViewer : ItemsControl
             typeof(MarkdownViewer),
             new(null, OnDecorationsChanged));
 
+    /// <summary>Можно ли выделять текст; выключение снимает выделение.</summary>
+    public static readonly DependencyProperty IsSelectionEnabledProperty =
+        DependencyProperty.Register(
+            nameof(IsSelectionEnabled),
+            typeof(bool),
+            typeof(MarkdownViewer),
+            new(true, OnIsSelectionEnabledChanged));
+
+    /// <summary>Берёт ли вьюер Ctrl+C сам; выключенный отдаёт команду копирования приложению.</summary>
+    public static readonly DependencyProperty IsCopyEnabledProperty =
+        DependencyProperty.Register(
+            nameof(IsCopyEnabled),
+            typeof(bool),
+            typeof(MarkdownViewer),
+            new(true, (_, _) => CommandManager.InvalidateRequerySuggested()));
+
     /// <summary>Номера строк исходника на полях слева.</summary>
     public static readonly DependencyProperty ShowSourceLineNumbersProperty =
         DependencyProperty.Register(
@@ -125,7 +143,7 @@ public sealed class MarkdownViewer : ItemsControl
             new(
                 ApplicationCommands.Copy,
                 (sender, _) => ((MarkdownViewer)sender).Copy(),
-                (sender, e) => e.CanExecute = ((MarkdownViewer)sender).SelectionLength > 0));
+                (sender, e) => e.CanExecute = sender is MarkdownViewer { IsCopyEnabled: true, SelectionLength: > 0 }));
 
         CommandManager.RegisterClassCommandBinding(
             typeof(MarkdownViewer),
@@ -194,6 +212,18 @@ public sealed class MarkdownViewer : ItemsControl
         set => SetValue(SelectionBrushProperty, value);
     }
 
+    public bool IsSelectionEnabled
+    {
+        get => (bool)GetValue(IsSelectionEnabledProperty);
+        set => SetValue(IsSelectionEnabledProperty, value);
+    }
+
+    public bool IsCopyEnabled
+    {
+        get => (bool)GetValue(IsCopyEnabledProperty);
+        set => SetValue(IsCopyEnabledProperty, value);
+    }
+
     public bool ShowSourceLineNumbers
     {
         get => (bool)GetValue(ShowSourceLineNumbersProperty);
@@ -215,6 +245,9 @@ public sealed class MarkdownViewer : ItemsControl
 
     /// <summary>Выделенный текст для копирования; считается по запросу.</summary>
     public string SelectedText => TextMap.GetText(Selection.Range);
+
+    /// <summary>Выделенное, записанное markdown со своим оформлением; считается по запросу.</summary>
+    public string SelectedMarkdown => MdMarkdownWriter.Write(_blocks, TextMap, Markdown ?? string.Empty, Selection.Range);
 
     internal IReadOnlyList<MdExtension> ActiveExtensions
         => GetValue(ExtensionsProperty) as MdExtensionCollection ?? (IReadOnlyList<MdExtension>)[];
@@ -268,12 +301,61 @@ public sealed class MarkdownViewer : ItemsControl
         return true;
     }
 
+    /// <summary>Прямоугольники куска текстовой карты в координатах вьюера; есть только у созданных блоков.</summary>
+    public IReadOnlyList<Rect> GetRangeRects(MdTextRange range)
+    {
+        var rects = new List<Rect>();
+        if (range.IsEmpty)
+        {
+            return rects;
+        }
+
+        foreach (var target in SelectionController.Targets(this))
+        {
+            switch (target)
+            {
+                case MdTextBlock text when text.TryGetMapRange(out var own) && own.Intersect(range) is { IsEmpty: false } common:
+                    var toViewer = text.TransformToAncestor(this);
+                    rects.AddRange(text.GetBounds(common.Start - own.Start, common.End - own.Start).Select(toViewer.TransformBounds));
+                    break;
+
+                case MdBlockItem item when item.TryGetAtomicRange(out var own) && !own.Intersect(range).IsEmpty:
+                    rects.Add(item.TransformToAncestor(this).TransformBounds(new(item.RenderSize)));
+                    break;
+            }
+        }
+
+        return rects;
+    }
+
+    /// <summary>Рамка куска текстовой карты в координатах вьюера; <see cref="Rect.Empty"/> — кусок не на созданных блоках.</summary>
+    public Rect GetRangeBounds(MdTextRange range) => GetRangeRects(range).Aggregate(Rect.Empty, Rect.Union);
+
     /// <summary>Выделяет кусок текстовой карты.</summary>
     public void Select(int start, int length) => Selection.Select(start, length);
 
     public void SelectAll() => Selection.Select(0, TextMap.Length);
 
     public void ClearSelection() => Selection.Select(Selection.Range.Start, 0);
+
+    /// <summary>Кладёт выделенное в буфер обмена голым текстом и разметкой; перед этим поднимает <see cref="DataObject.CopyingEvent"/>.</summary>
+    public void Copy()
+    {
+        if (CreateCopyData() is not { } data)
+        {
+            return;
+        }
+
+        try
+        {
+            Clipboard.SetDataObject(data, true);
+        }
+        catch (COMException)
+        {
+            // BYDESIGN: буфер обмена бывает занят другим приложением — копирование тогда просто
+            // не удаётся, а вьюер работает дальше.
+        }
+    }
 
     public override void OnApplyTemplate()
     {
@@ -298,6 +380,23 @@ public sealed class MarkdownViewer : ItemsControl
                 _viewportNotificationQueued = false;
                 ViewportChanged?.Invoke(this, EventArgs.Empty);
             });
+    }
+
+    /// <summary>Оба вида выделенного для буфера обмена после <see cref="DataObject.CopyingEvent"/>; <c>null</c> — копировать нечего или приложение отменило.</summary>
+    internal DataObject? CreateCopyData()
+    {
+        if (SelectionLength == 0)
+        {
+            return null;
+        }
+
+        var data = new DataObject();
+        data.SetText(SelectedText);
+        data.SetData(MdDataFormats.Markdown, new MemoryStream(Encoding.UTF8.GetBytes(SelectedMarkdown)));
+
+        var copying = new DataObjectCopyingEventArgs(data, false);
+        RaiseEvent(copying);
+        return copying.CommandCancelled ? null : data;
     }
 
     protected override DependencyObject GetContainerForItemOverride() => new MdBlockItem();
@@ -356,6 +455,9 @@ public sealed class MarkdownViewer : ItemsControl
     private static void OnDecorationsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownViewer)d).UpdateLayer();
 
+    private static void OnIsSelectionEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        => ((MarkdownViewer)d).ClearSelection();
+
     private static void OnExtensionsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var viewer = (MarkdownViewer)d;
@@ -379,22 +481,20 @@ public sealed class MarkdownViewer : ItemsControl
     private void OnSelectionChanged()
     {
         var range = Selection.Range;
+        var moved = range.Start != SelectionStart || range.Length != SelectionLength;
+        var wasEmpty = SelectionLength == 0;
         SetValue(SelectionStartPropertyKey, range.Start);
         SetValue(SelectionLengthPropertyKey, range.Length);
         UpdateLayer();
-        SelectionChanged?.Invoke(this, EventArgs.Empty);
-    }
 
-    private void Copy()
-    {
-        try
+        if (wasEmpty != range.IsEmpty)
         {
-            Clipboard.SetText(SelectedText);
+            CommandManager.InvalidateRequerySuggested();
         }
-        catch (COMException)
+
+        if (moved)
         {
-            // BYDESIGN: буфер обмена бывает занят другим приложением — копирование тогда просто
-            // не удаётся, а вьюер работает дальше.
+            SelectionChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 

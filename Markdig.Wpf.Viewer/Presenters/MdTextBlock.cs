@@ -183,22 +183,26 @@ public class MdTextBlock : TextBlock
 
     /// <summary>Прямоугольники подсветки своего куска в своих координатах.</summary>
     internal IEnumerable<Rect> GetRangeRects(int start, int end)
+        => _segments
+            .Where(segment => segment.End > start && segment.Start < end)
+            .SelectMany(segment => GetRunRects(segment, start, end));
+
+    /// <summary>Прямоугольники своего куска в своих координатах: строки текста и неделимые куски целиком.</summary>
+    internal IEnumerable<Rect> GetBounds(int start, int end)
     {
-        foreach (var segment in _segments)
+        foreach (var segment in _segments.Where(segment => segment.End > start && segment.Start < end))
         {
-            if (segment.Element is not Run run || segment.End <= start || segment.Start >= end)
+            if (segment.Overlay is { } overlay)
             {
+                if (overlay.IsDescendantOf(this))
+                {
+                    yield return overlay.TransformToAncestor(this).TransformBounds(new(overlay.RenderSize));
+                }
+
                 continue;
             }
 
-            var from = run.ContentStart.GetPositionAtOffset(Math.Max(start, segment.Start) - segment.Start);
-            var to = run.ContentStart.GetPositionAtOffset(Math.Min(end, segment.End) - segment.Start);
-            if (from is null || to is null)
-            {
-                continue;
-            }
-
-            foreach (var rect in GetLineRects(from, to))
+            foreach (var rect in GetRunRects(segment, start, end))
             {
                 yield return rect;
             }
@@ -250,6 +254,26 @@ public class MdTextBlock : TextBlock
 
     private static void OnStatesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MdTextBlock)d).UpdateWidgetStates();
+
+    private static IEnumerable<Rect> GetRunRects(Segment segment, int start, int end)
+    {
+        if (segment.Element is not Run run)
+        {
+            yield break;
+        }
+
+        var from = run.ContentStart.GetPositionAtOffset(Math.Max(start, segment.Start) - segment.Start);
+        var to = run.ContentStart.GetPositionAtOffset(Math.Min(end, segment.End) - segment.Start);
+        if (from is null || to is null)
+        {
+            yield break;
+        }
+
+        foreach (var rect in GetLineRects(from, to))
+        {
+            yield return rect;
+        }
+    }
 
     private static IEnumerable<Rect> GetLineRects(TextPointer from, TextPointer to)
     {

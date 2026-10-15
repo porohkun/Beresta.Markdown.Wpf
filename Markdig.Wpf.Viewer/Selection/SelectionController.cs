@@ -49,11 +49,35 @@ internal sealed class SelectionController
         return false;
     }
 
+    /// <summary>Созданные элементы со своим куском карты: тексты блоков и неделимые блоки.</summary>
+    public static IEnumerable<FrameworkElement> Targets(DependencyObject root)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            switch (child)
+            {
+                case MdTextBlock text when text.TryGetMapRange(out _):
+                    yield return text;
+                    continue;
+                case MdBlockItem item when item.TryGetAtomicRange(out _):
+                    yield return item;
+                    continue;
+            }
+
+            foreach (var deeper in Targets(child))
+            {
+                yield return deeper;
+            }
+        }
+    }
+
+    /// <summary>Выделяет кусок; при выключенном выделении — только ставит пустое на место.</summary>
     public void Select(int start, int length)
     {
         var size = _viewer.TextMap.Length;
         _anchor = Math.Clamp(start, 0, size);
-        _active = Math.Clamp(start + length, 0, size);
+        _active = _viewer.IsSelectionEnabled ? Math.Clamp(start + length, 0, size) : _anchor;
         Changed?.Invoke();
     }
 
@@ -68,7 +92,7 @@ internal sealed class SelectionController
     /// <summary>Нажатие: ставит якорь или, с <paramref name="extend"/>, двигает активный конец.</summary>
     public bool Press(Point point, bool extend)
     {
-        if (FindOffset(point) is not { } offset)
+        if (!_viewer.IsSelectionEnabled || FindOffset(point) is not { } offset)
         {
             return false;
         }
@@ -168,28 +192,6 @@ internal sealed class SelectionController
 
     private static int AtomicOffset(FrameworkElement element, MdTextRange range, Point pointInElement)
         => pointInElement.Y > element.ActualHeight / 2 ? range.End : range.Start;
-
-    private static IEnumerable<FrameworkElement> Targets(DependencyObject root)
-    {
-        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
-        {
-            var child = VisualTreeHelper.GetChild(root, i);
-            switch (child)
-            {
-                case MdTextBlock text when text.TryGetMapRange(out _):
-                    yield return text;
-                    continue;
-                case MdBlockItem item when item.TryGetAtomicRange(out _):
-                    yield return item;
-                    continue;
-            }
-
-            foreach (var deeper in Targets(child))
-            {
-                yield return deeper;
-            }
-        }
-    }
 
     private void MoveActive(Point point)
     {

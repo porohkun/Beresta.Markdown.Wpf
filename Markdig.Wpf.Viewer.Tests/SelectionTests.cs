@@ -1,5 +1,7 @@
 ﻿namespace MarkdigWpfViewer.Tests;
 
+using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -9,7 +11,7 @@ using Presenters;
 using Selection;
 using ViewModels;
 
-/// <summary>Выделение сквозь блоки: мышь, подсветка, копирование, неделимые элементы.</summary>
+/// <summary>Выделение сквозь блоки: мышь, подсветка, копирование, координаты кусков, неделимые элементы.</summary>
 public sealed class SelectionTests
 {
     private const string ThreeParagraphs = "first paragraph\n\nsecond **bold** paragraph\n\nthird paragraph";
@@ -74,6 +76,227 @@ public sealed class SelectionTests
             viewer.Selection.Release().Should().BeTrue();
 
             viewer.SelectedText.Should().Be("paragraph\n\nsecond bold paragraph\n\nthi");
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Выключенное_выделение_снимает_прежнее_и_не_начинается_заново()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
+            var window = WpfHost.Show(viewer);
+            viewer.SelectAll();
+            viewer.SelectionLength.Should().BePositive();
+
+            viewer.IsSelectionEnabled = false;
+            viewer.SelectionLength.Should().Be(0);
+
+            viewer.Selection.Press(PointOf(viewer, 3), extend: false).Should().BeFalse();
+            viewer.SelectAll();
+            viewer.Select(0, 5);
+            viewer.SelectionLength.Should().Be(0);
+            ApplicationCommands.Copy.CanExecute(null, viewer).Should().BeFalse();
+
+            viewer.IsSelectionEnabled = true;
+            viewer.Select(0, 5);
+            viewer.SelectedText.Should().Be("first");
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Копируются_разом_текст_и_разметка()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
+            var window = WpfHost.Show(viewer);
+            viewer.SelectAll();
+
+            var data = viewer.CreateCopyData().Should().BeOfType<DataObject>().Subject;
+
+            data.GetText().Should().Be("first paragraph\n\nsecond bold paragraph\n\nthird paragraph");
+            var markdown = data.GetData(MdDataFormats.Markdown).Should().BeOfType<MemoryStream>().Subject;
+            Encoding.UTF8.GetString(markdown.ToArray()).Should().Be(ThreeParagraphs);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Пустое_выделение_не_копируется()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
+            var window = WpfHost.Show(viewer);
+
+            viewer.CreateCopyData().Should().BeNull();
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Приложение_дописывает_свой_формат_в_Copying()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
+            var host = new Border { Child = viewer };
+            DataObject.AddCopyingHandler(host, (_, e) => e.DataObject.SetData(DataFormats.Html, "<p>html</p>"));
+            var window = WpfHost.Show(host);
+            viewer.SelectAll();
+
+            var data = viewer.CreateCopyData().Should().BeOfType<DataObject>().Subject;
+
+            data.GetData(DataFormats.Html).Should().Be("<p>html</p>");
+            data.GetText().Should().Be(viewer.SelectedText);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Отменённое_в_Copying_копирование_ничего_не_даёт()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
+            DataObject.AddCopyingHandler(viewer, (_, e) => e.CancelCommand());
+            var window = WpfHost.Show(viewer);
+            viewer.SelectAll();
+
+            viewer.CreateCopyData().Should().BeNull();
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Команду_копирования_берёт_вьюер_а_выключенное_копирование_отдаёт_приложению()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
+            var host = new Border { Child = viewer };
+            var asked = 0;
+            var copied = 0;
+            host.CommandBindings.Add(new(
+                ApplicationCommands.Copy,
+                (_, _) => copied++,
+                (_, e) =>
+                {
+                    asked++;
+                    e.CanExecute = true;
+                }));
+            var window = WpfHost.Show(host);
+            viewer.SelectAll();
+
+            ApplicationCommands.Copy.CanExecute(null, viewer).Should().BeTrue();
+            asked.Should().Be(0);
+
+            viewer.IsCopyEnabled = false;
+            ApplicationCommands.Copy.Execute(null, viewer);
+
+            copied.Should().Be(1);
+            viewer.CreateCopyData().Should().NotBeNull();
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Кнопка_копирования_следит_за_выделением_и_флагом()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
+            var button = new Button { Command = ApplicationCommands.Copy, CommandTarget = viewer };
+            var window = WpfHost.Show(new StackPanel { Children = { button, viewer } });
+            button.IsEnabled.Should().BeFalse();
+
+            viewer.Select(0, 5);
+            WpfHost.Settle(window);
+            button.IsEnabled.Should().BeTrue();
+
+            viewer.IsCopyEnabled = false;
+            WpfHost.Settle(window);
+            button.IsEnabled.Should().BeFalse();
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Прямоугольник_куска_строки_лежит_на_его_знаках()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
+            var window = WpfHost.Show(viewer);
+            var bold = viewer.TextMap.Text.IndexOf("bold", StringComparison.Ordinal);
+
+            var rect = viewer.GetRangeRects(new(bold, 4)).Should().ContainSingle().Subject;
+
+            Enumerable.Range(bold, 4).Should().OnlyContain(offset => rect.Contains(PointOf(viewer, offset)));
+            rect.Contains(PointOf(viewer, bold - 2)).Should().BeFalse();
+            rect.Contains(PointOf(viewer, bold + 5)).Should().BeFalse();
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Кусок_через_несколько_блоков_даёт_строки_каждого_и_общую_рамку()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
+            var window = WpfHost.Show(viewer);
+            var text = viewer.TextMap.Text;
+            var range = MdTextRange.Between(
+                text.IndexOf("paragraph", StringComparison.Ordinal),
+                text.IndexOf("third", StringComparison.Ordinal) + 5);
+
+            var rects = viewer.GetRangeRects(range);
+            var bounds = viewer.GetRangeBounds(range);
+
+            rects.Select(rect => Math.Round(rect.Top)).Distinct().Should().HaveCount(3);
+            rects.Should().OnlyContain(rect => bounds.Contains(rect));
+            bounds.Top.Should().Be(rects.Min(rect => rect.Top));
+            bounds.Bottom.Should().Be(rects.Max(rect => rect.Bottom));
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Неделимые_блок_и_кусок_строки_дают_рамку_целиком()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "a `code` b\n\n---\n\nc" };
+            var window = WpfHost.Show(viewer);
+
+            var rects = viewer.GetRangeRects(new(0, viewer.TextMap.Length));
+
+            var rule = Visuals.Descendants<MdBlockItem>(viewer).Single(item => item.Content is ThematicBreakVm);
+            var code = Visuals.Descendants<InlineCodePresenter>(viewer).Single();
+            var overlay = ((Grid)VisualTreeHelper.GetParent(code)).Children.OfType<Border>().Single();
+            rects.Should().Contain(rect => IsNear(rect, BoundsIn(viewer, rule)));
+            rects.Should().Contain(rect => IsNear(rect, BoundsIn(viewer, overlay)));
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Кусок_на_несозданных_блоках_прямоугольников_не_имеет()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var text = string.Join("\n\n", Enumerable.Range(0, 2000).Select(i => $"Paragraph {i}"));
+            var viewer = new MarkdownViewer { Markdown = text };
+            var window = WpfHost.Show(new ScrollViewer { Content = viewer });
+            var last = new MdTextRange(viewer.TextMap.Text.LastIndexOf("Paragraph", StringComparison.Ordinal), 9);
+
+            viewer.GetRangeRects(last).Should().BeEmpty();
+            viewer.GetRangeBounds(last).IsEmpty.Should().BeTrue();
+            viewer.GetRangeRects(new(0, 9)).Should().ContainSingle();
             window.Close();
         });
     }
@@ -246,6 +469,28 @@ public sealed class SelectionTests
     }
 
     [Fact]
+    public void Событие_выделения_приходит_только_при_его_смене()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
+            var changes = 0;
+            viewer.SelectionChanged += (_, _) => changes++;
+            var window = WpfHost.Show(viewer);
+
+            viewer.Markdown = "other text";
+            viewer.ClearSelection();
+            changes.Should().Be(0);
+
+            viewer.Select(0, 5);
+            viewer.Select(0, 5);
+            viewer.ClearSelection();
+            changes.Should().Be(2);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Новый_текст_сбрасывает_выделение()
     {
         WpfHost.Invoke(() =>
@@ -282,6 +527,15 @@ public sealed class SelectionTests
             window.Close();
         });
     }
+
+    private static Rect BoundsIn(Visual root, FrameworkElement element)
+        => element.TransformToAncestor(root).TransformBounds(new(element.RenderSize));
+
+    private static bool IsNear(Rect actual, Rect expected)
+        => Math.Abs(actual.X - expected.X) < 0.01
+           && Math.Abs(actual.Y - expected.Y) < 0.01
+           && Math.Abs(actual.Width - expected.Width) < 0.01
+           && Math.Abs(actual.Height - expected.Height) < 0.01;
 
     private static Point PointOf(MarkdownViewer viewer, int offset)
     {
