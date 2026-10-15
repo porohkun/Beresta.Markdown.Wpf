@@ -84,6 +84,26 @@ public sealed class MdBlockPanel : VirtualizingPanel
         return finalSize;
     }
 
+    /// <summary>Сдвигает ближайшую прокрутку так, чтобы блок оказался виден целиком или хотя бы сверху.</summary>
+    protected override void BringIndexIntoView(int index)
+    {
+        if (index < 0 || index >= _heights.Count || FindViewport() is not { PhysicalScroller: { } scroller } viewport)
+        {
+            return;
+        }
+
+        var top = _offsets[index];
+        var bottom = _offsets[index + 1];
+        var shift = top < viewport.Top || bottom - top > viewport.Bottom - viewport.Top
+            ? top - viewport.Top
+            : bottom > viewport.Bottom ? bottom - viewport.Bottom : 0;
+
+        if (shift != 0)
+        {
+            scroller.ScrollToVerticalOffset(scroller.VerticalOffset + shift);
+        }
+    }
+
     protected override void OnItemsChanged(object sender, ItemsChangedEventArgs args)
     {
         base.OnItemsChanged(sender, args);

@@ -85,6 +85,26 @@ public sealed class NoteExtension : MdExtension
 рисуется как обычно; незнакомый контейнер показывает своё содержимое. Общий набор расширений на
 несколько вьюеров задаётся свойством `Extensions` в стиле.
 
+## Выделение и подсветка
+
+Текст выделяется мышью сквозь блоки, в том числе кусками блоков; `Ctrl+A` выделяет всё,
+`Ctrl+C` копирует — и блоки, которых сейчас нет на экране. Снаружи выделением управляют
+`Select(start, length)`, `SelectAll()`, `ClearSelection()`, а читают его `SelectionStart`,
+`SelectionLength`, `SelectedText` и событие `SelectionChanged`. Позиции — в текстовой карте
+`TextMap`: в её сквозном тексте `TextMap.Text` и ищут.
+
+`Decorations` подсвечивает свои куски карты под выделением — так рисуются найденное или правки:
+
+```csharp
+viewer.Decorations = matches
+    .Select(match => new MdDecoration(new MdTextRange(match.Index, match.Length), FoundBrush))
+    .ToList();
+```
+
+Цвет выделения — ключ темы `Md.Selection.Brush`. Виджет, который реализует `IMdTextSource`, отдаёт
+в карту свой текст и вложенные блоки; без него он неделимый и выделяется целиком. Внутри элемента
+с `MdSelection.IsInteractive="True"` выделение не начинается — кнопки и поля ввода узнаются и так.
+
 ## Ссылки
 
 По умолчанию нажатая ссылка на веб или почту (`http`, `https`, `mailto`, а также `www.…` без

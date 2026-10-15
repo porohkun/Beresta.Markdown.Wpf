@@ -78,10 +78,28 @@
 
         <TabControl x:Name="Scenarios">
             <TabItem Header="Документ">
-                <ScrollViewer>
-                    <mdv:MarkdownViewer Markdown="{Binding Document}"
-                                        Margin="24,16" />
-                </ScrollViewer>
+                <DockPanel>
+                    <!-- Подсветка найденного и выделение -->
+                    <StackPanel DockPanel.Dock="Top"
+                                Orientation="Horizontal"
+                                Margin="24,8,24,0">
+                        <TextBlock Text="Подсветить:"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0" />
+                        <TextBox x:Name="SearchBox"
+                                 Width="200"
+                                 TextChanged="OnSearchChanged" />
+                        <TextBlock VerticalAlignment="Center"
+                                   Margin="16,0,0,0"
+                                   Text="{Binding SelectionLength, ElementName=DocumentViewer, StringFormat='Выделено знаков: {0}'}" />
+                    </StackPanel>
+
+                    <ScrollViewer>
+                        <mdv:MarkdownViewer x:Name="DocumentViewer"
+                                            Markdown="{Binding Document}"
+                                            Margin="24,16" />
+                    </ScrollViewer>
+                </DockPanel>
             </TabItem>
 
             <TabItem Header="Расширения">

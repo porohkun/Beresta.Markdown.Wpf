@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using Selection;
 using Styling;
 using ViewModels;
 
@@ -64,13 +65,30 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
+    private static readonly DependencyProperty LayerProperty =
+        MdSelection.LayerProperty.AddOwner(
+            typeof(MdTextBlock),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnLayerChanged));
+
     private static readonly string[] ExternalSchemes = [Uri.UriSchemeHttp, Uri.UriSchemeHttps, Uri.UriSchemeMailto];
 
     private static readonly DataTemplateSelector SharedSelector = new MarkdownTemplateSelector();
 
+    private readonly List<Segment> _segments = [];
+    private List<Highlight> _highlights = [];
+    private AdornerLayer? _adornerLayer;
+    private MdHighlightAdorner? _adorner;
+
     public MdTextBlock()
     {
         Rebuild();
+        Loaded += (_, _) => SyncAdorner();
+        Unloaded += (_, _) =>
+        {
+            _adornerLayer?.Remove(_adorner);
+            _adornerLayer = null;
+            _adorner = null;
+        };
     }
 
     public IEnumerable<InlineVm>? Runs
@@ -155,43 +173,216 @@ public class MdTextBlock : TextBlock
         }
     }
 
-    private void Rebuild()
+    /// <summary>Кусок текстовой карты, который рисует этот блок.</summary>
+    internal bool TryGetMapRange(out MdTextRange range)
     {
-        Inlines.Clear();
+        range = default;
+        return GetValue(LayerProperty) is MdDecorationLayer layer
+               && Runs is { } runs
+               && layer.Map.TryGetRange(runs, out range);
+    }
 
-        if (Runs is null)
+    /// <summary>Смещение в своём куске карты для точки в своих координатах.</summary>
+    internal int HitTestLocal(Point point)
+    {
+        var length = _segments.Count == 0 ? 0 : _segments[^1].End;
+        if (point.Y < 0)
         {
-            return;
+            return 0;
         }
 
-        foreach (var inline in Runs)
+        if (point.Y >= ActualHeight)
         {
-            switch (inline)
+            return length;
+        }
+
+        var clamped = new Point(Math.Clamp(point.X, 0, ActualWidth), point.Y);
+        var pointer = GetPositionFromPoint(clamped, snapToText: true);
+        return pointer is null ? (point.X <= 0 ? 0 : length) : OffsetOf(pointer, clamped);
+    }
+
+    /// <summary>Прямоугольники подсветки своего куска в своих координатах.</summary>
+    internal IEnumerable<Rect> GetRangeRects(int start, int end)
+    {
+        foreach (var segment in _segments)
+        {
+            if (segment.Element is not Run run || segment.End <= start || segment.Start >= end)
             {
-                case LineBreakVm:
-                    Inlines.Add(new LineBreak());
-                    break;
+                continue;
+            }
 
-                case RunVm run:
-                    AddRun(run);
-                    break;
+            var from = run.ContentStart.GetPositionAtOffset(Math.Max(start, segment.Start) - segment.Start);
+            var to = run.ContentStart.GetPositionAtOffset(Math.Min(end, segment.End) - segment.Start);
+            if (from is null || to is null)
+            {
+                continue;
+            }
 
-                default:
-                    Inlines.Add(CreateWidget(inline));
-                    break;
+            foreach (var rect in GetLineRects(from, to))
+            {
+                yield return rect;
             }
         }
     }
 
-    private void AddRun(RunVm run)
+    /// <summary>Подсвеченные куски своего текста в порядке рисования.</summary>
+    internal IEnumerable<(int Start, int End, Brush Brush)> Highlights
+        => _highlights.Select(highlight => (highlight.Start, highlight.End, highlight.Brush));
+
+    private static void OnLayerChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        => ((MdTextBlock)d).UpdateHighlights();
+
+    private static IEnumerable<Rect> GetLineRects(TextPointer from, TextPointer to)
     {
-        if (run.Code)
+        var lineStart = from;
+        while (lineStart.CompareTo(to) < 0)
         {
-            Inlines.Add(CreateInlineCode(run.Text));
+            var next = lineStart.GetLineStartPosition(1, out var moved);
+            var lineEnd = next is null || moved == 0 || next.CompareTo(to) >= 0 ? to : next;
+            var first = lineStart.GetCharacterRect(LogicalDirection.Forward);
+            var last = lineEnd.GetCharacterRect(LogicalDirection.Backward);
+            if (last.Left > first.Left)
+            {
+                yield return new Rect(first.Left, first.Top, last.Left - first.Left, first.Height);
+            }
+
+            if (ReferenceEquals(lineEnd, to))
+            {
+                yield break;
+            }
+
+            lineStart = lineEnd;
+        }
+    }
+
+    private int OffsetOf(TextPointer pointer, Point point)
+    {
+        foreach (var segment in _segments)
+        {
+            var element = segment.Element;
+            if (pointer.CompareTo(element.ElementEnd) > 0)
+            {
+                continue;
+            }
+
+            if (element is Run run && pointer.CompareTo(run.ContentStart) >= 0)
+            {
+                return segment.Start + Math.Clamp(run.ContentStart.GetOffsetToPosition(pointer), 0, segment.Length);
+            }
+
+            if (segment.Overlay is { } overlay)
+            {
+                var bounds = overlay.TransformToAncestor(this).TransformBounds(new Rect(overlay.RenderSize));
+                return point.X > bounds.Left + bounds.Width / 2 ? segment.End : segment.Start;
+            }
+
+            return pointer.CompareTo(element.ElementEnd) == 0 ? segment.End : segment.Start;
+        }
+
+        return _segments.Count == 0 ? 0 : _segments[^1].End;
+    }
+
+    private void UpdateHighlights()
+    {
+        var highlights = new List<Highlight>();
+        if (TryGetMapRange(out var range) && GetValue(LayerProperty) is MdDecorationLayer layer)
+        {
+            foreach (var (part, brush) in layer.Within(range))
+            {
+                highlights.Add(new(part.Start - range.Start, part.End - range.Start, brush));
+            }
+        }
+
+        foreach (var segment in _segments)
+        {
+            if (segment.Overlay is { } overlay)
+            {
+                overlay.Background = highlights.LastOrDefault(h => h.Start < segment.End && h.End > segment.Start)?.Brush;
+            }
+        }
+
+        if (!highlights.SequenceEqual(_highlights))
+        {
+            _highlights = highlights;
+            SyncAdorner();
+        }
+    }
+
+    private void SyncAdorner()
+    {
+        if (_highlights.Count == 0)
+        {
+            _adornerLayer?.Remove(_adorner);
+            _adornerLayer = null;
+            _adorner = null;
             return;
         }
 
-        Inline current = new Run(run.Text ?? string.Empty);
+        if (_adorner is null)
+        {
+            _adornerLayer = AdornerLayer.GetAdornerLayer(this);
+            if (_adornerLayer is null)
+            {
+                return;
+            }
+
+            _adorner = new MdHighlightAdorner(this);
+            _adornerLayer.Add(_adorner);
+        }
+
+        _adorner.InvalidateVisual();
+    }
+
+    private void Rebuild()
+    {
+        Inlines.Clear();
+        _segments.Clear();
+
+        foreach (var inline in Runs ?? [])
+        {
+            var start = _segments.Count == 0 ? 0 : _segments[^1].End;
+            var length = MdTextMap.TextOf(inline).Length;
+
+            switch (inline)
+            {
+                case LineBreakVm:
+                    var lineBreak = new LineBreak();
+                    Inlines.Add(lineBreak);
+                    _segments.Add(new(start, length, lineBreak, null));
+                    break;
+
+                case RunVm { Code: true } code:
+                    var (container, overlay) = CreateAtomic(new InlineCodePresenter { Text = code.Text, Style = InlineCodeStyle });
+                    Inlines.Add(container);
+                    _segments.Add(new(start, length, container, overlay));
+                    break;
+
+                case RunVm run:
+                    _segments.Add(new(start, length, AddRun(run), null));
+                    break;
+
+                default:
+                    var widget = new ContentPresenter
+                    {
+                        Content = inline,
+                        ContentTemplateSelector = TryFindResource("Md.TemplateSelector") as DataTemplateSelector ?? SharedSelector
+                    };
+                    var (host, cover) = CreateAtomic(widget);
+                    Inlines.Add(host);
+                    _segments.Add(new(start, length, host, cover));
+                    break;
+            }
+        }
+
+        _highlights = [];
+        SyncAdorner();
+        UpdateHighlights();
+    }
+
+    private Run AddRun(RunVm run)
+    {
+        var text = new Run(run.Text ?? string.Empty);
+        Inline current = text;
 
         if (run.Strike)
         {
@@ -232,6 +423,7 @@ public class MdTextBlock : TextBlock
         }
 
         Inlines.Add(current);
+        return text;
     }
 
     /// <summary>
@@ -247,31 +439,20 @@ public class MdTextBlock : TextBlock
             OpenExternal(href);
     }
 
-    private Inline CreateInlineCode(string text)
+    /// <summary>Неделимый кусок строки с накладкой подсветки поверх.</summary>
+    private static (InlineUIContainer Container, Border Overlay) CreateAtomic(UIElement content)
     {
-        var presenter = new InlineCodePresenter
-        {
-            Text = text,
-            Style = InlineCodeStyle
-        };
-
-        return new InlineUIContainer(presenter)
-        {
-            BaselineAlignment = BaselineAlignment.Center
-        };
+        var overlay = new Border { IsHitTestVisible = false };
+        var host = new Grid { Children = { content, overlay } };
+        var container = new InlineUIContainer(host) { BaselineAlignment = BaselineAlignment.Center };
+        return (container, overlay);
     }
 
-    private Inline CreateWidget(InlineVm inline)
+    /// <summary>Кусок своего текста: где он в карте и каким элементом нарисован.</summary>
+    private readonly record struct Segment(int Start, int Length, TextElement Element, Border? Overlay)
     {
-        var presenter = new ContentPresenter
-        {
-            Content = inline,
-            ContentTemplateSelector = TryFindResource("Md.TemplateSelector") as DataTemplateSelector ?? SharedSelector
-        };
-
-        return new InlineUIContainer(presenter)
-        {
-            BaselineAlignment = BaselineAlignment.Center
-        };
+        public int End => Start + Length;
     }
+
+    private sealed record Highlight(int Start, int End, Brush Brush);
 }

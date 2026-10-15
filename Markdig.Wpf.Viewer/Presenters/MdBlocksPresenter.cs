@@ -29,6 +29,10 @@ public class MdBlocksPresenter : ItemsControl
         set => SetValue(BlocksProperty, value);
     }
 
+    protected override DependencyObject GetContainerForItemOverride() => new MdBlockItem();
+
+    protected override bool IsItemItsOwnContainerOverride(object item) => item is MdBlockItem;
+
     private static void OnBlocksChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MdBlocksPresenter)d).ItemsSource = (IReadOnlyList<BlockVm>?)e.NewValue;
 }

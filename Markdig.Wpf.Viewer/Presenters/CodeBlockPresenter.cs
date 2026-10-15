@@ -2,9 +2,18 @@
 
 using System.Windows;
 using System.Windows.Controls;
+using ViewModels;
 
+/// <summary>Блок кода: рамка с прокруткой вбок вокруг текста кода.</summary>
 public class CodeBlockPresenter : Control
 {
+    /// <summary>Код одним куском текста — тот же список, что у вьюмодели, ради выделения.</summary>
+    public static readonly DependencyProperty RunsProperty =
+        DependencyProperty.Register(
+            nameof(Runs),
+            typeof(IReadOnlyList<InlineVm>),
+            typeof(CodeBlockPresenter));
+
     public static readonly DependencyProperty CodeProperty =
         DependencyProperty.Register(
             nameof(Code),
@@ -23,6 +32,11 @@ public class CodeBlockPresenter : Control
             typeof(string),
             typeof(CodeBlockPresenter));
 
+    public IReadOnlyList<InlineVm>? Runs
+    {
+        get => (IReadOnlyList<InlineVm>?)GetValue(RunsProperty);
+        set => SetValue(RunsProperty, value);
+    }
 
     public string? Code
     {

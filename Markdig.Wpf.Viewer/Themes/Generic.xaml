@@ -97,6 +97,9 @@
     <!-- ======== Md.BlankLine ======== -->
     <sys:Double   x:Key="Md.BlankLine.Height">14</sys:Double>
 
+    <!-- ======== Выделение ======== -->
+    <SolidColorBrush x:Key="Md.Selection.Brush" Color="#3399FF" Opacity="0.35" />
+
     <Style x:Key="Md.Paragraph.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}">
         <Setter Property="FontSize" Value="{DynamicResource Md.InlineCode.FontSize}" />
         <Setter Property="FontFamily" Value="{DynamicResource Md.InlineCode.FontFamily}" />
@@ -218,11 +221,11 @@
                                       VerticalScrollBarVisibility="Disabled"
                                       b:NestedScroll.PassWheelToParent="True">
 
-                            <TextBlock Text="{TemplateBinding Code}"
-                                       Foreground="{DynamicResource Md.CodeBlock.Foreground}"
-                                       FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
-                                       FontSize="{DynamicResource Md.CodeBlock.FontSize}"
-                                       TextWrapping="WrapWithOverflow"/>
+                            <p:MdTextBlock Runs="{TemplateBinding Runs}"
+                                           Foreground="{DynamicResource Md.CodeBlock.Foreground}"
+                                           FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
+                                           FontSize="{DynamicResource Md.CodeBlock.FontSize}"
+                                           TextWrapping="WrapWithOverflow"/>
                         </ScrollViewer>
 
                     </Border>
@@ -357,7 +360,7 @@
 
         <s:MdStyleProvider.CodeBlockTemplate>
             <DataTemplate DataType="{x:Type vm:CodeBlockVm}">
-                <p:CodeBlockPresenter InfoString="{Binding InfoString}" Syntax="{Binding Syntax}" Code="{Binding Code}" Style="{DynamicResource Md.CodeBlock.Style}"/>
+                <p:CodeBlockPresenter InfoString="{Binding InfoString}" Syntax="{Binding Syntax}" Code="{Binding Code}" Runs="{Binding Runs}" Style="{DynamicResource Md.CodeBlock.Style}"/>
             </DataTemplate>
         </s:MdStyleProvider.CodeBlockTemplate>
 
@@ -393,7 +396,28 @@
 
     </s:MdStyleProvider>
 
+    <Style TargetType="{x:Type p:MdBlockItem}">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type p:MdBlockItem}">
+                    <Grid>
+                        <ContentPresenter />
+                        <Border Background="{TemplateBinding Highlight}" IsHitTestVisible="False" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style TargetType="{x:Type local:MarkdownViewer}">
+        <Setter Property="Focusable" Value="True" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource Md.Selection.Brush}" />
         <Setter Property="ItemsPanel">
             <Setter.Value>
                 <ItemsPanelTemplate>
