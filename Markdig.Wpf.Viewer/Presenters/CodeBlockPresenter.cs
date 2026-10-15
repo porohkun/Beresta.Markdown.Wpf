@@ -4,7 +4,9 @@ using System.Windows;
 using System.Windows.Controls;
 using ViewModels;
 
-/// <summary>Блок кода: рамка с прокруткой вбок вокруг текста кода.</summary>
+/// <summary>Блок кода: рамка с шапкой языка и прокруткой вбок вокруг текста кода.</summary>
+[TemplatePart(Name = HeaderPart, Type = typeof(FrameworkElement))]
+[TemplatePart(Name = CodePart, Type = typeof(MdTextBlock))]
 public class CodeBlockPresenter : Control
 {
     /// <summary>Код одним куском текста — тот же список, что у вьюмодели, ради выделения.</summary>
@@ -43,6 +45,16 @@ public class CodeBlockPresenter : Control
             typeof(string),
             typeof(CodeBlockPresenter));
 
+    /// <summary>Код в ограждении: у блока есть шапка — экранная строка открывающего ограждения.</summary>
+    public static readonly DependencyProperty IsFencedProperty =
+        DependencyProperty.Register(
+            nameof(IsFenced),
+            typeof(bool),
+            typeof(CodeBlockPresenter),
+            new(false));
+
+    private const string HeaderPart = "PART_Header";
+    private const string CodePart = "PART_Code";
 
     public IReadOnlyList<InlineVm>? Runs
     {
@@ -68,6 +80,38 @@ public class CodeBlockPresenter : Control
     {
         get => (string?)GetValue(InfoStringProperty);
         set => SetValue(InfoStringProperty, value);
+    }
+
+    public bool IsFenced
+    {
+        get => (bool)GetValue(IsFencedProperty);
+        set => SetValue(IsFencedProperty, value);
+    }
+
+    /// <summary>Строки исходника блока — шапка и строки кода — и их полосы в своих координатах.</summary>
+    internal IEnumerable<(int Line, Rect Row)> SourceRows()
+    {
+        if (DataContext is not CodeBlockVm code)
+        {
+            yield break;
+        }
+
+        if (GetTemplateChild(HeaderPart) is FrameworkElement { IsVisible: true, ActualHeight: > 0 } header)
+        {
+            yield return (code.Source.StartLine, header.TransformToAncestor(this).TransformBounds(new(header.RenderSize)));
+        }
+
+        if (GetTemplateChild(CodePart) is FrameworkElement { ActualHeight: > 0 } text)
+        {
+            var lines = code.Code.Split('\n').Length;
+            var top = text.TranslatePoint(default, this).Y;
+            var height = text.ActualHeight / lines;
+
+            for (var i = 0; i < lines; i++)
+            {
+                yield return (code.CodeFirstLine + i, new(0, top + i * height, 0, height));
+            }
+        }
     }
 
     private static void OnCodeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

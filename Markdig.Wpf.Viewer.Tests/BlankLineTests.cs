@@ -25,8 +25,8 @@ public sealed class BlankLineTests
     [InlineData("```\nx\n```\n\nb", "C(x) _ P(b)")]
     [InlineData("Title\n===\n\nb", "H1(Title) _ P(b)")]
     [InlineData("| a |\n|---|\n| 1 |\n\nb", "T(2x1) _ P(b)")]
-    [InlineData("- a\n  more\n\nb", "L[• P(a more)] _ P(b)")]
-    [InlineData("> a\n> b\n\nc", "Q[P(a b)] _ P(c)")]
+    [InlineData("- a\n  more\n\nb", "L[• P(a\nmore)] _ P(b)")]
+    [InlineData("> a\n> b\n\nc", "Q[P(a\nb)] _ P(c)")]
     public void Отступ_после_многострочного_блока_считается_от_его_конца(string markdown, string expected)
     {
         ModelDump.Of(markdown).Should().Be(expected);

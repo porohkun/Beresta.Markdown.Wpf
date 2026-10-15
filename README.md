@@ -8,6 +8,12 @@ Markdown viewer for WPF based on Markdig.
 другим содержимым или в список, в том числе виртуализированный. Вьюер создаёт только блоки,
 попавшие в видимую область прокруток вокруг него; без прокрутки создаются все блоки.
 
+## Строки как в исходнике
+
+Каждая строка исходника начинается на экране с новой строки: перенос внутри абзаца рисуется
+переносом, а не пробелом. Открывающее ограждение блока кода тоже получает свою строку — шапку с
+языком.
+
 ## Свой вид
 
 Вид меняется снаружи на трёх уровнях: ключами темы, стилями начертаний и шаблонами блоков.
@@ -22,13 +28,14 @@ Markdown viewer for WPF based on Markdig.
 | Заголовки | `Md.Heading.FontFamily`, `Md.Heading.Foreground` (не заданы), `Md.Heading.LinkForeground`, `Md.Heading1…6.FontSize`, `.FontWeight`, `.Margin` |
 | Код посреди строки | `Md.InlineCode.FontFamily`, `.FontSize`, `.Foreground`, `.Background`, `.BorderBrush`, `.BorderThickness`, `.Padding`, `.CornerRadius` |
 | Блок кода | `Md.CodeBlock.FontFamily`, `.FontSize`, `.Foreground`, `.Background`, `.BorderBrush`, `.BorderThickness`, `.Padding`, `.CornerRadius`, `.LineNumberForeground`, `.LineNumberMargin` |
+| Шапка блока кода | `Md.CodeBlock.HeaderFontFamily` (не задан), `Md.CodeBlock.HeaderForeground`, `.HeaderFontSize`, `.HeaderMargin` |
 | Поля с номерами строк | `Md.Gutter.FontFamily` (не задан), `Md.Gutter.Foreground`, `.FontSize`, `.Padding` |
 | Цитата | `Md.Quote.BorderBrush`, `.BorderThickness`, `.Padding`, `.Margin` |
 | Список | `Md.List.Margin`, `Md.List.MarkerWidth`, `Md.List.ItemSpacing` |
 | Таблица | `Md.Table.BorderBrush`, `.BorderThickness`, `.CellPadding`, `.HeaderBackground` |
 | Разделитель и пустая строка | `Md.HorizontalRule.Margin`, `Md.BlankLine.Height` |
 | Начертания | `Md.Strong.Style`, `Md.Emphasis.Style`, `Md.Strike.Style` (стили `Span`), `Md.Link.Style` (стиль `Hyperlink`) |
-| Стили блоков целиком | `Md.Paragraph.Style`, `Md.Heading.Style`, `Md.CodeBlock.Style`, `Md.Quote.Style`, `Md.List.Style`, `Md.List.MarkerStyle`, `Md.Table.Style` |
+| Стили блоков целиком | `Md.Paragraph.Style`, `Md.Heading.Style`, `Md.CodeBlock.Style`, `Md.CodeBlock.HeaderStyle`, `Md.Quote.Style`, `Md.List.Style`, `Md.List.MarkerStyle`, `Md.Table.Style` |
 
 **Шаблон блока** заменяется своим провайдером: незаданные шаблоны он берёт у стандартного.
 
@@ -153,9 +160,11 @@ var sync = new MdScrollSync(leftViewer, rightViewer, new MdLineMap(anchors));
 
 ## Номера строк
 
-`ShowSourceLineNumbers` показывает слева поля с номерами строк исходника: у блока — номер первой
-строки, у блока кода — каждой. Ширина полей общая на документ. `ShowCodeLineNumbers` нумерует
-строки внутри блоков кода; свойство наследуется, поэтому его задают и один раз на окно или список
+`ShowSourceLineNumbers` показывает слева поля с номерами строк исходника — у каждой строки, у
+которой есть своё место на экране: строки текста, пустые строки, шапка блока кода и его строки.
+Закрывающее ограждение блока кода, разделитель таблицы и подчёркивание заголовка своего места не
+имеют и номера не получают. Ширина полей общая на документ. `ShowCodeLineNumbers` нумерует строки
+внутри блоков кода; свойство наследуется, поэтому его задают и один раз на окно или список
 вьюеров. Номера показываются с единицы, как в редакторе.
 
 ```xml

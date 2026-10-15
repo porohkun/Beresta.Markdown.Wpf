@@ -75,6 +75,10 @@
     <CornerRadius x:Key="Md.CodeBlock.CornerRadius">4</CornerRadius>
     <Brush x:Key="Md.CodeBlock.LineNumberForeground">Gray</Brush>
     <Thickness x:Key="Md.CodeBlock.LineNumberMargin">0,0,12,0</Thickness>
+    <!-- Md.CodeBlock.HeaderFontFamily не задан: шапка берёт шрифт у приложения -->
+    <Brush x:Key="Md.CodeBlock.HeaderForeground">Gray</Brush>
+    <sys:Double x:Key="Md.CodeBlock.HeaderFontSize">12</sys:Double>
+    <Thickness x:Key="Md.CodeBlock.HeaderMargin">0,0,0,8</Thickness>
 
     <!-- ======== Md.Gutter: поля с номерами строк исходника ======== -->
     <!-- Md.Gutter.FontFamily не задан: номера берут шрифт у приложения -->
@@ -220,6 +224,13 @@
         </Style.Triggers>
     </Style>
 
+    <Style x:Key="Md.CodeBlock.HeaderStyle" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontFamily" Value="{DynamicResource Md.CodeBlock.HeaderFontFamily}" />
+        <Setter Property="FontSize" Value="{DynamicResource Md.CodeBlock.HeaderFontSize}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.CodeBlock.HeaderForeground}" />
+        <Setter Property="Margin" Value="{DynamicResource Md.CodeBlock.HeaderMargin}" />
+    </Style>
+
     <Style x:Key="Md.CodeBlock.Style" TargetType="{x:Type p:CodeBlockPresenter}">
         <Setter Property="Template">
             <Setter.Value>
@@ -232,35 +243,50 @@
                             Background="{DynamicResource Md.CodeBlock.Background}">
 
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
 
-                            <TextBlock x:Name="LineNumbers"
-                                       Visibility="Collapsed"
-                                       Text="{TemplateBinding LineNumbers}"
-                                       Foreground="{DynamicResource Md.CodeBlock.LineNumberForeground}"
-                                       FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
-                                       FontSize="{DynamicResource Md.CodeBlock.FontSize}"
-                                       Margin="{DynamicResource Md.CodeBlock.LineNumberMargin}"
-                                       TextAlignment="Right" />
+                            <TextBlock x:Name="PART_Header"
+                                       Text="{TemplateBinding Syntax}"
+                                       Style="{DynamicResource Md.CodeBlock.HeaderStyle}" />
 
-                            <ScrollViewer Grid.Column="1"
-                                          HorizontalScrollBarVisibility="Auto"
-                                          VerticalScrollBarVisibility="Disabled"
-                                          b:NestedScroll.PassWheelToParent="True">
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
 
-                                <p:MdTextBlock Runs="{TemplateBinding Runs}"
-                                               Foreground="{DynamicResource Md.CodeBlock.Foreground}"
-                                               FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
-                                               FontSize="{DynamicResource Md.CodeBlock.FontSize}"
-                                               TextWrapping="WrapWithOverflow" />
-                            </ScrollViewer>
+                                <TextBlock x:Name="LineNumbers"
+                                           Visibility="Collapsed"
+                                           Text="{TemplateBinding LineNumbers}"
+                                           Foreground="{DynamicResource Md.CodeBlock.LineNumberForeground}"
+                                           FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
+                                           FontSize="{DynamicResource Md.CodeBlock.FontSize}"
+                                           Margin="{DynamicResource Md.CodeBlock.LineNumberMargin}"
+                                           TextAlignment="Right" />
+
+                                <ScrollViewer Grid.Column="1"
+                                              HorizontalScrollBarVisibility="Auto"
+                                              VerticalScrollBarVisibility="Disabled"
+                                              b:NestedScroll.PassWheelToParent="True">
+
+                                    <p:MdTextBlock x:Name="PART_Code"
+                                                   Runs="{TemplateBinding Runs}"
+                                                   Foreground="{DynamicResource Md.CodeBlock.Foreground}"
+                                                   FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
+                                                   FontSize="{DynamicResource Md.CodeBlock.FontSize}"
+                                                   TextWrapping="WrapWithOverflow" />
+                                </ScrollViewer>
+                            </Grid>
                         </Grid>
 
                     </Border>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsFenced" Value="False">
+                            <Setter TargetName="PART_Header" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
                         <Trigger Property="local:MarkdownViewer.ShowCodeLineNumbers" Value="True">
                             <Setter TargetName="LineNumbers" Property="Visibility" Value="Visible" />
                         </Trigger>
@@ -398,7 +424,7 @@
         <s:MdStyleProvider.CodeBlockTemplate>
             <DataTemplate DataType="{x:Type vm:CodeBlockVm}">
                 <p:CodeBlockPresenter InfoString="{Binding InfoString}" Syntax="{Binding Syntax}" Code="{Binding Code}"
-                                      Runs="{Binding Runs}" Style="{DynamicResource Md.CodeBlock.Style}" />
+                                      IsFenced="{Binding IsFenced}" Runs="{Binding Runs}" Style="{DynamicResource Md.CodeBlock.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.CodeBlockTemplate>
 

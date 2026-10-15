@@ -2,75 +2,46 @@
 
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using Theming;
+using Showcases;
+using Showcases.CustomLook;
+using Showcases.Document;
+using Showcases.Extensions;
+using Showcases.LargeDocument;
+using Showcases.Preview;
+using Showcases.TwoPanes;
 
-/// <summary>Состояние витрины: тема, номера строк и тексты сценариев.</summary>
+/// <summary>Витрины, выбранная из них и общие настройки.</summary>
 public sealed class MainWindowViewModel : INotifyPropertyChanged
 {
-    private bool _isDark;
-    private bool _showSourceLineNumbers;
-    private bool _showCodeLineNumbers;
-    private string _previewText = Samples.Load("Document.md");
+    private ShowcaseViewModel _selected;
+
+    public MainWindowViewModel()
+    {
+        Showcases =
+        [
+            new DocumentViewModel(Options),
+            new ExtensionsViewModel(Options),
+            new CustomLookViewModel(Options),
+            new TwoPanesViewModel(Options),
+            new LargeDocumentViewModel(Options),
+            new PreviewViewModel(Options)
+        ];
+
+        _selected = Showcases[0];
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public string Document { get; } = Samples.Load("Document.md");
+    public ShowcaseOptions Options { get; } = new();
 
-    public string ExtensionsDocument { get; } = Samples.Load("Extensions.md");
+    public IReadOnlyList<ShowcaseViewModel> Showcases { get; }
 
-    public string DiffLeft { get; } = Samples.Load("DiffLeft.md");
-
-    public string DiffRight { get; } = Samples.Load("DiffRight.md");
-
-    public string LargeDocument { get; } = string.Join(
-        "\n\n",
-        Enumerable.Range(1, 3000).Select(i => i % 10 == 0
-            ? $"## Раздел {i / 10}"
-            : $"Абзац {i}: текст, который нужен только для объёма."));
-
-    public bool IsDark
+    public ShowcaseViewModel Selected
     {
-        get => _isDark;
+        get => _selected;
         set
         {
-            if (_isDark == value)
-            {
-                return;
-            }
-
-            _isDark = value;
-            ThemeSwitcher.Apply(value);
-            OnPropertyChanged();
-        }
-    }
-
-    /// <summary>Текст живого предпросмотра: вьюер перерисовывает его на каждую правку.</summary>
-    public string PreviewText
-    {
-        get => _previewText;
-        set
-        {
-            _previewText = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public bool ShowSourceLineNumbers
-    {
-        get => _showSourceLineNumbers;
-        set
-        {
-            _showSourceLineNumbers = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public bool ShowCodeLineNumbers
-    {
-        get => _showCodeLineNumbers;
-        set
-        {
-            _showCodeLineNumbers = value;
+            _selected = value;
             OnPropertyChanged();
         }
     }

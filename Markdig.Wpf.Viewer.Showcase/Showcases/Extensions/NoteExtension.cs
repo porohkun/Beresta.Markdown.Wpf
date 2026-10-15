@@ -1,4 +1,4 @@
-﻿namespace MarkdigWpfViewer.Showcase.Extensions;
+﻿namespace MarkdigWpfViewer.Showcase.Showcases.Extensions;
 
 using System.Windows;
 using Markdig.Extensions.CustomContainers;

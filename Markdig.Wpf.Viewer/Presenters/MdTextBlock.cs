@@ -82,6 +82,7 @@ public class MdTextBlock : TextBlock
 
     private readonly List<Segment> _segments = [];
     private List<Highlight> _highlights = [];
+    private List<(int Line, Rect Row)>? _sourceRows;
     private AdornerLayer? _adornerLayer;
     private MdHighlightAdorner? _adorner;
 
@@ -142,6 +143,15 @@ public class MdTextBlock : TextBlock
     /// <summary>Подсвеченные куски своего текста в порядке рисования.</summary>
     internal IEnumerable<(int Start, int End, Brush Brush)> Highlights
         => _highlights.Select(highlight => (highlight.Start, highlight.End, highlight.Brush));
+
+    /// <summary>Строки исходника, которые начинаются в этом тексте, и экранные строки, где они начинаются.</summary>
+    internal IReadOnlyList<(int Line, Rect Row)> SourceRows => _sourceRows ??= FindSourceRows();
+
+    protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+    {
+        base.OnRenderSizeChanged(sizeInfo);
+        _sourceRows = null;
+    }
 
     /// <summary>Кусок текстовой карты, который рисует этот блок.</summary>
     internal bool TryGetMapRange(out MdTextRange range)
@@ -355,6 +365,7 @@ public class MdTextBlock : TextBlock
     {
         Inlines.Clear();
         _segments.Clear();
+        _sourceRows = null;
 
         foreach (var inline in Runs ?? [])
         {
@@ -366,17 +377,17 @@ public class MdTextBlock : TextBlock
                 case LineBreakVm:
                     var lineBreak = new LineBreak();
                     Inlines.Add(lineBreak);
-                    _segments.Add(new(start, length, lineBreak, null, null));
+                    _segments.Add(new(inline, start, length, lineBreak, null, null));
                     break;
 
                 case RunVm { Code: true } code:
                     var (container, overlay) = CreateAtomic(new InlineCodePresenter { Text = code.Text, Style = InlineCodeStyle });
                     Inlines.Add(container);
-                    _segments.Add(new(start, length, container, overlay, null));
+                    _segments.Add(new(inline, start, length, container, overlay, null));
                     break;
 
                 case RunVm run:
-                    _segments.Add(new(start, length, AddRun(run), null, null));
+                    _segments.Add(new(inline, start, length, AddRun(run), null, null));
                     break;
 
                 default:
@@ -387,7 +398,7 @@ public class MdTextBlock : TextBlock
                     };
                     var (host, cover) = CreateAtomic(widget);
                     Inlines.Add(host);
-                    _segments.Add(new(start, length, host, cover, widget));
+                    _segments.Add(new(inline, start, length, host, cover, widget));
                     break;
             }
         }
@@ -396,6 +407,28 @@ public class MdTextBlock : TextBlock
         SyncAdorner();
         UpdateHighlights();
         UpdateWidgetStates();
+    }
+
+    /// <summary>Для каждой строки исходника — экранная строка её первого инлайна.</summary>
+    private List<(int Line, Rect Row)> FindSourceRows()
+    {
+        var rows = new List<(int Line, Rect Row)>();
+        foreach (var segment in _segments)
+        {
+            var source = segment.Inline.Source;
+            if (segment.Inline is LineBreakVm || source.IsEmpty || rows is [.., var last] && source.StartLine <= last.Line)
+            {
+                continue;
+            }
+
+            var start = segment.Element is Run run ? run.ContentStart : segment.Element.ElementStart;
+            if (start.GetCharacterRect(LogicalDirection.Forward) is { IsEmpty: false, Height: > 0 } row)
+            {
+                rows.Add((source.StartLine, row));
+            }
+        }
+
+        return rows;
     }
 
     private void UpdateWidgetStates()
@@ -471,7 +504,7 @@ public class MdTextBlock : TextBlock
     }
 
     /// <summary>Кусок своего текста: где он в карте и каким элементом нарисован.</summary>
-    private readonly record struct Segment(int Start, int Length, TextElement Element, Border? Overlay, ContentPresenter? Widget)
+    private readonly record struct Segment(InlineVm Inline, int Start, int Length, TextElement Element, Border? Overlay, ContentPresenter? Widget)
     {
         public int End => Start + Length;
     }

@@ -34,7 +34,7 @@ public sealed class LineMapTests
 
     [Theory]
     [InlineData("a\nb\n\nc", 1, 1, "b")]
-    [InlineData("a\nb\n\nc", 0, 3, "a b\n\nc")]
+    [InlineData("a\nb\n\nc", 0, 3, "a\nb\n\nc")]
     [InlineData("```\nx\ny\nz\n```", 2, 2, "y")]
     [InlineData("| a | b |\n|---|---|\n| 1 | 2 |", 2, 2, "1\t2")]
     [InlineData("- one\n- two", 1, 1, "two")]

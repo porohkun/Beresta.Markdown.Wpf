@@ -18,8 +18,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Remove="Samples\*.md" />
-		<EmbeddedResource Include="Samples\*.md" />
+		<None Remove="Samples\*.md;Showcases\**\*.md" />
+		<EmbeddedResource Include="Samples\*.md;Showcases\**\*.md" />
 	</ItemGroup>
 
 </Project>

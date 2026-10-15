@@ -281,10 +281,11 @@ public sealed class MarkdownViewer : ItemsControl
         Gutter = GetTemplateChild(GutterPart) as MdLineGutter;
     }
 
+    /// <summary>Созданные блоки встали на другие места или сменились.</summary>
+    internal void OnBlocksArranged() => Gutter?.InvalidateVisual();
+
     internal void OnViewportMaybeChanged()
     {
-        Gutter?.InvalidateVisual();
-
         if (_viewportNotificationQueued || ViewportChanged is null)
         {
             return;

@@ -12,23 +12,23 @@ public sealed class LineNumberTests
         "# Title\n" + // 0
         "\n" +
         "First paragraph\n" + // 2
-        "second line\n" +
+        "second line\n" + // 3
         "\n" +
         "- one\n" + // 5
         "- two\n" + // 6
         "\n" +
-        "```\n" +
+        "```\n" + // 8
         "code 0\n" + // 9
         "code 1\n" + // 10
         "code 2\n" + // 11
-        "```\n" +
+        "```\n" + // 12
         "\n" +
         "> quoted\n"; // 14
 
     private static readonly string LongText = string.Join("\n\n", Enumerable.Range(0, 2000).Select(i => $"Paragraph {i}"));
 
     [Fact]
-    public void Поля_нумеруют_первую_строку_блока_и_каждую_строку_кода()
+    public void Поля_нумеруют_каждую_строку_у_которой_есть_место_на_экране()
     {
         WpfHost.Invoke(() =>
         {
@@ -37,8 +37,39 @@ public sealed class LineNumberTests
 
             var numbers = viewer.Gutter!.CollectNumbers();
 
-            numbers.Select(number => number.Line).Should().Equal(0, 2, 5, 6, 9, 10, 11, 14);
+            numbers.Select(number => number.Line).Should().Equal(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14);
             numbers.Select(number => number.Top).Should().BeInAscendingOrder().And.OnlyHaveUniqueItems();
+            ShouldNotOverlap(numbers);
+            window.Close();
+        });
+    }
+
+    [Theory]
+    [InlineData("a\n\n---\n\nb", new[] { 0, 1, 2, 3, 4 })]
+    [InlineData("<div>\nhello\n</div>", new[] { 0, 1, 2 })]
+    public void Строка_со_своим_местом_на_экране_получает_номер(string markdown, int[] expected)
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = markdown, ShowSourceLineNumbers = true };
+            var window = WpfHost.Show(viewer);
+
+            viewer.Gutter!.CollectNumbers().Select(number => number.Line).Should().Equal(expected);
+            window.Close();
+        });
+    }
+
+    [Theory]
+    [InlineData("| a | b |\n|---|---|\n| 1 | 2 |", new[] { 0, 2 })]
+    [InlineData("Title\n=====\n\ntext", new[] { 0, 2, 3 })]
+    public void Строка_без_своего_места_на_экране_остаётся_без_номера(string markdown, int[] expected)
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = markdown, ShowSourceLineNumbers = true };
+            var window = WpfHost.Show(viewer);
+
+            viewer.Gutter!.CollectNumbers().Select(number => number.Line).Should().Equal(expected);
             window.Close();
         });
     }
@@ -52,10 +83,37 @@ public sealed class LineNumberTests
             var window = WpfHost.Show(new ScrollViewer { Content = viewer });
             var gutter = viewer.Gutter!;
             var numbers = gutter.CollectNumbers().ToDictionary(number => number.Line, number => number.Top);
+            var presenter = Visuals.Descendants<CodeBlockPresenter>(viewer).Single();
+            var header = (FrameworkElement)presenter.Template.FindName("PART_Header", presenter);
 
             TopOf(TextStartingWith(viewer, "First"), 0, gutter).Should().BeApproximately(numbers[2], 0.5);
+            TopOf(TextStartingWith(viewer, "First"), "First paragraph\n".Length, gutter).Should().BeApproximately(numbers[3], 0.5);
             TopOf(TextStartingWith(viewer, "two"), 0, gutter).Should().BeApproximately(numbers[6], 0.5);
+            header.TranslatePoint(default, gutter).Y.Should().BeApproximately(numbers[8], 0.5);
             TopOf(TextStartingWith(viewer, "code 0"), "code 0\n".Length, gutter).Should().BeApproximately(numbers[10], 0.5);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Поля_перерисовываются_только_когда_блоки_встают_иначе()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = LongText, ShowSourceLineNumbers = true };
+            var scroll = new ScrollViewer { Content = viewer };
+            var window = WpfHost.Show(scroll);
+            var gutter = viewer.Gutter!;
+            var renders = gutter.Renders;
+
+            viewer.BlockPanel!.InvalidateMeasure();
+            viewer.BlockPanel.InvalidateArrange();
+            WpfHost.Settle(window);
+            gutter.Renders.Should().Be(renders, "блоки остались на своих местах");
+
+            scroll.ScrollToVerticalOffset(3000);
+            WpfHost.Settle(window);
+            gutter.Renders.Should().BeGreaterThan(renders, "созданы другие блоки");
             window.Close();
         });
     }
@@ -178,12 +236,12 @@ public sealed class LineNumberTests
             var paddedViewer = new MarkdownViewer { Extensions = [padded], Markdown = text, ShowSourceLineNumbers = true };
             var window = WpfHost.Show(new StackPanel { Children = { tightViewer, paddedViewer } });
 
-            tightViewer.Gutter!.CollectNumbers().Select(number => number.Line).Should().Equal(0, 3);
+            tightViewer.Gutter!.CollectNumbers().Select(number => number.Line).Should().Equal(0, 1, 3);
 
             var numbers = paddedViewer.Gutter!.CollectNumbers();
-            numbers.Select(number => number.Line).Should().Equal(0, 2, 3);
+            numbers.Select(number => number.Line).Should().Equal(0, 1, 2, 3);
             var border = Visuals.Descendants<Border>(paddedViewer).Single(element => Equals(element.Tag, "note"));
-            numbers[1].Top.Should().BeApproximately(border.TranslatePoint(default, paddedViewer.Gutter).Y, 0.5);
+            numbers[2].Top.Should().BeApproximately(border.TranslatePoint(default, paddedViewer.Gutter).Y, 0.5);
             ShouldNotOverlap(numbers);
             window.Close();
         });

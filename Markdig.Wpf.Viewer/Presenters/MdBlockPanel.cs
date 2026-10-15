@@ -20,6 +20,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
 
     private readonly Dictionary<HeightKey, double> _heights = [];
     private readonly List<ScrollViewer> _watched = [];
+    private readonly List<(UIElement Child, Rect Rect)> _arranged = [];
     private HeightKey[] _keys = [];
     private double[] _offsets = [0];
     private (HeightKey Key, double Top, double ViewportTop)? _anchor;
@@ -94,15 +95,43 @@ public sealed class MdBlockPanel : VirtualizingPanel
     protected override Size ArrangeOverride(Size finalSize)
     {
         var generator = ItemContainerGenerator;
+        var moved = _arranged.Count != InternalChildren.Count;
 
         for (var i = 0; i < InternalChildren.Count; i++)
         {
             var child = InternalChildren[i];
             var index = generator.IndexFromGeneratorPosition(new(i, 0));
-            child.Arrange(new(0, _offsets[index], finalSize.Width, child.DesiredSize.Height));
+            var rect = new Rect(0, _offsets[index], finalSize.Width, child.DesiredSize.Height);
+            child.Arrange(rect);
+
+            if (i < _arranged.Count && ReferenceEquals(_arranged[i].Child, child) && _arranged[i].Rect == rect)
+            {
+                continue;
+            }
+
+            moved = true;
+            if (i < _arranged.Count)
+            {
+                _arranged[i] = (child, rect);
+            }
+            else
+            {
+                _arranged.Add((child, rect));
+            }
         }
 
-        FindViewer()?.OnViewportMaybeChanged();
+        if (_arranged.Count > InternalChildren.Count)
+        {
+            _arranged.RemoveRange(InternalChildren.Count, _arranged.Count - InternalChildren.Count);
+        }
+
+        var viewer = FindViewer();
+        if (moved)
+        {
+            viewer?.OnBlocksArranged();
+        }
+
+        viewer?.OnViewportMaybeChanged();
         return finalSize;
     }
 

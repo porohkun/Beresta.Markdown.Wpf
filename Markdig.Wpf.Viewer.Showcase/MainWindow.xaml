@@ -5,16 +5,17 @@
            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
            xmlns:hc="https://handyorg.github.io/handycontrol"
            xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
-           xmlns:mdx="clr-namespace:MarkdigWpfViewer.Extensions;assembly=Markdig.Wpf.Viewer"
-           xmlns:p="clr-namespace:MarkdigWpfViewer.Presenters;assembly=Markdig.Wpf.Viewer"
-           xmlns:s="clr-namespace:MarkdigWpfViewer.Styling;assembly=Markdig.Wpf.Viewer"
-           xmlns:vm="clr-namespace:MarkdigWpfViewer.ViewModels;assembly=Markdig.Wpf.Viewer"
-           xmlns:ext="clr-namespace:MarkdigWpfViewer.Showcase.Extensions"
            xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase"
+           xmlns:document="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Document"
+           xmlns:extensions="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Extensions"
+           xmlns:look="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.CustomLook"
+           xmlns:panes="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.TwoPanes"
+           xmlns:large="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.LargeDocument"
+           xmlns:preview="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Preview"
            mc:Ignorable="d"
            d:DataContext="{d:DesignInstance local:MainWindowViewModel, IsDesignTimeCreatable=True}"
            Title="Markdig.Wpf.Viewer — витрина"
-           Width="1000"
+           Width="1100"
            Height="800"
            WindowStartupLocation="CenterScreen"
            Background="{DynamicResource RegionBrush}">
@@ -23,206 +24,54 @@
     </hc:Window.DataContext>
 
     <hc:Window.Resources>
-        <!-- Шаблоны виджетов. Свёрнута ли заметка — в её состоянии: переживает прокрутку и правку текста -->
-        <DataTemplate x:Key="Showcase.NoteTemplate" DataType="{x:Type ext:NoteVm}">
-            <Border Margin="0,4,0,8"
-                    Padding="12,8"
-                    CornerRadius="4"
-                    BorderThickness="4,0,0,0"
-                    BorderBrush="{DynamicResource PrimaryBrush}"
-                    Background="{DynamicResource SecondaryRegionBrush}">
-                <StackPanel>
-                    <ToggleButton x:Name="Toggle"
-                                  HorizontalAlignment="Left"
-                                  Margin="0,0,0,4"
-                                  Cursor="Hand"
-                                  IsChecked="{Binding (mdx:MdWidget.State).IsExpanded, RelativeSource={RelativeSource Self}}">
-                        <ToggleButton.Template>
-                            <ControlTemplate TargetType="{x:Type ToggleButton}">
-                                <ContentPresenter />
-                            </ControlTemplate>
-                        </ToggleButton.Template>
-                        <StackPanel Orientation="Horizontal" Background="Transparent">
-                            <TextBlock x:Name="Arrow"
-                                       Text="▾"
-                                       Margin="0,0,6,0"
-                                       Foreground="{DynamicResource PrimaryBrush}" />
-                            <TextBlock Text="{Binding Title}"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource PrimaryBrush}" />
-                        </StackPanel>
-                    </ToggleButton>
-                    <p:MdBlocksPresenter x:Name="Content" Blocks="{Binding Blocks}" />
-                </StackPanel>
-            </Border>
-            <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding IsChecked, ElementName=Toggle}" Value="False">
-                    <Setter TargetName="Content" Property="Visibility" Value="Collapsed" />
-                    <Setter TargetName="Arrow" Property="Text" Value="▸" />
-                </DataTrigger>
-            </DataTemplate.Triggers>
+        <!-- Вид витрины — по типу её вьюмодели -->
+        <DataTemplate DataType="{x:Type document:DocumentViewModel}">
+            <document:DocumentView />
         </DataTemplate>
-
-        <DataTemplate x:Key="Showcase.MentionTemplate" DataType="{x:Type ext:MentionVm}">
-            <Border Padding="6,0"
-                    CornerRadius="8"
-                    Background="{DynamicResource PrimaryBrush}">
-                <TextBlock Text="{Binding Name, StringFormat='@{0}'}"
-                           Foreground="White" />
-            </Border>
+        <DataTemplate DataType="{x:Type extensions:ExtensionsViewModel}">
+            <extensions:ExtensionsView />
         </DataTemplate>
-
-        <!-- Свой вид: заголовок с полосой слева, остальные шаблоны стандартные -->
-        <s:MdStyleProvider x:Key="Showcase.AccentProvider"
-                           BasedOn="{StaticResource Md.DefaultStyleProvider}">
-            <s:MdStyleProvider.HeadingTemplate>
-                <DataTemplate DataType="{x:Type vm:HeadingVm}">
-                    <Border Margin="0,12,0,4"
-                            Padding="10,0,0,0"
-                            BorderThickness="4,0,0,0"
-                            BorderBrush="{DynamicResource PrimaryBrush}">
-                        <p:MdHeadingBlock Level="{Binding Level}"
-                                          Runs="{Binding Inlines}"
-                                          Style="{DynamicResource Md.Heading.Style}"
-                                          Margin="0" />
-                    </Border>
-                </DataTemplate>
-            </s:MdStyleProvider.HeadingTemplate>
-        </s:MdStyleProvider>
+        <DataTemplate DataType="{x:Type look:CustomLookViewModel}">
+            <look:CustomLookView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type panes:TwoPanesViewModel}">
+            <panes:TwoPanesView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type large:LargeDocumentViewModel}">
+            <large:LargeDocumentView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type preview:PreviewViewModel}">
+            <preview:PreviewView />
+        </DataTemplate>
     </hc:Window.Resources>
 
     <DockPanel>
-        <!-- Панель настроек -->
+        <!-- Общие настройки -->
         <StackPanel DockPanel.Dock="Top"
                     Orientation="Horizontal"
                     Margin="12,8">
             <CheckBox Content="Тёмная тема"
-                      IsChecked="{Binding IsDark}" />
+                      IsChecked="{Binding Options.IsDark}" />
             <CheckBox Content="Номера строк исходника"
                       Margin="16,0,0,0"
-                      IsChecked="{Binding ShowSourceLineNumbers}" />
+                      IsChecked="{Binding Options.ShowSourceLineNumbers}" />
             <CheckBox Content="Номера строк в коде"
                       Margin="16,0,0,0"
-                      IsChecked="{Binding ShowCodeLineNumbers}" />
+                      IsChecked="{Binding Options.ShowCodeLineNumbers}" />
         </StackPanel>
 
-        <!-- Номера строк в коде наследуются: заданы один раз на все вкладки -->
-        <TabControl x:Name="Scenarios"
-                    mdv:MarkdownViewer.ShowCodeLineNumbers="{Binding ShowCodeLineNumbers}">
-            <TabItem Header="Документ">
-                <DockPanel>
-                    <!-- Подсветка найденного и выделение -->
-                    <StackPanel DockPanel.Dock="Top"
-                                Orientation="Horizontal"
-                                Margin="24,8,24,0">
-                        <TextBlock Text="Подсветить:"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,8,0" />
-                        <TextBox x:Name="SearchBox"
-                                 Width="200"
-                                 TextChanged="OnSearchChanged" />
-                        <TextBlock VerticalAlignment="Center"
-                                   Margin="16,0,0,0"
-                                   Text="{Binding SelectionLength, ElementName=DocumentViewer, StringFormat='Выделено знаков: {0}'}" />
-                    </StackPanel>
+        <!-- Витрины -->
+        <ListBox x:Name="ShowcaseList"
+                 DockPanel.Dock="Left"
+                 Width="200"
+                 Margin="12,0,0,12"
+                 ItemsSource="{Binding Showcases}"
+                 SelectedItem="{Binding Selected}"
+                 DisplayMemberPath="Title" />
 
-                    <ScrollViewer>
-                        <mdv:MarkdownViewer x:Name="DocumentViewer"
-                                            Markdown="{Binding Document}"
-                                            ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
-                                            Margin="24,16" />
-                    </ScrollViewer>
-                </DockPanel>
-            </TabItem>
-
-            <TabItem Header="Расширения">
-                <ScrollViewer>
-                    <mdv:MarkdownViewer Markdown="{Binding ExtensionsDocument}"
-                                        ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
-                                        Margin="24,16">
-                        <mdv:MarkdownViewer.Extensions>
-                            <ext:NoteExtension Template="{StaticResource Showcase.NoteTemplate}" />
-                            <ext:MentionExtension Template="{StaticResource Showcase.MentionTemplate}" />
-                        </mdv:MarkdownViewer.Extensions>
-                    </mdv:MarkdownViewer>
-                </ScrollViewer>
-            </TabItem>
-
-            <TabItem Header="Свой вид">
-                <ScrollViewer>
-                    <mdv:MarkdownViewer Markdown="{Binding Document}"
-                                        ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
-                                        Margin="24,16"
-                                        FontFamily="Georgia"
-                                        StyleProvider="{StaticResource Showcase.AccentProvider}">
-                        <mdv:MarkdownViewer.Resources>
-                        </mdv:MarkdownViewer.Resources>
-                    </mdv:MarkdownViewer>
-                </ScrollViewer>
-            </TabItem>
-
-            <TabItem Header="Две панели">
-                <Grid Loaded="OnDiffLoaded">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition />
-                        <ColumnDefinition />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition />
-                    </Grid.RowDefinitions>
-
-                    <TextBlock Text="Было" Margin="24,8,24,0" FontWeight="SemiBold" />
-                    <TextBlock Grid.Column="1" Text="Стало" Margin="24,8,24,0" FontWeight="SemiBold" />
-
-                    <ScrollViewer Grid.Row="1">
-                        <mdv:MarkdownViewer x:Name="DiffLeft"
-                                            Markdown="{Binding DiffLeft}"
-                                            ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
-                                            Margin="24,16" />
-                    </ScrollViewer>
-                    <ScrollViewer Grid.Row="1" Grid.Column="1">
-                        <mdv:MarkdownViewer x:Name="DiffRight"
-                                            Markdown="{Binding DiffRight}"
-                                            ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
-                                            Margin="24,16" />
-                    </ScrollViewer>
-                </Grid>
-            </TabItem>
-
-            <TabItem Header="Большой документ">
-                <ScrollViewer>
-                    <mdv:MarkdownViewer Markdown="{Binding LargeDocument}"
-                                        ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
-                                        Margin="24,16" />
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- Неизменившиеся блоки переживают правку: видимое стоит на месте -->
-            <TabItem Header="Предпросмотр">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition />
-                        <ColumnDefinition />
-                    </Grid.ColumnDefinitions>
-
-                    <TextBox x:Name="PreviewEditor"
-                             Text="{Binding PreviewText, UpdateSourceTrigger=PropertyChanged}"
-                             AcceptsReturn="True"
-                             AcceptsTab="True"
-                             TextWrapping="Wrap"
-                             VerticalContentAlignment="Top"
-                             VerticalScrollBarVisibility="Auto"
-                             FontFamily="Consolas"
-                             Margin="12" />
-
-                    <ScrollViewer Grid.Column="1">
-                        <mdv:MarkdownViewer Markdown="{Binding PreviewText}"
-                                            ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
-                                            Margin="24,16" />
-                    </ScrollViewer>
-                </Grid>
-            </TabItem>
-        </TabControl>
+        <!-- Выбранная витрина; номера строк в коде наследуются всеми её вьюерами -->
+        <ContentControl Content="{Binding Selected}"
+                        Focusable="False"
+                        mdv:MarkdownViewer.ShowCodeLineNumbers="{Binding Options.ShowCodeLineNumbers}" />
     </DockPanel>
 </hc:Window>

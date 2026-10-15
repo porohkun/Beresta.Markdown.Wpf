@@ -1,4 +1,4 @@
-﻿namespace MarkdigWpfViewer.Showcase.Extensions;
+﻿namespace MarkdigWpfViewer.Showcase.Showcases.Extensions;
 
 using System.ComponentModel;
 using System.Runtime.CompilerServices;

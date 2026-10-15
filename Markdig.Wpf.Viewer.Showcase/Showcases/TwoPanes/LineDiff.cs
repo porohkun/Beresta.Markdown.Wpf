@@ -1,4 +1,4 @@
-﻿namespace MarkdigWpfViewer.Showcase.Diff;
+﻿namespace MarkdigWpfViewer.Showcase.Showcases.TwoPanes;
 
 /// <summary>Построчный дифф: совпавшие строки двух текстов по наибольшей общей подпоследовательности.</summary>
 public static class LineDiff

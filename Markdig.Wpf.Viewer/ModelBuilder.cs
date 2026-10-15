@@ -134,7 +134,7 @@ internal sealed class ModelBuilder
         return state;
     }
 
-    private static IReadOnlyList<InlineVm> GetRawLines(LeafBlock leaf)
+    private IReadOnlyList<InlineVm> GetRawLines(LeafBlock leaf)
     {
         var inlines = new List<InlineVm>();
 
@@ -145,7 +145,8 @@ internal sealed class ModelBuilder
                 inlines.Add(new LineBreakVm());
             }
 
-            inlines.Add(new RunVm(leaf.Lines.Lines[i].Slice.ToString()));
+            var line = leaf.Lines.Lines[i];
+            inlines.Add(new RunVm(line.Slice.ToString()) { Source = GetLineSpan(line.Line) });
         }
 
         return inlines;
@@ -361,12 +362,8 @@ internal sealed class ModelBuilder
                     AddText(literal.Content.ToString(), state, output, node);
                     break;
 
-                case LineBreakInline { IsHard: true }:
-                    output.Add(Stamp(new LineBreakVm(), node));
-                    break;
-
                 case LineBreakInline:
-                    AddText(" ", state, output, node);
+                    output.Add(Stamp(new LineBreakVm(), node));
                     break;
 
                 case CodeInline code:

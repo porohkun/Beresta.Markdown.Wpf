@@ -7,17 +7,24 @@ using System.Windows.Media;
 using ViewModels;
 
 /// <summary>
-/// Поля с номерами строк исходника: у блока — номер первой строки, у блока кода — каждой.
+/// Поля с номерами строк исходника — у каждой строки, у которой есть своё место на экране.
 /// Ширина общая на документ — по числу цифр последней строки.
 /// </summary>
 public sealed class MdLineGutter : Control
 {
+    private const int MaxLabels = 4096;
+
+    private readonly Dictionary<int, FormattedText> _labels = [];
+
     static MdLineGutter()
     {
         DefaultStyleKeyProperty.OverrideMetadata(typeof(MdLineGutter), new FrameworkPropertyMetadata(typeof(MdLineGutter)));
     }
 
-    /// <summary>Номера созданных блоков: строка исходника, верх и высота её текста в координатах полей.</summary>
+    /// <summary>Сколько раз поля рисовались.</summary>
+    internal int Renders { get; private set; }
+
+    /// <summary>Номера созданных блоков: строка исходника, верх и высота её экранной строки в координатах полей.</summary>
     internal IReadOnlyList<(int Line, double Top, double Height)> CollectNumbers()
     {
         if (TemplatedParent is not MarkdownViewer { BlockPanel: { } panel })
@@ -26,39 +33,7 @@ public sealed class MdLineGutter : Control
         }
 
         var numbers = new SortedDictionary<int, Place>();
-        var pending = new Stack<DependencyObject>();
-        pending.Push(panel);
-
-        while (pending.Count > 0)
-        {
-            var node = pending.Pop();
-            var content = node switch
-            {
-                ContentPresenter presenter => presenter.Content,
-                ContentControl control => control.Content,
-                _ => null
-            };
-
-            if (node is FrameworkElement { ActualHeight: > 0 } element
-                && content is NodeVm { Source.IsEmpty: false } model and not (BlankLineVm or InlineVm))
-            {
-                if (model is CodeBlockVm code && First<CodeBlockPresenter>(element) is { } presenter &&
-                    First<MdTextBlock>(presenter) is { ActualHeight: > 0 } text)
-                {
-                    RememberCodeLines(numbers, code, text);
-                }
-                else
-                {
-                    Remember(numbers, model.Source.StartLine, PlaceOf(element, model.Source.StartLine));
-                }
-            }
-
-            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++)
-            {
-                pending.Push(VisualTreeHelper.GetChild(node, i));
-            }
-        }
-
+        Collect(panel, null, numbers);
         return WithoutOverlaps(numbers);
     }
 
@@ -71,12 +46,13 @@ public sealed class MdLineGutter : Control
 
     protected override void OnRender(DrawingContext drawingContext)
     {
+        Renders++;
+
         foreach (var (line, top, height) in CollectNumbers())
         {
-            var text = Format((line + 1).ToString(CultureInfo.InvariantCulture));
-            var x = ActualWidth - Padding.Right - text.WidthIncludingTrailingWhitespace;
-            var y = top + (height - text.Height) / 2;
-            drawingContext.DrawText(text, new(x, y));
+            var label = Label(line);
+            var x = ActualWidth - Padding.Right - label.WidthIncludingTrailingWhitespace;
+            drawingContext.DrawText(label, new(x, top + (height - label.Height) / 2));
         }
     }
 
@@ -91,35 +67,24 @@ public sealed class MdLineGutter : Control
             || e.Property == FontStretchProperty
             || e.Property == PaddingProperty)
         {
+            _labels.Clear();
             InvalidateMeasure();
             InvalidateVisual();
         }
         else if (e.Property == ForegroundProperty)
         {
+            _labels.Clear();
             InvalidateVisual();
         }
     }
 
-    private static T? First<T>(DependencyObject root)
-        where T : DependencyObject
+    protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
     {
-        if (root is T self)
-        {
-            return self;
-        }
-
-        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
-        {
-            if (First<T>(VisualTreeHelper.GetChild(root, i)) is { } found)
-            {
-                return found;
-            }
-        }
-
-        return null;
+        base.OnDpiChanged(oldDpi, newDpi);
+        _labels.Clear();
     }
 
-    /// <summary>Из номеров, налезающих друг на друга, оставляет один: на строке текста — охотнее, чем у рамки.</summary>
+    /// <summary>Из номеров, налезающих друг на друга, оставляет один: на своей строке — охотнее, чем у рамки.</summary>
     private static List<(int Line, double Top, double Height)> WithoutOverlaps(SortedDictionary<int, Place> numbers)
     {
         var placed = new List<(int Line, Place Place)>();
@@ -128,7 +93,7 @@ public sealed class MdLineGutter : Control
         {
             if (placed.Count > 0 && placed[^1].Place is var last && last.Top + last.Height > place.Top + 0.5)
             {
-                if (place.OnText && !last.OnText)
+                if (place.Exact && !last.Exact)
                 {
                     placed[^1] = (line, place);
                 }
@@ -142,40 +107,69 @@ public sealed class MdLineGutter : Control
         return placed.OrderBy(item => item.Line).Select(item => (item.Line, item.Place.Top, item.Place.Height)).ToList();
     }
 
-    /// <summary>Строку текста предпочитает рамке блока, из равных — верхнюю.</summary>
+    /// <summary>Свою строку предпочитает рамке блока, из равных — верхнюю.</summary>
     private static void Remember(SortedDictionary<int, Place> numbers, int line, Place place)
     {
         if (!numbers.TryGetValue(line, out var known)
-            || (place.OnText != known.OnText ? place.OnText : place.Top < known.Top))
+            || (place.Exact != known.Exact ? place.Exact : place.Top < known.Top))
         {
             numbers[line] = place;
         }
     }
 
-    private void RememberCodeLines(SortedDictionary<int, Place> numbers, CodeBlockVm code, MdTextBlock text)
+    /// <summary>
+    /// Обходит созданные блоки. Внутрь текста и кода не заходит: свои строки они знают сами; блок
+    /// без своих строк получает номер первой строки у верха рамки.
+    /// </summary>
+    private void Collect(DependencyObject node, NodeVm? owner, SortedDictionary<int, Place> numbers)
     {
-        var lines = code.Code.Split('\n').Length;
-        var top = text.TranslatePoint(default, this).Y;
-        var lineHeight = text.ActualHeight / lines;
-
-        for (var i = 0; i < lines; i++)
+        switch (node)
         {
-            Remember(numbers, code.CodeFirstLine + i, new(top + i * lineHeight, lineHeight, OnText: true));
+            case MdTextBlock { ActualHeight: > 0 } text:
+                RememberRows(numbers, text, text.SourceRows);
+                return;
+
+            case CodeBlockPresenter { ActualHeight: > 0 } code:
+                RememberRows(numbers, code, code.SourceRows());
+                return;
+        }
+
+        var content = node switch
+        {
+            ContentPresenter presenter => presenter.Content,
+            ContentControl control => control.Content,
+            _ => null
+        };
+
+        if (node is FrameworkElement { ActualHeight: > 0 } element
+            && content is NodeVm { Source.IsEmpty: false } model and not InlineVm
+            && !ReferenceEquals(model, owner))
+        {
+            var top = element.TranslatePoint(default, this).Y;
+            if (model is BlankLineVm)
+            {
+                Remember(numbers, model.Source.StartLine, new(top, element.ActualHeight, Exact: true));
+                return;
+            }
+
+            var height = Math.Min(Label(model.Source.StartLine).Height, element.ActualHeight);
+            Remember(numbers, model.Source.StartLine, new(top, height, Exact: false));
+            owner = model;
+        }
+
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++)
+        {
+            Collect(VisualTreeHelper.GetChild(node, i), owner, numbers);
         }
     }
 
-    /// <summary>Первая строка текста блока, если текст начинается на первой строке его исходника; иначе — верх рамки.</summary>
-    private Place PlaceOf(FrameworkElement element, int line)
+    private void RememberRows(SortedDictionary<int, Place> numbers, UIElement element, IEnumerable<(int Line, Rect Row)> rows)
     {
-        if (First<MdTextBlock>(element) is { ActualHeight: > 0 } text
-            && text.Runs?.FirstOrDefault() is { Source: { IsEmpty: false } source }
-            && source.StartLine == line
-            && text.GetRangeRects(0, 1).FirstOrDefault() is { Height: > 0 } rect)
+        var top = element.TranslatePoint(default, this).Y;
+        foreach (var (line, row) in rows)
         {
-            return new(text.TranslatePoint(rect.TopLeft, this).Y, rect.Height, OnText: true);
+            Remember(numbers, line, new(top + row.Top, row.Height, Exact: true));
         }
-
-        return new(element.TranslatePoint(default, this).Y, Format("0").Height, OnText: false);
     }
 
     private int LastLine()
@@ -183,6 +177,21 @@ public sealed class MdLineGutter : Control
         return TemplatedParent is MarkdownViewer { ItemsSource: IReadOnlyList<BlockVm> { Count: > 0 } items }
             ? items.Max(item => item.Source.EndLine)
             : 0;
+    }
+
+    private FormattedText Label(int line)
+    {
+        if (_labels.TryGetValue(line, out var label))
+        {
+            return label;
+        }
+
+        if (_labels.Count >= MaxLabels)
+        {
+            _labels.Clear();
+        }
+
+        return _labels[line] = Format((line + 1).ToString(CultureInfo.InvariantCulture));
     }
 
     private FormattedText Format(string text)
@@ -197,6 +206,6 @@ public sealed class MdLineGutter : Control
             VisualTreeHelper.GetDpi(this).PixelsPerDip);
     }
 
-    /// <summary>Где стоит номер: полоса по вертикали и стоит ли она на строке текста.</summary>
-    private readonly record struct Place(double Top, double Height, bool OnText);
+    /// <summary>Где стоит номер: полоса по вертикали и своя ли это строка или только рамка блока.</summary>
+    private readonly record struct Place(double Top, double Height, bool Exact);
 }

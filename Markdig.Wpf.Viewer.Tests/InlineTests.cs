@@ -24,6 +24,12 @@ public sealed class InlineTests
     }
 
     [Fact]
+    public void Каждая_строка_исходника_начинается_с_новой_строки()
+    {
+        ModelDump.Of("first\nsecond *third\nfourth*").Should().Be("P(first\nsecond third\nfourth)");
+    }
+
+    [Fact]
     public void Спецсимвол_показывается_расшифрованным()
     {
         ModelDump.Of("Tom &amp; Jerry &copy;").Should().Be("P(Tom & Jerry ©)");
