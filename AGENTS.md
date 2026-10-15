@@ -11,15 +11,14 @@ NuGet-пакетом `Markdig.Wpf.Viewer` и подключается сабмо
 | Проект | Пространство имён | Что это |
 |---|---|---|
 | [`Markdig.Wpf.Viewer`](Markdig.Wpf.Viewer/AGENTS.md) | `MarkdigWpfViewer` | библиотека: вьюер, разбор, тема по умолчанию; то, что уходит в пакет |
-| [`Markdig.Wpf.Viewer.Demo`](Markdig.Wpf.Viewer.Demo/AGENTS.md) | `MarkdigWpfViewer.Demo` | окно с образцом разметки: минимальное подключение; в пакет не входит |
-| [`Markdig.Wpf.Viewer.Showcase`](Markdig.Wpf.Viewer.Showcase/AGENTS.md) | `MarkdigWpfViewer.Showcase` | витрина на HandyControls: встраивание, темы, сценарии списком слева; в пакет не входит |
+| [`Markdig.Wpf.Viewer.Showcase`](Markdig.Wpf.Viewer.Showcase/AGENTS.md) | `MarkdigWpfViewer.Showcase` | витрина на HandyControls: встраивание, темы, сценарии списком слева, образец разметки; в пакет не входит |
 | `Markdig.Wpf.Viewer.Tests` | `MarkdigWpfViewer.Tests` | тесты библиотеки: разбор, панель блоков, выделение, позиции, виджеты; xUnit и FluentAssertions |
 
 ## Зависимости
 
-`Markdig.Wpf.Viewer.Demo` и `Markdig.Wpf.Viewer.Showcase` → `Markdig.Wpf.Viewer` → пакет Markdig.
-Библиотека о демо и витрине не знает и знать не должна. `Markdig.Wpf.Viewer.Tests` →
-`Markdig.Wpf.Viewer` и видит его внутренние типы.
+`Markdig.Wpf.Viewer.Showcase` → `Markdig.Wpf.Viewer` → пакет Markdig. Библиотека о витрине не
+знает и знать не должна. `Markdig.Wpf.Viewer.Tests` → `Markdig.Wpf.Viewer` и видит его внутренние
+типы.
 
 ## Команды
 
@@ -27,7 +26,6 @@ NuGet-пакетом `Markdig.Wpf.Viewer` и подключается сабмо
 |---|---|
 | Сборка | `dotnet build Markdig.Wpf.Viewer.slnx` |
 | Тесты | `dotnet test Markdig.Wpf.Viewer.Tests` |
-| Демо | `dotnet run --project Markdig.Wpf.Viewer.Demo` |
 | Витрина | `dotnet run --project Markdig.Wpf.Viewer.Showcase` |
 
 ## Соглашения

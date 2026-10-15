@@ -1,6 +1,7 @@
 ﻿namespace MarkdigWpfViewer.Showcase;
 
 using Showcases;
+using Showcases.About;
 using Showcases.Copying;
 using Showcases.CustomLook;
 using Showcases.Document;
@@ -22,7 +23,8 @@ public sealed class MainWindowViewModel : BindableBase
             new TwoPanesViewModel(Options),
             new LargeDocumentViewModel(Options),
             new PreviewViewModel(Options),
-            new CopyingViewModel(Options)
+            new CopyingViewModel(Options),
+            new AboutViewModel(Options)
         ];
 
         Selected = Showcases[0];

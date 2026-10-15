@@ -16,6 +16,7 @@
 	<ItemGroup>
 		<None Remove="Samples\*.md;Showcases\**\*.md" />
 		<EmbeddedResource Include="Samples\*.md;Showcases\**\*.md" />
+		<None Update="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 </Project>
