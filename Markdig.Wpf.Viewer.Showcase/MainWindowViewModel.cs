@@ -4,10 +4,12 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Theming;
 
-/// <summary>Состояние витрины: тема и тексты сценариев.</summary>
+/// <summary>Состояние витрины: тема, номера строк и тексты сценариев.</summary>
 public sealed class MainWindowViewModel : INotifyPropertyChanged
 {
     private bool _isDark;
+    private bool _showSourceLineNumbers;
+    private bool _showCodeLineNumbers;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -37,6 +39,26 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
             _isDark = value;
             ThemeSwitcher.Apply(value);
+            OnPropertyChanged();
+        }
+    }
+
+    public bool ShowSourceLineNumbers
+    {
+        get => _showSourceLineNumbers;
+        set
+        {
+            _showSourceLineNumbers = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool ShowCodeLineNumbers
+    {
+        get => _showCodeLineNumbers;
+        set
+        {
+            _showCodeLineNumbers = value;
             OnPropertyChanged();
         }
     }

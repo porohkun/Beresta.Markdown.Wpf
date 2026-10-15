@@ -15,6 +15,10 @@
     <SolidColorBrush x:Key="Md.CodeBlock.Background" Color="{DynamicResource SecondaryRegionColor}" />
     <SolidColorBrush x:Key="Md.CodeBlock.Foreground" Color="{DynamicResource PrimaryTextColor}" />
     <SolidColorBrush x:Key="Md.CodeBlock.BorderBrush" Color="{DynamicResource BorderColor}" />
+    <SolidColorBrush x:Key="Md.CodeBlock.LineNumberForeground" Color="{DynamicResource ThirdlyTextColor}" />
+
+    <!-- Поля с номерами строк -->
+    <SolidColorBrush x:Key="Md.Gutter.Foreground" Color="{DynamicResource ThirdlyTextColor}" />
 
     <!-- Цитата и таблица -->
     <SolidColorBrush x:Key="Md.Quote.BorderBrush" Color="{DynamicResource PrimaryColor}" />

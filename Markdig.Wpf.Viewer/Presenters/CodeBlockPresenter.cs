@@ -18,7 +18,18 @@ public class CodeBlockPresenter : Control
         DependencyProperty.Register(
             nameof(Code),
             typeof(string),
-            typeof(CodeBlockPresenter));
+            typeof(CodeBlockPresenter),
+            new(null, OnCodeChanged));
+
+    private static readonly DependencyPropertyKey LineNumbersPropertyKey =
+        DependencyProperty.RegisterReadOnly(
+            nameof(LineNumbers),
+            typeof(string),
+            typeof(CodeBlockPresenter),
+            new(string.Empty));
+
+    /// <summary>Номера строк кода столбцом, с единицы.</summary>
+    public static readonly DependencyProperty LineNumbersProperty = LineNumbersPropertyKey.DependencyProperty;
 
     public static readonly DependencyProperty SyntaxProperty =
         DependencyProperty.Register(
@@ -44,6 +55,8 @@ public class CodeBlockPresenter : Control
         set => SetValue(CodeProperty, value);
     }
 
+    public string LineNumbers => (string)GetValue(LineNumbersProperty);
+
     public string? Syntax
     {
         get => (string?)GetValue(SyntaxProperty);
@@ -54,5 +67,11 @@ public class CodeBlockPresenter : Control
     {
         get => (string?)GetValue(InfoStringProperty);
         set => SetValue(InfoStringProperty, value);
+    }
+
+    private static void OnCodeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var lines = ((string?)e.NewValue ?? string.Empty).Split('\n').Length;
+        d.SetValue(LineNumbersPropertyKey, string.Join("\n", Enumerable.Range(1, lines)));
     }
 }

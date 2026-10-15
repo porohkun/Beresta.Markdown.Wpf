@@ -21,7 +21,8 @@ Markdown viewer for WPF based on Markdig.
 | Абзац | `Md.Paragraph.FontFamily`, `Md.Paragraph.Foreground` (не заданы), `Md.Paragraph.FontSize`, `Md.Paragraph.LinkForeground` |
 | Заголовки | `Md.Heading.FontFamily`, `Md.Heading.Foreground` (не заданы), `Md.Heading.LinkForeground`, `Md.Heading1…6.FontSize`, `.FontWeight`, `.Margin` |
 | Код посреди строки | `Md.InlineCode.FontFamily`, `.FontSize`, `.Foreground`, `.Background`, `.BorderBrush`, `.BorderThickness`, `.Padding`, `.CornerRadius` |
-| Блок кода | `Md.CodeBlock.FontFamily`, `.FontSize`, `.Foreground`, `.Background`, `.BorderBrush`, `.BorderThickness`, `.Padding`, `.CornerRadius` |
+| Блок кода | `Md.CodeBlock.FontFamily`, `.FontSize`, `.Foreground`, `.Background`, `.BorderBrush`, `.BorderThickness`, `.Padding`, `.CornerRadius`, `.LineNumberForeground`, `.LineNumberMargin` |
+| Поля с номерами строк | `Md.Gutter.FontFamily` (не задан), `Md.Gutter.Foreground`, `.FontSize`, `.Padding` |
 | Цитата | `Md.Quote.BorderBrush`, `.BorderThickness`, `.Padding`, `.Margin` |
 | Список | `Md.List.Margin`, `Md.List.MarkerWidth`, `Md.List.ItemSpacing` |
 | Таблица | `Md.Table.BorderBrush`, `.BorderThickness`, `.CellPadding`, `.HeaderBackground` |
@@ -134,6 +135,21 @@ var sync = new MdScrollSync(leftViewer, rightViewer, new MdLineMap(anchors));
 
 Прокрутка вокруг вьюера должна быть попиксельной: логическая прокрутка списков сдвигает
 элементами, и строку в нужную точку так не поставить.
+
+## Номера строк
+
+`ShowSourceLineNumbers` показывает слева поля с номерами строк исходника: у блока — номер первой
+строки, у блока кода — каждой. Ширина полей общая на документ. `ShowCodeLineNumbers` нумерует
+строки внутри блоков кода; свойство наследуется, поэтому его задают и один раз на окно или список
+вьюеров. Номера показываются с единицы, как в редакторе.
+
+```xml
+<mdv:MarkdownViewer Markdown="{Binding Text}" ShowSourceLineNumbers="True" />
+
+<ItemsControl mdv:MarkdownViewer.ShowCodeLineNumbers="True" ItemsSource="{Binding Messages}" />
+```
+
+Свой шаблон вьюера сохраняет поля, если в нём есть `p:MdLineGutter x:Name="PART_Gutter"`.
 
 ## Ссылки
 

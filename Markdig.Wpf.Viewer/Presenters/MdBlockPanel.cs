@@ -81,7 +81,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
             child.Arrange(new Rect(0, _offsets[index], finalSize.Width, child.DesiredSize.Height));
         }
 
-        (ItemsControl.GetItemsOwner(this) as MarkdownViewer)?.OnViewportMaybeChanged();
+        FindViewer()?.OnViewportMaybeChanged();
         return finalSize;
     }
 
@@ -366,9 +366,13 @@ public sealed class MdBlockPanel : VirtualizingPanel
         if (e.VerticalChange != 0 || e.ViewportHeightChange != 0)
         {
             InvalidateMeasure();
-            (ItemsControl.GetItemsOwner(this) as MarkdownViewer)?.OnViewportMaybeChanged();
+            FindViewer()?.OnViewportMaybeChanged();
         }
     }
+
+    /// <summary>Вьюер, чьи блоки показывает панель, — сама или вложенная в блок.</summary>
+    private MarkdownViewer? FindViewer()
+        => ItemsControl.GetItemsOwner(this) as MarkdownViewer ?? Ancestors().OfType<MarkdownViewer>().FirstOrDefault();
 
     /// <summary>Видимая полоса панели в её координатах и прокрутка, которую можно подвинуть.</summary>
     private readonly record struct Viewport(double Top, double Bottom, ScrollViewer? PhysicalScroller);

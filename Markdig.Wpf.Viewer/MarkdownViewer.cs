@@ -16,8 +16,11 @@ using Selection;
 using ViewModels;
 
 /// <summary>Контрол, который показывает markdown-текст блоками по шаблонам темы.</summary>
+[TemplatePart(Name = GutterPart, Type = typeof(MdLineGutter))]
 public sealed class MarkdownViewer : ItemsControl
 {
+    private const string GutterPart = "PART_Gutter";
+
     /// <summary>Текст документа.</summary>
     public static readonly DependencyProperty MarkdownProperty =
         DependencyProperty.Register(
@@ -65,6 +68,22 @@ public sealed class MarkdownViewer : ItemsControl
             typeof(Brush),
             typeof(MarkdownViewer),
             new(null, OnDecorationsChanged));
+
+    /// <summary>Номера строк исходника на полях слева.</summary>
+    public static readonly DependencyProperty ShowSourceLineNumbersProperty =
+        DependencyProperty.Register(
+            nameof(ShowSourceLineNumbers),
+            typeof(bool),
+            typeof(MarkdownViewer),
+            new(false));
+
+    /// <summary>Номера строк внутри блоков кода; наследуется блоками кода.</summary>
+    public static readonly DependencyProperty ShowCodeLineNumbersProperty =
+        DependencyProperty.RegisterAttached(
+            nameof(ShowCodeLineNumbers),
+            typeof(bool),
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
 
     private static readonly DependencyPropertyKey SelectionStartPropertyKey =
         DependencyProperty.RegisterReadOnly(
@@ -166,6 +185,24 @@ public sealed class MarkdownViewer : ItemsControl
         set => SetValue(SelectionBrushProperty, value);
     }
 
+    public bool ShowSourceLineNumbers
+    {
+        get => (bool)GetValue(ShowSourceLineNumbersProperty);
+        set => SetValue(ShowSourceLineNumbersProperty, value);
+    }
+
+    public bool ShowCodeLineNumbers
+    {
+        get => (bool)GetValue(ShowCodeLineNumbersProperty);
+        set => SetValue(ShowCodeLineNumbersProperty, value);
+    }
+
+    public static bool GetShowCodeLineNumbers(DependencyObject element)
+        => (bool)element.GetValue(ShowCodeLineNumbersProperty);
+
+    public static void SetShowCodeLineNumbers(DependencyObject element, bool value)
+        => element.SetValue(ShowCodeLineNumbersProperty, value);
+
     /// <summary>Текстовая карта показанного документа.</summary>
     public MdTextMap TextMap { get; private set; } = MdTextMap.Empty;
 
@@ -182,6 +219,8 @@ public sealed class MarkdownViewer : ItemsControl
     internal SelectionController Selection => _selection;
 
     internal MdBlockPanel? BlockPanel { get; set; }
+
+    internal MdLineGutter? Gutter { get; private set; }
 
     /// <summary>Позиция строки исходника в координатах вьюера; дробная часть — доля строки.</summary>
     public double? GetSourceLineOffset(double line) => _positions.OffsetOf(line);
@@ -222,6 +261,8 @@ public sealed class MarkdownViewer : ItemsControl
 
     internal void OnViewportMaybeChanged()
     {
+        Gutter?.InvalidateVisual();
+
         if (_viewportNotificationQueued || ViewportChanged is null)
         {
             return;
@@ -241,6 +282,12 @@ public sealed class MarkdownViewer : ItemsControl
     public void SelectAll() => _selection.Select(0, TextMap.Length);
 
     public void ClearSelection() => _selection.Select(_selection.Range.Start, 0);
+
+    public override void OnApplyTemplate()
+    {
+        base.OnApplyTemplate();
+        Gutter = GetTemplateChild(GutterPart) as MdLineGutter;
+    }
 
     protected override DependencyObject GetContainerForItemOverride() => new MdBlockItem();
 
@@ -419,5 +466,6 @@ public sealed class MarkdownViewer : ItemsControl
         TextMap = MdTextMap.Build(blocks);
         ItemsSource = blocks;
         _selection?.Reset();
+        Gutter?.InvalidateMeasure();
     }
 }

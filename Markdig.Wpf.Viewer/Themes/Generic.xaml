@@ -73,6 +73,14 @@
     <Thickness    x:Key="Md.CodeBlock.BorderThickness">1</Thickness>
     <Thickness    x:Key="Md.CodeBlock.Padding">12</Thickness>
     <CornerRadius x:Key="Md.CodeBlock.CornerRadius">4</CornerRadius>
+    <Brush        x:Key="Md.CodeBlock.LineNumberForeground">Gray</Brush>
+    <Thickness    x:Key="Md.CodeBlock.LineNumberMargin">0,0,12,0</Thickness>
+
+    <!-- ======== Md.Gutter: поля с номерами строк исходника ======== -->
+    <!-- Md.Gutter.FontFamily не задан: номера берут шрифт у приложения -->
+    <Brush        x:Key="Md.Gutter.Foreground">Gray</Brush>
+    <sys:Double   x:Key="Md.Gutter.FontSize">12</sys:Double>
+    <Thickness    x:Key="Md.Gutter.Padding">0,0,12,0</Thickness>
 
     <!-- ======== Md.Quote ======== -->
     <Brush        x:Key="Md.Quote.BorderBrush">#dadada</Brush>
@@ -217,18 +225,40 @@
                             BorderBrush="{DynamicResource Md.CodeBlock.BorderBrush}"
                             Background="{DynamicResource Md.CodeBlock.Background}">
 
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                                      VerticalScrollBarVisibility="Disabled"
-                                      b:NestedScroll.PassWheelToParent="True">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                            <p:MdTextBlock Runs="{TemplateBinding Runs}"
-                                           Foreground="{DynamicResource Md.CodeBlock.Foreground}"
-                                           FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
-                                           FontSize="{DynamicResource Md.CodeBlock.FontSize}"
-                                           TextWrapping="WrapWithOverflow"/>
-                        </ScrollViewer>
+                            <TextBlock x:Name="LineNumbers"
+                                       Visibility="Collapsed"
+                                       Text="{TemplateBinding LineNumbers}"
+                                       Foreground="{DynamicResource Md.CodeBlock.LineNumberForeground}"
+                                       FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
+                                       FontSize="{DynamicResource Md.CodeBlock.FontSize}"
+                                       Margin="{DynamicResource Md.CodeBlock.LineNumberMargin}"
+                                       TextAlignment="Right"/>
+
+                            <ScrollViewer Grid.Column="1"
+                                          HorizontalScrollBarVisibility="Auto"
+                                          VerticalScrollBarVisibility="Disabled"
+                                          b:NestedScroll.PassWheelToParent="True">
+
+                                <p:MdTextBlock Runs="{TemplateBinding Runs}"
+                                               Foreground="{DynamicResource Md.CodeBlock.Foreground}"
+                                               FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
+                                               FontSize="{DynamicResource Md.CodeBlock.FontSize}"
+                                               TextWrapping="WrapWithOverflow"/>
+                            </ScrollViewer>
+                        </Grid>
 
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="local:MarkdownViewer.ShowCodeLineNumbers" Value="True">
+                            <Setter TargetName="LineNumbers" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -413,6 +443,15 @@
         </Setter>
     </Style>
 
+    <Style TargetType="{x:Type p:MdLineGutter}">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="FontFamily" Value="{DynamicResource Md.Gutter.FontFamily}" />
+        <Setter Property="FontSize" Value="{DynamicResource Md.Gutter.FontSize}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Gutter.Foreground}" />
+        <Setter Property="Padding" Value="{DynamicResource Md.Gutter.Padding}" />
+    </Style>
+
     <Style TargetType="{x:Type local:MarkdownViewer}">
         <Setter Property="Focusable" Value="True" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -440,9 +479,24 @@
                         Padding="{TemplateBinding Padding}"
                         SnapsToDevicePixels="True">
 
-                        <ItemsPresenter />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ItemsPresenter Grid.Column="1" />
+
+                            <!-- BYDESIGN: поля идут после блоков — раскладываются позже и видят их уже на местах -->
+                            <p:MdLineGutter x:Name="PART_Gutter" Visibility="Collapsed" />
+                        </Grid>
 
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="ShowSourceLineNumbers" Value="True">
+                            <Setter TargetName="PART_Gutter" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

@@ -74,9 +74,17 @@
                     Margin="12,8">
             <CheckBox Content="Тёмная тема"
                       IsChecked="{Binding IsDark}" />
+            <CheckBox Content="Номера строк исходника"
+                      Margin="16,0,0,0"
+                      IsChecked="{Binding ShowSourceLineNumbers}" />
+            <CheckBox Content="Номера строк в коде"
+                      Margin="16,0,0,0"
+                      IsChecked="{Binding ShowCodeLineNumbers}" />
         </StackPanel>
 
-        <TabControl x:Name="Scenarios">
+        <!-- Номера строк в коде наследуются: заданы один раз на все вкладки -->
+        <TabControl x:Name="Scenarios"
+                    mdv:MarkdownViewer.ShowCodeLineNumbers="{Binding ShowCodeLineNumbers}">
             <TabItem Header="Документ">
                 <DockPanel>
                     <!-- Подсветка найденного и выделение -->
@@ -97,6 +105,7 @@
                     <ScrollViewer>
                         <mdv:MarkdownViewer x:Name="DocumentViewer"
                                             Markdown="{Binding Document}"
+                                            ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
                                             Margin="24,16" />
                     </ScrollViewer>
                 </DockPanel>
@@ -105,6 +114,7 @@
             <TabItem Header="Расширения">
                 <ScrollViewer>
                     <mdv:MarkdownViewer Markdown="{Binding ExtensionsDocument}"
+                                        ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
                                         Margin="24,16">
                         <mdv:MarkdownViewer.Extensions>
                             <ext:NoteExtension Template="{StaticResource Showcase.NoteTemplate}" />
@@ -117,6 +127,7 @@
             <TabItem Header="Свой вид">
                 <ScrollViewer>
                     <mdv:MarkdownViewer Markdown="{Binding Document}"
+                                        ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
                                         Margin="24,16"
                                         FontFamily="Georgia"
                                         StyleProvider="{StaticResource Showcase.AccentProvider}">
@@ -147,11 +158,13 @@
                     <ScrollViewer Grid.Row="1">
                         <mdv:MarkdownViewer x:Name="DiffLeft"
                                             Markdown="{Binding DiffLeft}"
+                                            ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
                                             Margin="24,16" />
                     </ScrollViewer>
                     <ScrollViewer Grid.Row="1" Grid.Column="1">
                         <mdv:MarkdownViewer x:Name="DiffRight"
                                             Markdown="{Binding DiffRight}"
+                                            ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
                                             Margin="24,16" />
                     </ScrollViewer>
                 </Grid>
@@ -160,6 +173,7 @@
             <TabItem Header="Большой документ">
                 <ScrollViewer>
                     <mdv:MarkdownViewer Markdown="{Binding LargeDocument}"
+                                        ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
                                         Margin="24,16" />
                 </ScrollViewer>
             </TabItem>
