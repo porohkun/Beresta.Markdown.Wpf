@@ -25,13 +25,11 @@
         <ScrollViewer Grid.Row="1">
             <mdv:MarkdownViewer x:Name="LeftViewer"
                                 Markdown="{Binding Left}"
-                                ShowSourceLineNumbers="{Binding Options.ShowSourceLineNumbers}"
                                 Margin="24,16" />
         </ScrollViewer>
         <ScrollViewer Grid.Row="1" Grid.Column="1">
             <mdv:MarkdownViewer x:Name="RightViewer"
                                 Markdown="{Binding Right}"
-                                ShowSourceLineNumbers="{Binding Options.ShowSourceLineNumbers}"
                                 Margin="24,16" />
         </ScrollViewer>
     </Grid>

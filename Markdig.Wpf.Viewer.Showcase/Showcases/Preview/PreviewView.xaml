@@ -25,7 +25,6 @@
 
         <ScrollViewer Grid.Column="1">
             <mdv:MarkdownViewer Markdown="{Binding Text}"
-                                ShowSourceLineNumbers="{Binding Options.ShowSourceLineNumbers}"
                                 Margin="24,16" />
         </ScrollViewer>
     </Grid>

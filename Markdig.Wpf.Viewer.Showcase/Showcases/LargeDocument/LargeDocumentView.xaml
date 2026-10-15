@@ -9,7 +9,6 @@
              d:DataContext="{d:DesignInstance local:LargeDocumentViewModel}">
     <ScrollViewer>
         <mdv:MarkdownViewer Markdown="{Binding Text}"
-                            ShowSourceLineNumbers="{Binding Options.ShowSourceLineNumbers}"
                             Margin="24,16" />
     </ScrollViewer>
 </UserControl>

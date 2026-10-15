@@ -26,7 +26,6 @@
         <ScrollViewer>
             <mdv:MarkdownViewer x:Name="Viewer"
                                 Markdown="{Binding Text}"
-                                ShowSourceLineNumbers="{Binding Options.ShowSourceLineNumbers}"
                                 Margin="24,16" />
         </ScrollViewer>
     </DockPanel>

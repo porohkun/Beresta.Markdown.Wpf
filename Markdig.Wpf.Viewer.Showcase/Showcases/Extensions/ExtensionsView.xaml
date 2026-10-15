@@ -62,7 +62,6 @@
 
     <ScrollViewer>
         <mdv:MarkdownViewer Markdown="{Binding Text}"
-                            ShowSourceLineNumbers="{Binding Options.ShowSourceLineNumbers}"
                             Margin="24,16">
             <mdv:MarkdownViewer.Extensions>
                 <local:NoteExtension Template="{StaticResource NoteTemplate}" />

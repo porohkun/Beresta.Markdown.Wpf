@@ -1,54 +1,31 @@
 ﻿namespace MarkdigWpfViewer.Showcase;
 
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using Theming;
 
-/// <summary>Общие настройки всех витрин: тема и номера строк.</summary>
-public sealed class ShowcaseOptions : INotifyPropertyChanged
+/// <summary>Общие настройки всех витрин: тема, номера строк, выделение.</summary>
+public sealed class ShowcaseOptions : BindableBase
 {
-    private bool _isDark;
-    private bool _showSourceLineNumbers;
-    private bool _showCodeLineNumbers;
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
     public bool IsDark
     {
-        get => _isDark;
-        set
-        {
-            if (_isDark == value)
-            {
-                return;
-            }
-
-            _isDark = value;
-            ThemeSwitcher.Apply(value);
-            OnPropertyChanged();
-        }
+        get;
+        set => Set(ref field, value, () => ThemeSwitcher.Apply(value));
     }
 
     public bool ShowSourceLineNumbers
     {
-        get => _showSourceLineNumbers;
-        set
-        {
-            _showSourceLineNumbers = value;
-            OnPropertyChanged();
-        }
+        get;
+        set => Set(ref field, value);
     }
 
     public bool ShowCodeLineNumbers
     {
-        get => _showCodeLineNumbers;
-        set
-        {
-            _showCodeLineNumbers = value;
-            OnPropertyChanged();
-        }
+        get;
+        set => Set(ref field, value);
     }
 
-    private void OnPropertyChanged([CallerMemberName] string? name = null)
-        => PropertyChanged?.Invoke(this, new(name));
+    public bool IsSelectionEnabled
+    {
+        get;
+        set => Set(ref field, value);
+    } = true;
 }

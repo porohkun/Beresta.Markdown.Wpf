@@ -3,8 +3,6 @@
 /// <summary>Живой предпросмотр: неизменившиеся блоки переживают правку, видимое стоит на месте.</summary>
 public sealed class PreviewViewModel : ShowcaseViewModel
 {
-    private string _text = Samples.Document;
-
     public PreviewViewModel(ShowcaseOptions options)
         : base(options)
     {
@@ -15,11 +13,7 @@ public sealed class PreviewViewModel : ShowcaseViewModel
     /// <summary>Текст из редактора; вьюер перерисовывает его на каждую правку.</summary>
     public string Text
     {
-        get => _text;
-        set
-        {
-            _text = value;
-            OnPropertyChanged();
-        }
-    }
+        get;
+        set => Set(ref field, value);
+    } = Samples.Document;
 }
