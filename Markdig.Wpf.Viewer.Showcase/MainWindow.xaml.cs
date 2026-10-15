@@ -1,13 +1,20 @@
 ﻿namespace MarkdigWpfViewer.Showcase;
 
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Diff;
+using Scrolling;
 using Selection;
 
 /// <summary>Окно витрины: вкладка на каждый сценарий встраивания.</summary>
 public partial class MainWindow : HandyControl.Controls.Window
 {
     private static readonly Brush FoundBrush = new SolidColorBrush(Color.FromArgb(0x80, 0xFF, 0xC1, 0x07));
+    private static readonly Brush RemovedBrush = new SolidColorBrush(Color.FromArgb(0x50, 0xE5, 0x39, 0x35));
+    private static readonly Brush AddedBrush = new SolidColorBrush(Color.FromArgb(0x50, 0x43, 0xA0, 0x47));
+
+    private MdScrollSync? _diffSync;
 
     public MainWindow()
     {
@@ -29,5 +36,40 @@ public partial class MainWindow : HandyControl.Controls.Window
         }
 
         DocumentViewer.Decorations = found;
+    }
+
+    /// <summary>
+    /// Дифф считает витрина: совпавшие строки — опоры синхронной прокрутки, остальные
+    /// подсвечиваются как удалённые и добавленные.
+    /// </summary>
+    private void OnDiffLoaded(object sender, RoutedEventArgs e)
+    {
+        if (_diffSync is not null || DiffLeft.Markdown is not { } left || DiffRight.Markdown is not { } right)
+        {
+            return;
+        }
+
+        var leftLines = left.Split('\n');
+        var rightLines = right.Split('\n');
+        var matches = LineDiff.Match(leftLines, rightLines);
+
+        var anchors = matches.SelectMany(match => new[]
+        {
+            ((double)match.Left, (double)match.Right),
+            (match.Left + 1.0, match.Right + 1.0)
+        });
+        _diffSync = new MdScrollSync(DiffLeft, DiffRight, new MdLineMap(anchors));
+
+        DiffLeft.Decorations = Changes(DiffLeft, LineDiff.Unmatched(leftLines.Length, matches.Select(match => match.Left)), RemovedBrush);
+        DiffRight.Decorations = Changes(DiffRight, LineDiff.Unmatched(rightLines.Length, matches.Select(match => match.Right)), AddedBrush);
+    }
+
+    private static List<MdDecoration> Changes(MarkdownViewer viewer, IEnumerable<(int Start, int End)> chunks, Brush brush)
+    {
+        return chunks
+            .Select(chunk => viewer.TextMap.RangeOfSourceLines(chunk.Start, chunk.End))
+            .OfType<MdTextRange>()
+            .Select(range => new MdDecoration(range, brush))
+            .ToList();
     }
 }

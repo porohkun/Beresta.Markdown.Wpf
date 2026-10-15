@@ -15,6 +15,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public string ExtensionsDocument { get; } = Samples.Load("Extensions.md");
 
+    public string DiffLeft { get; } = Samples.Load("DiffLeft.md");
+
+    public string DiffRight { get; } = Samples.Load("DiffRight.md");
+
     public string LargeDocument { get; } = string.Join(
         "\n\n",
         Enumerable.Range(1, 3000).Select(i => i % 10 == 0

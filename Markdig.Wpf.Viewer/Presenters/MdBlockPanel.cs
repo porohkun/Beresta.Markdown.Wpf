@@ -81,7 +81,30 @@ public sealed class MdBlockPanel : VirtualizingPanel
             child.Arrange(new Rect(0, _offsets[index], finalSize.Width, child.DesiredSize.Height));
         }
 
+        (ItemsControl.GetItemsOwner(this) as MarkdownViewer)?.OnViewportMaybeChanged();
         return finalSize;
+    }
+
+    /// <summary>Сколько блоков у панели, созданных и нет.</summary>
+    internal int ItemCount => _heights.Count;
+
+    /// <summary>Верх блока в координатах панели — измеренный или оценённый.</summary>
+    internal double GetItemTop(int index) => _offsets[Math.Clamp(index, 0, _offsets.Length - 1)];
+
+    /// <summary>Низ блока в координатах панели.</summary>
+    internal double GetItemBottom(int index) => _offsets[Math.Clamp(index + 1, 0, _offsets.Length - 1)];
+
+    /// <summary>Блок, на который приходится позиция в координатах панели.</summary>
+    internal int IndexAtOffset(double offset) => offset < 0 ? 0 : IndexAt(offset) is var index and >= 0 ? index : _heights.Count - 1;
+
+    protected override void OnIsItemsHostChanged(bool oldIsItemsHost, bool newIsItemsHost)
+    {
+        base.OnIsItemsHostChanged(oldIsItemsHost, newIsItemsHost);
+
+        if (newIsItemsHost && ItemsControl.GetItemsOwner(this) is MarkdownViewer viewer)
+        {
+            viewer.BlockPanel = this;
+        }
     }
 
     /// <summary>Сдвигает ближайшую прокрутку так, чтобы блок оказался виден целиком или хотя бы сверху.</summary>
@@ -343,6 +366,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
         if (e.VerticalChange != 0 || e.ViewportHeightChange != 0)
         {
             InvalidateMeasure();
+            (ItemsControl.GetItemsOwner(this) as MarkdownViewer)?.OnViewportMaybeChanged();
         }
     }
 

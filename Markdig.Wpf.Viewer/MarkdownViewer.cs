@@ -6,10 +6,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Abstractions;
 using Extensions;
 using Markdig;
 using Presenters;
+using Scrolling;
 using Selection;
 using ViewModels;
 
@@ -85,7 +87,10 @@ public sealed class MarkdownViewer : ItemsControl
     public static readonly DependencyProperty SelectionLengthProperty = SelectionLengthPropertyKey.DependencyProperty;
 
     private readonly SelectionController _selection;
+    private readonly SourcePositions _positions;
     private MarkdownPipeline? _pipeline;
+    private bool _viewportNotificationQueued;
+    private (double Line, double Fraction, int Attempts)? _pendingScroll;
 
     static MarkdownViewer()
     {
@@ -111,6 +116,7 @@ public sealed class MarkdownViewer : ItemsControl
 
         _selection = new SelectionController(this);
         _selection.Changed += OnSelectionChanged;
+        _positions = new SourcePositions(this);
 
         // BYDESIGN: фокус по щелчку нужен ради копирования; показывать при этом вьюер целиком
         // внешняя прокрутка не должна.
@@ -119,6 +125,9 @@ public sealed class MarkdownViewer : ItemsControl
 
     /// <summary>Выделение изменилось.</summary>
     public event EventHandler? SelectionChanged;
+
+    /// <summary>Видимая часть документа могла сместиться: прокрутка, уточнились высоты блоков.</summary>
+    public event EventHandler? ViewportChanged;
 
     public string? Markdown
     {
@@ -171,6 +180,60 @@ public sealed class MarkdownViewer : ItemsControl
         => GetValue(ExtensionsProperty) as MdExtensionCollection ?? (IReadOnlyList<MdExtension>)[];
 
     internal SelectionController Selection => _selection;
+
+    internal MdBlockPanel? BlockPanel { get; set; }
+
+    /// <summary>Позиция строки исходника в координатах вьюера; дробная часть — доля строки.</summary>
+    public double? GetSourceLineOffset(double line) => _positions.OffsetOf(line);
+
+    /// <summary>Строка исходника в позиции вьюера; дробная часть — доля строки.</summary>
+    public double? GetSourceLineAt(double offset) => _positions.LineAt(offset);
+
+    /// <summary>
+    /// Строка исходника, которая видна в доле <paramref name="viewportFraction"/> высоты прокрутки,
+    /// в которой стоит вьюер: 0 — верхний край, 1 — нижний.
+    /// </summary>
+    public double? GetVisibleSourceLine(double viewportFraction = 0)
+    {
+        if (Scrollers.Nearest(this) is not { } scroller)
+        {
+            return null;
+        }
+
+        var point = scroller.TranslatePoint(new Point(0, viewportFraction * scroller.ViewportHeight), this);
+        return GetSourceLineAt(point.Y);
+    }
+
+    /// <summary>
+    /// Прокручивает прокрутку, в которой стоит вьюер, так, чтобы строка исходника встала в долю
+    /// <paramref name="viewportFraction"/> её высоты. Прокрутка должна быть попиксельной.
+    /// </summary>
+    public bool ScrollToSourceLine(double line, double viewportFraction = 0)
+    {
+        if (!ScrollToSourceLineOnce(line, viewportFraction))
+        {
+            return false;
+        }
+
+        _pendingScroll = (line, viewportFraction, 3);
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, RefineScroll);
+        return true;
+    }
+
+    internal void OnViewportMaybeChanged()
+    {
+        if (_viewportNotificationQueued || ViewportChanged is null)
+        {
+            return;
+        }
+
+        _viewportNotificationQueued = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.Render, () =>
+        {
+            _viewportNotificationQueued = false;
+            ViewportChanged?.Invoke(this, EventArgs.Empty);
+        });
+    }
 
     /// <summary>Выделяет кусок текстовой карты.</summary>
     public void Select(int start, int length) => _selection.Select(start, length);
@@ -270,6 +333,42 @@ public sealed class MarkdownViewer : ItemsControl
         {
             // BYDESIGN: буфер обмена бывает занят другим приложением — копирование тогда просто
             // не удаётся, а вьюер работает дальше.
+        }
+    }
+
+    private bool ScrollToSourceLineOnce(double line, double viewportFraction)
+    {
+        if (Scrollers.Nearest(this) is not { } scroller || GetSourceLineOffset(line) is not { } offset)
+        {
+            return false;
+        }
+
+        var position = TranslatePoint(new Point(0, offset), scroller).Y;
+        var shift = position - viewportFraction * scroller.ViewportHeight;
+        if (Math.Abs(shift) >= 0.5)
+        {
+            scroller.ScrollToVerticalOffset(scroller.VerticalOffset + shift);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// После прокрутки созданные блоки уточняют свои высоты, и строка съезжает — прокрутка
+    /// повторяется, пока строка не встанет на место.
+    /// </summary>
+    private void RefineScroll()
+    {
+        if (_pendingScroll is not { } pending)
+        {
+            return;
+        }
+
+        _pendingScroll = null;
+        if (pending.Attempts > 0 && ScrollToSourceLineOnce(pending.Line, pending.Fraction))
+        {
+            _pendingScroll = pending with { Attempts = pending.Attempts - 1 };
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, RefineScroll);
         }
     }
 

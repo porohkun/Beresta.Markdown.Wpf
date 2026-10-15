@@ -60,6 +60,112 @@ public sealed class MdTextMap
     /// <summary>Кусок карты списка инлайнов или неделимого элемента.</summary>
     public bool TryGetRange(object owner, out MdTextRange range) => _owners.TryGetValue(owner, out range);
 
+    /// <summary>
+    /// Кусок карты, который занимают строки исходника с <paramref name="startLine"/> по
+    /// <paramref name="endLine"/> включительно; <c>null</c> — на этих строках ничего не видно.
+    /// Строки текста и кода узнаются точно, неделимое и виджет — целиком.
+    /// </summary>
+    public MdTextRange? RangeOfSourceLines(int startLine, int endLine)
+    {
+        var start = int.MaxValue;
+        var end = int.MinValue;
+
+        void Take(int from, int length)
+        {
+            start = Math.Min(start, from);
+            end = Math.Max(end, from + length);
+        }
+
+        bool Intersects(MdSourceSpan source)
+            => !source.IsEmpty && source.EndLine >= startLine && source.StartLine <= endLine;
+
+        void TakeInlines(IReadOnlyList<InlineVm> inlines)
+        {
+            if (!TryGetRange(inlines, out var range))
+            {
+                return;
+            }
+
+            var position = range.Start;
+            var located = false;
+            foreach (var inline in inlines)
+            {
+                var length = TextOf(inline).Length;
+                located |= !inline.Source.IsEmpty;
+                if (Intersects(inline.Source))
+                {
+                    Take(position, length);
+                }
+
+                position += length;
+            }
+
+            if (!located)
+            {
+                Take(range.Start, range.Length);
+            }
+        }
+
+        foreach (var (block, range) in _blocks)
+        {
+            if (!Intersects(block.Source))
+            {
+                continue;
+            }
+
+            switch (block)
+            {
+                case ParagraphVm paragraph:
+                    TakeInlines(paragraph.Inlines);
+                    break;
+
+                case HeadingVm heading:
+                    TakeInlines(heading.Inlines);
+                    break;
+
+                case CodeBlockVm code when TryGetRange(code.Runs, out var codeRange):
+                    var lineStart = 0;
+                    var lines = code.Code.Split('\n');
+                    for (var i = 0; i < lines.Length; i++)
+                    {
+                        var line = code.CodeFirstLine + i;
+                        if (line >= startLine && line <= endLine)
+                        {
+                            Take(codeRange.Start + lineStart, lines[i].Length);
+                        }
+
+                        lineStart += lines[i].Length + 1;
+                    }
+
+                    break;
+
+                case TableVm table:
+                    foreach (var row in table.Rows.Where(row => Intersects(row.Source)))
+                    {
+                        foreach (var cell in row.Cells)
+                        {
+                            TakeInlines(cell.Inlines);
+                        }
+                    }
+
+                    break;
+
+                case QuoteVm or ListVm or BlankLineVm:
+                    break;
+
+                default:
+                    if (!range.IsEmpty)
+                    {
+                        Take(range.Start, range.Length);
+                    }
+
+                    break;
+            }
+        }
+
+        return end >= start ? new MdTextRange(start, end - start) : null;
+    }
+
     /// <summary>Текст куска для копирования, без знаков неделимых.</summary>
     public string GetText(MdTextRange range)
     {

@@ -6,6 +6,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Presenters;
+using Scrolling;
 
 /// <summary>Выделение во вьюере: якорь и активный конец в текстовой карте, мышь, автопрокрутка.</summary>
 internal sealed class SelectionController
@@ -178,7 +179,7 @@ internal sealed class SelectionController
 
     private void UpdateAutoScroll(Point point)
     {
-        _scroller ??= FindScroller();
+        _scroller ??= Scrollers.Nearest(_viewer);
         if (_scroller is null)
         {
             return;
@@ -193,19 +194,6 @@ internal sealed class SelectionController
         {
             _autoScroll.Stop();
         }
-    }
-
-    private ScrollViewer? FindScroller()
-    {
-        for (var node = VisualTreeHelper.GetParent(_viewer); node is not null; node = VisualTreeHelper.GetParent(node))
-        {
-            if (node is ScrollViewer { VerticalScrollBarVisibility: not ScrollBarVisibility.Disabled } scroller)
-            {
-                return scroller;
-            }
-        }
-
-        return null;
     }
 
     private int? FindOffset(Point point)

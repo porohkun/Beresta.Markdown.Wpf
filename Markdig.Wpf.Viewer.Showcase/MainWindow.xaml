@@ -130,6 +130,33 @@
                 </ScrollViewer>
             </TabItem>
 
+            <TabItem Header="Две панели">
+                <Grid Loaded="OnDiffLoaded">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Было" Margin="24,8,24,0" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="1" Text="Стало" Margin="24,8,24,0" FontWeight="SemiBold" />
+
+                    <ScrollViewer Grid.Row="1">
+                        <mdv:MarkdownViewer x:Name="DiffLeft"
+                                            Markdown="{Binding DiffLeft}"
+                                            Margin="24,16" />
+                    </ScrollViewer>
+                    <ScrollViewer Grid.Row="1" Grid.Column="1">
+                        <mdv:MarkdownViewer x:Name="DiffRight"
+                                            Markdown="{Binding DiffRight}"
+                                            Margin="24,16" />
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
             <TabItem Header="Большой документ">
                 <ScrollViewer>
                     <mdv:MarkdownViewer Markdown="{Binding LargeDocument}"
