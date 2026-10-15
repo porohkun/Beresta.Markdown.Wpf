@@ -56,7 +56,7 @@ public sealed class ThemeTests
             var viewer = new MarkdownViewer { Markdown = "# H\n\ntext\n\n- item" };
             var host = new Border { Child = viewer };
             TextElement.SetForeground(host, Brushes.Green);
-            TextElement.SetFontFamily(host, new FontFamily("Consolas"));
+            TextElement.SetFontFamily(host, new("Consolas"));
             var window = WpfHost.Show(host);
 
             var texts = Visuals.Descendants<TextBlock>(viewer).ToList();

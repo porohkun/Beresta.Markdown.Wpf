@@ -8,13 +8,14 @@
         mc:Ignorable="d"
         Title="MainWindow"
         d:DataContext="{d:DesignInstance local:MainWindowViewModel, IsDesignTimeCreatable=True}"
-        Height="800" Width="600">
+        Height="800" Width="600"
+        WindowStartupLocation="CenterScreen">
     <Window.DataContext>
-        <local:MainWindowViewModel/>
+        <local:MainWindowViewModel />
     </Window.DataContext>
     <ScrollViewer>
         <markdigWpfViewer:MarkdownViewer Markdown="{Binding Text}"
                                          Margin="8"
-                                         markdigWpfViewer:MarkdownLink.Navigate="OnMarkdownLink"/>
+                                         markdigWpfViewer:MarkdownLink.Navigate="OnMarkdownLink" />
     </ScrollViewer>
 </Window>

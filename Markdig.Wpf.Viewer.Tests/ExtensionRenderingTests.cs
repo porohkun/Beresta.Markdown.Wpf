@@ -1,6 +1,5 @@
 ﻿namespace MarkdigWpfViewer.Tests;
 
-using System.Windows;
 using System.Windows.Controls;
 using Extensions;
 using Presenters;

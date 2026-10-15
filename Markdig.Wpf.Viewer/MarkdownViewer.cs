@@ -20,8 +20,6 @@ using ViewModels;
 [TemplatePart(Name = GutterPart, Type = typeof(MdLineGutter))]
 public sealed class MarkdownViewer : ItemsControl
 {
-    private const string GutterPart = "PART_Gutter";
-
     /// <summary>Текст документа.</summary>
     public static readonly DependencyProperty MarkdownProperty =
         DependencyProperty.Register(
@@ -93,6 +91,9 @@ public sealed class MarkdownViewer : ItemsControl
             typeof(MarkdownViewer),
             new(0));
 
+    /// <summary>Начало выделения в текстовой карте.</summary>
+    public static readonly DependencyProperty SelectionStartProperty = SelectionStartPropertyKey.DependencyProperty;
+
     private static readonly DependencyPropertyKey SelectionLengthPropertyKey =
         DependencyProperty.RegisterReadOnly(
             nameof(SelectionLength),
@@ -100,13 +101,12 @@ public sealed class MarkdownViewer : ItemsControl
             typeof(MarkdownViewer),
             new(0));
 
-    /// <summary>Начало выделения в текстовой карте.</summary>
-    public static readonly DependencyProperty SelectionStartProperty = SelectionStartPropertyKey.DependencyProperty;
-
     /// <summary>Длина выделения в текстовой карте.</summary>
     public static readonly DependencyProperty SelectionLengthProperty = SelectionLengthPropertyKey.DependencyProperty;
 
-    private readonly SelectionController _selection;
+    private const string GutterPart = "PART_Gutter";
+
+
     private readonly SourcePositions _positions;
     private readonly WidgetStates _states;
     private readonly ModelIdentity _identity = new();
@@ -122,19 +122,19 @@ public sealed class MarkdownViewer : ItemsControl
 
         CommandManager.RegisterClassCommandBinding(
             typeof(MarkdownViewer),
-            new CommandBinding(
+            new(
                 ApplicationCommands.Copy,
                 (sender, _) => ((MarkdownViewer)sender).Copy(),
                 (sender, e) => e.CanExecute = ((MarkdownViewer)sender).SelectionLength > 0));
 
         CommandManager.RegisterClassCommandBinding(
             typeof(MarkdownViewer),
-            new CommandBinding(ApplicationCommands.SelectAll, (sender, _) => ((MarkdownViewer)sender).SelectAll()));
+            new(ApplicationCommands.SelectAll, (sender, _) => ((MarkdownViewer)sender).SelectAll()));
     }
 
     public MarkdownViewer()
     {
-        _states = new WidgetStates(() => ActiveExtensions);
+        _states = new(() => ActiveExtensions);
         SetValue(MdWidget.StatesProperty, _states);
 
         // BYDESIGN: своя коллекция через SetCurrentValue, а не локальным значением — так её
@@ -142,9 +142,9 @@ public sealed class MarkdownViewer : ItemsControl
         SetCurrentValue(ExtensionsProperty, new MdExtensionCollection());
         ItemsSource = _blocks;
 
-        _selection = new SelectionController(this);
-        _selection.Changed += OnSelectionChanged;
-        _positions = new SourcePositions(this);
+        Selection = new(this);
+        Selection.Changed += OnSelectionChanged;
+        _positions = new(this);
 
         // BYDESIGN: фокус по щелчку нужен ради копирования; показывать при этом вьюер целиком
         // внешняя прокрутка не должна.
@@ -206,12 +206,6 @@ public sealed class MarkdownViewer : ItemsControl
         set => SetValue(ShowCodeLineNumbersProperty, value);
     }
 
-    public static bool GetShowCodeLineNumbers(DependencyObject element)
-        => (bool)element.GetValue(ShowCodeLineNumbersProperty);
-
-    public static void SetShowCodeLineNumbers(DependencyObject element, bool value)
-        => element.SetValue(ShowCodeLineNumbersProperty, value);
-
     /// <summary>Текстовая карта показанного документа.</summary>
     public MdTextMap TextMap { get; private set; } = MdTextMap.Empty;
 
@@ -220,16 +214,22 @@ public sealed class MarkdownViewer : ItemsControl
     public int SelectionLength => (int)GetValue(SelectionLengthProperty);
 
     /// <summary>Выделенный текст для копирования; считается по запросу.</summary>
-    public string SelectedText => TextMap.GetText(_selection.Range);
+    public string SelectedText => TextMap.GetText(Selection.Range);
 
     internal IReadOnlyList<MdExtension> ActiveExtensions
         => GetValue(ExtensionsProperty) as MdExtensionCollection ?? (IReadOnlyList<MdExtension>)[];
 
-    internal SelectionController Selection => _selection;
+    internal SelectionController Selection { get; }
 
     internal MdBlockPanel? BlockPanel { get; set; }
 
     internal MdLineGutter? Gutter { get; private set; }
+
+    public static bool GetShowCodeLineNumbers(DependencyObject element)
+        => (bool)element.GetValue(ShowCodeLineNumbersProperty);
+
+    public static void SetShowCodeLineNumbers(DependencyObject element, bool value)
+        => element.SetValue(ShowCodeLineNumbersProperty, value);
 
     /// <summary>Позиция строки исходника в координатах вьюера; дробная часть — доля строки.</summary>
     public double? GetSourceLineOffset(double line) => _positions.OffsetOf(line);
@@ -248,7 +248,7 @@ public sealed class MarkdownViewer : ItemsControl
             return null;
         }
 
-        var point = scroller.TranslatePoint(new Point(0, viewportFraction * scroller.ViewportHeight), this);
+        var point = scroller.TranslatePoint(new(0, viewportFraction * scroller.ViewportHeight), this);
         return GetSourceLineAt(point.Y);
     }
 
@@ -268,6 +268,19 @@ public sealed class MarkdownViewer : ItemsControl
         return true;
     }
 
+    /// <summary>Выделяет кусок текстовой карты.</summary>
+    public void Select(int start, int length) => Selection.Select(start, length);
+
+    public void SelectAll() => Selection.Select(0, TextMap.Length);
+
+    public void ClearSelection() => Selection.Select(Selection.Range.Start, 0);
+
+    public override void OnApplyTemplate()
+    {
+        base.OnApplyTemplate();
+        Gutter = GetTemplateChild(GutterPart) as MdLineGutter;
+    }
+
     internal void OnViewportMaybeChanged()
     {
         Gutter?.InvalidateVisual();
@@ -278,24 +291,12 @@ public sealed class MarkdownViewer : ItemsControl
         }
 
         _viewportNotificationQueued = true;
-        Dispatcher.BeginInvoke(DispatcherPriority.Render, () =>
-        {
-            _viewportNotificationQueued = false;
-            ViewportChanged?.Invoke(this, EventArgs.Empty);
-        });
-    }
-
-    /// <summary>Выделяет кусок текстовой карты.</summary>
-    public void Select(int start, int length) => _selection.Select(start, length);
-
-    public void SelectAll() => _selection.Select(0, TextMap.Length);
-
-    public void ClearSelection() => _selection.Select(_selection.Range.Start, 0);
-
-    public override void OnApplyTemplate()
-    {
-        base.OnApplyTemplate();
-        Gutter = GetTemplateChild(GutterPart) as MdLineGutter;
+        Dispatcher.BeginInvoke(DispatcherPriority.Render,
+            () =>
+            {
+                _viewportNotificationQueued = false;
+                ViewportChanged?.Invoke(this, EventArgs.Empty);
+            });
     }
 
     protected override DependencyObject GetContainerForItemOverride() => new MdBlockItem();
@@ -311,7 +312,7 @@ public sealed class MarkdownViewer : ItemsControl
             return;
         }
 
-        if (_selection.Press(e.GetPosition(this), Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)))
+        if (Selection.Press(e.GetPosition(this), Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)))
         {
             Focus();
         }
@@ -321,7 +322,7 @@ public sealed class MarkdownViewer : ItemsControl
     {
         base.OnPreviewMouseMove(e);
 
-        if (e.LeftButton == MouseButtonState.Pressed && _selection.Drag(e.GetPosition(this)) && !IsMouseCaptured)
+        if (e.LeftButton == MouseButtonState.Pressed && Selection.Drag(e.GetPosition(this)) && !IsMouseCaptured)
         {
             CaptureMouse();
         }
@@ -331,7 +332,7 @@ public sealed class MarkdownViewer : ItemsControl
     {
         base.OnPreviewMouseLeftButtonUp(e);
 
-        if (_selection.Release())
+        if (Selection.Release())
         {
             ReleaseMouseCapture();
             e.Handled = true;
@@ -376,7 +377,7 @@ public sealed class MarkdownViewer : ItemsControl
 
     private void OnSelectionChanged()
     {
-        var range = _selection.Range;
+        var range = Selection.Range;
         SetValue(SelectionStartPropertyKey, range.Start);
         SetValue(SelectionLengthPropertyKey, range.Length);
         UpdateLayer();
@@ -403,7 +404,7 @@ public sealed class MarkdownViewer : ItemsControl
             return false;
         }
 
-        var position = TranslatePoint(new Point(0, offset), scroller).Y;
+        var position = TranslatePoint(new(0, offset), scroller).Y;
         var shift = position - viewportFraction * scroller.ViewportHeight;
         if (Math.Abs(shift) >= 0.5)
         {
@@ -434,7 +435,7 @@ public sealed class MarkdownViewer : ItemsControl
 
     private void UpdateLayer()
     {
-        SetValue(MdSelection.LayerProperty, new MdDecorationLayer(TextMap, _selection.Range, SelectionBrush, Decorations ?? []));
+        SetValue(MdSelection.LayerProperty, new MdDecorationLayer(TextMap, Selection.Range, SelectionBrush, Decorations ?? []));
     }
 
     private void ResetPipeline()
@@ -492,7 +493,7 @@ public sealed class MarkdownViewer : ItemsControl
             Items.Refresh();
         }
 
-        _selection?.Reset();
+        Selection?.Reset();
         Gutter?.InvalidateMeasure();
         Gutter?.InvalidateVisual();
     }

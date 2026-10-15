@@ -19,7 +19,7 @@ public sealed class TextMapTests
     {
         var map = MdTextMap.Build(ModelBuilder.Parse(markdown));
 
-        map.GetText(new MdTextRange(0, map.Length)).Should().Be(expected);
+        map.GetText(new(0, map.Length)).Should().Be(expected);
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public sealed class TextMapTests
         map.TryGetRange(blocks.OfType<ThematicBreakVm>().Single(), out var range).Should().BeTrue();
         range.Length.Should().Be(1);
         map.Text[range.Start].Should().Be(MdTextMap.ObjectMark);
-        map.GetText(new MdTextRange(0, map.Length)).Should().NotContain(MdTextMap.ObjectMark.ToString());
+        map.GetText(new(0, map.Length)).Should().NotContain(MdTextMap.ObjectMark.ToString());
     }
 
     [Fact]
@@ -81,8 +81,8 @@ public sealed class TextMapTests
         var map = MdTextMap.Build([new ParagraphVm([new RunVm("a "), mention, new RunVm(" b")]), new CopyDiagramVm()]);
 
         map.Text.Should().Be($"a {MdTextMap.ObjectMark} b\n{MdTextMap.ObjectMark}");
-        map.GetText(new MdTextRange(0, map.Length)).Should().Be("a @ivan b\n[diagram]");
-        map.GetText(new MdTextRange(2, 1)).Should().Be("@ivan");
+        map.GetText(new(0, map.Length)).Should().Be("a @ivan b\n[diagram]");
+        map.GetText(new(2, 1)).Should().Be("@ivan");
     }
 
     [Fact]

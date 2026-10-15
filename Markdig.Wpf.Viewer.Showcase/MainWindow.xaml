@@ -16,6 +16,7 @@
            Title="Markdig.Wpf.Viewer — витрина"
            Width="1000"
            Height="800"
+           WindowStartupLocation="CenterScreen"
            Background="{DynamicResource RegionBrush}">
     <hc:Window.DataContext>
         <local:MainWindowViewModel />
@@ -155,10 +156,6 @@
                                         FontFamily="Georgia"
                                         StyleProvider="{StaticResource Showcase.AccentProvider}">
                         <mdv:MarkdownViewer.Resources>
-                            <Style x:Key="Md.Strong.Style" TargetType="{x:Type Span}">
-                                <Setter Property="FontWeight" Value="Bold" />
-                                <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
-                            </Style>
                         </mdv:MarkdownViewer.Resources>
                     </mdv:MarkdownViewer>
                 </ScrollViewer>

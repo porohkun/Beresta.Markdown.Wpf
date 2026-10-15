@@ -1,6 +1,5 @@
 ﻿namespace MarkdigWpfViewer.Tests;
 
-using System.Windows;
 using System.Windows.Controls;
 using Presenters;
 using Scrolling;
@@ -72,10 +71,11 @@ public sealed class SourcePositionTests
             var window = WpfHost.Show(scroll);
             var firstCodeLine = 50 * 2 + 1;
 
-            viewer.ScrollToSourceLine(firstCodeLine + 40, 0).Should().BeTrue();
+            viewer.ScrollToSourceLine(firstCodeLine + 40).Should().BeTrue();
             WpfHost.Settle(window);
 
-            var block = Visuals.Descendants<MdTextBlock>(viewer).Single(text => text.Runs?.Count() == 1 && viewer.TextMap.TryGetRange(text.Runs!, out var range) && viewer.TextMap.GetText(range).StartsWith("line 0"));
+            var block = Visuals.Descendants<MdTextBlock>(viewer).Single(text =>
+                text.Runs?.Count() == 1 && viewer.TextMap.TryGetRange(text.Runs!, out var range) && viewer.TextMap.GetText(range).StartsWith("line 0"));
             var lineOffset = code.IndexOf("line 40", StringComparison.Ordinal);
             var rect = block.GetRangeRects(lineOffset, lineOffset + 1).First();
             block.TranslatePoint(rect.TopLeft, scroll).Y.Should().BeApproximately(0, 2);
@@ -112,9 +112,9 @@ public sealed class SourcePositionTests
             var leftScroll = new ScrollViewer { Content = left };
             var rightScroll = new ScrollViewer { Content = right };
             Grid.SetColumn(rightScroll, 1);
-            var grid = new Grid { ColumnDefinitions = { new ColumnDefinition(), new ColumnDefinition() }, Children = { leftScroll, rightScroll } };
+            var grid = new Grid { ColumnDefinitions = { new(), new() }, Children = { leftScroll, rightScroll } };
             var window = WpfHost.Show(grid);
-            using var sync = new MdScrollSync(left, right, new MdLineMap([(0, 10), (4000, 4010)]));
+            using var sync = new MdScrollSync(left, right, new([(0, 10), (4000, 4010)]));
 
             leftScroll.ScrollToVerticalOffset(20000);
             WpfHost.Settle(window);

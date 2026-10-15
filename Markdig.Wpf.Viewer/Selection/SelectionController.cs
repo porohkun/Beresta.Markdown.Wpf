@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 using Presenters;
 using Scrolling;
@@ -26,7 +27,7 @@ internal sealed class SelectionController
     public SelectionController(MarkdownViewer viewer)
     {
         _viewer = viewer;
-        _autoScroll = new DispatcherTimer(TimeSpan.FromMilliseconds(30), DispatcherPriority.Input, (_, _) => AutoScrollStep(), viewer.Dispatcher);
+        _autoScroll = new(TimeSpan.FromMilliseconds(30), DispatcherPriority.Input, (_, _) => AutoScrollStep(), viewer.Dispatcher);
         _autoScroll.Stop();
     }
 
@@ -160,13 +161,35 @@ internal sealed class SelectionController
 
     private static DependencyObject? ParentOf(DependencyObject node)
     {
-        return node is Visual or System.Windows.Media.Media3D.Visual3D
+        return node is Visual or Visual3D
             ? VisualTreeHelper.GetParent(node) ?? LogicalTreeHelper.GetParent(node)
             : LogicalTreeHelper.GetParent(node);
     }
 
     private static int AtomicOffset(FrameworkElement element, MdTextRange range, Point pointInElement)
         => pointInElement.Y > element.ActualHeight / 2 ? range.End : range.Start;
+
+    private static IEnumerable<FrameworkElement> Targets(DependencyObject root)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            switch (child)
+            {
+                case MdTextBlock text when text.TryGetMapRange(out _):
+                    yield return text;
+                    continue;
+                case MdBlockItem item when item.TryGetAtomicRange(out _):
+                    yield return item;
+                    continue;
+            }
+
+            foreach (var deeper in Targets(child))
+            {
+                yield return deeper;
+            }
+        }
+    }
 
     private void MoveActive(Point point)
     {
@@ -237,7 +260,7 @@ internal sealed class SelectionController
 
         foreach (var target in Targets(_viewer))
         {
-            var bounds = target.TransformToAncestor(_viewer).TransformBounds(new Rect(target.RenderSize));
+            var bounds = target.TransformToAncestor(_viewer).TransformBounds(new(target.RenderSize));
             var dy = point.Y < bounds.Top ? bounds.Top - point.Y : point.Y > bounds.Bottom ? point.Y - bounds.Bottom : 0;
             var dx = point.X < bounds.Left ? bounds.Left - point.X : point.X > bounds.Right ? point.X - bounds.Right : 0;
             var distance = dy * 1000 + dx;
@@ -255,27 +278,5 @@ internal sealed class SelectionController
             MdBlockItem item when item.TryGetAtomicRange(out var range) => AtomicOffset(item, range, local),
             _ => null
         };
-    }
-
-    private static IEnumerable<FrameworkElement> Targets(DependencyObject root)
-    {
-        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
-        {
-            var child = VisualTreeHelper.GetChild(root, i);
-            switch (child)
-            {
-                case MdTextBlock text when text.TryGetMapRange(out _):
-                    yield return text;
-                    continue;
-                case MdBlockItem item when item.TryGetAtomicRange(out _):
-                    yield return item;
-                    continue;
-            }
-
-            foreach (var deeper in Targets(child))
-            {
-                yield return deeper;
-            }
-        }
     }
 }

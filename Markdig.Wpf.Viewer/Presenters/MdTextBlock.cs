@@ -139,6 +139,62 @@ public class MdTextBlock : TextBlock
         set => SetValue(LinkStyleProperty, value);
     }
 
+    /// <summary>Подсвеченные куски своего текста в порядке рисования.</summary>
+    internal IEnumerable<(int Start, int End, Brush Brush)> Highlights
+        => _highlights.Select(highlight => (highlight.Start, highlight.End, highlight.Brush));
+
+    /// <summary>Кусок текстовой карты, который рисует этот блок.</summary>
+    internal bool TryGetMapRange(out MdTextRange range)
+    {
+        range = default;
+        return GetValue(LayerProperty) is MdDecorationLayer layer
+               && Runs is { } runs
+               && layer.Map.TryGetRange(runs, out range);
+    }
+
+    /// <summary>Смещение в своём куске карты для точки в своих координатах.</summary>
+    internal int HitTestLocal(Point point)
+    {
+        var length = _segments.Count == 0 ? 0 : _segments[^1].End;
+        if (point.Y < 0)
+        {
+            return 0;
+        }
+
+        if (point.Y >= ActualHeight)
+        {
+            return length;
+        }
+
+        var clamped = new Point(Math.Clamp(point.X, 0, ActualWidth), point.Y);
+        var pointer = GetPositionFromPoint(clamped, snapToText: true);
+        return pointer is null ? point.X <= 0 ? 0 : length : OffsetOf(pointer, clamped);
+    }
+
+    /// <summary>Прямоугольники подсветки своего куска в своих координатах.</summary>
+    internal IEnumerable<Rect> GetRangeRects(int start, int end)
+    {
+        foreach (var segment in _segments)
+        {
+            if (segment.Element is not Run run || segment.End <= start || segment.Start >= end)
+            {
+                continue;
+            }
+
+            var from = run.ContentStart.GetPositionAtOffset(Math.Max(start, segment.Start) - segment.Start);
+            var to = run.ContentStart.GetPositionAtOffset(Math.Min(end, segment.End) - segment.Start);
+            if (from is null || to is null)
+            {
+                continue;
+            }
+
+            foreach (var rect in GetLineRects(from, to))
+            {
+                yield return rect;
+            }
+        }
+    }
+
     private static void OnAnyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MdTextBlock)d).Rebuild();
 
@@ -179,62 +235,6 @@ public class MdTextBlock : TextBlock
         }
     }
 
-    /// <summary>Кусок текстовой карты, который рисует этот блок.</summary>
-    internal bool TryGetMapRange(out MdTextRange range)
-    {
-        range = default;
-        return GetValue(LayerProperty) is MdDecorationLayer layer
-               && Runs is { } runs
-               && layer.Map.TryGetRange(runs, out range);
-    }
-
-    /// <summary>Смещение в своём куске карты для точки в своих координатах.</summary>
-    internal int HitTestLocal(Point point)
-    {
-        var length = _segments.Count == 0 ? 0 : _segments[^1].End;
-        if (point.Y < 0)
-        {
-            return 0;
-        }
-
-        if (point.Y >= ActualHeight)
-        {
-            return length;
-        }
-
-        var clamped = new Point(Math.Clamp(point.X, 0, ActualWidth), point.Y);
-        var pointer = GetPositionFromPoint(clamped, snapToText: true);
-        return pointer is null ? (point.X <= 0 ? 0 : length) : OffsetOf(pointer, clamped);
-    }
-
-    /// <summary>Прямоугольники подсветки своего куска в своих координатах.</summary>
-    internal IEnumerable<Rect> GetRangeRects(int start, int end)
-    {
-        foreach (var segment in _segments)
-        {
-            if (segment.Element is not Run run || segment.End <= start || segment.Start >= end)
-            {
-                continue;
-            }
-
-            var from = run.ContentStart.GetPositionAtOffset(Math.Max(start, segment.Start) - segment.Start);
-            var to = run.ContentStart.GetPositionAtOffset(Math.Min(end, segment.End) - segment.Start);
-            if (from is null || to is null)
-            {
-                continue;
-            }
-
-            foreach (var rect in GetLineRects(from, to))
-            {
-                yield return rect;
-            }
-        }
-    }
-
-    /// <summary>Подсвеченные куски своего текста в порядке рисования.</summary>
-    internal IEnumerable<(int Start, int End, Brush Brush)> Highlights
-        => _highlights.Select(highlight => (highlight.Start, highlight.End, highlight.Brush));
-
     private static void OnLayerChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MdTextBlock)d).UpdateHighlights();
 
@@ -252,7 +252,7 @@ public class MdTextBlock : TextBlock
             var last = lineEnd.GetCharacterRect(LogicalDirection.Backward);
             if (last.Left > first.Left)
             {
-                yield return new Rect(first.Left, first.Top, last.Left - first.Left, first.Height);
+                yield return new(first.Left, first.Top, last.Left - first.Left, first.Height);
             }
 
             if (ReferenceEquals(lineEnd, to))
@@ -262,6 +262,15 @@ public class MdTextBlock : TextBlock
 
             lineStart = lineEnd;
         }
+    }
+
+    /// <summary>Неделимый кусок строки с накладкой подсветки поверх.</summary>
+    private static (InlineUIContainer Container, Border Overlay) CreateAtomic(UIElement content)
+    {
+        var overlay = new Border { IsHitTestVisible = false };
+        var host = new Grid { Children = { content, overlay } };
+        var container = new InlineUIContainer(host) { BaselineAlignment = BaselineAlignment.Center };
+        return (container, overlay);
     }
 
     private int OffsetOf(TextPointer pointer, Point point)
@@ -281,7 +290,7 @@ public class MdTextBlock : TextBlock
 
             if (segment.Overlay is { } overlay)
             {
-                var bounds = overlay.TransformToAncestor(this).TransformBounds(new Rect(overlay.RenderSize));
+                var bounds = overlay.TransformToAncestor(this).TransformBounds(new(overlay.RenderSize));
                 return point.X > bounds.Left + bounds.Width / 2 ? segment.End : segment.Start;
             }
 
@@ -335,7 +344,7 @@ public class MdTextBlock : TextBlock
                 return;
             }
 
-            _adorner = new MdHighlightAdorner(this);
+            _adorner = new(this);
             _adornerLayer.Add(_adorner);
         }
 
@@ -459,15 +468,6 @@ public class MdTextBlock : TextBlock
 
         if (!args.Handled)
             OpenExternal(href);
-    }
-
-    /// <summary>Неделимый кусок строки с накладкой подсветки поверх.</summary>
-    private static (InlineUIContainer Container, Border Overlay) CreateAtomic(UIElement content)
-    {
-        var overlay = new Border { IsHitTestVisible = false };
-        var host = new Grid { Children = { content, overlay } };
-        var container = new InlineUIContainer(host) { BaselineAlignment = BaselineAlignment.Center };
-        return (container, overlay);
     }
 
     /// <summary>Кусок своего текста: где он в карте и каким элементом нарисован.</summary>

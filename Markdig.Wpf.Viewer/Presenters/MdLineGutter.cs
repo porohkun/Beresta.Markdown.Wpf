@@ -42,7 +42,8 @@ public sealed class MdLineGutter : Control
             if (node is FrameworkElement { ActualHeight: > 0 } element
                 && content is NodeVm { Source.IsEmpty: false } model and not (BlankLineVm or InlineVm))
             {
-                if (model is CodeBlockVm code && First<CodeBlockPresenter>(element) is { } presenter && First<MdTextBlock>(presenter) is { ActualHeight: > 0 } text)
+                if (model is CodeBlockVm code && First<CodeBlockPresenter>(element) is { } presenter &&
+                    First<MdTextBlock>(presenter) is { ActualHeight: > 0 } text)
                 {
                     RememberCodeLines(numbers, code, text);
                 }
@@ -64,8 +65,8 @@ public sealed class MdLineGutter : Control
     protected override Size MeasureOverride(Size constraint)
     {
         var digits = Math.Max(2, (LastLine() + 1).ToString(CultureInfo.InvariantCulture).Length);
-        var width = Format(new string('9', digits)).WidthIncludingTrailingWhitespace;
-        return new Size(Math.Ceiling(width) + Padding.Left + Padding.Right, 0);
+        var width = Format(new('9', digits)).WidthIncludingTrailingWhitespace;
+        return new(Math.Ceiling(width) + Padding.Left + Padding.Right, 0);
     }
 
     protected override void OnRender(DrawingContext drawingContext)
@@ -75,7 +76,7 @@ public sealed class MdLineGutter : Control
             var text = Format((line + 1).ToString(CultureInfo.InvariantCulture));
             var x = ActualWidth - Padding.Right - text.WidthIncludingTrailingWhitespace;
             var y = top + (height - text.Height) / 2;
-            drawingContext.DrawText(text, new Point(x, y));
+            drawingContext.DrawText(text, new(x, y));
         }
     }
 
@@ -159,14 +160,11 @@ public sealed class MdLineGutter : Control
 
         for (var i = 0; i < lines; i++)
         {
-            Remember(numbers, code.CodeFirstLine + i, new Place(top + i * lineHeight, lineHeight, OnText: true));
+            Remember(numbers, code.CodeFirstLine + i, new(top + i * lineHeight, lineHeight, OnText: true));
         }
     }
 
-    /// <summary>
-    /// Первая строка текста блока, если текст начинается на первой строке исходника блока;
-    /// иначе — верх рамки: первый текст внутри принадлежит вложенному блоку.
-    /// </summary>
+    /// <summary>Первая строка текста блока, если текст начинается на первой строке его исходника; иначе — верх рамки.</summary>
     private Place PlaceOf(FrameworkElement element, int line)
     {
         if (First<MdTextBlock>(element) is { ActualHeight: > 0 } text
@@ -174,10 +172,10 @@ public sealed class MdLineGutter : Control
             && source.StartLine == line
             && text.GetRangeRects(0, 1).FirstOrDefault() is { Height: > 0 } rect)
         {
-            return new Place(text.TranslatePoint(rect.TopLeft, this).Y, rect.Height, OnText: true);
+            return new(text.TranslatePoint(rect.TopLeft, this).Y, rect.Height, OnText: true);
         }
 
-        return new Place(element.TranslatePoint(default, this).Y, Format("0").Height, OnText: false);
+        return new(element.TranslatePoint(default, this).Y, Format("0").Height, OnText: false);
     }
 
     private int LastLine()
@@ -189,11 +187,11 @@ public sealed class MdLineGutter : Control
 
     private FormattedText Format(string text)
     {
-        return new FormattedText(
+        return new(
             text,
             CultureInfo.CurrentUICulture,
             FlowDirection.LeftToRight,
-            new Typeface(FontFamily, FontStyle, FontWeight, FontStretch),
+            new(FontFamily, FontStyle, FontWeight, FontStretch),
             FontSize,
             Foreground ?? Brushes.Gray,
             VisualTreeHelper.GetDpi(this).PixelsPerDip);

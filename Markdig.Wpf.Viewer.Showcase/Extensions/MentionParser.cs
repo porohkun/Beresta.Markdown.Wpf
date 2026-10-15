@@ -2,7 +2,6 @@
 
 using Markdig.Helpers;
 using Markdig.Parsers;
-using Markdig.Syntax;
 
 /// <summary>Разбирает <c>@имя</c> из букв и цифр.</summary>
 public sealed class MentionParser : InlineParser
@@ -30,7 +29,7 @@ public sealed class MentionParser : InlineParser
         processor.Inline = new MentionInline
         {
             Name = slice.Text.Substring(start + 1, length),
-            Span = new SourceSpan(position, position + length),
+            Span = new(position, position + length),
             Line = line,
             Column = column
         };

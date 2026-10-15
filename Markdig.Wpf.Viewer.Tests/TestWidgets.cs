@@ -102,7 +102,7 @@ internal static class TestWidgets
             processor.Inline = new MentionInline
             {
                 Name = slice.Text.Substring(start + 1, length),
-                Span = new SourceSpan(position, position + length),
+                Span = new(position, position + length),
                 Line = line,
                 Column = column
             };

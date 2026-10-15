@@ -2,7 +2,6 @@
 
 using Scrolling;
 using Selection;
-using ViewModels;
 
 /// <summary>Соответствие строк двух исходников и строк исходника — кускам карты.</summary>
 public sealed class LineMapTests

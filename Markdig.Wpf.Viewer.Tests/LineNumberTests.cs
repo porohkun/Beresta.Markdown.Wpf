@@ -9,21 +9,21 @@ using Presenters;
 public sealed class LineNumberTests
 {
     private const string Document =
-        "# Title\n" +            // 0
+        "# Title\n" + // 0
         "\n" +
-        "First paragraph\n" +    // 2
+        "First paragraph\n" + // 2
         "second line\n" +
         "\n" +
-        "- one\n" +              // 5
-        "- two\n" +              // 6
+        "- one\n" + // 5
+        "- two\n" + // 6
         "\n" +
         "```\n" +
-        "code 0\n" +             // 9
-        "code 1\n" +             // 10
-        "code 2\n" +             // 11
+        "code 0\n" + // 9
+        "code 1\n" + // 10
+        "code 2\n" + // 11
         "```\n" +
         "\n" +
-        "> quoted\n";            // 14
+        "> quoted\n"; // 14
 
     private static readonly string LongText = string.Join("\n\n", Enumerable.Range(0, 2000).Select(i => $"Paragraph {i}"));
 
@@ -103,7 +103,7 @@ public sealed class LineNumberTests
             var large = new MarkdownViewer { Markdown = LongText, ShowSourceLineNumbers = true };
             var largeScroll = new ScrollViewer { Content = large };
             Grid.SetColumn(largeScroll, 1);
-            var grid = new Grid { ColumnDefinitions = { new ColumnDefinition(), new ColumnDefinition() }, Children = { small, largeScroll } };
+            var grid = new Grid { ColumnDefinitions = { new(), new() }, Children = { small, largeScroll } };
             var window = WpfHost.Show(grid);
 
             var width = large.Gutter!.ActualWidth;
@@ -193,7 +193,8 @@ public sealed class LineNumberTests
     {
         for (var i = 1; i < numbers.Count; i++)
         {
-            numbers[i].Top.Should().BeGreaterThanOrEqualTo(numbers[i - 1].Top + numbers[i - 1].Height - 0.5, $"номера строк {numbers[i - 1].Line} и {numbers[i].Line}");
+            numbers[i].Top.Should().BeGreaterThanOrEqualTo(numbers[i - 1].Top + numbers[i - 1].Height - 0.5,
+                $"номера строк {numbers[i - 1].Line} и {numbers[i].Line}");
         }
     }
 
@@ -235,7 +236,8 @@ public sealed class LineNumberTests
     private static MdTextBlock TextStartingWith(MarkdownViewer viewer, string start)
     {
         return Visuals.Descendants<MdTextBlock>(viewer).First(text =>
-            text.Runs is { } runs && viewer.TextMap.TryGetRange(runs, out var range) && viewer.TextMap.GetText(range).StartsWith(start, StringComparison.Ordinal));
+            text.Runs is { } runs && viewer.TextMap.TryGetRange(runs, out var range) &&
+            viewer.TextMap.GetText(range).StartsWith(start, StringComparison.Ordinal));
     }
 
     private static double TopOf(MdTextBlock text, int offset, UIElement target)

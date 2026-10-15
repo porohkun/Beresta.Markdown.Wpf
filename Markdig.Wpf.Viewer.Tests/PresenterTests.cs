@@ -1,5 +1,6 @@
 ﻿namespace MarkdigWpfViewer.Tests;
 
+using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
 using Presenters;
@@ -16,11 +17,11 @@ public sealed class PresenterTests
             var block = new MdTextBlock
             {
                 FontSize = 14,
-                Runs = [new RunVm("text"), new RunVm("link", Hyperlink: new Uri("https://example.com"))]
+                Runs = [new RunVm("text"), new RunVm("link", Hyperlink: new("https://example.com"))]
             };
 
             block.FontSize = 28;
-            block.FontFamily = new FontFamily("Consolas");
+            block.FontFamily = new("Consolas");
 
             var runs = RunsOf(block.Inlines).ToList();
             runs.Should().HaveCount(2);
@@ -57,8 +58,8 @@ public sealed class PresenterTests
         });
     }
 
-    private static IEnumerable<T> FindAll<T>(System.Windows.DependencyObject root)
-        where T : System.Windows.DependencyObject
+    private static IEnumerable<T> FindAll<T>(DependencyObject root)
+        where T : DependencyObject
     {
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
         {

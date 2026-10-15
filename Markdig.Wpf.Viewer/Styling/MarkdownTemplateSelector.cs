@@ -3,6 +3,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using ViewModels;
 
 /// <summary>
@@ -63,7 +64,7 @@ public sealed class MarkdownTemplateSelector : DataTemplateSelector
                 return viewer;
             }
 
-            current = current is Visual or System.Windows.Media.Media3D.Visual3D
+            current = current is Visual or Visual3D
                 ? VisualTreeHelper.GetParent(current) ?? LogicalTreeHelper.GetParent(current)
                 : LogicalTreeHelper.GetParent(current);
         }

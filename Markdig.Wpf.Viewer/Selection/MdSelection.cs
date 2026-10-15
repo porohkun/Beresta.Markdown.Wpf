@@ -14,13 +14,7 @@ public static class MdSelection
             "IsInteractive",
             typeof(bool),
             typeof(MdSelection),
-            new PropertyMetadata(false));
-
-    public static bool GetIsInteractive(DependencyObject element)
-        => (bool)element.GetValue(IsInteractiveProperty);
-
-    public static void SetIsInteractive(DependencyObject element, bool value)
-        => element.SetValue(IsInteractiveProperty, value);
+            new(false));
 
     /// <summary>Что сейчас подсвечено в документе; ставит вьюер, наследуют его презентеры.</summary>
     internal static readonly DependencyProperty LayerProperty =
@@ -29,4 +23,10 @@ public static class MdSelection
             typeof(MdDecorationLayer),
             typeof(MdSelection),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits));
+
+    public static bool GetIsInteractive(DependencyObject element)
+        => (bool)element.GetValue(IsInteractiveProperty);
+
+    public static void SetIsInteractive(DependencyObject element, bool value)
+        => element.SetValue(IsInteractiveProperty, value);
 }

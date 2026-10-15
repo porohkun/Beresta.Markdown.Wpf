@@ -7,12 +7,12 @@
                     xmlns:local="clr-namespace:MarkdigWpfViewer"
                     xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
-    <s:MarkdownTemplateSelector x:Key="Md.TemplateSelector"/>
+    <s:MarkdownTemplateSelector x:Key="Md.TemplateSelector" />
 
     <!-- ======== Md.Paragraph ======== -->
     <!-- Md.Paragraph.FontFamily и Md.Paragraph.Foreground не заданы: текст берёт их у приложения -->
-    <sys:Double   x:Key="Md.Paragraph.FontSize">14</sys:Double>
-    <Brush        x:Key="Md.Paragraph.LinkForeground">Blue</Brush>
+    <sys:Double x:Key="Md.Paragraph.FontSize">14</sys:Double>
+    <Brush x:Key="Md.Paragraph.LinkForeground">Blue</Brush>
 
     <!-- ======== Начертания ======== -->
     <Style x:Key="Md.Strong.Style" TargetType="{x:Type Span}">
@@ -27,83 +27,83 @@
     <Style x:Key="Md.Link.Style" TargetType="{x:Type Hyperlink}" />
 
     <!-- ======== Md.InlineCode ======== -->
-    <FontFamily   x:Key="Md.InlineCode.FontFamily">Consolas</FontFamily>
-    <sys:Double   x:Key="Md.InlineCode.FontSize">14</sys:Double>
-    <Brush        x:Key="Md.InlineCode.Background">Bisque</Brush>
-    <Brush        x:Key="Md.InlineCode.Foreground">Brown</Brush>
-    <Brush        x:Key="Md.InlineCode.BorderBrush">#dadada</Brush>
-    <Thickness    x:Key="Md.InlineCode.BorderThickness">1</Thickness>
-    <Thickness    x:Key="Md.InlineCode.Padding">3,1</Thickness>
+    <FontFamily x:Key="Md.InlineCode.FontFamily">Consolas</FontFamily>
+    <sys:Double x:Key="Md.InlineCode.FontSize">14</sys:Double>
+    <Brush x:Key="Md.InlineCode.Background">Bisque</Brush>
+    <Brush x:Key="Md.InlineCode.Foreground">Brown</Brush>
+    <Brush x:Key="Md.InlineCode.BorderBrush">#dadada</Brush>
+    <Thickness x:Key="Md.InlineCode.BorderThickness">1</Thickness>
+    <Thickness x:Key="Md.InlineCode.Padding">3,1</Thickness>
     <CornerRadius x:Key="Md.InlineCode.CornerRadius">3</CornerRadius>
 
     <!-- ======== Md.Heading ======== -->
     <!-- Md.Heading.FontFamily и Md.Heading.Foreground не заданы: заголовок берёт их у приложения -->
-    <Brush        x:Key="Md.Heading.LinkForeground">Blue</Brush>
+    <Brush x:Key="Md.Heading.LinkForeground">Blue</Brush>
 
-    <Thickness    x:Key="Md.Heading1.Margin">0,14,0,0</Thickness>
-    <sys:Double   x:Key="Md.Heading1.FontSize">28</sys:Double>
-    <FontWeight   x:Key="Md.Heading1.FontWeight">Bold</FontWeight>
+    <Thickness x:Key="Md.Heading1.Margin">0,14,0,0</Thickness>
+    <sys:Double x:Key="Md.Heading1.FontSize">28</sys:Double>
+    <FontWeight x:Key="Md.Heading1.FontWeight">Bold</FontWeight>
 
-    <Thickness    x:Key="Md.Heading2.Margin">0,12,0,0</Thickness>
-    <sys:Double   x:Key="Md.Heading2.FontSize">24</sys:Double>
-    <FontWeight   x:Key="Md.Heading2.FontWeight">Bold</FontWeight>
+    <Thickness x:Key="Md.Heading2.Margin">0,12,0,0</Thickness>
+    <sys:Double x:Key="Md.Heading2.FontSize">24</sys:Double>
+    <FontWeight x:Key="Md.Heading2.FontWeight">Bold</FontWeight>
 
-    <Thickness    x:Key="Md.Heading3.Margin">0,10,0,0</Thickness>
-    <sys:Double   x:Key="Md.Heading3.FontSize">20</sys:Double>
-    <FontWeight   x:Key="Md.Heading3.FontWeight">SemiBold</FontWeight>
+    <Thickness x:Key="Md.Heading3.Margin">0,10,0,0</Thickness>
+    <sys:Double x:Key="Md.Heading3.FontSize">20</sys:Double>
+    <FontWeight x:Key="Md.Heading3.FontWeight">SemiBold</FontWeight>
 
-    <Thickness    x:Key="Md.Heading4.Margin">0,8,0,0</Thickness>
-    <sys:Double   x:Key="Md.Heading4.FontSize">18</sys:Double>
-    <FontWeight   x:Key="Md.Heading4.FontWeight">SemiBold</FontWeight>
+    <Thickness x:Key="Md.Heading4.Margin">0,8,0,0</Thickness>
+    <sys:Double x:Key="Md.Heading4.FontSize">18</sys:Double>
+    <FontWeight x:Key="Md.Heading4.FontWeight">SemiBold</FontWeight>
 
-    <Thickness    x:Key="Md.Heading5.Margin">0,8,0,0</Thickness>
-    <sys:Double   x:Key="Md.Heading5.FontSize">16</sys:Double>
-    <FontWeight   x:Key="Md.Heading5.FontWeight">SemiBold</FontWeight>
+    <Thickness x:Key="Md.Heading5.Margin">0,8,0,0</Thickness>
+    <sys:Double x:Key="Md.Heading5.FontSize">16</sys:Double>
+    <FontWeight x:Key="Md.Heading5.FontWeight">SemiBold</FontWeight>
 
-    <Thickness    x:Key="Md.Heading6.Margin">0,8,0,0</Thickness>
-    <sys:Double   x:Key="Md.Heading6.FontSize">14</sys:Double>
-    <FontWeight   x:Key="Md.Heading6.FontWeight">SemiBold</FontWeight>
+    <Thickness x:Key="Md.Heading6.Margin">0,8,0,0</Thickness>
+    <sys:Double x:Key="Md.Heading6.FontSize">14</sys:Double>
+    <FontWeight x:Key="Md.Heading6.FontWeight">SemiBold</FontWeight>
 
     <!-- ======== Md.CodeBlock ======== -->
-    <FontFamily   x:Key="Md.CodeBlock.FontFamily">Consolas</FontFamily>
-    <sys:Double   x:Key="Md.CodeBlock.FontSize">14</sys:Double>
-    <Brush        x:Key="Md.CodeBlock.Background">#f9f9f9</Brush>
-    <Brush        x:Key="Md.CodeBlock.Foreground">Brown</Brush>
-    <Brush        x:Key="Md.CodeBlock.BorderBrush">#dadada</Brush>
-    <Thickness    x:Key="Md.CodeBlock.BorderThickness">1</Thickness>
-    <Thickness    x:Key="Md.CodeBlock.Padding">12</Thickness>
+    <FontFamily x:Key="Md.CodeBlock.FontFamily">Consolas</FontFamily>
+    <sys:Double x:Key="Md.CodeBlock.FontSize">14</sys:Double>
+    <Brush x:Key="Md.CodeBlock.Background">#f9f9f9</Brush>
+    <Brush x:Key="Md.CodeBlock.Foreground">Brown</Brush>
+    <Brush x:Key="Md.CodeBlock.BorderBrush">#dadada</Brush>
+    <Thickness x:Key="Md.CodeBlock.BorderThickness">1</Thickness>
+    <Thickness x:Key="Md.CodeBlock.Padding">12</Thickness>
     <CornerRadius x:Key="Md.CodeBlock.CornerRadius">4</CornerRadius>
-    <Brush        x:Key="Md.CodeBlock.LineNumberForeground">Gray</Brush>
-    <Thickness    x:Key="Md.CodeBlock.LineNumberMargin">0,0,12,0</Thickness>
+    <Brush x:Key="Md.CodeBlock.LineNumberForeground">Gray</Brush>
+    <Thickness x:Key="Md.CodeBlock.LineNumberMargin">0,0,12,0</Thickness>
 
     <!-- ======== Md.Gutter: поля с номерами строк исходника ======== -->
     <!-- Md.Gutter.FontFamily не задан: номера берут шрифт у приложения -->
-    <Brush        x:Key="Md.Gutter.Foreground">Gray</Brush>
-    <sys:Double   x:Key="Md.Gutter.FontSize">12</sys:Double>
-    <Thickness    x:Key="Md.Gutter.Padding">0,0,12,0</Thickness>
+    <Brush x:Key="Md.Gutter.Foreground">Gray</Brush>
+    <sys:Double x:Key="Md.Gutter.FontSize">12</sys:Double>
+    <Thickness x:Key="Md.Gutter.Padding">0,0,12,0</Thickness>
 
     <!-- ======== Md.Quote ======== -->
-    <Brush        x:Key="Md.Quote.BorderBrush">#dadada</Brush>
-    <Thickness    x:Key="Md.Quote.BorderThickness">6,0,0,0</Thickness>
-    <Thickness    x:Key="Md.Quote.Padding">6,0,0,0</Thickness>
-    <Thickness    x:Key="Md.Quote.Margin">0,0,0,4</Thickness>
+    <Brush x:Key="Md.Quote.BorderBrush">#dadada</Brush>
+    <Thickness x:Key="Md.Quote.BorderThickness">6,0,0,0</Thickness>
+    <Thickness x:Key="Md.Quote.Padding">6,0,0,0</Thickness>
+    <Thickness x:Key="Md.Quote.Margin">0,0,0,4</Thickness>
 
     <!-- ======== Md.List ======== -->
-    <Thickness    x:Key="Md.List.Margin">0,0,0,0</Thickness>
-    <GridLength   x:Key="Md.List.MarkerWidth">16</GridLength>
-    <Thickness    x:Key="Md.List.ItemSpacing">0,0,4,0</Thickness>
+    <Thickness x:Key="Md.List.Margin">0,0,0,0</Thickness>
+    <GridLength x:Key="Md.List.MarkerWidth">16</GridLength>
+    <Thickness x:Key="Md.List.ItemSpacing">0,0,4,0</Thickness>
 
     <!-- ======== Md.Table ======== -->
-    <Brush        x:Key="Md.Table.BorderBrush">#dadada</Brush>
-    <Thickness    x:Key="Md.Table.BorderThickness">1</Thickness>
-    <Thickness    x:Key="Md.Table.CellPadding">8,4</Thickness>
-    <Brush        x:Key="Md.Table.HeaderBackground">#dfdfdf</Brush>
+    <Brush x:Key="Md.Table.BorderBrush">#dadada</Brush>
+    <Thickness x:Key="Md.Table.BorderThickness">1</Thickness>
+    <Thickness x:Key="Md.Table.CellPadding">8,4</Thickness>
+    <Brush x:Key="Md.Table.HeaderBackground">#dfdfdf</Brush>
 
     <!-- ======== Md.HorizontalRule ======== -->
-    <Thickness    x:Key="Md.HorizontalRule.Margin">28,0,28,14</Thickness>
+    <Thickness x:Key="Md.HorizontalRule.Margin">28,0,28,14</Thickness>
 
     <!-- ======== Md.BlankLine ======== -->
-    <sys:Double   x:Key="Md.BlankLine.Height">14</sys:Double>
+    <sys:Double x:Key="Md.BlankLine.Height">14</sys:Double>
 
     <!-- ======== Выделение ======== -->
     <SolidColorBrush x:Key="Md.Selection.Brush" Color="#3399FF" Opacity="0.35" />
@@ -129,27 +129,33 @@
         </Setter>
     </Style>
 
-    <Style x:Key="Md.Heading1.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}" BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
+    <Style x:Key="Md.Heading1.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}"
+           BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading1.FontSize}" />
     </Style>
 
-    <Style x:Key="Md.Heading2.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}" BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
+    <Style x:Key="Md.Heading2.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}"
+           BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading2.FontSize}" />
     </Style>
 
-    <Style x:Key="Md.Heading3.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}" BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
+    <Style x:Key="Md.Heading3.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}"
+           BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading3.FontSize}" />
     </Style>
 
-    <Style x:Key="Md.Heading4.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}" BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
+    <Style x:Key="Md.Heading4.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}"
+           BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading4.FontSize}" />
     </Style>
 
-    <Style x:Key="Md.Heading5.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}" BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
+    <Style x:Key="Md.Heading5.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}"
+           BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading5.FontSize}" />
     </Style>
 
-    <Style x:Key="Md.Heading6.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}" BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
+    <Style x:Key="Md.Heading6.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}"
+           BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading6.FontSize}" />
     </Style>
 
@@ -159,7 +165,7 @@
         <Setter Property="Foreground" Value="{DynamicResource Md.Paragraph.Foreground}" />
         <Setter Property="LinkForeground" Value="{DynamicResource Md.Paragraph.LinkForeground}" />
         <Setter Property="TextWrapping" Value="Wrap" />
-        <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Paragraph.InlineCodeStyle}"/>
+        <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Paragraph.InlineCodeStyle}" />
         <Setter Property="StrongStyle" Value="{DynamicResource Md.Strong.Style}" />
         <Setter Property="EmphasisStyle" Value="{DynamicResource Md.Emphasis.Style}" />
         <Setter Property="StrikeStyle" Value="{DynamicResource Md.Strike.Style}" />
@@ -178,38 +184,38 @@
         <Setter Property="Margin" Value="{DynamicResource Md.Heading6.Margin}" />
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading6.FontSize}" />
         <Setter Property="FontWeight" Value="{DynamicResource Md.Heading6.FontWeight}" />
-        <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading6.InlineCodeStyle}"/>
+        <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading6.InlineCodeStyle}" />
 
         <Style.Triggers>
             <Trigger Property="Level" Value="1">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading1.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading1.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading1.FontWeight}" />
-                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading1.InlineCodeStyle}"/>
+                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading1.InlineCodeStyle}" />
             </Trigger>
             <Trigger Property="Level" Value="2">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading2.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading2.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading2.FontWeight}" />
-                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading2.InlineCodeStyle}"/>
+                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading2.InlineCodeStyle}" />
             </Trigger>
             <Trigger Property="Level" Value="3">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading3.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading3.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading3.FontWeight}" />
-                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading3.InlineCodeStyle}"/>
+                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading3.InlineCodeStyle}" />
             </Trigger>
             <Trigger Property="Level" Value="4">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading4.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading4.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading4.FontWeight}" />
-                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading4.InlineCodeStyle}"/>
+                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading4.InlineCodeStyle}" />
             </Trigger>
             <Trigger Property="Level" Value="5">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading5.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading5.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading5.FontWeight}" />
-                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading5.InlineCodeStyle}"/>
+                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading5.InlineCodeStyle}" />
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -227,8 +233,8 @@
 
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
 
                             <TextBlock x:Name="LineNumbers"
@@ -238,7 +244,7 @@
                                        FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
                                        FontSize="{DynamicResource Md.CodeBlock.FontSize}"
                                        Margin="{DynamicResource Md.CodeBlock.LineNumberMargin}"
-                                       TextAlignment="Right"/>
+                                       TextAlignment="Right" />
 
                             <ScrollViewer Grid.Column="1"
                                           HorizontalScrollBarVisibility="Auto"
@@ -249,14 +255,14 @@
                                                Foreground="{DynamicResource Md.CodeBlock.Foreground}"
                                                FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
                                                FontSize="{DynamicResource Md.CodeBlock.FontSize}"
-                                               TextWrapping="WrapWithOverflow"/>
+                                               TextWrapping="WrapWithOverflow" />
                             </ScrollViewer>
                         </Grid>
 
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="local:MarkdownViewer.ShowCodeLineNumbers" Value="True">
-                            <Setter TargetName="LineNumbers" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="LineNumbers" Property="Visibility" Value="Visible" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -301,8 +307,8 @@
                 <DataTemplate DataType="{x:Type vm:ListItemVm}">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="{DynamicResource Md.List.MarkerWidth}"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="{DynamicResource Md.List.MarkerWidth}" />
+                            <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="{Binding MarkerText}" Style="{DynamicResource Md.List.MarkerStyle}" />
                         <p:MdBlocksPresenter Grid.Column="1" Blocks="{Binding Blocks}" />
@@ -342,7 +348,7 @@
                         <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
                                 BorderThickness="{DynamicResource Md.Table.BorderThickness}"
                                 HorizontalAlignment="Left">
-                            <Grid x:Name="PART_Grid" SnapsToDevicePixels="True"/>
+                            <Grid x:Name="PART_Grid" SnapsToDevicePixels="True" />
                         </Border>
                     </ScrollViewer>
                 </ControlTemplate>
@@ -355,7 +361,7 @@
                             BorderThickness="{DynamicResource Md.Table.BorderThickness}"
                             Padding="{DynamicResource Md.Table.CellPadding}"
                             Background="{DynamicResource Md.Table.HeaderBackground}">
-                        <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}"/>
+                        <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
                     </Border>
                 </DataTemplate>
             </Setter.Value>
@@ -364,57 +370,59 @@
             <Setter.Value>
                 <DataTemplate DataType="{x:Type vm:TableCellVm}">
                     <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
-                                BorderThickness="{DynamicResource Md.Table.BorderThickness}"
-                                Padding="{DynamicResource Md.Table.CellPadding}">
-                        <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}"/>
+                            BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                            Padding="{DynamicResource Md.Table.CellPadding}">
+                        <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
                     </Border>
                 </DataTemplate>
             </Setter.Value>
         </Setter>
     </Style>
 
-        <!-- ======== Templates ======== -->
+    <!-- ======== Templates ======== -->
     <s:MdStyleProvider x:Key="Md.DefaultStyleProvider">
 
         <s:MdStyleProvider.ParagraphTemplate>
             <DataTemplate DataType="{x:Type vm:ParagraphVm}">
-                <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}"/>
+                <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.ParagraphTemplate>
 
         <s:MdStyleProvider.HeadingTemplate>
             <DataTemplate DataType="{x:Type vm:HeadingVm}">
-                <p:MdHeadingBlock Level="{Binding Level}" Runs="{Binding Inlines}" Style="{DynamicResource Md.Heading.Style}"/>
+                <p:MdHeadingBlock Level="{Binding Level}" Runs="{Binding Inlines}"
+                                  Style="{DynamicResource Md.Heading.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.HeadingTemplate>
 
         <s:MdStyleProvider.CodeBlockTemplate>
             <DataTemplate DataType="{x:Type vm:CodeBlockVm}">
-                <p:CodeBlockPresenter InfoString="{Binding InfoString}" Syntax="{Binding Syntax}" Code="{Binding Code}" Runs="{Binding Runs}" Style="{DynamicResource Md.CodeBlock.Style}"/>
+                <p:CodeBlockPresenter InfoString="{Binding InfoString}" Syntax="{Binding Syntax}" Code="{Binding Code}"
+                                      Runs="{Binding Runs}" Style="{DynamicResource Md.CodeBlock.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.CodeBlockTemplate>
 
         <s:MdStyleProvider.QuoteTemplate>
             <DataTemplate DataType="{x:Type vm:QuoteVm}">
-                <p:QuotePresenter Blocks="{Binding Blocks}" Style="{DynamicResource Md.Quote.Style}"/>
+                <p:QuotePresenter Blocks="{Binding Blocks}" Style="{DynamicResource Md.Quote.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.QuoteTemplate>
 
         <s:MdStyleProvider.ListTemplate>
             <DataTemplate DataType="{x:Type vm:ListVm}">
-                <ItemsControl ItemsSource="{Binding Items}" Style="{DynamicResource Md.List.Style}"/>
+                <ItemsControl ItemsSource="{Binding Items}" Style="{DynamicResource Md.List.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.ListTemplate>
 
         <s:MdStyleProvider.TableTemplate>
             <DataTemplate DataType="{x:Type vm:TableVm}">
-                <p:MdTablePresenter Table="{Binding}" Style="{DynamicResource Md.Table.Style}"/>
+                <p:MdTablePresenter Table="{Binding}" Style="{DynamicResource Md.Table.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.TableTemplate>
 
         <s:MdStyleProvider.HorizontalRuleTemplate>
             <DataTemplate DataType="{x:Type vm:ThematicBreakVm}">
-                <Separator Margin="{DynamicResource Md.HorizontalRule.Margin}"/>
+                <Separator Margin="{DynamicResource Md.HorizontalRule.Margin}" />
             </DataTemplate>
         </s:MdStyleProvider.HorizontalRuleTemplate>
 
@@ -467,8 +475,8 @@
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
-        <Setter Property="StyleProvider" Value="{DynamicResource Md.DefaultStyleProvider}"/>
-        <Setter Property="ItemTemplateSelector" Value="{DynamicResource Md.TemplateSelector}"/>
+        <Setter Property="StyleProvider" Value="{DynamicResource Md.DefaultStyleProvider}" />
+        <Setter Property="ItemTemplateSelector" Value="{DynamicResource Md.TemplateSelector}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:MarkdownViewer}">
@@ -481,8 +489,8 @@
 
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
 
                             <ItemsPresenter Grid.Column="1" />
@@ -494,7 +502,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="ShowSourceLineNumbers" Value="True">
-                            <Setter TargetName="PART_Gutter" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="PART_Gutter" Property="Visibility" Value="Visible" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

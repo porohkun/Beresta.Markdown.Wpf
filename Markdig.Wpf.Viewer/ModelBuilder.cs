@@ -40,7 +40,7 @@ internal sealed class ModelBuilder
         ModelIdentity? identity = null)
     {
         markdown ??= string.Empty;
-        identity ??= new ModelIdentity();
+        identity ??= new();
 
         var document = Markdown.Parse(markdown, pipeline ?? DefaultPipeline);
         identity.Match(document, markdown);
@@ -106,13 +106,104 @@ internal sealed class ModelBuilder
         return GetSourceText(node.Span);
     }
 
+    private static CodeBlockVm ConvertCodeBlock(CodeBlock block)
+    {
+        var info = (block as FencedCodeBlock)?.Info;
+        return new(info, ParseLanguage(info), GetLeafText(block));
+    }
+
+    private static InlineState ApplyEmphasis(InlineState state, EmphasisInline emphasis)
+    {
+        if (emphasis.DelimiterChar is '*' or '_')
+        {
+            if (emphasis.DelimiterCount >= 2)
+            {
+                state = state with { Bold = true };
+            }
+
+            if ((emphasis.DelimiterCount & 1) == 1)
+            {
+                state = state with { Italic = true };
+            }
+        }
+        else if (emphasis.DelimiterChar == '~' && emphasis.DelimiterCount == 2)
+        {
+            state = state with { Strike = true };
+        }
+
+        return state;
+    }
+
+    private static IReadOnlyList<InlineVm> GetRawLines(LeafBlock leaf)
+    {
+        var inlines = new List<InlineVm>();
+
+        for (var i = 0; i < leaf.Lines.Count; i++)
+        {
+            if (i > 0)
+            {
+                inlines.Add(new LineBreakVm());
+            }
+
+            inlines.Add(new RunVm(leaf.Lines.Lines[i].Slice.ToString()));
+        }
+
+        return inlines;
+    }
+
+    private static List<int> FindLineStarts(string text)
+    {
+        var starts = new List<int> { 0 };
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            var lineEnd = text[i] == '\n'
+                          || (text[i] == '\r' && (i + 1 == text.Length || text[i + 1] != '\n'));
+            if (lineEnd)
+            {
+                starts.Add(i + 1);
+            }
+        }
+
+        return starts;
+    }
+
+    private static string? ParseLanguage(string? infoString)
+    {
+        if (string.IsNullOrWhiteSpace(infoString))
+        {
+            return null;
+        }
+
+        var firstToken = infoString
+            .Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries)
+            .FirstOrDefault();
+
+        return string.IsNullOrWhiteSpace(firstToken) ? null : firstToken;
+    }
+
+    private static string GetLeafText(LeafBlock block)
+    {
+        return block.Lines.ToString().TrimEnd('\r', '\n') ?? string.Empty;
+    }
+
+    private static Uri? TryCreateUri(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out var uri) ? uri : null;
+    }
+
     private IReadOnlyList<BlockVm> ConvertBlock(
         Block block,
         int listDepth)
     {
         foreach (var extension in _extensions)
         {
-            if (extension.ConvertBlock(block, new MdConvertContext(this, listDepth)) is { } custom)
+            if (extension.ConvertBlock(block, new(this, listDepth)) is { } custom)
             {
                 return [Stamp(custom, block)];
             }
@@ -173,12 +264,6 @@ internal sealed class ModelBuilder
         }
 
         return (T)_identity.Reuse(stamped);
-    }
-
-    private static CodeBlockVm ConvertCodeBlock(CodeBlock block)
-    {
-        var info = (block as FencedCodeBlock)?.Info;
-        return new(info, ParseLanguage(info), GetLeafText(block));
     }
 
     private ListVm ConvertList(ListBlock list, int listDepth)
@@ -328,7 +413,7 @@ internal sealed class ModelBuilder
     {
         foreach (var extension in _extensions)
         {
-            if (extension.ConvertInline(node, new MdConvertContext(this, listDepth: 0)) is { } custom)
+            if (extension.ConvertInline(node, new(this, listDepth: 0)) is { } custom)
             {
                 output.Add(Stamp(custom, node));
                 return true;
@@ -336,28 +421,6 @@ internal sealed class ModelBuilder
         }
 
         return false;
-    }
-
-    private static InlineState ApplyEmphasis(InlineState state, EmphasisInline emphasis)
-    {
-        if (emphasis.DelimiterChar is '*' or '_')
-        {
-            if (emphasis.DelimiterCount >= 2)
-            {
-                state = state with { Bold = true };
-            }
-
-            if ((emphasis.DelimiterCount & 1) == 1)
-            {
-                state = state with { Italic = true };
-            }
-        }
-        else if (emphasis.DelimiterChar == '~' && emphasis.DelimiterCount == 2)
-        {
-            state = state with { Strike = true };
-        }
-
-        return state;
     }
 
     private void AddLink(string? url, Inline? firstChild, InlineState state, List<InlineVm> output, Inline node)
@@ -409,23 +472,6 @@ internal sealed class ModelBuilder
         }
     }
 
-    private static IReadOnlyList<InlineVm> GetRawLines(LeafBlock leaf)
-    {
-        var inlines = new List<InlineVm>();
-
-        for (var i = 0; i < leaf.Lines.Count; i++)
-        {
-            if (i > 0)
-            {
-                inlines.Add(new LineBreakVm());
-            }
-
-            inlines.Add(new RunVm(leaf.Lines.Lines[i].Slice.ToString()));
-        }
-
-        return inlines;
-    }
-
     private (int Start, int End) GetLines(Block block)
     {
         var end = block is ContainerBlock { LastChild: { } last }
@@ -473,52 +519,6 @@ internal sealed class ModelBuilder
         return span.Start >= 0 && span.Length > 0 && span.End < _source.Length
             ? _source.Substring(span.Start, span.Length)
             : string.Empty;
-    }
-
-    private static List<int> FindLineStarts(string text)
-    {
-        var starts = new List<int> { 0 };
-
-        for (var i = 0; i < text.Length; i++)
-        {
-            var lineEnd = text[i] == '\n'
-                          || (text[i] == '\r' && (i + 1 == text.Length || text[i + 1] != '\n'));
-            if (lineEnd)
-            {
-                starts.Add(i + 1);
-            }
-        }
-
-        return starts;
-    }
-
-    private static string? ParseLanguage(string? infoString)
-    {
-        if (string.IsNullOrWhiteSpace(infoString))
-        {
-            return null;
-        }
-
-        var firstToken = infoString
-            .Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries)
-            .FirstOrDefault();
-
-        return string.IsNullOrWhiteSpace(firstToken) ? null : firstToken;
-    }
-
-    private static string GetLeafText(LeafBlock block)
-    {
-        return block.Lines.ToString().TrimEnd('\r', '\n') ?? string.Empty;
-    }
-
-    private static Uri? TryCreateUri(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        return Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out var uri) ? uri : null;
     }
 
     private readonly record struct InlineState(

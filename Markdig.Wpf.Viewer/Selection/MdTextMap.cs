@@ -56,7 +56,7 @@ public sealed class MdTextMap
                 return "\n";
             case IMdTextSource source:
                 var builder = new Builder();
-                source.WriteText(new MdTextWriter(builder));
+                source.WriteText(new(builder));
                 return builder.Text.ToString();
             default:
                 return ObjectMark.ToString();
@@ -305,7 +305,7 @@ public sealed class MdTextMap
                     break;
 
                 case IMdTextSource source:
-                    source.WriteText(new MdTextWriter(this));
+                    source.WriteText(new(this));
                     break;
 
                 default:

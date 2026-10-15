@@ -77,7 +77,7 @@ internal sealed class SourcePositions
             return null;
         }
 
-        var panelOffset = _viewer.TranslatePoint(new Point(0, offset), panel).Y;
+        var panelOffset = _viewer.TranslatePoint(new(0, offset), panel).Y;
         var index = Math.Clamp(panel.IndexAtOffset(panelOffset), 0, Math.Min(items.Count, panel.ItemCount) - 1);
 
         if (Deepest(Spans(index).Where(span => span.Bounds.Top <= offset && offset < span.Bounds.Bottom)) is { } best)
@@ -107,8 +107,21 @@ internal sealed class SourcePositions
         return best;
     }
 
+    private static IEnumerable<DependencyObject> Visuals(DependencyObject root)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            yield return child;
+            foreach (var deeper in Visuals(child))
+            {
+                yield return deeper;
+            }
+        }
+    }
+
     private double ToViewer(MdBlockPanel panel, double panelOffset)
-        => panel.TranslatePoint(new Point(0, panelOffset), _viewer).Y;
+        => panel.TranslatePoint(new(0, panelOffset), _viewer).Y;
 
     /// <summary>Созданные элементы блока с известными строками, с их рамками во вьюере.</summary>
     private IEnumerable<(Rect Bounds, double Start, double End, int Depth)> Spans(int index)
@@ -133,14 +146,14 @@ internal sealed class SourcePositions
 
             if (node is FrameworkElement { ActualHeight: > 0 } element && content is NodeVm { Source.IsEmpty: false } model)
             {
-                var bounds = element.TransformToAncestor(_viewer).TransformBounds(new Rect(element.RenderSize));
+                var bounds = element.TransformToAncestor(_viewer).TransformBounds(new(element.RenderSize));
                 yield return (bounds, model.Source.StartLine, model.Source.EndLine + 1, depth);
             }
 
             if (node is CodeBlockPresenter { DataContext: CodeBlockVm code } presenterOfCode
                 && Visuals(presenterOfCode).OfType<MdTextBlock>().FirstOrDefault() is { ActualHeight: > 0 } text)
             {
-                var bounds = text.TransformToAncestor(_viewer).TransformBounds(new Rect(text.RenderSize));
+                var bounds = text.TransformToAncestor(_viewer).TransformBounds(new(text.RenderSize));
                 var first = code.CodeFirstLine;
                 yield return (bounds, first, first + code.Code.Split('\n').Length, depth + 1);
             }
@@ -148,19 +161,6 @@ internal sealed class SourcePositions
             for (var i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++)
             {
                 pending.Push((VisualTreeHelper.GetChild(node, i), depth + 1));
-            }
-        }
-    }
-
-    private static IEnumerable<DependencyObject> Visuals(DependencyObject root)
-    {
-        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
-        {
-            var child = VisualTreeHelper.GetChild(root, i);
-            yield return child;
-            foreach (var deeper in Visuals(child))
-            {
-                yield return deeper;
             }
         }
     }

@@ -53,9 +53,9 @@ internal static class WpfHost
         var thread = new Thread(() =>
         {
             var application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
-            application.Resources.MergedDictionaries.Add(new ResourceDictionary
+            application.Resources.MergedDictionaries.Add(new()
             {
-                Source = new Uri("pack://application:,,,/Markdig.Wpf.Viewer;component/Themes/Generic.xaml")
+                Source = new("pack://application:,,,/Markdig.Wpf.Viewer;component/Themes/Generic.xaml")
             });
 
             dispatcher = Dispatcher.CurrentDispatcher;

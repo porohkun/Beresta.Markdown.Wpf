@@ -264,7 +264,7 @@ public sealed class VirtualizationTests
             if (node is ScrollViewer scroll)
             {
                 var bounds = scroll.TransformToDescendant(panel)
-                    .TransformBounds(new Rect(0, 0, scroll.ActualWidth, scroll.ActualHeight));
+                    .TransformBounds(new(0, 0, scroll.ActualWidth, scroll.ActualHeight));
                 top = Math.Max(top, bounds.Top);
                 bottom = Math.Min(bottom, bounds.Bottom);
             }
@@ -283,7 +283,7 @@ public sealed class VirtualizationTests
             .Select(item =>
             {
                 var container = (FrameworkElement)item.Container;
-                var top = container.TransformToAncestor(panel).Transform(new Point(0, 0)).Y;
+                var top = container.TransformToAncestor(panel).Transform(new(0, 0)).Y;
                 return (item.Index, top, top + container.ActualHeight);
             })
             .ToList();
@@ -317,7 +317,7 @@ public sealed class VirtualizationTests
     private static double TopOf(MarkdownViewer viewer, int index, ScrollViewer scroll)
     {
         var container = (Visual)viewer.ItemContainerGenerator.ContainerFromIndex(index);
-        return container.TransformToAncestor(scroll).Transform(new Point(0, 0)).Y;
+        return container.TransformToAncestor(scroll).Transform(new(0, 0)).Y;
     }
 
     private static string CodeBlock(int index, int lines)

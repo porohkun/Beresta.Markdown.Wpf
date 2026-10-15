@@ -69,7 +69,8 @@ public sealed class WidgetTests
         WpfHost.Invoke(() =>
         {
             var note = TestWidgets.Note();
-            var outer = new LambdaExtension { Block = note.Block, Template = note.Template, State = node => node is TestWidgets.NoteVm ? new ToggleState() : null };
+            var outer = new LambdaExtension
+                { Block = note.Block, Template = note.Template, State = node => node is TestWidgets.NoteVm ? new ToggleState() : null };
             var viewer = new MarkdownViewer { Extensions = [outer, Toggle()], Markdown = ":::note T\ninside\n\n```toggle\n```\n:::" };
             var window = WpfHost.Show(viewer);
 
@@ -115,19 +116,20 @@ public sealed class WidgetTests
     private static DataTemplate StateCheckBox()
     {
         var box = new FrameworkElementFactory(typeof(CheckBox));
-        box.SetBinding(ToggleButton.IsCheckedProperty, new Binding
-        {
-            Path = new PropertyPath("(0).IsOn", MdWidget.StateProperty),
-            RelativeSource = RelativeSource.Self
-        });
+        box.SetBinding(ToggleButton.IsCheckedProperty,
+            new Binding
+            {
+                Path = new("(0).IsOn", MdWidget.StateProperty),
+                RelativeSource = RelativeSource.Self
+            });
 
-        return new DataTemplate { VisualTree = box };
+        return new() { VisualTree = box };
     }
 
     private static LambdaExtension Toggle()
     {
         var template = StateCheckBox();
-        return new LambdaExtension
+        return new()
         {
             Block = (block, _) => block is FencedCodeBlock { Info: "toggle" } ? new ToggleVm() : null,
             Template = item => item is ToggleVm ? template : null,

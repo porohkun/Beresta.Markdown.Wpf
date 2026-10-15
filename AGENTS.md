@@ -13,7 +13,7 @@ NuGet-пакетом `Markdig.Wpf.Viewer` и подключается сабмо
 | [`Markdig.Wpf.Viewer`](Markdig.Wpf.Viewer/AGENTS.md) | `MarkdigWpfViewer` | библиотека: вьюер, разбор, тема по умолчанию; то, что уходит в пакет |
 | [`Markdig.Wpf.Viewer.Demo`](Markdig.Wpf.Viewer.Demo/AGENTS.md) | `MarkdigWpfViewer.Demo` | окно с образцом разметки: минимальное подключение; в пакет не входит |
 | [`Markdig.Wpf.Viewer.Showcase`](Markdig.Wpf.Viewer.Showcase/AGENTS.md) | `MarkdigWpfViewer.Showcase` | витрина на HandyControls: встраивание, темы, сценарии по вкладкам; в пакет не входит |
-| `Markdig.Wpf.Viewer.Tests` | `MarkdigWpfViewer.Tests` | тесты разбора, панели блоков и презентеров; xUnit и FluentAssertions |
+| `Markdig.Wpf.Viewer.Tests` | `MarkdigWpfViewer.Tests` | тесты библиотеки: разбор, панель блоков, выделение, позиции, виджеты; xUnit и FluentAssertions |
 
 ## Зависимости
 

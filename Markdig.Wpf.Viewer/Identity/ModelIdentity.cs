@@ -87,43 +87,7 @@ internal sealed class ModelIdentity
         return model;
     }
 
-    private Entry[] MatchSequence(IReadOnlyList<MarkdownObject> nodes, Entry[] old, string source)
-    {
-        if (nodes.Count == 0)
-        {
-            return NoEntries;
-        }
-
-        var keys = new Key[nodes.Count];
-        for (var i = 0; i < nodes.Count; i++)
-        {
-            keys[i] = KeyOf(nodes[i], source);
-        }
-
-        var matched = Align(old, keys);
-        var entries = new Entry[nodes.Count];
-
-        for (var i = 0; i < nodes.Count; i++)
-        {
-            var id = matched[i] != 0 ? matched[i] : ++_lastId;
-            _ids[nodes[i]] = id;
-            entries[i] = new Entry(keys[i], id);
-
-            var children = ChildrenOf(nodes[i]);
-            if (children.Count > 0)
-            {
-                var oldChildren = matched[i] != 0 && _children.TryGetValue(matched[i], out var known) ? known : NoEntries;
-                _nextChildren[id] = MatchSequence(children, oldChildren, source);
-            }
-        }
-
-        return entries;
-    }
-
-    /// <summary>
-    /// Для каждого нового узла — идентификатор прошлого: общие начало и конец, затем наибольшая
-    /// общая подпоследовательность, а между совпавшими — изменённые на месте узлы того же вида.
-    /// </summary>
+    /// <summary>Идентификаторы прошлых узлов для новых — совпавших текстом и изменённых на своём месте; 0 — новый узел.</summary>
     private static long[] Align(Entry[] old, Key[] keys)
     {
         var matched = new long[keys.Length];
@@ -238,8 +202,41 @@ internal sealed class ModelIdentity
     {
         var span = node.Span;
         return span.IsEmpty || span.Start < 0 || span.End >= source.Length
-            ? new Key(node.GetType(), 0, 0)
+            ? new(node.GetType(), 0, 0)
             : new Key(node.GetType(), span.Length, string.GetHashCode(source.AsSpan(span.Start, span.Length)));
+    }
+
+    private Entry[] MatchSequence(IReadOnlyList<MarkdownObject> nodes, Entry[] old, string source)
+    {
+        if (nodes.Count == 0)
+        {
+            return NoEntries;
+        }
+
+        var keys = new Key[nodes.Count];
+        for (var i = 0; i < nodes.Count; i++)
+        {
+            keys[i] = KeyOf(nodes[i], source);
+        }
+
+        var matched = Align(old, keys);
+        var entries = new Entry[nodes.Count];
+
+        for (var i = 0; i < nodes.Count; i++)
+        {
+            var id = matched[i] != 0 ? matched[i] : ++_lastId;
+            _ids[nodes[i]] = id;
+            entries[i] = new(keys[i], id);
+
+            var children = ChildrenOf(nodes[i]);
+            if (children.Count > 0)
+            {
+                var oldChildren = matched[i] != 0 && _children.TryGetValue(matched[i], out var known) ? known : NoEntries;
+                _nextChildren[id] = MatchSequence(children, oldChildren, source);
+            }
+        }
+
+        return entries;
     }
 
     /// <summary>Вид узла и его текст в исходнике — длиной и свёрткой.</summary>

@@ -30,6 +30,18 @@ public sealed class MdBlockPanel : VirtualizingPanel
         Unloaded += (_, _) => UnwatchScrollViewers();
     }
 
+    /// <summary>Сколько блоков у панели, созданных и нет.</summary>
+    internal int ItemCount => _keys.Length;
+
+    /// <summary>Верх блока в координатах панели — измеренный или оценённый.</summary>
+    internal double GetItemTop(int index) => _offsets[Math.Clamp(index, 0, _offsets.Length - 1)];
+
+    /// <summary>Низ блока в координатах панели.</summary>
+    internal double GetItemBottom(int index) => _offsets[Math.Clamp(index + 1, 0, _offsets.Length - 1)];
+
+    /// <summary>Блок, на который приходится позиция в координатах панели.</summary>
+    internal int IndexAtOffset(double offset) => offset < 0 ? 0 : IndexAt(offset) is var index and >= 0 ? index : _keys.Length - 1;
+
     protected override Size MeasureOverride(Size availableSize)
     {
         // BYDESIGN: обращение к InternalChildren создаёт генератор контейнеров — до него
@@ -86,25 +98,13 @@ public sealed class MdBlockPanel : VirtualizingPanel
         for (var i = 0; i < InternalChildren.Count; i++)
         {
             var child = InternalChildren[i];
-            var index = generator.IndexFromGeneratorPosition(new GeneratorPosition(i, 0));
-            child.Arrange(new Rect(0, _offsets[index], finalSize.Width, child.DesiredSize.Height));
+            var index = generator.IndexFromGeneratorPosition(new(i, 0));
+            child.Arrange(new(0, _offsets[index], finalSize.Width, child.DesiredSize.Height));
         }
 
         FindViewer()?.OnViewportMaybeChanged();
         return finalSize;
     }
-
-    /// <summary>Сколько блоков у панели, созданных и нет.</summary>
-    internal int ItemCount => _keys.Length;
-
-    /// <summary>Верх блока в координатах панели — измеренный или оценённый.</summary>
-    internal double GetItemTop(int index) => _offsets[Math.Clamp(index, 0, _offsets.Length - 1)];
-
-    /// <summary>Низ блока в координатах панели.</summary>
-    internal double GetItemBottom(int index) => _offsets[Math.Clamp(index + 1, 0, _offsets.Length - 1)];
-
-    /// <summary>Блок, на который приходится позиция в координатах панели.</summary>
-    internal int IndexAtOffset(double offset) => offset < 0 ? 0 : IndexAt(offset) is var index and >= 0 ? index : _keys.Length - 1;
 
     protected override void OnIsItemsHostChanged(bool oldIsItemsHost, bool newIsItemsHost)
     {
@@ -128,7 +128,9 @@ public sealed class MdBlockPanel : VirtualizingPanel
         var bottom = _offsets[index + 1];
         var shift = top < viewport.Top || bottom - top > viewport.Bottom - viewport.Top
             ? top - viewport.Top
-            : bottom > viewport.Bottom ? bottom - viewport.Bottom : 0;
+            : bottom > viewport.Bottom
+                ? bottom - viewport.Bottom
+                : 0;
 
         if (shift != 0)
         {
@@ -149,8 +151,8 @@ public sealed class MdBlockPanel : VirtualizingPanel
     }
 
     /// <summary>
-    /// Насколько сдвинулся блок, бывший вверху видимой области в прошлый раз: так новый текст
-    /// выше него не уводит видимое. Прокрутку, которую с тех пор сделал кто-то другой, не трогает.
+    /// Насколько с прошлого раза сдвинулся блок, бывший вверху видимой области; если прокрутку с
+    /// тех пор двигал кто-то другой — ноль.
     /// </summary>
     private double AnchorShift(Viewport viewport)
     {
@@ -355,7 +357,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
                 ? scrollViewer.ActualHeight
                 : SystemParameters.PrimaryScreenHeight;
             var bounds = scrollViewer.TransformToDescendant(this)
-                .TransformBounds(new Rect(0, 0, scrollViewer.ActualWidth, height));
+                .TransformBounds(new(0, 0, scrollViewer.ActualWidth, height));
 
             if (viewport is { } current)
             {
@@ -368,7 +370,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
             else
             {
                 viewport = scrollInfo is ScrollContentPresenter
-                    ? new Viewport(bounds.Top, bounds.Bottom, scrollViewer, scrollInfo)
+                    ? new(bounds.Top, bounds.Bottom, scrollViewer, scrollInfo)
                     : new Viewport(bounds.Top, bounds.Bottom, null, null);
             }
         }

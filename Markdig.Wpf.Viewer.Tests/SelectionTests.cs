@@ -3,6 +3,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Input;
 using System.Windows.Media;
 using Presenters;
 using Selection;
@@ -22,14 +23,14 @@ public sealed class SelectionTests
             {
                 Width = 120,
                 TextWrapping = TextWrapping.Wrap,
-                Runs = [new RunVm("Hello "), new RunVm("bold words", Bold: true), new RunVm(" and a link", Hyperlink: new Uri("https://e.com"))]
+                Runs = [new RunVm("Hello "), new RunVm("bold words", Bold: true), new RunVm(" and a link", Hyperlink: new("https://e.com"))]
             };
             var window = WpfHost.Show(block);
 
             for (var offset = 0; offset < 27; offset++)
             {
                 var rect = block.GetRangeRects(offset, offset + 1).First();
-                block.HitTestLocal(new Point(rect.Left + 0.5, rect.Top + rect.Height / 2)).Should().Be(offset, $"знак {offset}");
+                block.HitTestLocal(new(rect.Left + 0.5, rect.Top + rect.Height / 2)).Should().Be(offset, $"знак {offset}");
             }
 
             window.Close();
@@ -140,7 +141,7 @@ public sealed class SelectionTests
             var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
             var window = WpfHost.Show(viewer);
 
-            viewer.Decorations = [new MdDecoration(new MdTextRange(0, 5), Brushes.Yellow)];
+            viewer.Decorations = [new(new(0, 5), Brushes.Yellow)];
             viewer.Select(2, 10);
             WpfHost.Settle(window);
 
@@ -197,7 +198,7 @@ public sealed class SelectionTests
             var window = WpfHost.Show(scroll);
 
             viewer.Selection.Press(PointOf(viewer, 0), extend: false);
-            var below = scroll.TranslatePoint(new Point(20, scroll.ActualHeight + 40), viewer);
+            var below = scroll.TranslatePoint(new(20, scroll.ActualHeight + 40), viewer);
             viewer.Selection.Drag(below);
             var before = viewer.SelectionLength;
 
@@ -235,11 +236,11 @@ public sealed class SelectionTests
             var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
             var window = WpfHost.Show(viewer);
 
-            System.Windows.Input.ApplicationCommands.Copy.CanExecute(null, viewer).Should().BeFalse();
-            System.Windows.Input.ApplicationCommands.SelectAll.Execute(null, viewer);
+            ApplicationCommands.Copy.CanExecute(null, viewer).Should().BeFalse();
+            ApplicationCommands.SelectAll.Execute(null, viewer);
 
             viewer.SelectionLength.Should().Be(viewer.TextMap.Length);
-            System.Windows.Input.ApplicationCommands.Copy.CanExecute(null, viewer).Should().BeTrue();
+            ApplicationCommands.Copy.CanExecute(null, viewer).Should().BeTrue();
             window.Close();
         });
     }
@@ -276,7 +277,7 @@ public sealed class SelectionTests
 
             var container = (FrameworkElement)viewer.ItemContainerGenerator.ContainerFromIndex(3000);
             container.Should().NotBeNull();
-            var top = container.TransformToAncestor(scroll).Transform(new Point(0, 0)).Y;
+            var top = container.TransformToAncestor(scroll).Transform(new(0, 0)).Y;
             top.Should().BeInRange(0, scroll.ViewportHeight);
             window.Close();
         });
@@ -289,7 +290,7 @@ public sealed class SelectionTests
             if (text.TryGetMapRange(out var range) && offset >= range.Start && offset < range.End)
             {
                 var rect = text.GetRangeRects(offset - range.Start, offset - range.Start + 1).First();
-                return text.TranslatePoint(new Point(rect.Left + 0.5, rect.Top + rect.Height / 2), viewer);
+                return text.TranslatePoint(new(rect.Left + 0.5, rect.Top + rect.Height / 2), viewer);
             }
         }
 
