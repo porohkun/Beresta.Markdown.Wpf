@@ -1,0 +1,44 @@
+﻿<hc:Window x:Class="MarkdigWpfViewer.Showcase.MainWindow"
+           xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+           xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+           xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+           xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+           xmlns:hc="https://handyorg.github.io/handycontrol"
+           xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
+           xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase"
+           mc:Ignorable="d"
+           d:DataContext="{d:DesignInstance local:MainWindowViewModel, IsDesignTimeCreatable=True}"
+           Title="Markdig.Wpf.Viewer — витрина"
+           Width="1000"
+           Height="800"
+           Background="{DynamicResource RegionBrush}">
+    <hc:Window.DataContext>
+        <local:MainWindowViewModel />
+    </hc:Window.DataContext>
+
+    <DockPanel>
+        <!-- Панель настроек -->
+        <StackPanel DockPanel.Dock="Top"
+                    Orientation="Horizontal"
+                    Margin="12,8">
+            <CheckBox Content="Тёмная тема"
+                      IsChecked="{Binding IsDark}" />
+        </StackPanel>
+
+        <TabControl x:Name="Scenarios">
+            <TabItem Header="Документ">
+                <ScrollViewer>
+                    <mdv:MarkdownViewer Markdown="{Binding Document}"
+                                        Margin="24,16" />
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Большой документ">
+                <ScrollViewer>
+                    <mdv:MarkdownViewer Markdown="{Binding LargeDocument}"
+                                        Margin="24,16" />
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</hc:Window>

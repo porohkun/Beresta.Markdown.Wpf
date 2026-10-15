@@ -9,6 +9,7 @@
     <File Path="ROADMAP.md" />
   </Folder>
   <Project Path="Markdig.Wpf.Viewer.Demo/Markdig.Wpf.Viewer.Demo.csproj" Id="e03eab19-4b93-4d48-a2a9-8f0d77f15f11" />
+  <Project Path="Markdig.Wpf.Viewer.Showcase/Markdig.Wpf.Viewer.Showcase.csproj" />
   <Project Path="Markdig.Wpf.Viewer.Tests/Markdig.Wpf.Viewer.Tests.csproj" />
   <Project Path="Markdig.Wpf.Viewer/Markdig.Wpf.Viewer.csproj" />
 </Solution>

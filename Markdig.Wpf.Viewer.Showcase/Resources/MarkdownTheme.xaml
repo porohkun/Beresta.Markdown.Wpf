@@ -1,0 +1,24 @@
+﻿<!-- Ключи вьюера от цветов HandyControl -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Текст и ссылки -->
+    <SolidColorBrush x:Key="Md.Paragraph.Foreground" Color="{DynamicResource PrimaryTextColor}" />
+    <SolidColorBrush x:Key="Md.Heading.Foreground" Color="{DynamicResource PrimaryTextColor}" />
+    <SolidColorBrush x:Key="Md.Paragraph.LinkForeground" Color="{DynamicResource PrimaryColor}" />
+    <SolidColorBrush x:Key="Md.Heading.LinkForeground" Color="{DynamicResource PrimaryColor}" />
+
+    <!-- Код -->
+    <SolidColorBrush x:Key="Md.InlineCode.Background" Color="{DynamicResource SecondaryRegionColor}" />
+    <SolidColorBrush x:Key="Md.InlineCode.Foreground" Color="{DynamicResource DangerColor}" />
+    <SolidColorBrush x:Key="Md.InlineCode.BorderBrush" Color="{DynamicResource BorderColor}" />
+    <SolidColorBrush x:Key="Md.CodeBlock.Background" Color="{DynamicResource SecondaryRegionColor}" />
+    <SolidColorBrush x:Key="Md.CodeBlock.Foreground" Color="{DynamicResource PrimaryTextColor}" />
+    <SolidColorBrush x:Key="Md.CodeBlock.BorderBrush" Color="{DynamicResource BorderColor}" />
+
+    <!-- Цитата и таблица -->
+    <SolidColorBrush x:Key="Md.Quote.BorderBrush" Color="{DynamicResource PrimaryColor}" />
+    <SolidColorBrush x:Key="Md.Table.BorderBrush" Color="{DynamicResource BorderColor}" />
+    <SolidColorBrush x:Key="Md.Table.HeaderBackground" Color="{DynamicResource SecondaryRegionColor}" />
+
+</ResourceDictionary>
