@@ -81,6 +81,12 @@
     <Thickness    x:Key="Md.Table.CellPadding">8,4</Thickness>
     <Brush        x:Key="Md.Table.HeaderBackground">#dfdfdf</Brush>
 
+    <!-- ======== Md.HorizontalRule ======== -->
+    <Thickness    x:Key="Md.HorizontalRule.Margin">28,0,28,14</Thickness>
+
+    <!-- ======== Md.BlankLine ======== -->
+    <sys:Double   x:Key="Md.BlankLine.Height">14</sys:Double>
+
     <Style x:Key="Md.Paragraph.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}">
         <Setter Property="FontSize" Value="{DynamicResource Md.InlineCode.FontSize}" />
         <Setter Property="FontFamily" Value="{DynamicResource Md.InlineCode.FontFamily}" />
@@ -135,7 +141,7 @@
         <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Paragraph.InlineCodeStyle}"/>
     </Style>
 
-    <Style x:Key="Md.Heading.Style" TargetType="{x:Type p:MdTextBlock}">
+    <Style x:Key="Md.Heading.Style" TargetType="{x:Type p:MdHeadingBlock}">
         <Setter Property="FontFamily" Value="{DynamicResource Md.Heading.FontFamily}" />
         <Setter Property="Foreground" Value="{DynamicResource Md.Heading.Foreground}" />
         <Setter Property="LinkForeground" Value="{DynamicResource Md.Heading.LinkForeground}" />
@@ -146,36 +152,36 @@
         <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading6.InlineCodeStyle}"/>
 
         <Style.Triggers>
-            <DataTrigger Binding="{Binding Level}" Value="1">
+            <Trigger Property="Level" Value="1">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading1.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading1.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading1.FontWeight}" />
                 <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading1.InlineCodeStyle}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding Level}" Value="2">
+            </Trigger>
+            <Trigger Property="Level" Value="2">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading2.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading2.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading2.FontWeight}" />
                 <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading2.InlineCodeStyle}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding Level}" Value="3">
+            </Trigger>
+            <Trigger Property="Level" Value="3">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading3.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading3.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading3.FontWeight}" />
                 <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading3.InlineCodeStyle}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding Level}" Value="4">
+            </Trigger>
+            <Trigger Property="Level" Value="4">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading4.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading4.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading4.FontWeight}" />
                 <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading4.InlineCodeStyle}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding Level}" Value="5">
+            </Trigger>
+            <Trigger Property="Level" Value="5">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading5.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading5.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading5.FontWeight}" />
                 <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading5.InlineCodeStyle}"/>
-            </DataTrigger>
+            </Trigger>
         </Style.Triggers>
     </Style>
 
@@ -316,7 +322,7 @@
 
         <s:MdStyleProvider.HeadingTemplate>
             <DataTemplate DataType="{x:Type vm:HeadingVm}">
-                <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Heading.Style}"/>
+                <p:MdHeadingBlock Level="{Binding Level}" Runs="{Binding Inlines}" Style="{DynamicResource Md.Heading.Style}"/>
             </DataTemplate>
         </s:MdStyleProvider.HeadingTemplate>
 
@@ -346,13 +352,13 @@
 
         <s:MdStyleProvider.HorizontalRuleTemplate>
             <DataTemplate DataType="{x:Type vm:ThematicBreakVm}">
-                <Separator Margin="28,0,28,14"/>
+                <Separator Margin="{DynamicResource Md.HorizontalRule.Margin}"/>
             </DataTemplate>
         </s:MdStyleProvider.HorizontalRuleTemplate>
 
         <s:MdStyleProvider.BlankLineTemplate>
             <DataTemplate DataType="{x:Type vm:BlankLineVm}">
-                <Border Height="14" Background="Transparent" />
+                <Border Height="{DynamicResource Md.BlankLine.Height}" Background="Transparent" />
             </DataTemplate>
         </s:MdStyleProvider.BlankLineTemplate>
 
@@ -362,12 +368,13 @@
         <Setter Property="ItemsPanel">
             <Setter.Value>
                 <ItemsPanelTemplate>
-                    <VirtualizingStackPanel Orientation="Vertical"/>
+                    <p:MdBlockPanel />
                 </ItemsPanelTemplate>
             </Setter.Value>
         </Setter>
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="0" />
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
         <Setter Property="StyleProvider" Value="{DynamicResource Md.DefaultStyleProvider}"/>
         <Setter Property="ItemTemplateSelector" Value="{DynamicResource Md.TemplateSelector}"/>
         <Setter Property="Template">

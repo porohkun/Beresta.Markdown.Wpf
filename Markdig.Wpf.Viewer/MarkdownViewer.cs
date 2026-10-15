@@ -1,6 +1,5 @@
 ﻿namespace MarkdigWpfViewer;
 
-using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using Abstractions;
@@ -29,16 +28,9 @@ public sealed class MarkdownViewer : ItemsControl
             typeof(MarkdownViewer),
             new(null, OnStyleProviderChanged));
 
-    private readonly ObservableCollection<IMdBlockVm> _blocks = new();
-
     static MarkdownViewer()
     {
         DefaultStyleKeyProperty.OverrideMetadata(typeof(MarkdownViewer), new FrameworkPropertyMetadata(typeof(MarkdownViewer)));
-    }
-
-    public MarkdownViewer()
-    {
-        ItemsSource = _blocks;
     }
 
     public string? Markdown
@@ -67,13 +59,8 @@ public sealed class MarkdownViewer : ItemsControl
 
     private void Rebuild()
     {
-        _blocks.Clear();
-
-        if (StyleProvider is null)
-            return;
-
-        var parsed = ModelBuilder.Parse(Markdown ?? string.Empty);
-        foreach (var block in parsed)
-            _blocks.Add(block);
+        ItemsSource = StyleProvider is null
+            ? Array.Empty<IMdBlockVm>()
+            : ModelBuilder.Parse(Markdown ?? string.Empty, MarkdownPipeline);
     }
 }

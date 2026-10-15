@@ -1,6 +1,5 @@
 ﻿namespace MarkdigWpfViewer;
 
-using System.Text;
 using Abstractions;
 using Markdig;
 using Markdig.Extensions.Tables;
@@ -8,97 +7,96 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using ViewModels;
 
-internal static class ModelBuilder
+internal sealed class ModelBuilder
 {
     private static readonly MarkdownPipeline DefaultPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .Build();
 
+    private static readonly string[] Bullets = ["•", "◦", "▪"];
+
+    private readonly string _source;
+    private readonly List<int> _lineStarts;
+
+    private ModelBuilder(string source)
+    {
+        _source = source;
+        _lineStarts = FindLineStarts(source);
+    }
+
     public static IReadOnlyList<IMdBlockVm> Parse(
         string markdown,
         MarkdownPipeline? pipeline = null)
     {
-        pipeline ??= DefaultPipeline;
         markdown ??= string.Empty;
 
-        var result = new List<IMdBlockVm>();
-
-        foreach (var segment in SplitIntoSegments(markdown))
-        {
-            if (segment.IsBlank)
-            {
-                result.Add(new BlankLineVm());
-                continue;
-            }
-
-            var document = Markdown.Parse(segment.Text!, pipeline);
-            result.AddRange(ConvertBlocks(document, depth: 0));
-        }
-
-        return result;
+        var document = Markdown.Parse(markdown, pipeline ?? DefaultPipeline);
+        return new ModelBuilder(markdown).ConvertBlocks(document, listDepth: 0);
     }
 
-    private static IReadOnlyList<IMdBlockVm> ConvertBlocks(
+    private List<IMdBlockVm> ConvertBlocks(
         ContainerBlock container,
-        int depth)
+        int listDepth)
     {
         var blocks = new List<IMdBlockVm>();
+        int? previousEnd = null;
 
-        foreach (var obj in container)
+        foreach (var child in container)
         {
-            if (obj == null)
-                continue;
-
-            var converted = ConvertBlock(obj, depth);
-            if (converted is not null)
+            var converted = ConvertBlock(child, listDepth);
+            if (converted.Count == 0)
             {
-                blocks.Add(converted);
+                continue;
             }
+
+            var (start, end) = GetLines(child);
+            if (previousEnd is { } previous)
+            {
+                AddBlankLines(blocks, CountBlankLines(previous, start));
+            }
+
+            blocks.AddRange(converted);
+            previousEnd = end;
         }
 
         return blocks;
     }
 
-    private static IMdBlockVm? ConvertBlock(
+    private IReadOnlyList<IMdBlockVm> ConvertBlock(
         Block block,
-        int depth)
+        int listDepth)
     {
         return block switch
         {
-            ParagraphBlock paragraph => new ParagraphVm(ConvertInlines(paragraph.Inline)),
-            HeadingBlock heading => new HeadingVm(heading.Level, ConvertInlines(heading.Inline)),
-            ThematicBreakBlock => new ThematicBreakVm(),
-            FencedCodeBlock fenced => ConvertCodeBlock(fenced),
-            CodeBlock code => ConvertCodeBlock(code),
-            QuoteBlock quote => new QuoteVm(ConvertBlocks(quote, depth + 1)),
-            ListBlock list => ConvertList(list, depth),
-            Table table => ConvertTable(table),
-            _ => null
+            ParagraphBlock paragraph => [new ParagraphVm(ConvertInlines(paragraph.Inline))],
+            HeadingBlock heading => [new HeadingVm(heading.Level, ConvertInlines(heading.Inline))],
+            ThematicBreakBlock => [new ThematicBreakVm()],
+            CodeBlock code => [ConvertCodeBlock(code)],
+            QuoteBlock quote => [new QuoteVm(ConvertBlocks(quote, listDepth))],
+            ListBlock list => [ConvertList(list, listDepth)],
+            Table table => [ConvertTable(table)],
+            LinkReferenceDefinitionGroup or LinkReferenceDefinition => [],
+            ContainerBlock container => ConvertBlocks(container, listDepth),
+            LeafBlock { Inline: not null } leaf => [new ParagraphVm(ConvertInlines(leaf.Inline))],
+            LeafBlock { Lines.Count: > 0 } leaf => [new ParagraphVm(GetRawLines(leaf))],
+            _ => []
         };
     }
 
     private static CodeBlockVm ConvertCodeBlock(CodeBlock block)
     {
-        var code = GetLeafText(block);
-        var info = TryGetStringProperty(block, "InfoString")
-                   ?? TryGetStringProperty(block, "Info");
-
-        var language = ParseLanguage(info);
-        return new(info, language, code);
+        var info = (block as FencedCodeBlock)?.Info;
+        return new(info, ParseLanguage(info), GetLeafText(block));
     }
 
-    private static ListVm ConvertList(ListBlock list, int depth)
+    private ListVm ConvertList(ListBlock list, int listDepth)
     {
-        var ordered = TryGetBoolProperty(list, "IsOrdered")
-                      ?? TryGetBoolProperty(list, "Ordered")
-                      ?? false;
+        var ordered = list.IsOrdered;
+        var start = ordered && int.TryParse(list.OrderedStart, out var number) ? number : 1;
 
-        var start = TryGetIntProperty(list, "StartingNumber")
-                    ?? TryGetIntProperty(list, "Start")
-                    ?? 1;
-
-        var items = new List<ListItemVm>();
-        var index = 0;
+        var markers = new List<string>();
+        var contents = new List<List<IMdBlockVm>>();
+        var previousEnd = 0;
 
         foreach (var child in list)
         {
@@ -107,16 +105,26 @@ internal static class ModelBuilder
                 continue;
             }
 
-            var blocks = ConvertBlocks(item, depth + 1);
-            var markerText = ordered ? $"{start + index}." : "•";
-            items.Add(new(markerText, blocks));
-            index++;
+            var (itemStart, itemEnd) = GetLines(item);
+            if (contents.Count > 0)
+            {
+                AddBlankLines(contents[^1], CountBlankLines(previousEnd, itemStart));
+            }
+
+            var bullet = Bullets[listDepth % Bullets.Length];
+            markers.Add(ordered ? $"{start + markers.Count}{list.OrderedDelimiter}" : bullet);
+            contents.Add(ConvertBlocks(item, listDepth + 1));
+            previousEnd = itemEnd;
         }
 
-        return new(ordered, start, depth, items);
+        var items = markers
+            .Select((marker, index) => new ListItemVm(marker, contents[index]))
+            .ToList();
+
+        return new(ordered, start, listDepth, items);
     }
 
-    private static TableVm ConvertTable(Table table)
+    private TableVm ConvertTable(Table table)
     {
         var rows = new List<TableRowVm>();
         var maxColumns = table.ColumnDefinitions.Count;
@@ -160,7 +168,7 @@ internal static class ModelBuilder
         return new(maxColumns, rows);
     }
 
-    private static IReadOnlyList<InlineVm> GetCellInlines(TableCell cell)
+    private IReadOnlyList<InlineVm> GetCellInlines(TableCell cell)
     {
         var paragraph = cell.Descendants<ParagraphBlock>().FirstOrDefault();
         return paragraph?.Inline is { } inline
@@ -168,149 +176,104 @@ internal static class ModelBuilder
             : [];
     }
 
-    private static IReadOnlyList<InlineVm> ConvertInlines(ContainerInline? container)
+    private IReadOnlyList<InlineVm> ConvertInlines(ContainerInline? container)
     {
         var result = new List<InlineVm>();
-
-        if (container?.FirstChild is not null)
-        {
-            WalkInline(container.FirstChild, new(), result);
-        }
-
+        WalkInline(container?.FirstChild, new(), result);
         return result;
     }
 
-    private static void WalkInline(Inline? current, InlineState state, List<InlineVm> output)
+    private void WalkInline(Inline? current, InlineState state, List<InlineVm> output)
     {
         for (var node = current; node is not null; node = node.NextSibling)
         {
             switch (node)
             {
                 case LiteralInline literal:
-                {
-                    var text = literal.Content.ToString();
-                    if (!string.IsNullOrEmpty(text))
-                    {
-                        output.Add(new(
-                            text,
-                            state.Bold,
-                            state.Italic,
-                            state.Strike,
-                            state.Code,
-                            state.Hyperlink,
-                            Href: state.Href));
-                    }
-
+                    AddText(literal.Content.ToString(), state, output);
                     break;
-                }
 
-                case LineBreakInline lineBreak:
-                {
-                    if (lineBreak.IsHard)
-                    {
-                        output.Add(new(
-                            string.Empty,
-                            state.Bold,
-                            state.Italic,
-                            state.Strike,
-                            state.Code,
-                            state.Hyperlink,
-                            LineBreak: true,
-                            Href: state.Href));
-                    }
-                    else
-                    {
-                        output.Add(new(
-                            " ",
-                            state.Bold,
-                            state.Italic,
-                            state.Strike,
-                            state.Code,
-                            state.Hyperlink,
-                            Href: state.Href));
-                    }
-
-                    break;
-                }
-
-                case CodeInline code:
-                {
+                case LineBreakInline { IsHard: true }:
                     output.Add(new(
-                        code.Content ?? string.Empty,
+                        string.Empty,
                         state.Bold,
                         state.Italic,
                         state.Strike,
-                        Code: true,
-                        Hyperlink: state.Hyperlink,
+                        state.Code,
+                        state.Hyperlink,
+                        LineBreak: true,
                         Href: state.Href));
                     break;
-                }
+
+                case LineBreakInline:
+                    AddText(" ", state, output);
+                    break;
+
+                case CodeInline code:
+                    AddText(code.Content ?? string.Empty, state with { Code = true }, output);
+                    break;
 
                 case AutolinkInline autolink:
-                {
                     AddLink(autolink.Url, autolink, state, output);
                     break;
-                }
-
-                case LinkInline { IsImage: false } link:
-                {
-                    AddLink(link.Url, link.FirstChild, state, output);
-                    break;
-                }
-
-                case EmphasisInline emphasis:
-                {
-                    var childState = state;
-
-                    if (emphasis.DelimiterCount >= 2)
-                    {
-                        childState = childState with { Bold = true };
-                    }
-
-                    if ((emphasis.DelimiterCount & 1) == 1)
-                    {
-                        childState = childState with { Italic = true };
-                    }
-
-                    if (emphasis.FirstChild is not null)
-                    {
-                        WalkInline(emphasis.FirstChild, childState, output);
-                    }
-
-                    break;
-                }
-
-                case ContainerInline { FirstChild: not null } container:
-                {
-                    WalkInline(container.FirstChild, state, output);
-                    break;
-                }
 
                 case HtmlInline html:
-                {
-                    var text = html.ToString();
-                    if (!string.IsNullOrEmpty(text))
-                    {
-                        output.Add(new(
-                            text,
-                            state.Bold,
-                            state.Italic,
-                            state.Strike,
-                            state.Code,
-                            state.Hyperlink,
-                            Href: state.Href));
-                    }
-
+                    AddText(html.Tag, state, output);
                     break;
-                }
+
+                case HtmlEntityInline entity:
+                    AddText(entity.Transcoded.ToString(), state, output);
+                    break;
+
+                case LinkInline { IsImage: false } link:
+                    AddLink(link.Url, link.FirstChild, state, output);
+                    break;
+
+                case EmphasisInline emphasis:
+                    WalkInline(emphasis.FirstChild, ApplyEmphasis(state, emphasis), output);
+                    break;
+
+                case DelimiterInline delimiter:
+                    AddText(delimiter.ToLiteral(), state, output);
+                    WalkInline(delimiter.FirstChild, state, output);
+                    break;
+
+                case ContainerInline container:
+                    WalkInline(container.FirstChild, state, output);
+                    break;
+
+                default:
+                    AddText(GetSourceText(node.Span), state, output);
+                    break;
             }
         }
     }
 
-    private static void AddLink(string? url, Inline? firstChild, InlineState state, List<InlineVm> output)
+    private static InlineState ApplyEmphasis(InlineState state, EmphasisInline emphasis)
     {
-        var uri = TryCreateUri(url);
-        var linkedState = state with { Hyperlink = uri, Href = url };
+        if (emphasis.DelimiterChar is '*' or '_')
+        {
+            if (emphasis.DelimiterCount >= 2)
+            {
+                state = state with { Bold = true };
+            }
+
+            if ((emphasis.DelimiterCount & 1) == 1)
+            {
+                state = state with { Italic = true };
+            }
+        }
+        else if (emphasis.DelimiterChar == '~' && emphasis.DelimiterCount == 2)
+        {
+            state = state with { Strike = true };
+        }
+
+        return state;
+    }
+
+    private void AddLink(string? url, Inline? firstChild, InlineState state, List<InlineVm> output)
+    {
+        var linkedState = state with { Hyperlink = TryCreateUri(url), Href = url };
 
         if (firstChild is not null)
         {
@@ -320,8 +283,124 @@ internal static class ModelBuilder
 
         if (!string.IsNullOrWhiteSpace(url))
         {
-            output.Add(new(url, state.Bold, state.Italic, state.Strike, state.Code, uri, Href: url));
+            AddText(url, linkedState, output);
         }
+    }
+
+    private static void AddText(string text, InlineState state, List<InlineVm> output)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        output.Add(new(
+            text,
+            state.Bold,
+            state.Italic,
+            state.Strike,
+            state.Code,
+            state.Hyperlink,
+            Href: state.Href));
+    }
+
+    private static void AddBlankLines(List<IMdBlockVm> blocks, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            blocks.Add(new BlankLineVm());
+        }
+    }
+
+    private static IReadOnlyList<InlineVm> GetRawLines(LeafBlock leaf)
+    {
+        var inlines = new List<InlineVm>();
+
+        for (var i = 0; i < leaf.Lines.Count; i++)
+        {
+            if (i > 0)
+            {
+                inlines.Add(new(string.Empty, LineBreak: true));
+            }
+
+            inlines.Add(new(leaf.Lines.Lines[i].Slice.ToString()));
+        }
+
+        return inlines;
+    }
+
+    private (int Start, int End) GetLines(Block block)
+    {
+        var end = block is ContainerBlock { LastChild: { } last }
+            ? GetLines(last).End
+            : GetLineAt(block.Span.End);
+
+        return (block.Line, Math.Max(block.Line, end));
+    }
+
+    private int CountBlankLines(int afterLine, int beforeLine)
+    {
+        var count = 0;
+
+        for (var line = afterLine + 1; line < beforeLine && line < _lineStarts.Count; line++)
+        {
+            if (IsBlankLine(line))
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private bool IsBlankLine(int line)
+    {
+        var end = line + 1 < _lineStarts.Count ? _lineStarts[line + 1] : _source.Length;
+
+        for (var i = _lineStarts[line]; i < end; i++)
+        {
+            if (_source[i] is not (' ' or '\t' or '>' or '\r' or '\n'))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private int GetLineAt(int position)
+    {
+        if (position < 0)
+        {
+            return 0;
+        }
+
+        var index = _lineStarts.BinarySearch(position);
+        return index >= 0 ? index : ~index - 1;
+    }
+
+    private string GetSourceText(SourceSpan span)
+    {
+        return span.Start >= 0 && span.Length > 0 && span.End < _source.Length
+            ? _source.Substring(span.Start, span.Length)
+            : string.Empty;
+    }
+
+    private static List<int> FindLineStarts(string text)
+    {
+        var starts = new List<int> { 0 };
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            var lineEnd = text[i] == '\n'
+                          || (text[i] == '\r' && (i + 1 == text.Length || text[i + 1] != '\n'));
+            if (lineEnd)
+            {
+                starts.Add(i + 1);
+            }
+        }
+
+        return starts;
     }
 
     private static string? ParseLanguage(string? infoString)
@@ -353,57 +432,6 @@ internal static class ModelBuilder
         return Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out var uri) ? uri : null;
     }
 
-    private static bool? TryGetBoolProperty(object obj, string name)
-        => obj.GetType().GetProperty(name)?.GetValue(obj) as bool?;
-
-    private static int? TryGetIntProperty(object obj, string name)
-        => obj.GetType().GetProperty(name)?.GetValue(obj) as int?;
-
-    private static string? TryGetStringProperty(object obj, string name)
-        => obj.GetType().GetProperty(name)?.GetValue(obj) as string;
-
-    private static IReadOnlyList<MarkdownSegment> SplitIntoSegments(string markdown)
-    {
-        var segments = new List<MarkdownSegment>();
-        var sb = new StringBuilder();
-        var lines = markdown.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
-
-        var inFence = false;
-
-        foreach (var line in lines)
-        {
-            var trimmed = line.TrimStart();
-            var isFence = trimmed.StartsWith("```", StringComparison.Ordinal)
-                          || trimmed.StartsWith("~~~", StringComparison.Ordinal);
-
-            if (isFence)
-            {
-                inFence = !inFence;
-            }
-
-            if (!inFence && string.IsNullOrWhiteSpace(line))
-            {
-                if (sb.Length > 0)
-                {
-                    segments.Add(new(sb.ToString(), false));
-                    sb.Clear();
-                }
-
-                segments.Add(new(null, true));
-                continue;
-            }
-
-            sb.AppendLine(line);
-        }
-
-        if (sb.Length > 0)
-        {
-            segments.Add(new(sb.ToString(), false));
-        }
-
-        return segments;
-    }
-
     private readonly record struct InlineState(
         bool Bold = false,
         bool Italic = false,
@@ -411,6 +439,4 @@ internal static class ModelBuilder
         bool Code = false,
         Uri? Hyperlink = null,
         string? Href = null);
-
-    private readonly record struct MarkdownSegment(string? Text, bool IsBlank);
 }

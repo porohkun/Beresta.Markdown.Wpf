@@ -9,7 +9,7 @@ public sealed class MdHeadingBlock : MdTextBlock
             nameof(Level),
             typeof(int),
             typeof(MdHeadingBlock),
-            new FrameworkPropertyMetadata(1, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
+            new FrameworkPropertyMetadata(1));
 
     public int Level
     {

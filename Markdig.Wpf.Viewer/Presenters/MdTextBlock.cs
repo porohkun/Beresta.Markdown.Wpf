@@ -30,6 +30,8 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
+    private static readonly string[] ExternalSchemes = [Uri.UriSchemeHttp, Uri.UriSchemeHttps, Uri.UriSchemeMailto];
+
     public MdTextBlock()
     {
         Rebuild();
@@ -53,7 +55,7 @@ public class MdTextBlock : TextBlock
         set => SetValue(InlineCodeStyleProperty, value);
     }
 
-    protected static void OnAnyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    private static void OnAnyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MdTextBlock)d).Rebuild();
 
     private static Span Wrap(Inline inner, Action<Span> configure)
@@ -65,20 +67,20 @@ public class MdTextBlock : TextBlock
     }
 
     /// <summary>
-    /// Ссылка наружу — системным обработчиком. Адрес отдаётся исходной строкой, а не через
-    /// <see cref="Uri"/>: <c>www.example.com</c> оболочка открывает браузером, а нормализация
-    /// такого адреса ничего не добавляет.
+    /// Ссылка наружу — системным обработчиком. Открываются только адреса веба и почты;
+    /// <c>www.example.com</c> без схемы считается адресом веба.
     /// </summary>
     private static void OpenExternal(string href)
     {
-        if (string.IsNullOrWhiteSpace(href))
+        var target = href.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? "http://" + href : href;
+        if (!Uri.TryCreate(target, UriKind.Absolute, out var uri) || !ExternalSchemes.Contains(uri.Scheme))
         {
             return;
         }
 
         try
         {
-            Process.Start(new ProcessStartInfo(href) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
         }
         catch
         {
@@ -115,11 +117,7 @@ public class MdTextBlock : TextBlock
             return;
         }
 
-        Inline current = new Run(inline.Text ?? string.Empty)
-        {
-            FontFamily = FontFamily,
-            FontSize = FontSize
-        };
+        Inline current = new Run(inline.Text ?? string.Empty);
 
         if (inline.Strike)
         {
@@ -141,8 +139,6 @@ public class MdTextBlock : TextBlock
             var link = new Hyperlink
             {
                 NavigateUri = inline.Hyperlink,
-                FontFamily = FontFamily,
-                FontSize = FontSize,
                 Foreground = LinkForeground
             };
 
