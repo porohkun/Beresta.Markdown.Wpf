@@ -132,7 +132,7 @@ public sealed class MarkdownViewer : ItemsControl
     private MarkdownPipeline? _pipeline;
     private bool _templatesChanged;
     private bool _viewportNotificationQueued;
-    private (double Line, double Fraction, int Attempts)? _pendingScroll;
+    private (Func<bool> Step, int Attempts)? _pendingScroll;
 
     static MarkdownViewer()
     {
@@ -290,16 +290,20 @@ public sealed class MarkdownViewer : ItemsControl
     /// <paramref name="viewportFraction"/> её высоты. Прокрутка должна быть попиксельной.
     /// </summary>
     public bool ScrollToSourceLine(double line, double viewportFraction = 0)
-    {
-        if (!ScrollToSourceLineOnce(line, viewportFraction))
-        {
-            return false;
-        }
+        => StartScroll(() => ScrollToSourceLineOnce(line, viewportFraction));
 
-        _pendingScroll = (line, viewportFraction, 3);
-        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, RefineScroll);
-        return true;
-    }
+    /// <summary>
+    /// Прокручивает прокрутку, в которой стоит вьюер, так, чтобы начало куска текстовой карты встало
+    /// в долю <paramref name="viewportFraction"/> её высоты; кусок может лежать и в несозданных блоках.
+    /// </summary>
+    public bool ScrollToRange(MdTextRange range, double viewportFraction = 0)
+        => StartScroll(() => ScrollToRangeOnce(range, viewportFraction));
+
+    /// <summary>
+    /// Позиция в текстовой карте для точки в координатах вьюера; с <paramref name="snapToText"/> —
+    /// у ближайшего текста, без него вне текста — <c>null</c>.
+    /// </summary>
+    public int? GetPositionFromPoint(Point point, bool snapToText) => Selection.FindOffset(point, snapToText);
 
     /// <summary>Прямоугольники куска текстовой карты в координатах вьюера; есть только у созданных блоков.</summary>
     public IReadOnlyList<Rect> GetRangeRects(MdTextRange range)
@@ -505,19 +509,53 @@ public sealed class MarkdownViewer : ItemsControl
             return false;
         }
 
+        ScrollTo(scroller, offset, viewportFraction);
+        return true;
+    }
+
+    /// <summary>Созданное начало куска — точно по его прямоугольнику, несозданное — по строке исходника.</summary>
+    private bool ScrollToRangeOnce(MdTextRange range, double viewportFraction)
+    {
+        if (Scrollers.Nearest(this) is not { } scroller)
+        {
+            return false;
+        }
+
+        if (GetRangeRects(new(range.Start, 1)) is [var head, ..])
+        {
+            ScrollTo(scroller, head.Top, viewportFraction);
+            return true;
+        }
+
+        return TextMap.SourceLineOf(range.Start) is { } line && ScrollToSourceLineOnce(line, viewportFraction);
+    }
+
+    /// <summary>Сдвигает прокрутку так, чтобы позиция вьюера встала в долю её высоты.</summary>
+    private void ScrollTo(ScrollViewer scroller, double offset, double viewportFraction)
+    {
         var position = TranslatePoint(new(0, offset), scroller).Y;
         var shift = position - viewportFraction * scroller.ViewportHeight;
         if (Math.Abs(shift) >= 0.5)
         {
             scroller.ScrollToVerticalOffset(scroller.VerticalOffset + shift);
         }
+    }
 
+    private bool StartScroll(Func<bool> step)
+    {
+        if (!step())
+        {
+            return false;
+        }
+
+        _pendingScroll = (step, 3);
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, RefineScroll);
         return true;
     }
 
     /// <summary>
-    /// После прокрутки созданные блоки уточняют свои высоты, и строка съезжает — прокрутка
-    /// повторяется, пока строка не встанет на место.
+    /// После прокрутки созданные блоки уточняют свои высоты, и цель съезжает — прокрутка
+    /// повторяется, пока цель не встанет на место.
     /// </summary>
     private void RefineScroll()
     {
@@ -527,7 +565,7 @@ public sealed class MarkdownViewer : ItemsControl
         }
 
         _pendingScroll = null;
-        if (pending.Attempts > 0 && ScrollToSourceLineOnce(pending.Line, pending.Fraction))
+        if (pending.Attempts > 0 && pending.Step())
         {
             _pendingScroll = pending with { Attempts = pending.Attempts - 1 };
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, RefineScroll);
@@ -576,10 +614,15 @@ public sealed class MarkdownViewer : ItemsControl
 
     /// <summary>
     /// Новый текст ложится правками: блок с прежним идентификатором остаётся в своём контейнере.
-    /// Сменились шаблоны — контейнеры создаются заново.
+    /// Сменились шаблоны — контейнеры создаются заново. Выделение переходит вместе со своими
+    /// блоками; блок исчез — выделение снимается.
     /// </summary>
     private void Rebuild()
     {
+        var selected = Selection is { Range.IsEmpty: false } selection
+            ? (Anchor: TextMap.Locate(selection.Ends.Anchor), Active: TextMap.Locate(selection.Ends.Active))
+            : default;
+
         var blocks = StyleProvider is null
             ? Array.Empty<BlockVm>()
             : ModelBuilder.Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions, _identity);
@@ -594,7 +637,15 @@ public sealed class MarkdownViewer : ItemsControl
             Items.Refresh();
         }
 
-        Selection?.Reset();
+        if (selected is ({ } anchor, { } active) && TextMap.Find(anchor) is { } start && TextMap.Find(active) is { } end)
+        {
+            Selection!.Restore(start, end);
+        }
+        else
+        {
+            Selection?.Reset();
+        }
+
         Gutter?.InvalidateMeasure();
         Gutter?.InvalidateVisual();
     }

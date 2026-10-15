@@ -491,7 +491,7 @@ public sealed class SelectionTests
     }
 
     [Fact]
-    public void Новый_текст_сбрасывает_выделение()
+    public void Выделение_в_исчезнувшем_блоке_снимается()
     {
         WpfHost.Invoke(() =>
         {
@@ -502,6 +502,40 @@ public sealed class SelectionTests
             viewer.Markdown = "other";
 
             viewer.SelectionLength.Should().Be(0);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Выделение_переживает_дописанный_текст()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
+            var window = WpfHost.Show(viewer);
+            viewer.Select(viewer.TextMap.Text.IndexOf("second", StringComparison.Ordinal), 6);
+
+            viewer.Markdown = ThreeParagraphs + " and more\n\nfourth paragraph";
+
+            viewer.SelectedText.Should().Be("second");
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Выделение_переезжает_вместе_со_своим_блоком()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ThreeParagraphs };
+            var window = WpfHost.Show(viewer);
+            var third = viewer.TextMap.Text.IndexOf("third", StringComparison.Ordinal);
+            viewer.Select(third, 5);
+
+            viewer.Markdown = "inserted above\n\n" + ThreeParagraphs;
+
+            viewer.SelectedText.Should().Be("third");
+            viewer.SelectionStart.Should().BeGreaterThan(third);
             window.Close();
         });
     }
@@ -537,17 +571,5 @@ public sealed class SelectionTests
            && Math.Abs(actual.Width - expected.Width) < 0.01
            && Math.Abs(actual.Height - expected.Height) < 0.01;
 
-    private static Point PointOf(MarkdownViewer viewer, int offset)
-    {
-        foreach (var text in Visuals.Descendants<MdTextBlock>(viewer))
-        {
-            if (text.TryGetMapRange(out var range) && offset >= range.Start && offset < range.End)
-            {
-                var rect = text.GetRangeRects(offset - range.Start, offset - range.Start + 1).First();
-                return text.TranslatePoint(new(rect.Left + 0.5, rect.Top + rect.Height / 2), viewer);
-            }
-        }
-
-        throw new InvalidOperationException($"Знак {offset} не найден среди созданных блоков.");
-    }
+    private static Point PointOf(MarkdownViewer viewer, int offset) => Visuals.PointOf(viewer, offset);
 }

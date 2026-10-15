@@ -172,6 +172,67 @@ public sealed class MdTextMap
         return end >= start ? new MdTextRange(start, end - start) : null;
     }
 
+    /// <summary>
+    /// Строка исходника, на которой стоит позиция карты: по инлайну, в блоке кода — по строке кода;
+    /// <c>null</c> — позиции нет ни в одном блоке или строка неизвестна.
+    /// </summary>
+    public int? SourceLineOf(int position)
+    {
+        if (Innermost(position, _ => true) is not { Block: var block })
+        {
+            return null;
+        }
+
+        switch (block)
+        {
+            case ParagraphVm paragraph when LineIn(paragraph.Inlines, position) is { } line:
+                return line;
+
+            case HeadingVm heading when LineIn(heading.Inlines, position) is { } line:
+                return line;
+
+            case CodeBlockVm code when TryGetRange(code.Runs, out var codeRange):
+                var before = Math.Clamp(position - codeRange.Start, 0, code.Code.Length);
+                return code.CodeFirstLine + code.Code.AsSpan(0, before).Count('\n');
+
+            case TableVm table:
+                foreach (var row in table.Rows)
+                {
+                    foreach (var cell in row.Cells)
+                    {
+                        if (TryGetRange(cell.Inlines, out var cellRange) && cellRange.Start <= position && position <= cellRange.End)
+                        {
+                            return LineIn(cell.Inlines, position) ?? (row.Source.IsEmpty ? null : row.Source.StartLine);
+                        }
+                    }
+                }
+
+                break;
+        }
+
+        return block.Source.IsEmpty ? null : block.Source.StartLine;
+    }
+
+    /// <summary>Место позиции относительно самого глубокого блока с идентификатором — чтобы найти его в карте нового текста.</summary>
+    internal (long NodeId, int Offset)? Locate(int position)
+        => Innermost(position, block => block.NodeId != 0) is { } found
+            ? (found.Block.NodeId, position - found.Range.Start)
+            : null;
+
+    /// <summary>Позиция в этой карте для места из карты прошлого текста; блока больше нет — <c>null</c>.</summary>
+    internal int? Find((long NodeId, int Offset) place)
+    {
+        foreach (var (block, range) in _blocks)
+        {
+            if (block.NodeId == place.NodeId)
+            {
+                return range.Start + Math.Clamp(place.Offset, 0, range.Length);
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>Текст куска для копирования: неделимые — своим текстом для копирования или ничем.</summary>
     public string GetText(MdTextRange range)
     {
@@ -198,6 +259,47 @@ public sealed class MdTextMap
         }
 
         return text.ToString();
+    }
+
+    /// <summary>
+    /// Самый глубокий подходящий блок, в куске которого стоит позиция, считая его конец; вложенные
+    /// блоки идут в списке после своих контейнеров.
+    /// </summary>
+    private (BlockVm Block, MdTextRange Range)? Innermost(int position, Func<BlockVm, bool> suits)
+    {
+        for (var i = _blocks.Count - 1; i >= 0; i--)
+        {
+            var (block, range) = _blocks[i];
+            if (!range.IsEmpty && range.Start <= position && position <= range.End && suits(block))
+            {
+                return (block, range);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Строка исходника инлайна, на котором стоит позиция.</summary>
+    private int? LineIn(IReadOnlyList<InlineVm> inlines, int position)
+    {
+        if (!TryGetRange(inlines, out var range))
+        {
+            return null;
+        }
+
+        var start = range.Start;
+        for (var i = 0; i < inlines.Count; i++)
+        {
+            var end = start + TextOf(inlines[i]).Length;
+            if (position < end || i == inlines.Count - 1)
+            {
+                return inlines[i].Source.IsEmpty ? null : inlines[i].Source.StartLine;
+            }
+
+            start = end;
+        }
+
+        return null;
     }
 
     internal sealed class Builder

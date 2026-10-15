@@ -35,6 +35,9 @@ internal sealed class SelectionController
 
     public MdTextRange Range => MdTextRange.Between(_anchor, _active);
 
+    /// <summary>Якорь и активный конец в текстовой карте.</summary>
+    public (int Anchor, int Active) Ends => (_anchor, _active);
+
     public static bool IsInteractive(DependencyObject? source, DependencyObject viewer)
     {
         for (var node = source; node is not null && !ReferenceEquals(node, viewer); node = ParentOf(node))
@@ -89,10 +92,57 @@ internal sealed class SelectionController
         Select(0, 0);
     }
 
+    /// <summary>Ставит концы, перенесённые в новую текстовую карту.</summary>
+    public void Restore(int anchor, int active)
+    {
+        var size = _viewer.TextMap.Length;
+        _anchor = Math.Clamp(anchor, 0, size);
+        _active = Math.Clamp(active, 0, size);
+        Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Позиция в карте для точки во вьюере; с <paramref name="snapToText"/> — у ближайшего текста,
+    /// без него вне текста — <c>null</c>.
+    /// </summary>
+    public int? FindOffset(Point point, bool snapToText)
+    {
+        if (_viewer.TextMap.Length == 0)
+        {
+            return snapToText ? 0 : null;
+        }
+
+        DependencyObject? hit = null;
+        VisualTreeHelper.HitTest(
+            _viewer,
+            null,
+            result =>
+            {
+                hit = result.VisualHit;
+                return HitTestResultBehavior.Stop;
+            },
+            new PointHitTestParameters(point));
+
+        for (var node = hit; node is not null && !ReferenceEquals(node, _viewer); node = ParentOf(node))
+        {
+            if (node is MdTextBlock text && text.TryGetMapRange(out var textRange))
+            {
+                return textRange.Start + text.HitTestLocal(_viewer.TranslatePoint(point, text));
+            }
+
+            if (node is MdBlockItem item && item.TryGetAtomicRange(out var atomicRange))
+            {
+                return AtomicOffset(item, atomicRange, _viewer.TranslatePoint(point, item));
+            }
+        }
+
+        return snapToText ? FindNearest(point) : null;
+    }
+
     /// <summary>Нажатие: ставит якорь или, с <paramref name="extend"/>, двигает активный конец.</summary>
     public bool Press(Point point, bool extend)
     {
-        if (!_viewer.IsSelectionEnabled || FindOffset(point) is not { } offset)
+        if (!_viewer.IsSelectionEnabled || FindOffset(point, snapToText: true) is not { } offset)
         {
             return false;
         }
@@ -195,7 +245,7 @@ internal sealed class SelectionController
 
     private void MoveActive(Point point)
     {
-        if (FindOffset(point) is { } offset && offset != _active)
+        if (FindOffset(point, snapToText: true) is { } offset && offset != _active)
         {
             _active = offset;
             Changed?.Invoke();
@@ -219,40 +269,6 @@ internal sealed class SelectionController
         {
             _autoScroll.Stop();
         }
-    }
-
-    private int? FindOffset(Point point)
-    {
-        if (_viewer.TextMap.Length == 0)
-        {
-            return 0;
-        }
-
-        DependencyObject? hit = null;
-        VisualTreeHelper.HitTest(
-            _viewer,
-            null,
-            result =>
-            {
-                hit = result.VisualHit;
-                return HitTestResultBehavior.Stop;
-            },
-            new PointHitTestParameters(point));
-
-        for (var node = hit; node is not null && !ReferenceEquals(node, _viewer); node = ParentOf(node))
-        {
-            if (node is MdTextBlock text && text.TryGetMapRange(out var textRange))
-            {
-                return textRange.Start + text.HitTestLocal(_viewer.TranslatePoint(point, text));
-            }
-
-            if (node is MdBlockItem item && item.TryGetAtomicRange(out var atomicRange))
-            {
-                return AtomicOffset(item, atomicRange, _viewer.TranslatePoint(point, item));
-            }
-        }
-
-        return FindNearest(point);
     }
 
     private int? FindNearest(Point point)
