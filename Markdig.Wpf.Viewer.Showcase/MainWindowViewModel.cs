@@ -10,6 +10,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private bool _isDark;
     private bool _showSourceLineNumbers;
     private bool _showCodeLineNumbers;
+    private string _previewText = Samples.Load("Document.md");
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -39,6 +40,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
             _isDark = value;
             ThemeSwitcher.Apply(value);
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>Текст живого предпросмотра: вьюер перерисовывает его на каждую правку.</summary>
+    public string PreviewText
+    {
+        get => _previewText;
+        set
+        {
+            _previewText = value;
             OnPropertyChanged();
         }
     }

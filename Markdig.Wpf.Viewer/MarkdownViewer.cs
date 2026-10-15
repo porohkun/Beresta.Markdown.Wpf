@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Abstractions;
 using Extensions;
+using Identity;
 using Markdig;
 using Presenters;
 using Scrolling;
@@ -107,7 +108,10 @@ public sealed class MarkdownViewer : ItemsControl
 
     private readonly SelectionController _selection;
     private readonly SourcePositions _positions;
+    private readonly ModelIdentity _identity = new();
+    private readonly ModelCollection<BlockVm> _blocks = [];
     private MarkdownPipeline? _pipeline;
+    private bool _templatesChanged;
     private bool _viewportNotificationQueued;
     private (double Line, double Fraction, int Attempts)? _pendingScroll;
 
@@ -132,6 +136,7 @@ public sealed class MarkdownViewer : ItemsControl
         // BYDESIGN: своя коллекция через SetCurrentValue, а не локальным значением — так её
         // перекрывает общая из стиля, а XAML, который читает свойство мимо геттера, видит не null.
         SetCurrentValue(ExtensionsProperty, new MdExtensionCollection());
+        ItemsSource = _blocks;
 
         _selection = new SelectionController(this);
         _selection.Changed += OnSelectionChanged;
@@ -336,7 +341,11 @@ public sealed class MarkdownViewer : ItemsControl
         => ((MarkdownViewer)d).ResetPipeline();
 
     private static void OnStyleProviderChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        => ((MarkdownViewer)d).Rebuild();
+    {
+        var viewer = (MarkdownViewer)d;
+        viewer._templatesChanged = true;
+        viewer.Rebuild();
+    }
 
     private static void OnDecorationsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownViewer)d).UpdateLayer();
@@ -427,6 +436,7 @@ public sealed class MarkdownViewer : ItemsControl
     private void ResetPipeline()
     {
         _pipeline = null;
+        _templatesChanged = true;
         Rebuild();
     }
 
@@ -457,15 +467,27 @@ public sealed class MarkdownViewer : ItemsControl
         return _pipeline = builder.Build();
     }
 
+    /// <summary>
+    /// Новый текст ложится правками: блок с прежним идентификатором остаётся в своём контейнере.
+    /// Сменились шаблоны — контейнеры создаются заново.
+    /// </summary>
     private void Rebuild()
     {
         var blocks = StyleProvider is null
             ? Array.Empty<BlockVm>()
-            : ModelBuilder.Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions);
+            : ModelBuilder.Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions, _identity);
 
         TextMap = MdTextMap.Build(blocks);
-        ItemsSource = blocks;
+        _blocks.Apply(blocks);
+
+        if (_templatesChanged)
+        {
+            _templatesChanged = false;
+            Items.Refresh();
+        }
+
         _selection?.Reset();
         Gutter?.InvalidateMeasure();
+        Gutter?.InvalidateVisual();
     }
 }

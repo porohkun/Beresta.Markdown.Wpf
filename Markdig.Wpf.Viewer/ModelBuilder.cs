@@ -1,6 +1,7 @@
 ﻿namespace MarkdigWpfViewer;
 
 using Extensions;
+using Identity;
 using Markdig;
 using Markdig.Extensions.Tables;
 using Markdig.Syntax;
@@ -18,23 +19,35 @@ internal sealed class ModelBuilder
     private readonly string _source;
     private readonly List<int> _lineStarts;
     private readonly IReadOnlyList<MdExtension> _extensions;
+    private readonly ModelIdentity _identity;
 
-    private ModelBuilder(string source, IReadOnlyList<MdExtension> extensions)
+    private ModelBuilder(string source, IReadOnlyList<MdExtension> extensions, ModelIdentity identity)
     {
         _source = source;
         _lineStarts = FindLineStarts(source);
         _extensions = extensions;
+        _identity = identity;
     }
 
+    /// <summary>
+    /// Разбирает документ; с памятью прошлого разбора элементы сохраняют идентификаторы, а
+    /// неизменные — вьюмодели.
+    /// </summary>
     public static IReadOnlyList<BlockVm> Parse(
         string markdown,
         MarkdownPipeline? pipeline = null,
-        IReadOnlyList<MdExtension>? extensions = null)
+        IReadOnlyList<MdExtension>? extensions = null,
+        ModelIdentity? identity = null)
     {
         markdown ??= string.Empty;
+        identity ??= new ModelIdentity();
 
         var document = Markdown.Parse(markdown, pipeline ?? DefaultPipeline);
-        return new ModelBuilder(markdown, extensions ?? []).ConvertBlocks(document, listDepth: 0);
+        identity.Match(document, markdown);
+
+        var blocks = new ModelBuilder(markdown, extensions ?? [], identity).ConvertBlocks(document, listDepth: 0);
+        identity.Commit();
+        return blocks;
     }
 
     internal List<BlockVm> ConvertBlocks(
@@ -55,7 +68,7 @@ internal sealed class ModelBuilder
             var (start, end) = GetLines(child);
             if (previousEnd is { } previous)
             {
-                AddBlankLines(blocks, previous, start);
+                AddBlankLines(blocks, previous, start, blocks[^1].NodeId);
             }
 
             blocks.AddRange(converted);
@@ -148,13 +161,18 @@ internal sealed class ModelBuilder
     private T Stamp<T>(T node, MarkdownObject source)
         where T : NodeVm
     {
-        if (!node.Source.IsEmpty)
+        NodeVm stamped = node;
+        if (stamped.Source.IsEmpty)
         {
-            return node;
+            stamped = stamped with { Source = GetSpan(source) };
         }
 
-        NodeVm unstamped = node;
-        return (T)(unstamped with { Source = GetSpan(source) });
+        if (stamped.NodeId == 0)
+        {
+            stamped = stamped with { NodeId = _identity.IdOf(source) };
+        }
+
+        return (T)_identity.Reuse(stamped);
     }
 
     private static CodeBlockVm ConvertCodeBlock(CodeBlock block)
@@ -181,7 +199,9 @@ internal sealed class ModelBuilder
             var (itemStart, itemEnd) = GetLines(item);
             if (items.Count > 0)
             {
-                AddBlankLines(items[^1].Blocks, previousEnd, itemStart);
+                var previous = items[^1];
+                var previousId = previous.Blocks is [.., var last] ? last.NodeId : _identity.IdOf(previous.Item);
+                AddBlankLines(previous.Blocks, previousEnd, itemStart, previousId);
             }
 
             var bullet = Bullets[listDepth % Bullets.Length];
@@ -199,7 +219,7 @@ internal sealed class ModelBuilder
 
     private TableVm ConvertTable(Table table)
     {
-        var rows = new List<TableRowVm>();
+        var rows = new List<(TableRow Row, bool IsHeader, List<TableCellVm> Cells)>();
         var maxColumns = table.ColumnDefinitions.Count;
 
         for (var r = 0; r < table.Count; r++)
@@ -219,26 +239,18 @@ internal sealed class ModelBuilder
             }
 
             maxColumns = Math.Max(maxColumns, cells.Count);
-
-            rows.Add(Stamp(new TableRowVm(IsHeader: r == 0, Cells: cells), row));
+            rows.Add((row, r == 0, cells));
         }
 
-        foreach (var row in rows)
+        foreach (var (_, _, cells) in rows)
         {
-            while (row.Cells.Count < maxColumns)
+            while (cells.Count < maxColumns)
             {
-                if (row.Cells is List<TableCellVm> list)
-                {
-                    list.Add(new([]));
-                }
-                else
-                {
-                    break;
-                }
+                cells.Add(new([]));
             }
         }
 
-        return new(maxColumns, rows);
+        return new(maxColumns, rows.Select(entry => Stamp(new TableRowVm(entry.IsHeader, entry.Cells), entry.Row)).ToList());
     }
 
     private IReadOnlyList<InlineVm> GetCellInlines(TableCell cell)
@@ -383,13 +395,16 @@ internal sealed class ModelBuilder
             node));
     }
 
-    private void AddBlankLines(List<BlockVm> blocks, int afterLine, int beforeLine)
+    /// <summary>Отступы на месте пустых строк; идентификатор отступа держится за блок перед ним.</summary>
+    private void AddBlankLines(List<BlockVm> blocks, int afterLine, int beforeLine, long previousId)
     {
+        var index = 0;
         for (var line = afterLine + 1; line < beforeLine && line < _lineStarts.Count; line++)
         {
             if (IsBlankLine(line))
             {
-                blocks.Add(new BlankLineVm { Source = GetLineSpan(line) });
+                var blank = new BlankLineVm { Source = GetLineSpan(line), NodeId = _identity.BlankLineId(previousId, index++) };
+                blocks.Add(_identity.Reuse(blank));
             }
         }
     }

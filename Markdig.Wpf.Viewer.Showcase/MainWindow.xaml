@@ -177,6 +177,32 @@
                                         Margin="24,16" />
                 </ScrollViewer>
             </TabItem>
+
+            <!-- Неизменившиеся блоки переживают правку: видимое стоит на месте -->
+            <TabItem Header="Предпросмотр">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="PreviewEditor"
+                             Text="{Binding PreviewText, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True"
+                             AcceptsTab="True"
+                             TextWrapping="Wrap"
+                             VerticalContentAlignment="Top"
+                             VerticalScrollBarVisibility="Auto"
+                             FontFamily="Consolas"
+                             Margin="12" />
+
+                    <ScrollViewer Grid.Column="1">
+                        <mdv:MarkdownViewer Markdown="{Binding PreviewText}"
+                                            ShowSourceLineNumbers="{Binding ShowSourceLineNumbers}"
+                                            Margin="24,16" />
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
         </TabControl>
     </DockPanel>
 </hc:Window>

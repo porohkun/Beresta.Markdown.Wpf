@@ -2,6 +2,7 @@
 
 using System.Windows;
 using System.Windows.Controls;
+using Identity;
 using ViewModels;
 
 /// <summary>
@@ -18,9 +19,16 @@ public class MdBlocksPresenter : ItemsControl
             typeof(MdBlocksPresenter),
             new(null, OnBlocksChanged));
 
+    private readonly ModelCollection<BlockVm> _blocks = [];
+
     static MdBlocksPresenter()
     {
         DefaultStyleKeyProperty.OverrideMetadata(typeof(MdBlocksPresenter), new FrameworkPropertyMetadata(typeof(MdBlocksPresenter)));
+    }
+
+    public MdBlocksPresenter()
+    {
+        ItemsSource = _blocks;
     }
 
     public IReadOnlyList<BlockVm>? Blocks
@@ -34,5 +42,5 @@ public class MdBlocksPresenter : ItemsControl
     protected override bool IsItemItsOwnContainerOverride(object item) => item is MdBlockItem;
 
     private static void OnBlocksChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        => ((MdBlocksPresenter)d).ItemsSource = (IReadOnlyList<BlockVm>?)e.NewValue;
+        => ((MdBlocksPresenter)d)._blocks.Apply((IReadOnlyList<BlockVm>?)e.NewValue ?? []);
 }

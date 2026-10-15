@@ -55,7 +55,7 @@ public sealed class ExtensionTests
 
         var blocks = ModelBuilder.Parse("a", ModelDump.Pipeline(), [first, second]);
 
-        blocks.Should().ContainSingle().Which.Should().Be(new DiagramVm("first") { Source = blocks[0].Source });
+        blocks.Should().ContainSingle().Which.Should().BeOfType<DiagramVm>().Which.Code.Should().Be("first");
     }
 
     [Fact]

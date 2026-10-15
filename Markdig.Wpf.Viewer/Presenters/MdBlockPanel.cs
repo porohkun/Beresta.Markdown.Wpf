@@ -5,10 +5,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using ViewModels;
 
 /// <summary>
 /// Вертикальная панель блоков документа: создаёт только блоки, попавшие в видимую область
-/// прокруток-предков, остальным отводит место по известной или оценённой высоте.
+/// прокруток-предков, остальным отводит место по известной или оценённой высоте. Высоты помнит
+/// по идентификаторам блоков, так что новый текст их не сбрасывает.
 /// </summary>
 public sealed class MdBlockPanel : VirtualizingPanel
 {
@@ -16,9 +18,11 @@ public sealed class MdBlockPanel : VirtualizingPanel
     private const double CacheShare = 0.5;
     private const int MaxPasses = 4;
 
-    private readonly List<double> _heights = [];
+    private readonly Dictionary<HeightKey, double> _heights = [];
     private readonly List<ScrollViewer> _watched = [];
+    private HeightKey[] _keys = [];
     private double[] _offsets = [0];
+    private (HeightKey Key, double Top, double ViewportTop)? _anchor;
 
     public MdBlockPanel()
     {
@@ -33,8 +37,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
         _ = InternalChildren;
 
         var owner = ItemsControl.GetItemsOwner(this);
-        var count = owner?.Items.Count ?? 0;
-        ResizeHeights(count);
+        UpdateKeys(owner);
         UpdateOffsets();
 
         var constraint = new Size(availableSize.Width, double.PositiveInfinity);
@@ -45,13 +48,17 @@ public sealed class MdBlockPanel : VirtualizingPanel
 
         if (viewport is { } visible)
         {
-            range = RealizeVisible(visible, constraint, out shift);
+            var moved = AnchorShift(visible);
+            range = RealizeVisible(visible with { Top = visible.Top + moved, Bottom = visible.Bottom + moved }, constraint, out shift);
+            shift += moved;
+            RememberAnchor(visible with { Top = visible.Top + shift });
         }
         else
         {
-            range = (0, count - 1);
+            range = (0, _keys.Length - 1);
             Realize(range.First, range.Last, constraint);
             UpdateOffsets();
+            _anchor = null;
         }
 
         CleanUp(range.First, range.Last);
@@ -86,7 +93,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
     }
 
     /// <summary>Сколько блоков у панели, созданных и нет.</summary>
-    internal int ItemCount => _heights.Count;
+    internal int ItemCount => _keys.Length;
 
     /// <summary>Верх блока в координатах панели — измеренный или оценённый.</summary>
     internal double GetItemTop(int index) => _offsets[Math.Clamp(index, 0, _offsets.Length - 1)];
@@ -95,7 +102,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
     internal double GetItemBottom(int index) => _offsets[Math.Clamp(index + 1, 0, _offsets.Length - 1)];
 
     /// <summary>Блок, на который приходится позиция в координатах панели.</summary>
-    internal int IndexAtOffset(double offset) => offset < 0 ? 0 : IndexAt(offset) is var index and >= 0 ? index : _heights.Count - 1;
+    internal int IndexAtOffset(double offset) => offset < 0 ? 0 : IndexAt(offset) is var index and >= 0 ? index : _keys.Length - 1;
 
     protected override void OnIsItemsHostChanged(bool oldIsItemsHost, bool newIsItemsHost)
     {
@@ -110,7 +117,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
     /// <summary>Сдвигает ближайшую прокрутку так, чтобы блок оказался виден целиком или хотя бы сверху.</summary>
     protected override void BringIndexIntoView(int index)
     {
-        if (index < 0 || index >= _heights.Count || FindViewport() is not { PhysicalScroller: { } scroller } viewport)
+        if (index < 0 || index >= _keys.Length || FindViewport() is not { PhysicalScroller: { } scroller } viewport)
         {
             return;
         }
@@ -137,8 +144,29 @@ public sealed class MdBlockPanel : VirtualizingPanel
         {
             RemoveInternalChildRange(args.Position.Index, args.ItemUICount);
         }
+    }
 
-        _heights.Clear();
+    /// <summary>
+    /// Насколько сдвинулся блок, бывший вверху видимой области в прошлый раз: так новый текст
+    /// выше него не уводит видимое. Прокрутку, которую с тех пор сделал кто-то другой, не трогает.
+    /// </summary>
+    private double AnchorShift(Viewport viewport)
+    {
+        if (viewport.PhysicalScroller is null
+            || _anchor is not { } anchor
+            || Math.Abs(viewport.Top - anchor.ViewportTop) > 0.5)
+        {
+            return 0;
+        }
+
+        var index = Array.IndexOf(_keys, anchor.Key);
+        return index >= 0 ? _offsets[index] - anchor.Top : 0;
+    }
+
+    private void RememberAnchor(Viewport viewport)
+    {
+        var index = viewport.PhysicalScroller is not null && viewport.Top > 0 ? IndexAt(viewport.Top) : -1;
+        _anchor = index >= 0 ? (_keys[index], _offsets[index], viewport.Top) : null;
     }
 
     private (int First, int Last) RealizeVisible(Viewport viewport, Size constraint, out double shift)
@@ -204,7 +232,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
                 }
 
                 child.Measure(constraint);
-                _heights[index] = child.DesiredSize.Height;
+                _heights[_keys[index]] = child.DesiredSize.Height;
             }
         }
     }
@@ -227,34 +255,54 @@ public sealed class MdBlockPanel : VirtualizingPanel
         }
     }
 
-    private void ResizeHeights(int count)
+    private void UpdateKeys(ItemsControl? owner)
     {
-        if (_heights.Count > count)
+        var count = owner?.Items.Count ?? 0;
+        if (_keys.Length != count)
         {
-            _heights.RemoveRange(count, _heights.Count - count);
+            _keys = new HeightKey[count];
         }
 
-        while (_heights.Count < count)
+        for (var i = 0; i < count; i++)
         {
-            _heights.Add(double.NaN);
+            _keys[i] = HeightKey.Of(owner!.Items[i]);
+        }
+
+        if (_heights.Count > 2 * count + 64)
+        {
+            var current = _keys.ToHashSet();
+            foreach (var key in _heights.Keys.Where(key => !current.Contains(key)).ToList())
+            {
+                _heights.Remove(key);
+            }
         }
     }
 
     private void UpdateOffsets()
     {
-        var known = _heights.Where(height => !double.IsNaN(height)).ToList();
-        var estimate = known.Count > 0 ? known.Average() : DefaultHeight;
-
-        _offsets = new double[_heights.Count + 1];
-        for (var i = 0; i < _heights.Count; i++)
+        var known = 0;
+        var total = 0.0;
+        foreach (var key in _keys)
         {
-            _offsets[i + 1] = _offsets[i] + (double.IsNaN(_heights[i]) ? estimate : _heights[i]);
+            if (_heights.TryGetValue(key, out var height))
+            {
+                known++;
+                total += height;
+            }
+        }
+
+        var estimate = known > 0 ? total / known : DefaultHeight;
+
+        _offsets = new double[_keys.Length + 1];
+        for (var i = 0; i < _keys.Length; i++)
+        {
+            _offsets[i + 1] = _offsets[i] + (_heights.TryGetValue(_keys[i], out var height) ? height : estimate);
         }
     }
 
     private int IndexAt(double y)
     {
-        for (var i = 0; i < _heights.Count; i++)
+        for (var i = 0; i < _keys.Length; i++)
         {
             if (_offsets[i + 1] > y)
             {
@@ -274,7 +322,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
         }
 
         var last = first;
-        while (last + 1 < _heights.Count && _offsets[last + 1] < bottom)
+        while (last + 1 < _keys.Length && _offsets[last + 1] < bottom)
         {
             last++;
         }
@@ -376,4 +424,10 @@ public sealed class MdBlockPanel : VirtualizingPanel
 
     /// <summary>Видимая полоса панели в её координатах и прокрутка, которую можно подвинуть.</summary>
     private readonly record struct Viewport(double Top, double Bottom, ScrollViewer? PhysicalScroller);
+
+    /// <summary>Чья высота: блока по его идентификатору, а без идентификатора — самого элемента.</summary>
+    private readonly record struct HeightKey(long Id, object? Item)
+    {
+        public static HeightKey Of(object item) => item is NodeVm { NodeId: not 0 } node ? new(node.NodeId, null) : new(0, item);
+    }
 }
