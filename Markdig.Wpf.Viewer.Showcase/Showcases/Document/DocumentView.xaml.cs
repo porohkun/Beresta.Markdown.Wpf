@@ -4,14 +4,37 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Selection;
 
-/// <summary>Документ с подсветкой найденного.</summary>
+/// <summary>Документ с оглавлением и подсветкой найденного.</summary>
 public partial class DocumentView : UserControl
 {
     private static readonly Brush FoundBrush = new SolidColorBrush(Color.FromArgb(0x80, 0xFF, 0xC1, 0x07));
 
+    private bool _followingScroll;
+
     public DocumentView()
     {
         InitializeComponent();
+    }
+
+    private void OnContentsSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_followingScroll && Contents.SelectedItem is MdHeading heading)
+        {
+            Viewer.ScrollToRange(heading.Range);
+        }
+    }
+
+    /// <summary>Текущий — последний заголовок выше верхнего края видимого.</summary>
+    private void OnViewportChanged(object? sender, EventArgs e)
+    {
+        if (Viewer.GetVisibleSourceLine() is not { } line)
+        {
+            return;
+        }
+
+        _followingScroll = true;
+        Contents.SelectedItem = Viewer.TextMap.Headings.LastOrDefault(heading => heading.SourceLine <= line + 0.5);
+        _followingScroll = false;
     }
 
     /// <summary>Найденное в текстовой карте подсвечивается декорациями вьюера.</summary>

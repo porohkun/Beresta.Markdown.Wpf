@@ -1,6 +1,5 @@
 ﻿namespace MarkdigWpfViewer.Presenters;
 
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -75,8 +74,6 @@ public class MdTextBlock : TextBlock
         MdWidget.StatesProperty.AddOwner(
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnStatesChanged));
-
-    private static readonly string[] ExternalSchemes = [Uri.UriSchemeHttp, Uri.UriSchemeHttps, Uri.UriSchemeMailto];
 
     private static readonly DataTemplateSelector SharedSelector = new MarkdownTemplateSelector();
 
@@ -225,28 +222,6 @@ public class MdTextBlock : TextBlock
         }
 
         return span;
-    }
-
-    /// <summary>
-    /// Ссылка наружу — системным обработчиком. Открываются только адреса веба и почты;
-    /// <c>www.example.com</c> без схемы считается адресом веба.
-    /// </summary>
-    private static void OpenExternal(string href)
-    {
-        var target = href.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? "http://" + href : href;
-        if (!Uri.TryCreate(target, UriKind.Absolute, out var uri) || !ExternalSchemes.Contains(uri.Scheme))
-        {
-            return;
-        }
-
-        try
-        {
-            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
-        }
-        catch
-        {
-            // deliberately ignored
-        }
     }
 
     private static void OnLayerChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -500,10 +475,11 @@ public class MdTextBlock : TextBlock
             // (inline.Href) в RequestNavigateEventArgs не поедет, а именно он нужен обработчику
             // своих ссылок — Uri их нормализует.
             var href = run.Href ?? run.Hyperlink.ToString();
+            link.ToolTip = run.LinkTitle ?? href;
             link.RequestNavigate += (_, e) =>
             {
                 e.Handled = true;
-                Navigate(href, e.Uri);
+                MarkdownLink.Activate(this, href, e.Uri);
             };
 
             link.Inlines.Add(current);
@@ -512,19 +488,6 @@ public class MdTextBlock : TextBlock
 
         Inlines.Add(current);
         return text;
-    }
-
-    /// <summary>
-    /// Сначала спрашиваем приложение (<see cref="MarkdownLink.NavigateEvent"/> всплывает до
-    /// любого предка вьюера), и только необработанную ссылку открываем наружу.
-    /// </summary>
-    private void Navigate(string href, Uri? uri)
-    {
-        var args = new MarkdownLinkEventArgs(MarkdownLink.NavigateEvent, this, href, uri);
-        RaiseEvent(args);
-
-        if (!args.Handled)
-            OpenExternal(href);
     }
 
     /// <summary>Кусок своего текста: где он в карте и каким элементом нарисован.</summary>

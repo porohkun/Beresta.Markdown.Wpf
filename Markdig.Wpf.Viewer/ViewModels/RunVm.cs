@@ -3,6 +3,7 @@
 /// <summary>Кусок текста с одним набором начертаний.</summary>
 /// <param name="Hyperlink">Разбор <paramref name="Href"/>; ссылки нет — <c>null</c>.</param>
 /// <param name="Href">Цель ссылки; ссылки нет — <c>null</c>.</param>
+/// <param name="LinkTitle">Заголовок ссылки (<c>[текст](адрес "заголовок")</c>); нет — <c>null</c>.</param>
 public sealed record RunVm(
     string Text,
     bool Bold = false,
@@ -10,5 +11,6 @@ public sealed record RunVm(
     bool Strike = false,
     bool Code = false,
     Uri? Hyperlink = null,
-    string? Href = null)
+    string? Href = null,
+    string? LinkTitle = null)
     : InlineVm;

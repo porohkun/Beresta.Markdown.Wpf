@@ -4,6 +4,7 @@ using Extensions;
 using Identity;
 using Markdig;
 using Markdig.Extensions.Tables;
+using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using ViewModels;
@@ -220,7 +221,7 @@ internal sealed class ModelBuilder
                 return [Stamp(new ParagraphVm(ConvertInlines(paragraph.Inline)), block)];
 
             case HeadingBlock heading:
-                return [Stamp(new HeadingVm(heading.Level, ConvertInlines(heading.Inline)), block)];
+                return [Stamp(new HeadingVm(heading.Level, ConvertInlines(heading.Inline), heading.TryGetAttributes()?.Id), block)];
 
             case ThematicBreakBlock:
                 return [Stamp(new ThematicBreakVm(), block)];
@@ -372,7 +373,7 @@ internal sealed class ModelBuilder
                     break;
 
                 case AutolinkInline autolink:
-                    AddLink(autolink.Url, null, state, output, node);
+                    AddLink(autolink.Url, null, null, state, output, node);
                     break;
 
                 case HtmlInline html:
@@ -384,7 +385,7 @@ internal sealed class ModelBuilder
                     break;
 
                 case LinkInline { IsImage: false } link:
-                    AddLink(link.Url, link.FirstChild, state, output, node);
+                    AddLink(link.Url, link.Title, link.FirstChild, state, output, node);
                     break;
 
                 case EmphasisInline emphasis:
@@ -421,9 +422,20 @@ internal sealed class ModelBuilder
         return false;
     }
 
-    private void AddLink(string? url, Inline? firstChild, InlineState state, List<InlineVm> output, Inline node)
+    private void AddLink(
+        string? url,
+        string? title,
+        Inline? firstChild,
+        InlineState state,
+        List<InlineVm> output,
+        Inline node)
     {
-        var linkedState = state with { Hyperlink = TryCreateUri(url), Href = url };
+        var linkedState = state with
+        {
+            Hyperlink = TryCreateUri(url),
+            Href = url,
+            LinkTitle = string.IsNullOrEmpty(title) ? null : title
+        };
 
         if (firstChild is not null)
         {
@@ -452,7 +464,8 @@ internal sealed class ModelBuilder
                 state.Strike,
                 state.Code,
                 state.Hyperlink,
-                state.Href),
+                state.Href,
+                state.LinkTitle),
             node));
     }
 
@@ -525,5 +538,6 @@ internal sealed class ModelBuilder
         bool Strike = false,
         bool Code = false,
         Uri? Hyperlink = null,
-        string? Href = null);
+        string? Href = null,
+        string? LinkTitle = null);
 }

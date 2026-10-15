@@ -7,6 +7,10 @@
              xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Document"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:DocumentViewModel}">
+    <UserControl.Resources>
+        <local:LevelIndentConverter x:Key="LevelIndent" />
+    </UserControl.Resources>
+
     <DockPanel>
         <!-- Подсветка найденного и выделение -->
         <StackPanel DockPanel.Dock="Top"
@@ -23,9 +27,26 @@
                        Text="{Binding SelectionLength, ElementName=Viewer, StringFormat='Выделено знаков: {0}'}" />
         </StackPanel>
 
+        <!-- Оглавление: прокрутка к заголовку и текущий заголовок при прокрутке -->
+        <ListBox x:Name="Contents"
+                 DockPanel.Dock="Left"
+                 Width="200"
+                 Margin="12,16,0,16"
+                 ItemsSource="{Binding TextMap.Headings, ElementName=Viewer}"
+                 SelectionChanged="OnContentsSelectionChanged">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Text}"
+                               TextTrimming="CharacterEllipsis"
+                               Margin="{Binding Level, Converter={StaticResource LevelIndent}}" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
         <ScrollViewer>
             <mdv:MarkdownViewer x:Name="Viewer"
                                 Markdown="{Binding Text}"
+                                ViewportChanged="OnViewportChanged"
                                 Margin="24,16" />
         </ScrollViewer>
     </DockPanel>

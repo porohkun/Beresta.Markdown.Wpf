@@ -15,20 +15,19 @@ public sealed class MdTextMap
     private readonly Dictionary<object, MdTextRange> _owners;
     private readonly List<(BlockVm Block, MdTextRange Range)> _blocks;
     private readonly Dictionary<int, string> _copies;
+    private readonly Dictionary<string, MdTextRange> _anchors;
 
-    private MdTextMap(
-        string text,
-        Dictionary<object, MdTextRange> owners,
-        List<(BlockVm, MdTextRange)> blocks,
-        Dictionary<int, string> copies)
+    private MdTextMap(Builder builder)
     {
-        Text = text;
-        _owners = owners;
-        _blocks = blocks;
-        _copies = copies;
+        Text = builder.Text.ToString();
+        _owners = builder.Owners;
+        _blocks = builder.BlockRanges;
+        _copies = builder.Copies;
+        _anchors = builder.Anchors;
+        Headings = builder.Headings;
     }
 
-    public static MdTextMap Empty { get; } = new(string.Empty, new(ReferenceEqualityComparer.Instance), [], []);
+    public static MdTextMap Empty { get; } = new(new Builder());
 
     /// <summary>Сквозной текст; неделимые элементы — знаком <see cref="ObjectMark"/>.</summary>
     public string Text { get; }
@@ -38,12 +37,18 @@ public sealed class MdTextMap
     /// <summary>Блоки документа, вложенные тоже, с их кусками карты в порядке чтения.</summary>
     public IReadOnlyList<(BlockVm Block, MdTextRange Range)> Blocks => _blocks;
 
+    /// <summary>Заголовки документа в порядке чтения — для оглавления.</summary>
+    public IReadOnlyList<MdHeading> Headings { get; }
+
     public static MdTextMap Build(IReadOnlyList<BlockVm> blocks)
     {
         var builder = new Builder();
         builder.AppendBlocks(blocks);
-        return new(builder.Text.ToString(), builder.Owners, builder.BlockRanges, builder.Copies);
+        return new(builder);
     }
+
+    /// <summary>Кусок карты якоря — заголовка или сноски — по его идентификатору без <c>#</c>.</summary>
+    public bool TryGetAnchor(string id, out MdTextRange range) => _anchors.TryGetValue(id, out range);
 
     /// <summary>Текст инлайна в карте: кусок текста, перенос строки или знак неделимого.</summary>
     public static string TextOf(InlineVm inline)
@@ -304,6 +309,8 @@ public sealed class MdTextMap
 
     internal sealed class Builder
     {
+        private readonly Dictionary<string, int> _slugs = [];
+
         public StringBuilder Text { get; } = new();
 
         public Dictionary<object, MdTextRange> Owners { get; } = new(ReferenceEqualityComparer.Instance);
@@ -313,7 +320,33 @@ public sealed class MdTextMap
         /// <summary>Тексты для копирования неделимых по позициям их знаков.</summary>
         public Dictionary<int, string> Copies { get; } = [];
 
+        public Dictionary<string, MdTextRange> Anchors { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public List<MdHeading> Headings { get; } = [];
+
         public void Append(string text) => Text.Append(text);
+
+        /// <summary>
+        /// Якорь, как у GitHub: строчные буквы, цифры, дефис и подчёркивание, пробел — дефисом;
+        /// повтор получает номер через дефис.
+        /// </summary>
+        private static string Slug(string text)
+        {
+            var slug = new StringBuilder(text.Length);
+            foreach (var symbol in text.Trim().ToLowerInvariant())
+            {
+                if (char.IsLetterOrDigit(symbol) || symbol is '-' or '_')
+                {
+                    slug.Append(symbol);
+                }
+                else if (char.IsWhiteSpace(symbol))
+                {
+                    slug.Append('-');
+                }
+            }
+
+            return slug.ToString();
+        }
 
         public void AppendInlines(IReadOnlyList<InlineVm> inlines)
         {
@@ -359,6 +392,7 @@ public sealed class MdTextMap
 
                 case HeadingVm heading:
                     AppendInlines(heading.Inlines);
+                    AddHeading(heading);
                     break;
 
                 case CodeBlockVm code:
@@ -422,6 +456,36 @@ public sealed class MdTextMap
             }
 
             BlockRanges[index] = (block, new(start, Text.Length - start));
+        }
+
+        /// <summary>Заголовок — в оглавление, его якоря — свой, как у GitHub, и идентификатор от Markdig.</summary>
+        private void AddHeading(HeadingVm heading)
+        {
+            var range = Owners[heading.Inlines];
+            var text = Text.ToString(range.Start, range.Length).Replace(ObjectMark.ToString(), string.Empty).Trim();
+
+            var slug = Slug(text);
+            if (_slugs.TryGetValue(slug, out var seen))
+            {
+                _slugs[slug] = seen + 1;
+                slug = $"{slug}-{seen + 1}";
+            }
+            else
+            {
+                _slugs[slug] = 0;
+            }
+
+            if (slug.Length > 0)
+            {
+                Anchors.TryAdd(slug, range);
+            }
+
+            if (heading.Id is { Length: > 0 } id)
+            {
+                Anchors.TryAdd(id, range);
+            }
+
+            Headings.Add(new(heading.Level, text, slug, range, heading.Source.StartLine));
         }
     }
 }

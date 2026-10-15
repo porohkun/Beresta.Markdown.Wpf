@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 using Abstractions;
 using Extensions;
@@ -122,8 +123,17 @@ public sealed class MarkdownViewer : ItemsControl
     /// <summary>Длина выделения в текстовой карте.</summary>
     public static readonly DependencyProperty SelectionLengthProperty = SelectionLengthPropertyKey.DependencyProperty;
 
-    private const string GutterPart = "PART_Gutter";
+    private static readonly DependencyPropertyKey TextMapPropertyKey =
+        DependencyProperty.RegisterReadOnly(
+            nameof(TextMap),
+            typeof(MdTextMap),
+            typeof(MarkdownViewer),
+            new(MdTextMap.Empty));
 
+    /// <summary>Текстовая карта показанного документа; меняется с каждым новым текстом.</summary>
+    public static readonly DependencyProperty TextMapProperty = TextMapPropertyKey.DependencyProperty;
+
+    private const string GutterPart = "PART_Gutter";
 
     private readonly SourcePositions _positions;
     private readonly WidgetStates _states;
@@ -236,8 +246,11 @@ public sealed class MarkdownViewer : ItemsControl
         set => SetValue(ShowCodeLineNumbersProperty, value);
     }
 
-    /// <summary>Текстовая карта показанного документа.</summary>
-    public MdTextMap TextMap { get; private set; } = MdTextMap.Empty;
+    public MdTextMap TextMap
+    {
+        get => (MdTextMap)GetValue(TextMapProperty);
+        private set => SetValue(TextMapPropertyKey, value);
+    }
 
     public int SelectionStart => (int)GetValue(SelectionStartProperty);
 
@@ -300,10 +313,34 @@ public sealed class MarkdownViewer : ItemsControl
         => StartScroll(() => ScrollToRangeOnce(range, viewportFraction));
 
     /// <summary>
+    /// Прокручивает к якорю документа — заголовку или сноске — так же, как <see cref="ScrollToRange"/>;
+    /// якоря нет — <c>false</c>.
+    /// </summary>
+    public bool ScrollToAnchor(string id, double viewportFraction = 0)
+        => (TextMap.TryGetAnchor(id, out var range) || TextMap.TryGetAnchor(Uri.UnescapeDataString(id), out range))
+           && ScrollToRange(range, viewportFraction);
+
+    /// <summary>
     /// Позиция в текстовой карте для точки в координатах вьюера; с <paramref name="snapToText"/> —
     /// у ближайшего текста, без него вне текста — <c>null</c>.
     /// </summary>
     public int? GetPositionFromPoint(Point point, bool snapToText) => Selection.FindOffset(point, snapToText);
+
+    /// <summary>Ближайший вьюер, внутри которого стоит элемент.</summary>
+    internal static MarkdownViewer? Owning(DependencyObject element)
+    {
+        for (DependencyObject? node = element; node is not null; node = node is Visual or Visual3D
+                 ? VisualTreeHelper.GetParent(node) ?? LogicalTreeHelper.GetParent(node)
+                 : LogicalTreeHelper.GetParent(node))
+        {
+            if (node is MarkdownViewer viewer)
+            {
+                return viewer;
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>Прямоугольники куска текстовой карты в координатах вьюера; есть только у созданных блоков.</summary>
     public IReadOnlyList<Rect> GetRangeRects(MdTextRange range)
