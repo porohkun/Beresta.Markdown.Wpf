@@ -108,6 +108,7 @@ public sealed class MarkdownViewer : ItemsControl
 
     private readonly SelectionController _selection;
     private readonly SourcePositions _positions;
+    private readonly WidgetStates _states;
     private readonly ModelIdentity _identity = new();
     private readonly ModelCollection<BlockVm> _blocks = [];
     private MarkdownPipeline? _pipeline;
@@ -133,6 +134,9 @@ public sealed class MarkdownViewer : ItemsControl
 
     public MarkdownViewer()
     {
+        _states = new WidgetStates(() => ActiveExtensions);
+        SetValue(MdWidget.StatesProperty, _states);
+
         // BYDESIGN: своя коллекция через SetCurrentValue, а не локальным значением — так её
         // перекрывает общая из стиля, а XAML, который читает свойство мимо геттера, видит не null.
         SetCurrentValue(ExtensionsProperty, new MdExtensionCollection());
@@ -437,6 +441,7 @@ public sealed class MarkdownViewer : ItemsControl
     {
         _pipeline = null;
         _templatesChanged = true;
+        _states.Clear();
         Rebuild();
     }
 
@@ -478,6 +483,7 @@ public sealed class MarkdownViewer : ItemsControl
             : ModelBuilder.Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions, _identity);
 
         TextMap = MdTextMap.Build(blocks);
+        _states.Retain(_identity.Contains);
         _blocks.Apply(blocks);
 
         if (_templatesChanged)

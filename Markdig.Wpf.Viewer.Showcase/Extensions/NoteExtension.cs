@@ -21,4 +21,7 @@ public sealed class NoteExtension : MdExtension
 
     public override DataTemplate? SelectTemplate(object item, DependencyObject container)
         => item is NoteVm ? Template : null;
+
+    public override object? CreateState(NodeVm node)
+        => node is NoteVm ? new NoteState() : null;
 }

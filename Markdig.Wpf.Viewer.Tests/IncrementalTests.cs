@@ -180,6 +180,27 @@ public sealed class IncrementalTests
     }
 
     [Fact]
+    public void Прокрутка_хоста_сразу_после_нового_текста_не_перебивается()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var text = string.Join("\n\n", Enumerable.Range(0, 400).Select(i => $"Paragraph {i}"));
+            var viewer = new MarkdownViewer { Markdown = text };
+            var scroll = new ScrollViewer { Content = viewer };
+            var window = WpfHost.Show(scroll);
+            viewer.ScrollToSourceLine(400).Should().BeTrue();
+            WpfHost.Settle(window);
+
+            viewer.Markdown = "Inserted\n\n" + text;
+            scroll.ScrollToHome();
+            WpfHost.Settle(window);
+
+            scroll.VerticalOffset.Should().Be(0);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Смена_провайдера_стилей_перестраивает_блоки()
     {
         WpfHost.Invoke(() =>

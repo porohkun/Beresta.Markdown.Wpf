@@ -25,4 +25,10 @@ public abstract class MdExtension
 
     /// <summary>Шаблон своего виджета; <c>null</c> — элемент не свой.</summary>
     public virtual DataTemplate? SelectTemplate(object item, DependencyObject container) => null;
+
+    /// <summary>
+    /// Состояние своего виджета, которое должно пережить его контрол: свёрнут ли, что выбрано.
+    /// Шаблон получает его через <see cref="MdWidget.StateProperty"/>; <c>null</c> — состояния нет.
+    /// </summary>
+    public virtual object? CreateState(NodeVm node) => null;
 }

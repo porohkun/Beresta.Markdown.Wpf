@@ -18,6 +18,8 @@ internal sealed class LambdaExtension : MdExtension
 
     public Func<object, DataTemplate?>? Template { get; init; }
 
+    public Func<NodeVm, object?>? State { get; init; }
+
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline) => Setup?.Invoke(pipeline);
 
     public override BlockVm? ConvertBlock(Block block, MdConvertContext context) => Block?.Invoke(block, context);
@@ -25,4 +27,6 @@ internal sealed class LambdaExtension : MdExtension
     public override InlineVm? ConvertInline(Inline inline, MdConvertContext context) => Inline?.Invoke(inline, context);
 
     public override DataTemplate? SelectTemplate(object item, DependencyObject container) => Template?.Invoke(item);
+
+    public override object? CreateState(NodeVm node) => State?.Invoke(node);
 }

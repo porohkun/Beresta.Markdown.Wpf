@@ -63,9 +63,11 @@ public sealed class MdBlockPanel : VirtualizingPanel
 
         CleanUp(range.First, range.Last);
 
-        if (shift != 0 && viewport?.PhysicalScroller is { } scroller)
+        if (shift != 0 && viewport?.Scrolling is { } scrolling)
         {
-            scroller.ScrollToVerticalOffset(scroller.VerticalOffset + shift);
+            // BYDESIGN: сдвиг — прямо в прокрутку, мимо очереди команд ScrollViewer: явная прокрутка
+            // хоста, поставленная в очередь раньше, выполнится после него и не будет перебита.
+            scrolling.SetVerticalOffset(scrolling.VerticalOffset + shift);
         }
 
         var width = InternalChildren
@@ -365,8 +367,9 @@ public sealed class MdBlockPanel : VirtualizingPanel
             }
             else
             {
-                var physical = scrollInfo is ScrollContentPresenter ? scrollViewer : null;
-                viewport = new Viewport(bounds.Top, bounds.Bottom, physical);
+                viewport = scrollInfo is ScrollContentPresenter
+                    ? new Viewport(bounds.Top, bounds.Bottom, scrollViewer, scrollInfo)
+                    : new Viewport(bounds.Top, bounds.Bottom, null, null);
             }
         }
 
@@ -422,8 +425,8 @@ public sealed class MdBlockPanel : VirtualizingPanel
     private MarkdownViewer? FindViewer()
         => ItemsControl.GetItemsOwner(this) as MarkdownViewer ?? Ancestors().OfType<MarkdownViewer>().FirstOrDefault();
 
-    /// <summary>Видимая полоса панели в её координатах и прокрутка, которую можно подвинуть.</summary>
-    private readonly record struct Viewport(double Top, double Bottom, ScrollViewer? PhysicalScroller);
+    /// <summary>Видимая полоса панели в её координатах и попиксельная прокрутка, которую можно подвинуть.</summary>
+    private readonly record struct Viewport(double Top, double Bottom, ScrollViewer? PhysicalScroller, IScrollInfo? Scrolling);
 
     /// <summary>Чья высота: блока по его идентификатору, а без идентификатора — самого элемента.</summary>
     private readonly record struct HeightKey(long Id, object? Item)

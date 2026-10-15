@@ -10,6 +10,7 @@ using Markdig.Parsers;
 using Markdig.Renderers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Selection;
 using ViewModels;
 
 /// <summary>Виджеты и расширения для тестов: заметка, диаграмма, галочка, упоминание.</summary>
@@ -17,7 +18,8 @@ internal static class TestWidgets
 {
     private const string Namespaces =
         "xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' "
-        + "xmlns:p='clr-namespace:MarkdigWpfViewer.Presenters;assembly=Markdig.Wpf.Viewer'";
+        + "xmlns:p='clr-namespace:MarkdigWpfViewer.Presenters;assembly=Markdig.Wpf.Viewer' "
+        + "xmlns:e='clr-namespace:MarkdigWpfViewer.Extensions;assembly=Markdig.Wpf.Viewer'";
 
     /// <summary><c>:::note Заголовок</c> — заметка со своей разметкой внутри.</summary>
     public static LambdaExtension Note() => new()
@@ -65,7 +67,10 @@ internal static class TestWidgets
 
     public sealed record CheckVm(bool Checked) : InlineVm;
 
-    public sealed record MentionVm(string Name) : InlineVm;
+    public sealed record MentionVm(string Name) : InlineVm, IMdCopyText
+    {
+        public string CopyText => "@" + Name;
+    }
 
     private sealed class MentionInline : LeafInline
     {

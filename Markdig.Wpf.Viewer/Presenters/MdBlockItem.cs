@@ -3,11 +3,12 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Extensions;
 using Selection;
 
 /// <summary>
 /// Контейнер блока во вьюере и во вложенных блоках. Неделимый блок — разделитель, виджет без
-/// текста — подсвечивается им целиком.
+/// текста — подсвечивается им целиком. Отдаёт своему блоку его состояние виджета.
 /// </summary>
 public sealed class MdBlockItem : ContentControl
 {
@@ -23,6 +24,11 @@ public sealed class MdBlockItem : ContentControl
         MdSelection.LayerProperty.AddOwner(
             typeof(MdBlockItem),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnLayerChanged));
+
+    private static readonly DependencyProperty StatesProperty =
+        MdWidget.StatesProperty.AddOwner(
+            typeof(MdBlockItem),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnStatesChanged));
 
     static MdBlockItem()
     {
@@ -48,10 +54,18 @@ public sealed class MdBlockItem : ContentControl
     {
         base.OnContentChanged(oldContent, newContent);
         UpdateHighlight();
+        UpdateState();
     }
 
     private static void OnLayerChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MdBlockItem)d).UpdateHighlight();
+
+    private static void OnStatesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        => ((MdBlockItem)d).UpdateState();
+
+    /// <summary>Своё состояние или пустое — состояние внешнего виджета внутрь блока не проходит.</summary>
+    private void UpdateState()
+        => MdWidget.SetState(this, (GetValue(StatesProperty) as WidgetStates)?.StateOf(Content));
 
     private void UpdateHighlight()
     {

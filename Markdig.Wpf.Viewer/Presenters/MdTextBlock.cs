@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using Extensions;
 using Selection;
 using Styling;
 using ViewModels;
@@ -69,6 +70,11 @@ public class MdTextBlock : TextBlock
         MdSelection.LayerProperty.AddOwner(
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnLayerChanged));
+
+    private static readonly DependencyProperty StatesProperty =
+        MdWidget.StatesProperty.AddOwner(
+            typeof(MdTextBlock),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnStatesChanged));
 
     private static readonly string[] ExternalSchemes = [Uri.UriSchemeHttp, Uri.UriSchemeHttps, Uri.UriSchemeMailto];
 
@@ -232,6 +238,9 @@ public class MdTextBlock : TextBlock
     private static void OnLayerChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MdTextBlock)d).UpdateHighlights();
 
+    private static void OnStatesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        => ((MdTextBlock)d).UpdateWidgetStates();
+
     private static IEnumerable<Rect> GetLineRects(TextPointer from, TextPointer to)
     {
         var lineStart = from;
@@ -348,17 +357,17 @@ public class MdTextBlock : TextBlock
                 case LineBreakVm:
                     var lineBreak = new LineBreak();
                     Inlines.Add(lineBreak);
-                    _segments.Add(new(start, length, lineBreak, null));
+                    _segments.Add(new(start, length, lineBreak, null, null));
                     break;
 
                 case RunVm { Code: true } code:
                     var (container, overlay) = CreateAtomic(new InlineCodePresenter { Text = code.Text, Style = InlineCodeStyle });
                     Inlines.Add(container);
-                    _segments.Add(new(start, length, container, overlay));
+                    _segments.Add(new(start, length, container, overlay, null));
                     break;
 
                 case RunVm run:
-                    _segments.Add(new(start, length, AddRun(run), null));
+                    _segments.Add(new(start, length, AddRun(run), null, null));
                     break;
 
                 default:
@@ -369,7 +378,7 @@ public class MdTextBlock : TextBlock
                     };
                     var (host, cover) = CreateAtomic(widget);
                     Inlines.Add(host);
-                    _segments.Add(new(start, length, host, cover));
+                    _segments.Add(new(start, length, host, cover, widget));
                     break;
             }
         }
@@ -377,6 +386,19 @@ public class MdTextBlock : TextBlock
         _highlights = [];
         SyncAdorner();
         UpdateHighlights();
+        UpdateWidgetStates();
+    }
+
+    private void UpdateWidgetStates()
+    {
+        var states = GetValue(StatesProperty) as WidgetStates;
+        foreach (var segment in _segments)
+        {
+            if (segment.Widget is { } widget)
+            {
+                MdWidget.SetState(widget, states?.StateOf(widget.Content));
+            }
+        }
     }
 
     private Run AddRun(RunVm run)
@@ -449,7 +471,7 @@ public class MdTextBlock : TextBlock
     }
 
     /// <summary>Кусок своего текста: где он в карте и каким элементом нарисован.</summary>
-    private readonly record struct Segment(int Start, int Length, TextElement Element, Border? Overlay)
+    private readonly record struct Segment(int Start, int Length, TextElement Element, Border? Overlay, ContentPresenter? Widget)
     {
         public int End => Start + Length;
     }

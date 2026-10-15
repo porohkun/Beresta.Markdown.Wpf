@@ -75,6 +75,17 @@ public sealed class TextMapTests
     }
 
     [Fact]
+    public void Неделимый_виджет_копируется_своим_текстом()
+    {
+        var mention = new TestWidgets.MentionVm("ivan");
+        var map = MdTextMap.Build([new ParagraphVm([new RunVm("a "), mention, new RunVm(" b")]), new CopyDiagramVm()]);
+
+        map.Text.Should().Be($"a {MdTextMap.ObjectMark} b\n{MdTextMap.ObjectMark}");
+        map.GetText(new MdTextRange(0, map.Length)).Should().Be("a @ivan b\n[diagram]");
+        map.GetText(new MdTextRange(2, 1)).Should().Be("@ivan");
+    }
+
+    [Fact]
     public void Блоки_карты_идут_в_порядке_чтения_вместе_с_вложенными()
     {
         var blocks = ModelBuilder.Parse("> a\n\nb");
@@ -82,6 +93,11 @@ public sealed class TextMapTests
 
         map.Blocks.Select(entry => entry.Block.GetType().Name)
             .Should().Equal(nameof(QuoteVm), nameof(ParagraphVm), nameof(BlankLineVm), nameof(ParagraphVm));
+    }
+
+    private sealed record CopyDiagramVm : BlockVm, IMdCopyText
+    {
+        public string CopyText => "[diagram]";
     }
 
     private sealed record TextNoteVm(string Title, IReadOnlyList<BlockVm> Blocks) : BlockVm, IMdTextSource

@@ -14,15 +14,21 @@ public sealed class MdTextMap
 
     private readonly Dictionary<object, MdTextRange> _owners;
     private readonly List<(BlockVm Block, MdTextRange Range)> _blocks;
+    private readonly Dictionary<int, string> _copies;
 
-    private MdTextMap(string text, Dictionary<object, MdTextRange> owners, List<(BlockVm, MdTextRange)> blocks)
+    private MdTextMap(
+        string text,
+        Dictionary<object, MdTextRange> owners,
+        List<(BlockVm, MdTextRange)> blocks,
+        Dictionary<int, string> copies)
     {
         Text = text;
         _owners = owners;
         _blocks = blocks;
+        _copies = copies;
     }
 
-    public static MdTextMap Empty { get; } = new(string.Empty, new(ReferenceEqualityComparer.Instance), []);
+    public static MdTextMap Empty { get; } = new(string.Empty, new(ReferenceEqualityComparer.Instance), [], []);
 
     /// <summary>Сквозной текст; неделимые элементы — знаком <see cref="ObjectMark"/>.</summary>
     public string Text { get; }
@@ -36,7 +42,7 @@ public sealed class MdTextMap
     {
         var builder = new Builder();
         builder.AppendBlocks(blocks);
-        return new(builder.Text.ToString(), builder.Owners, builder.BlockRanges);
+        return new(builder.Text.ToString(), builder.Owners, builder.BlockRanges, builder.Copies);
     }
 
     /// <summary>Текст инлайна в карте: кусок текста, перенос строки или знак неделимого.</summary>
@@ -166,12 +172,32 @@ public sealed class MdTextMap
         return end >= start ? new MdTextRange(start, end - start) : null;
     }
 
-    /// <summary>Текст куска для копирования, без знаков неделимых.</summary>
+    /// <summary>Текст куска для копирования: неделимые — своим текстом для копирования или ничем.</summary>
     public string GetText(MdTextRange range)
     {
         var start = Math.Clamp(range.Start, 0, Length);
         var end = Math.Clamp(range.End, start, Length);
-        return Text.Substring(start, end - start).Replace(ObjectMark.ToString(), string.Empty);
+        var text = new StringBuilder(end - start);
+
+        for (var position = start; position < end;)
+        {
+            var mark = Text.IndexOf(ObjectMark, position, end - position);
+            if (mark < 0)
+            {
+                text.Append(Text, position, end - position);
+                break;
+            }
+
+            text.Append(Text, position, mark - position);
+            if (_copies.TryGetValue(mark, out var copy))
+            {
+                text.Append(copy);
+            }
+
+            position = mark + 1;
+        }
+
+        return text.ToString();
     }
 
     internal sealed class Builder
@@ -182,6 +208,9 @@ public sealed class MdTextMap
 
         public List<(BlockVm, MdTextRange)> BlockRanges { get; } = [];
 
+        /// <summary>Тексты для копирования неделимых по позициям их знаков.</summary>
+        public Dictionary<int, string> Copies { get; } = [];
+
         public void Append(string text) => Text.Append(text);
 
         public void AppendInlines(IReadOnlyList<InlineVm> inlines)
@@ -189,7 +218,13 @@ public sealed class MdTextMap
             var start = Text.Length;
             foreach (var inline in inlines)
             {
-                Text.Append(TextOf(inline));
+                var text = TextOf(inline);
+                if (inline is IMdCopyText copy && text is [ObjectMark])
+                {
+                    Copies[Text.Length] = copy.CopyText;
+                }
+
+                Text.Append(text);
             }
 
             Owners[inlines] = new(start, Text.Length - start);
@@ -274,6 +309,11 @@ public sealed class MdTextMap
                     break;
 
                 default:
+                    if (block is IMdCopyText copy)
+                    {
+                        Copies[Text.Length] = copy.CopyText;
+                    }
+
                     Owners[block] = new(Text.Length, 1);
                     Text.Append(ObjectMark);
                     break;

@@ -52,6 +52,9 @@ internal sealed class ModelIdentity
     /// <summary>Идентификатор узла нового разбора; 0 — узел не из сопоставленного документа.</summary>
     public long IdOf(MarkdownObject node) => _ids.TryGetValue(node, out var id) ? id : 0;
 
+    /// <summary>Есть ли элемент с этим идентификатором в последнем разборе.</summary>
+    public bool Contains(long id) => _models.ContainsKey(id);
+
     /// <summary>Идентификатор отступа — <paramref name="index"/>-го подряд после элемента <paramref name="previous"/>.</summary>
     public long BlankLineId(long previous, int index)
     {

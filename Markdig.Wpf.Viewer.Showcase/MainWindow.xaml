@@ -5,6 +5,7 @@
            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
            xmlns:hc="https://handyorg.github.io/handycontrol"
            xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
+           xmlns:mdx="clr-namespace:MarkdigWpfViewer.Extensions;assembly=Markdig.Wpf.Viewer"
            xmlns:p="clr-namespace:MarkdigWpfViewer.Presenters;assembly=Markdig.Wpf.Viewer"
            xmlns:s="clr-namespace:MarkdigWpfViewer.Styling;assembly=Markdig.Wpf.Viewer"
            xmlns:vm="clr-namespace:MarkdigWpfViewer.ViewModels;assembly=Markdig.Wpf.Viewer"
@@ -21,7 +22,7 @@
     </hc:Window.DataContext>
 
     <hc:Window.Resources>
-        <!-- Шаблоны виджетов -->
+        <!-- Шаблоны виджетов. Свёрнута ли заметка — в её состоянии: переживает прокрутку и правку текста -->
         <DataTemplate x:Key="Showcase.NoteTemplate" DataType="{x:Type ext:NoteVm}">
             <Border Margin="0,4,0,8"
                     Padding="12,8"
@@ -30,13 +31,35 @@
                     BorderBrush="{DynamicResource PrimaryBrush}"
                     Background="{DynamicResource SecondaryRegionBrush}">
                 <StackPanel>
-                    <TextBlock Text="{Binding Title}"
-                               Margin="0,0,0,4"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource PrimaryBrush}" />
-                    <p:MdBlocksPresenter Blocks="{Binding Blocks}" />
+                    <ToggleButton x:Name="Toggle"
+                                  HorizontalAlignment="Left"
+                                  Margin="0,0,0,4"
+                                  Cursor="Hand"
+                                  IsChecked="{Binding (mdx:MdWidget.State).IsExpanded, RelativeSource={RelativeSource Self}}">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                        <StackPanel Orientation="Horizontal" Background="Transparent">
+                            <TextBlock x:Name="Arrow"
+                                       Text="▾"
+                                       Margin="0,0,6,0"
+                                       Foreground="{DynamicResource PrimaryBrush}" />
+                            <TextBlock Text="{Binding Title}"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource PrimaryBrush}" />
+                        </StackPanel>
+                    </ToggleButton>
+                    <p:MdBlocksPresenter x:Name="Content" Blocks="{Binding Blocks}" />
                 </StackPanel>
             </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsChecked, ElementName=Toggle}" Value="False">
+                    <Setter TargetName="Content" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="Arrow" Property="Text" Value="▸" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
         </DataTemplate>
 
         <DataTemplate x:Key="Showcase.MentionTemplate" DataType="{x:Type ext:MentionVm}">
