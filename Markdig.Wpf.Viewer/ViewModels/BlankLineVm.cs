@@ -1,5 +1,4 @@
 ﻿namespace MarkdigWpfViewer.ViewModels;
 
-using Abstractions;
-
-public sealed record BlankLineVm : IMdBlockVm;
+/// <summary>Отступ на месте пустой строки исходника.</summary>
+public sealed record BlankLineVm : BlockVm;

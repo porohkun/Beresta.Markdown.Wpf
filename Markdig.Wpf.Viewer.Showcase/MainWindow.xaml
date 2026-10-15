@@ -5,6 +5,10 @@
            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
            xmlns:hc="https://handyorg.github.io/handycontrol"
            xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
+           xmlns:p="clr-namespace:MarkdigWpfViewer.Presenters;assembly=Markdig.Wpf.Viewer"
+           xmlns:s="clr-namespace:MarkdigWpfViewer.Styling;assembly=Markdig.Wpf.Viewer"
+           xmlns:vm="clr-namespace:MarkdigWpfViewer.ViewModels;assembly=Markdig.Wpf.Viewer"
+           xmlns:ext="clr-namespace:MarkdigWpfViewer.Showcase.Extensions"
            xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase"
            mc:Ignorable="d"
            d:DataContext="{d:DesignInstance local:MainWindowViewModel, IsDesignTimeCreatable=True}"
@@ -15,6 +19,53 @@
     <hc:Window.DataContext>
         <local:MainWindowViewModel />
     </hc:Window.DataContext>
+
+    <hc:Window.Resources>
+        <!-- Шаблоны виджетов -->
+        <DataTemplate x:Key="Showcase.NoteTemplate" DataType="{x:Type ext:NoteVm}">
+            <Border Margin="0,4,0,8"
+                    Padding="12,8"
+                    CornerRadius="4"
+                    BorderThickness="4,0,0,0"
+                    BorderBrush="{DynamicResource PrimaryBrush}"
+                    Background="{DynamicResource SecondaryRegionBrush}">
+                <StackPanel>
+                    <TextBlock Text="{Binding Title}"
+                               Margin="0,0,0,4"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+                    <p:MdBlocksPresenter Blocks="{Binding Blocks}" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate x:Key="Showcase.MentionTemplate" DataType="{x:Type ext:MentionVm}">
+            <Border Padding="6,0"
+                    CornerRadius="8"
+                    Background="{DynamicResource PrimaryBrush}">
+                <TextBlock Text="{Binding Name, StringFormat='@{0}'}"
+                           Foreground="White" />
+            </Border>
+        </DataTemplate>
+
+        <!-- Свой вид: заголовок с полосой слева, остальные шаблоны стандартные -->
+        <s:MdStyleProvider x:Key="Showcase.AccentProvider"
+                           BasedOn="{StaticResource Md.DefaultStyleProvider}">
+            <s:MdStyleProvider.HeadingTemplate>
+                <DataTemplate DataType="{x:Type vm:HeadingVm}">
+                    <Border Margin="0,12,0,4"
+                            Padding="10,0,0,0"
+                            BorderThickness="4,0,0,0"
+                            BorderBrush="{DynamicResource PrimaryBrush}">
+                        <p:MdHeadingBlock Level="{Binding Level}"
+                                          Runs="{Binding Inlines}"
+                                          Style="{DynamicResource Md.Heading.Style}"
+                                          Margin="0" />
+                    </Border>
+                </DataTemplate>
+            </s:MdStyleProvider.HeadingTemplate>
+        </s:MdStyleProvider>
+    </hc:Window.Resources>
 
     <DockPanel>
         <!-- Панель настроек -->
@@ -30,6 +81,34 @@
                 <ScrollViewer>
                     <mdv:MarkdownViewer Markdown="{Binding Document}"
                                         Margin="24,16" />
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Расширения">
+                <ScrollViewer>
+                    <mdv:MarkdownViewer Markdown="{Binding ExtensionsDocument}"
+                                        Margin="24,16">
+                        <mdv:MarkdownViewer.Extensions>
+                            <ext:NoteExtension Template="{StaticResource Showcase.NoteTemplate}" />
+                            <ext:MentionExtension Template="{StaticResource Showcase.MentionTemplate}" />
+                        </mdv:MarkdownViewer.Extensions>
+                    </mdv:MarkdownViewer>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Свой вид">
+                <ScrollViewer>
+                    <mdv:MarkdownViewer Markdown="{Binding Document}"
+                                        Margin="24,16"
+                                        FontFamily="Georgia"
+                                        StyleProvider="{StaticResource Showcase.AccentProvider}">
+                        <mdv:MarkdownViewer.Resources>
+                            <Style x:Key="Md.Strong.Style" TargetType="{x:Type Span}">
+                                <Setter Property="FontWeight" Value="Bold" />
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+                            </Style>
+                        </mdv:MarkdownViewer.Resources>
+                    </mdv:MarkdownViewer>
                 </ScrollViewer>
             </TabItem>
 

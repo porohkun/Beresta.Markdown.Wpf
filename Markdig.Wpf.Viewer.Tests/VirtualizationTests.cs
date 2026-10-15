@@ -144,6 +144,23 @@ public sealed class VirtualizationTests
         });
     }
 
+    [Theory]
+    [InlineData("> ")]
+    [InlineData("- ")]
+    public void Длинное_вложенное_содержимое_тоже_виртуализируется(string prefix)
+    {
+        WpfHost.Invoke(() =>
+        {
+            var text = string.Join("\n" + prefix.TrimEnd() + "\n", Enumerable.Range(0, 2000).Select(i => $"{prefix}Line {i}"));
+            var viewer = new MarkdownViewer { Markdown = text };
+            var window = WpfHost.Show(new ScrollViewer { Content = viewer });
+
+            viewer.Items.Count.Should().Be(1);
+            Visuals.Descendants<MdTextBlock>(viewer).Count().Should().BeInRange(1, 100);
+            window.Close();
+        });
+    }
+
     [Fact]
     public void Без_прокрутки_создаются_все_блоки()
     {

@@ -13,6 +13,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public string Document { get; } = Samples.Load("Document.md");
 
+    public string ExtensionsDocument { get; } = Samples.Load("Extensions.md");
+
     public string LargeDocument { get; } = string.Join(
         "\n\n",
         Enumerable.Range(1, 3000).Select(i => i % 10 == 0

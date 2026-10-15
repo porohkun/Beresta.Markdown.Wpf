@@ -10,10 +10,21 @@
     <s:MarkdownTemplateSelector x:Key="Md.TemplateSelector"/>
 
     <!-- ======== Md.Paragraph ======== -->
-    <FontFamily   x:Key="Md.Paragraph.FontFamily">Segoe UI</FontFamily>
+    <!-- Md.Paragraph.FontFamily и Md.Paragraph.Foreground не заданы: текст берёт их у приложения -->
     <sys:Double   x:Key="Md.Paragraph.FontSize">14</sys:Double>
-    <Brush        x:Key="Md.Paragraph.Foreground">Black</Brush>
     <Brush        x:Key="Md.Paragraph.LinkForeground">Blue</Brush>
+
+    <!-- ======== Начертания ======== -->
+    <Style x:Key="Md.Strong.Style" TargetType="{x:Type Span}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style x:Key="Md.Emphasis.Style" TargetType="{x:Type Span}">
+        <Setter Property="FontStyle" Value="Italic" />
+    </Style>
+    <Style x:Key="Md.Strike.Style" TargetType="{x:Type Span}">
+        <Setter Property="TextDecorations" Value="Strikethrough" />
+    </Style>
+    <Style x:Key="Md.Link.Style" TargetType="{x:Type Hyperlink}" />
 
     <!-- ======== Md.InlineCode ======== -->
     <FontFamily   x:Key="Md.InlineCode.FontFamily">Consolas</FontFamily>
@@ -26,8 +37,7 @@
     <CornerRadius x:Key="Md.InlineCode.CornerRadius">3</CornerRadius>
 
     <!-- ======== Md.Heading ======== -->
-    <FontFamily   x:Key="Md.Heading.FontFamily">Segoe UI</FontFamily>
-    <Brush        x:Key="Md.Heading.Foreground">Black</Brush>
+    <!-- Md.Heading.FontFamily и Md.Heading.Foreground не заданы: заголовок берёт их у приложения -->
     <Brush        x:Key="Md.Heading.LinkForeground">Blue</Brush>
 
     <Thickness    x:Key="Md.Heading1.Margin">0,14,0,0</Thickness>
@@ -139,6 +149,10 @@
         <Setter Property="LinkForeground" Value="{DynamicResource Md.Paragraph.LinkForeground}" />
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Paragraph.InlineCodeStyle}"/>
+        <Setter Property="StrongStyle" Value="{DynamicResource Md.Strong.Style}" />
+        <Setter Property="EmphasisStyle" Value="{DynamicResource Md.Emphasis.Style}" />
+        <Setter Property="StrikeStyle" Value="{DynamicResource Md.Strike.Style}" />
+        <Setter Property="LinkStyle" Value="{DynamicResource Md.Link.Style}" />
     </Style>
 
     <Style x:Key="Md.Heading.Style" TargetType="{x:Type p:MdHeadingBlock}">
@@ -146,6 +160,10 @@
         <Setter Property="Foreground" Value="{DynamicResource Md.Heading.Foreground}" />
         <Setter Property="LinkForeground" Value="{DynamicResource Md.Heading.LinkForeground}" />
         <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="StrongStyle" Value="{DynamicResource Md.Strong.Style}" />
+        <Setter Property="EmphasisStyle" Value="{DynamicResource Md.Emphasis.Style}" />
+        <Setter Property="StrikeStyle" Value="{DynamicResource Md.Strike.Style}" />
+        <Setter Property="LinkStyle" Value="{DynamicResource Md.Link.Style}" />
         <Setter Property="Margin" Value="{DynamicResource Md.Heading6.Margin}" />
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading6.FontSize}" />
         <Setter Property="FontWeight" Value="{DynamicResource Md.Heading6.FontWeight}" />
@@ -221,25 +239,27 @@
                             BorderBrush="{DynamicResource Md.Quote.BorderBrush}"
                             Padding="{DynamicResource Md.Quote.Padding}"
                             Margin="{DynamicResource Md.Quote.Margin}">
-                        <ItemsControl ItemsSource="{TemplateBinding Blocks}" ItemTemplateSelector="{DynamicResource Md.TemplateSelector}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <VirtualizingStackPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
+                        <p:MdBlocksPresenter Blocks="{TemplateBinding Blocks}" />
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
 
+    <Style x:Key="Md.List.MarkerStyle" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="{DynamicResource Md.Paragraph.FontSize}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Md.Paragraph.FontFamily}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Paragraph.Foreground}" />
+        <Setter Property="Margin" Value="{DynamicResource Md.List.ItemSpacing}" />
+    </Style>
+
     <Style x:Key="Md.List.Style" TargetType="{x:Type ItemsControl}">
         <Setter Property="Margin" Value="{DynamicResource Md.List.Margin}" />
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
         <Setter Property="ItemsPanel">
             <Setter.Value>
                 <ItemsPanelTemplate>
-                    <VirtualizingStackPanel />
+                    <p:MdBlockPanel />
                 </ItemsPanelTemplate>
             </Setter.Value>
         </Setter>
@@ -251,20 +271,29 @@
                             <ColumnDefinition Width="{DynamicResource Md.List.MarkerWidth}"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{Binding MarkerText}"
-                                   FontSize="{DynamicResource Md.Paragraph.FontSize}"
-                                   FontFamily="{DynamicResource Md.Paragraph.FontFamily}"
-                                   Foreground="{DynamicResource Md.Paragraph.Foreground}"
-                                   Margin="{DynamicResource Md.List.ItemSpacing}" />
-                        <ItemsControl Grid.Column="1" ItemsSource="{Binding Blocks}" ItemTemplateSelector="{DynamicResource Md.TemplateSelector}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <VirtualizingStackPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
+                        <TextBlock Text="{Binding MarkerText}" Style="{DynamicResource Md.List.MarkerStyle}" />
+                        <p:MdBlocksPresenter Grid.Column="1" Blocks="{Binding Blocks}" />
                     </Grid>
                 </DataTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type p:MdBlocksPresenter}">
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+        <Setter Property="ItemTemplateSelector" Value="{DynamicResource Md.TemplateSelector}" />
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <p:MdBlockPanel />
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type p:MdBlocksPresenter}">
+                    <ItemsPresenter />
+                </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>

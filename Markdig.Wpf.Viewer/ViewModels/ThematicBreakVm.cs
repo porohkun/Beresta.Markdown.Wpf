@@ -1,5 +1,4 @@
 ﻿namespace MarkdigWpfViewer.ViewModels;
 
-using Abstractions;
-
-public sealed record ThematicBreakVm : IMdBlockVm;
+/// <summary>Горизонтальный разделитель.</summary>
+public sealed record ThematicBreakVm : BlockVm;

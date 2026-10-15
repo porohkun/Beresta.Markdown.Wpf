@@ -1,6 +1,5 @@
 ﻿namespace MarkdigWpfViewer.ViewModels;
 
-using Abstractions;
-
+/// <summary>Строка таблицы.</summary>
 public sealed record TableRowVm(bool IsHeader, IReadOnlyList<TableCellVm> Cells)
-    : IMdBlockVm;
+    : NodeVm;

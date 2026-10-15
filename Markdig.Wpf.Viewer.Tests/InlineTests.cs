@@ -11,7 +11,16 @@ public sealed class InlineTests
         var paragraph = (ParagraphVm)ModelBuilder.Parse("~~s~~")[0];
 
         paragraph.Inlines.Should().ContainSingle()
-            .Which.Should().Match<InlineVm>(inline => inline.Strike && !inline.Bold && !inline.Italic);
+            .Which.Should().Match<RunVm>(inline => inline.Strike && !inline.Bold && !inline.Italic);
+    }
+
+    [Fact]
+    public void Автоссылка_в_угловых_скобках_становится_ссылкой()
+    {
+        var paragraph = (ParagraphVm)ModelBuilder.Parse("see <https://example.com>")[0];
+
+        paragraph.Inlines.OfType<RunVm>().Should().ContainSingle(run => run.Href == "https://example.com")
+            .Which.Text.Should().Be("https://example.com");
     }
 
     [Fact]

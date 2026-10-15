@@ -3,21 +3,69 @@
 using System.Windows;
 using Abstractions;
 
-internal sealed class MdStyleProvider : IMdStyleProvider
+/// <summary>
+/// Шаблоны встроенных блоков. Незаданный шаблон берётся у <see cref="BasedOn"/>: в XAML
+/// заменяется один шаблон, остальные остаются стандартными.
+/// </summary>
+public sealed class MdStyleProvider : IMdStyleProvider
 {
-    public required DataTemplate ParagraphTemplate { get; set; }
+    private DataTemplate? _paragraph;
+    private DataTemplate? _heading;
+    private DataTemplate? _codeBlock;
+    private DataTemplate? _quote;
+    private DataTemplate? _list;
+    private DataTemplate? _table;
+    private DataTemplate? _horizontalRule;
+    private DataTemplate? _blankLine;
 
-    public required DataTemplate HeadingTemplate { get; set; }
+    /// <summary>Провайдер, у которого берутся незаданные шаблоны.</summary>
+    public IMdStyleProvider? BasedOn { get; set; }
 
-    public required DataTemplate CodeBlockTemplate { get; set; }
+    public DataTemplate? ParagraphTemplate
+    {
+        get => _paragraph ?? BasedOn?.ParagraphTemplate;
+        set => _paragraph = value;
+    }
 
-    public required DataTemplate QuoteTemplate { get; set; }
+    public DataTemplate? HeadingTemplate
+    {
+        get => _heading ?? BasedOn?.HeadingTemplate;
+        set => _heading = value;
+    }
 
-    public required DataTemplate ListTemplate { get; set; }
+    public DataTemplate? CodeBlockTemplate
+    {
+        get => _codeBlock ?? BasedOn?.CodeBlockTemplate;
+        set => _codeBlock = value;
+    }
 
-    public required DataTemplate TableTemplate { get; set; }
+    public DataTemplate? QuoteTemplate
+    {
+        get => _quote ?? BasedOn?.QuoteTemplate;
+        set => _quote = value;
+    }
 
-    public required DataTemplate HorizontalRuleTemplate { get; set; }
+    public DataTemplate? ListTemplate
+    {
+        get => _list ?? BasedOn?.ListTemplate;
+        set => _list = value;
+    }
 
-    public required DataTemplate BlankLineTemplate { get; set; }
+    public DataTemplate? TableTemplate
+    {
+        get => _table ?? BasedOn?.TableTemplate;
+        set => _table = value;
+    }
+
+    public DataTemplate? HorizontalRuleTemplate
+    {
+        get => _horizontalRule ?? BasedOn?.HorizontalRuleTemplate;
+        set => _horizontalRule = value;
+    }
+
+    public DataTemplate? BlankLineTemplate
+    {
+        get => _blankLine ?? BasedOn?.BlankLineTemplate;
+        set => _blankLine = value;
+    }
 }

@@ -1,6 +1,6 @@
 ﻿namespace MarkdigWpfViewer;
 
-using Abstractions;
+using Extensions;
 using Markdig;
 using Markdig.Extensions.Tables;
 using Markdig.Syntax;
@@ -9,7 +9,7 @@ using ViewModels;
 
 internal sealed class ModelBuilder
 {
-    private static readonly MarkdownPipeline DefaultPipeline = new MarkdownPipelineBuilder()
+    public static readonly MarkdownPipeline DefaultPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .Build();
 
@@ -17,28 +17,31 @@ internal sealed class ModelBuilder
 
     private readonly string _source;
     private readonly List<int> _lineStarts;
+    private readonly IReadOnlyList<MdExtension> _extensions;
 
-    private ModelBuilder(string source)
+    private ModelBuilder(string source, IReadOnlyList<MdExtension> extensions)
     {
         _source = source;
         _lineStarts = FindLineStarts(source);
+        _extensions = extensions;
     }
 
-    public static IReadOnlyList<IMdBlockVm> Parse(
+    public static IReadOnlyList<BlockVm> Parse(
         string markdown,
-        MarkdownPipeline? pipeline = null)
+        MarkdownPipeline? pipeline = null,
+        IReadOnlyList<MdExtension>? extensions = null)
     {
         markdown ??= string.Empty;
 
         var document = Markdown.Parse(markdown, pipeline ?? DefaultPipeline);
-        return new ModelBuilder(markdown).ConvertBlocks(document, listDepth: 0);
+        return new ModelBuilder(markdown, extensions ?? []).ConvertBlocks(document, listDepth: 0);
     }
 
-    private List<IMdBlockVm> ConvertBlocks(
+    internal List<BlockVm> ConvertBlocks(
         ContainerBlock container,
         int listDepth)
     {
-        var blocks = new List<IMdBlockVm>();
+        var blocks = new List<BlockVm>();
         int? previousEnd = null;
 
         foreach (var child in container)
@@ -52,7 +55,7 @@ internal sealed class ModelBuilder
             var (start, end) = GetLines(child);
             if (previousEnd is { } previous)
             {
-                AddBlankLines(blocks, CountBlankLines(previous, start));
+                AddBlankLines(blocks, previous, start);
             }
 
             blocks.AddRange(converted);
@@ -62,25 +65,96 @@ internal sealed class ModelBuilder
         return blocks;
     }
 
-    private IReadOnlyList<IMdBlockVm> ConvertBlock(
+    internal IReadOnlyList<InlineVm> ConvertInlines(ContainerInline? container)
+    {
+        var result = new List<InlineVm>();
+        WalkInline(container?.FirstChild, new(), result);
+        return result;
+    }
+
+    internal MdSourceSpan GetSpan(MarkdownObject node)
+    {
+        if (node.Span.IsEmpty || node.Span.Start < 0)
+        {
+            return default;
+        }
+
+        var start = node.Span.Start;
+        var end = Math.Min(node.Span.End, _source.Length - 1);
+        var (startLine, endLine) = node is Block block
+            ? GetLines(block)
+            : (GetLineAt(start), GetLineAt(end));
+
+        return new(start, end - start + 1, startLine, endLine);
+    }
+
+    internal string GetSource(MarkdownObject node)
+    {
+        return GetSourceText(node.Span);
+    }
+
+    private IReadOnlyList<BlockVm> ConvertBlock(
         Block block,
         int listDepth)
     {
-        return block switch
+        foreach (var extension in _extensions)
         {
-            ParagraphBlock paragraph => [new ParagraphVm(ConvertInlines(paragraph.Inline))],
-            HeadingBlock heading => [new HeadingVm(heading.Level, ConvertInlines(heading.Inline))],
-            ThematicBreakBlock => [new ThematicBreakVm()],
-            CodeBlock code => [ConvertCodeBlock(code)],
-            QuoteBlock quote => [new QuoteVm(ConvertBlocks(quote, listDepth))],
-            ListBlock list => [ConvertList(list, listDepth)],
-            Table table => [ConvertTable(table)],
-            LinkReferenceDefinitionGroup or LinkReferenceDefinition => [],
-            ContainerBlock container => ConvertBlocks(container, listDepth),
-            LeafBlock { Inline: not null } leaf => [new ParagraphVm(ConvertInlines(leaf.Inline))],
-            LeafBlock { Lines.Count: > 0 } leaf => [new ParagraphVm(GetRawLines(leaf))],
-            _ => []
-        };
+            if (extension.ConvertBlock(block, new MdConvertContext(this, listDepth)) is { } custom)
+            {
+                return [Stamp(custom, block)];
+            }
+        }
+
+        switch (block)
+        {
+            case LinkReferenceDefinitionGroup or LinkReferenceDefinition:
+                return [];
+
+            case ParagraphBlock paragraph:
+                return [Stamp(new ParagraphVm(ConvertInlines(paragraph.Inline)), block)];
+
+            case HeadingBlock heading:
+                return [Stamp(new HeadingVm(heading.Level, ConvertInlines(heading.Inline)), block)];
+
+            case ThematicBreakBlock:
+                return [Stamp(new ThematicBreakVm(), block)];
+
+            case CodeBlock code:
+                return [Stamp(ConvertCodeBlock(code), block)];
+
+            case QuoteBlock quote:
+                return [Stamp(new QuoteVm(ConvertBlocks(quote, listDepth)), block)];
+
+            case ListBlock list:
+                return [Stamp(ConvertList(list, listDepth), block)];
+
+            case Table table:
+                return [Stamp(ConvertTable(table), block)];
+
+            case ContainerBlock container:
+                return ConvertBlocks(container, listDepth);
+
+            case LeafBlock { Inline: not null } leaf:
+                return [Stamp(new ParagraphVm(ConvertInlines(leaf.Inline)), block)];
+
+            case LeafBlock { Lines.Count: > 0 } leaf:
+                return [Stamp(new ParagraphVm(GetRawLines(leaf)), block)];
+
+            default:
+                return [];
+        }
+    }
+
+    private T Stamp<T>(T node, MarkdownObject source)
+        where T : NodeVm
+    {
+        if (!node.Source.IsEmpty)
+        {
+            return node;
+        }
+
+        NodeVm unstamped = node;
+        return (T)(unstamped with { Source = GetSpan(source) });
     }
 
     private static CodeBlockVm ConvertCodeBlock(CodeBlock block)
@@ -94,8 +168,7 @@ internal sealed class ModelBuilder
         var ordered = list.IsOrdered;
         var start = ordered && int.TryParse(list.OrderedStart, out var number) ? number : 1;
 
-        var markers = new List<string>();
-        var contents = new List<List<IMdBlockVm>>();
+        var items = new List<(string Marker, List<BlockVm> Blocks, ListItemBlock Item)>();
         var previousEnd = 0;
 
         foreach (var child in list)
@@ -106,22 +179,22 @@ internal sealed class ModelBuilder
             }
 
             var (itemStart, itemEnd) = GetLines(item);
-            if (contents.Count > 0)
+            if (items.Count > 0)
             {
-                AddBlankLines(contents[^1], CountBlankLines(previousEnd, itemStart));
+                AddBlankLines(items[^1].Blocks, previousEnd, itemStart);
             }
 
             var bullet = Bullets[listDepth % Bullets.Length];
-            markers.Add(ordered ? $"{start + markers.Count}{list.OrderedDelimiter}" : bullet);
-            contents.Add(ConvertBlocks(item, listDepth + 1));
+            var marker = ordered ? $"{start + items.Count}{list.OrderedDelimiter}" : bullet;
+            items.Add((marker, ConvertBlocks(item, listDepth + 1), item));
             previousEnd = itemEnd;
         }
 
-        var items = markers
-            .Select((marker, index) => new ListItemVm(marker, contents[index]))
+        var converted = items
+            .Select(entry => Stamp(new ListItemVm(entry.Marker, entry.Blocks), entry.Item))
             .ToList();
 
-        return new(ordered, start, listDepth, items);
+        return new(ordered, start, listDepth, converted);
     }
 
     private TableVm ConvertTable(Table table)
@@ -141,13 +214,13 @@ internal sealed class ModelBuilder
             {
                 if (row[c] is TableCell cell)
                 {
-                    cells.Add(new(GetCellInlines(cell)));
+                    cells.Add(Stamp(new TableCellVm(GetCellInlines(cell)), cell));
                 }
             }
 
             maxColumns = Math.Max(maxColumns, cells.Count);
 
-            rows.Add(new(IsHeader: r == 0, Cells: cells));
+            rows.Add(Stamp(new TableRowVm(IsHeader: r == 0, Cells: cells), row));
         }
 
         foreach (var row in rows)
@@ -176,57 +249,47 @@ internal sealed class ModelBuilder
             : [];
     }
 
-    private IReadOnlyList<InlineVm> ConvertInlines(ContainerInline? container)
-    {
-        var result = new List<InlineVm>();
-        WalkInline(container?.FirstChild, new(), result);
-        return result;
-    }
-
     private void WalkInline(Inline? current, InlineState state, List<InlineVm> output)
     {
         for (var node = current; node is not null; node = node.NextSibling)
         {
+            if (TryConvertByExtension(node, output))
+            {
+                continue;
+            }
+
             switch (node)
             {
                 case LiteralInline literal:
-                    AddText(literal.Content.ToString(), state, output);
+                    AddText(literal.Content.ToString(), state, output, node);
                     break;
 
                 case LineBreakInline { IsHard: true }:
-                    output.Add(new(
-                        string.Empty,
-                        state.Bold,
-                        state.Italic,
-                        state.Strike,
-                        state.Code,
-                        state.Hyperlink,
-                        LineBreak: true,
-                        Href: state.Href));
+                    output.Add(Stamp(new LineBreakVm(), node));
                     break;
 
                 case LineBreakInline:
-                    AddText(" ", state, output);
+                    AddText(" ", state, output, node);
                     break;
 
                 case CodeInline code:
-                    AddText(code.Content ?? string.Empty, state with { Code = true }, output);
+                    AddText(code.Content ?? string.Empty, state with { Code = true }, output, node);
                     break;
 
                 case AutolinkInline autolink:
-                    AddLink(autolink.Url, autolink, state, output);
+                    AddLink(autolink.Url, null, state, output, node);
                     break;
 
                 case HtmlInline html:
-                    AddText(html.Tag, state, output);
+                    AddText(html.Tag, state, output, node);
                     break;
 
                 case HtmlEntityInline entity:
-                    AddText(entity.Transcoded.ToString(), state, output);
+                    AddText(entity.Transcoded.ToString(), state, output, node);
                     break;
 
                 case LinkInline { IsImage: false } link:
-                    AddLink(link.Url, link.FirstChild, state, output);
+                    AddLink(link.Url, link.FirstChild, state, output, node);
                     break;
 
                 case EmphasisInline emphasis:
@@ -234,7 +297,7 @@ internal sealed class ModelBuilder
                     break;
 
                 case DelimiterInline delimiter:
-                    AddText(delimiter.ToLiteral(), state, output);
+                    AddText(delimiter.ToLiteral(), state, output, node);
                     WalkInline(delimiter.FirstChild, state, output);
                     break;
 
@@ -243,10 +306,24 @@ internal sealed class ModelBuilder
                     break;
 
                 default:
-                    AddText(GetSourceText(node.Span), state, output);
+                    AddText(GetSourceText(node.Span), state, output, node);
                     break;
             }
         }
+    }
+
+    private bool TryConvertByExtension(Inline node, List<InlineVm> output)
+    {
+        foreach (var extension in _extensions)
+        {
+            if (extension.ConvertInline(node, new MdConvertContext(this, listDepth: 0)) is { } custom)
+            {
+                output.Add(Stamp(custom, node));
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static InlineState ApplyEmphasis(InlineState state, EmphasisInline emphasis)
@@ -271,7 +348,7 @@ internal sealed class ModelBuilder
         return state;
     }
 
-    private void AddLink(string? url, Inline? firstChild, InlineState state, List<InlineVm> output)
+    private void AddLink(string? url, Inline? firstChild, InlineState state, List<InlineVm> output, Inline node)
     {
         var linkedState = state with { Hyperlink = TryCreateUri(url), Href = url };
 
@@ -283,32 +360,37 @@ internal sealed class ModelBuilder
 
         if (!string.IsNullOrWhiteSpace(url))
         {
-            AddText(url, linkedState, output);
+            AddText(url, linkedState, output, node);
         }
     }
 
-    private static void AddText(string text, InlineState state, List<InlineVm> output)
+    private void AddText(string text, InlineState state, List<InlineVm> output, Inline node)
     {
         if (string.IsNullOrEmpty(text))
         {
             return;
         }
 
-        output.Add(new(
-            text,
-            state.Bold,
-            state.Italic,
-            state.Strike,
-            state.Code,
-            state.Hyperlink,
-            Href: state.Href));
+        output.Add(Stamp(
+            new RunVm(
+                text,
+                state.Bold,
+                state.Italic,
+                state.Strike,
+                state.Code,
+                state.Hyperlink,
+                state.Href),
+            node));
     }
 
-    private static void AddBlankLines(List<IMdBlockVm> blocks, int count)
+    private void AddBlankLines(List<BlockVm> blocks, int afterLine, int beforeLine)
     {
-        for (var i = 0; i < count; i++)
+        for (var line = afterLine + 1; line < beforeLine && line < _lineStarts.Count; line++)
         {
-            blocks.Add(new BlankLineVm());
+            if (IsBlankLine(line))
+            {
+                blocks.Add(new BlankLineVm { Source = GetLineSpan(line) });
+            }
         }
     }
 
@@ -320,10 +402,10 @@ internal sealed class ModelBuilder
         {
             if (i > 0)
             {
-                inlines.Add(new(string.Empty, LineBreak: true));
+                inlines.Add(new LineBreakVm());
             }
 
-            inlines.Add(new(leaf.Lines.Lines[i].Slice.ToString()));
+            inlines.Add(new RunVm(leaf.Lines.Lines[i].Slice.ToString()));
         }
 
         return inlines;
@@ -338,19 +420,11 @@ internal sealed class ModelBuilder
         return (block.Line, Math.Max(block.Line, end));
     }
 
-    private int CountBlankLines(int afterLine, int beforeLine)
+    private MdSourceSpan GetLineSpan(int line)
     {
-        var count = 0;
-
-        for (var line = afterLine + 1; line < beforeLine && line < _lineStarts.Count; line++)
-        {
-            if (IsBlankLine(line))
-            {
-                count++;
-            }
-        }
-
-        return count;
+        var start = _lineStarts[line];
+        var end = line + 1 < _lineStarts.Count ? _lineStarts[line + 1] : _source.Length;
+        return new(start, end - start, line, line);
     }
 
     private bool IsBlankLine(int line)

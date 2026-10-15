@@ -16,7 +16,7 @@ public sealed class PresenterTests
             var block = new MdTextBlock
             {
                 FontSize = 14,
-                Runs = [new InlineVm("text"), new InlineVm("link", Hyperlink: new Uri("https://example.com"))]
+                Runs = [new RunVm("text"), new RunVm("link", Hyperlink: new Uri("https://example.com"))]
             };
 
             block.FontSize = 28;

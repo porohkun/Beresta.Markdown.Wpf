@@ -11,7 +11,7 @@ public sealed class WholeDocumentTests
         var blocks = ModelBuilder.Parse("see [docs][d]\n\n[d]: https://example.com");
 
         ModelDump.Of(blocks).Should().Be("P(see docs)");
-        var link = ((ParagraphVm)blocks[0]).Inlines.Single(inline => inline.Text == "docs");
+        var link = ((ParagraphVm)blocks[0]).Inlines.OfType<RunVm>().Single(inline => inline.Text == "docs");
         link.Href.Should().Be("https://example.com");
     }
 
