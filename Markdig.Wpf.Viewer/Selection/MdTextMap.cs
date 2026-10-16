@@ -50,6 +50,28 @@ public sealed class MdTextMap
     /// <summary>Кусок карты якоря — заголовка или сноски — по его идентификатору без <c>#</c>.</summary>
     public bool TryGetAnchor(string id, out MdTextRange range) => _anchors.TryGetValue(id, out range);
 
+    /// <summary>
+    /// Якорь заголовка с этим текстом, как у GitHub: строчные буквы, цифры, дефис и подчёркивание,
+    /// пробел — дефисом. Повтор того же заголовка в документе получает номер через дефис.
+    /// </summary>
+    public static string AnchorOf(string text)
+    {
+        var slug = new StringBuilder(text.Length);
+        foreach (var symbol in text.Trim().ToLowerInvariant())
+        {
+            if (char.IsLetterOrDigit(symbol) || symbol is '-' or '_')
+            {
+                slug.Append(symbol);
+            }
+            else if (char.IsWhiteSpace(symbol))
+            {
+                slug.Append('-');
+            }
+        }
+
+        return slug.ToString();
+    }
+
     /// <summary>Текст инлайна в карте: кусок текста, перенос строки или знак неделимого.</summary>
     public static string TextOf(InlineVm inline)
     {
@@ -359,28 +381,6 @@ public sealed class MdTextMap
 
         public void Append(string text) => Text.Append(text);
 
-        /// <summary>
-        /// Якорь, как у GitHub: строчные буквы, цифры, дефис и подчёркивание, пробел — дефисом;
-        /// повтор получает номер через дефис.
-        /// </summary>
-        private static string Slug(string text)
-        {
-            var slug = new StringBuilder(text.Length);
-            foreach (var symbol in text.Trim().ToLowerInvariant())
-            {
-                if (char.IsLetterOrDigit(symbol) || symbol is '-' or '_')
-                {
-                    slug.Append(symbol);
-                }
-                else if (char.IsWhiteSpace(symbol))
-                {
-                    slug.Append('-');
-                }
-            }
-
-            return slug.ToString();
-        }
-
         public void AppendInlines(IReadOnlyList<InlineVm> inlines)
         {
             var start = Text.Length;
@@ -567,7 +567,7 @@ public sealed class MdTextMap
             var range = Owners[heading.Inlines];
             var text = Text.ToString(range.Start, range.Length).Replace(ObjectMark.ToString(), string.Empty).Trim();
 
-            var slug = Slug(text);
+            var slug = AnchorOf(text);
             if (_slugs.TryGetValue(slug, out var seen))
             {
                 _slugs[slug] = seen + 1;

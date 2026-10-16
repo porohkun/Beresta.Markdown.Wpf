@@ -6,6 +6,8 @@
                     xmlns:p="clr-namespace:MarkdigWpfViewer.Presenters"
                     xmlns:local="clr-namespace:MarkdigWpfViewer"
                     xmlns:mdx="clr-namespace:MarkdigWpfViewer.Extensions"
+                    xmlns:kit="clr-namespace:MarkdigWpfViewer.Kit"
+                    xmlns:sel="clr-namespace:MarkdigWpfViewer.Selection"
                     xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
     <s:MarkdownTemplateSelector x:Key="Md.TemplateSelector" />
@@ -1064,6 +1066,86 @@
         </s:MdStyleProvider.AlignedTemplate>
 
     </s:MdStyleProvider>
+
+    <!-- ======== Готовые расширения: связи ======== -->
+    <Style x:Key="Md.WikiLink.Style" TargetType="{x:Type Span}" />
+    <Style x:Key="Md.WikiLink.Missing.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="#CF222E" />
+    </Style>
+
+    <Style x:Key="Md.Tag.Style" TargetType="{x:Type Span}">
+        <Setter Property="Background" Value="#DDF4FF" />
+        <Setter Property="Foreground" Value="#0969DA" />
+    </Style>
+
+    <Brush x:Key="Md.Mention.Background">#DDF4FF</Brush>
+    <Brush x:Key="Md.Mention.Foreground">#0969DA</Brush>
+    <Thickness x:Key="Md.Mention.Padding">4,0</Thickness>
+    <CornerRadius x:Key="Md.Mention.CornerRadius">8</CornerRadius>
+    <DataTemplate x:Key="Md.Mention.Template" DataType="{x:Type kit:MentionVm}">
+        <Button Style="{x:Null}"
+                Focusable="False"
+                Cursor="Hand"
+                ToolTip="{Binding Href}"
+                Command="{x:Static local:MarkdownLink.ActivateCommand}"
+                CommandParameter="{Binding Href}">
+            <Button.Template>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border Background="{DynamicResource Md.Mention.Background}"
+                            CornerRadius="{DynamicResource Md.Mention.CornerRadius}"
+                            Padding="{DynamicResource Md.Mention.Padding}">
+                        <TextBlock Text="{Binding DisplayName, StringFormat='@{0}'}"
+                                   Foreground="{DynamicResource Md.Mention.Foreground}" />
+                    </Border>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+    </DataTemplate>
+
+    <!-- Оглавление на месте: отступ пункта — по уровню заголовка -->
+    <Thickness x:Key="Md.Toc.Margin">0,0,0,4</Thickness>
+    <Thickness x:Key="Md.Toc.Level1.Margin">0,0,0,2</Thickness>
+    <Thickness x:Key="Md.Toc.Level2.Margin">16,0,0,2</Thickness>
+    <Thickness x:Key="Md.Toc.Level3.Margin">32,0,0,2</Thickness>
+    <Thickness x:Key="Md.Toc.Level4.Margin">48,0,0,2</Thickness>
+    <Thickness x:Key="Md.Toc.Level5.Margin">64,0,0,2</Thickness>
+    <Thickness x:Key="Md.Toc.Level6.Margin">80,0,0,2</Thickness>
+    <DataTemplate x:Key="Md.Toc.Template" DataType="{x:Type kit:TocVm}">
+        <p:MdListPresenter ItemsSource="{Binding TextMap.Headings, RelativeSource={RelativeSource AncestorType={x:Type local:MarkdownViewer}}}"
+                           Margin="{DynamicResource Md.Toc.Margin}">
+            <p:MdListPresenter.ItemTemplate>
+                <DataTemplate DataType="{x:Type sel:MdHeading}">
+                    <TextBlock x:Name="Item"
+                               Margin="{DynamicResource Md.Toc.Level1.Margin}"
+                               FontSize="{DynamicResource Md.Paragraph.FontSize}">
+                        <Hyperlink Command="{x:Static local:MarkdownLink.ActivateCommand}"
+                                   CommandParameter="{Binding Href}"
+                                   Foreground="{DynamicResource Md.Paragraph.LinkForeground}"
+                                   Style="{DynamicResource Md.Link.Style}">
+                            <Run Text="{Binding Text, Mode=OneWay}" />
+                        </Hyperlink>
+                    </TextBlock>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Level}" Value="2">
+                            <Setter TargetName="Item" Property="Margin" Value="{DynamicResource Md.Toc.Level2.Margin}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Level}" Value="3">
+                            <Setter TargetName="Item" Property="Margin" Value="{DynamicResource Md.Toc.Level3.Margin}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Level}" Value="4">
+                            <Setter TargetName="Item" Property="Margin" Value="{DynamicResource Md.Toc.Level4.Margin}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Level}" Value="5">
+                            <Setter TargetName="Item" Property="Margin" Value="{DynamicResource Md.Toc.Level5.Margin}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Level}" Value="6">
+                            <Setter TargetName="Item" Property="Margin" Value="{DynamicResource Md.Toc.Level6.Margin}" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </p:MdListPresenter.ItemTemplate>
+        </p:MdListPresenter>
+    </DataTemplate>
 
     <Style TargetType="{x:Type p:MdBlockItem}">
         <Setter Property="Focusable" Value="False" />

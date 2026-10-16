@@ -6,16 +6,36 @@
              xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
              xmlns:kit="clr-namespace:MarkdigWpfViewer.Kit;assembly=Markdig.Wpf.Viewer"
              xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Kit"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:KitViewModel}">
-    <ScrollViewer>
-        <mdv:MarkdownViewer Markdown="{Binding Text}"
-                            Margin="24,16">
-            <mdv:MarkdownViewer.Extensions>
-                <kit:ObsidianCallouts />
-                <kit:MkDocsAdmonitions />
-                <kit:CalloutContainers />
-            </mdv:MarkdownViewer.Extensions>
-        </mdv:MarkdownViewer>
-    </ScrollViewer>
+    <DockPanel>
+        <!-- Свои схемы ссылок обрабатывает витрина: показывает цель вместо перехода -->
+        <TextBlock DockPanel.Dock="Top"
+                   Margin="24,8,24,0"
+                   Foreground="{DynamicResource SecondaryTextBrush}"
+                   Text="{Binding LastLink}" />
+
+        <ScrollViewer>
+            <mdv:MarkdownViewer Markdown="{Binding Text}"
+                                Margin="24,16"
+                                mdv:MarkdownLink.Navigate="OnLink">
+                <mdv:MarkdownViewer.Extensions>
+                    <kit:ObsidianCallouts />
+                    <kit:MkDocsAdmonitions />
+                    <kit:CalloutContainers />
+                    <kit:TableOfContents />
+                    <kit:WikiLinks Resolver="{x:Static local:KitResolver.Instance}" />
+                    <kit:WikiEmbeds />
+                    <kit:Tags />
+                    <kit:Mentions Resolver="{x:Static local:KitResolver.Instance}" />
+                    <kit:IssueLinks>
+                        <kit:IssueLinks.Templates>
+                            <sys:String x:Key="#">https://github.com/porohkun/Markdig.Wpf.Viewer/issues/{0}</sys:String>
+                        </kit:IssueLinks.Templates>
+                    </kit:IssueLinks>
+                </mdv:MarkdownViewer.Extensions>
+            </mdv:MarkdownViewer>
+        </ScrollViewer>
+    </DockPanel>
 </UserControl>

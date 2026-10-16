@@ -433,7 +433,10 @@ with the `Span` style under the theme key `Md.<StyleName>.Style`; `Markup` is th
 «Copy as Markdown».
 
 One Markdig node often gives several pieces — plain and bold text in one chip — so return them from
-`ConvertInlines`. An empty list hides the node.
+`ConvertInlines`. An empty list hides the node. A piece of text made from scratch takes the formatting
+of its place — bold, italic, the link around it — from `context.CreateRun(text)`. When the frame
+writes the link of the piece itself, as `[[Page]]` does, `ReplacesLink = true` keeps the Markdown link
+syntax off it.
 
 **`ChipExtension.cs`**, for `::text::`, Markdig's inline custom container:
 

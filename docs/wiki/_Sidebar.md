@@ -33,6 +33,7 @@
 **Ready-made Extensions**
 
 - [Callouts and Collapsibles](Kit-Callouts)
+- [Links and References](Kit-Links)
 
 ---
 
@@ -71,3 +72,4 @@
 **Готовые расширения**
 
 - [Плашки и сворачиваемое](Kit-Callouts-ru)
+- [Связи](Kit-Links-ru)

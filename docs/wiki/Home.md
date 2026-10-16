@@ -54,6 +54,7 @@ What you get:
 **Ready-made Extensions**
 
 - [Callouts and Collapsibles](Kit-Callouts) — Obsidian callouts, MkDocs admonitions, `:::kind` containers
+- [Links and References](Kit-Links) — wiki links, tags, mentions, issue links, a table of contents in place
 
 ## Showcase
 

@@ -126,7 +126,7 @@ internal sealed partial class MdMarkdownWriter
     private static List<Marker> Markers(RunVm run)
     {
         var markers = new List<Marker>();
-        if ((run.Href ?? run.Hyperlink?.OriginalString) is { } href)
+        if ((run.Href ?? run.Hyperlink?.OriginalString) is { } href && run.Markup is not { ReplacesLink: true })
         {
             markers.Add(new("[", $"]({Destination(href)})", Emphasis: false));
         }

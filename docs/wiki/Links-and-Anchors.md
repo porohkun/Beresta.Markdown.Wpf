@@ -18,7 +18,7 @@ The title of a link, `[text](https://example.com "title")`, is its tooltip.
 
 Every heading is an anchor. Its identifier is made like on GitHub: the text in lower case, where
 letters, digits, `-` and `_` stay, spaces become `-` and other characters are dropped; a repeated
-heading gets `-1`, `-2`.
+heading gets `-1`, `-2`; `MdTextMap.AnchorOf(text)` makes the identifier of a heading with this text.
 An explicit identifier is set with attributes: `## Setup {#setup}`. Footnotes are anchors too:
 `fn:1` is the first footnote, `fnref:1` the first reference to a footnote.
 
@@ -55,9 +55,10 @@ Viewer.ScrollToAnchor("installation", 0.1);
 
 ## Table of contents
 
-`TextMap.Headings` lists the headings of the document: `Level`, `Text`, anchor `Id`, `Range` in the
-text map and `SourceLine`. A list bound to it is a table of contents; `ViewportChanged` and
-`GetVisibleSourceLine()` tell which heading is being read now.
+`TextMap.Headings` lists the headings of the document: `Level`, `Text`, anchor `Id` and the link to it
+`Href` (`#id`), `Range` in the text map and `SourceLine`. A list bound to it is a table of contents;
+`ViewportChanged` and `GetVisibleSourceLine()` tell which heading is being read now. A table of
+contents right in the document, from `[TOC]`, is a [ready-made extension](Kit-Links#table-of-contents).
 
 **`MainWindow.xaml`**:
 

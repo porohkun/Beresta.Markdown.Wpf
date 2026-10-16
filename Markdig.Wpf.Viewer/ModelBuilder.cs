@@ -859,7 +859,7 @@ internal sealed partial class ModelBuilder
 
         for (var node = current; node is not null; node = node.NextSibling)
         {
-            if (TryConvertByExtension(node, output))
+            if (TryConvertByExtension(node, state, output))
             {
                 continue;
             }
@@ -1064,11 +1064,12 @@ internal sealed partial class ModelBuilder
     }
 
     /// <summary>Инлайны расширения из узла; первый берёт идентификатор узла, следующие — производные от него.</summary>
-    private bool TryConvertByExtension(Inline node, List<InlineVm> output)
+    private bool TryConvertByExtension(Inline node, InlineState state, List<InlineVm> output)
     {
+        var context = new MdConvertContext(this, listDepth: 0, text => Run(text, state));
         foreach (var extension in _extensions)
         {
-            if (extension.ConvertInlines(node, new(this, listDepth: 0)) is not { } custom)
+            if (extension.ConvertInlines(node, context) is not { } custom)
             {
                 continue;
             }
