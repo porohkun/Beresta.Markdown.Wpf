@@ -2,12 +2,13 @@
 
 using System.Windows.Media;
 
-/// <summary>Снимок того, что подсвечено в документе: декорации и поверх них выделение.</summary>
+/// <summary>Снимок того, что подсвечено в документе: декорации и поверх них выделение; включено ли выделение.</summary>
 internal sealed record MdDecorationLayer(
     MdTextMap Map,
     MdTextRange Selection,
     Brush? SelectionBrush,
-    IReadOnlyList<MdDecoration> Decorations)
+    IReadOnlyList<MdDecoration> Decorations,
+    bool IsSelectionEnabled = true)
 {
     /// <summary>Подсветки, которые задевают кусок, в порядке рисования.</summary>
     public IEnumerable<(MdTextRange Range, Brush Brush)> Within(MdTextRange range)

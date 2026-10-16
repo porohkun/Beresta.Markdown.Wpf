@@ -112,31 +112,40 @@ internal sealed class SelectionController
             return snapToText ? 0 : null;
         }
 
-        DependencyObject? hit = null;
-        VisualTreeHelper.HitTest(
-            _viewer,
-            null,
-            result =>
-            {
-                hit = result.VisualHit;
-                return HitTestResultBehavior.Stop;
-            },
-            new PointHitTestParameters(point));
-
-        for (var node = hit; node is not null && !ReferenceEquals(node, _viewer); node = ParentOf(node))
+        if (TargetAt(point, snapToText) is not { } found)
         {
-            if (node is MdTextBlock text && text.TryGetMapRange(out var textRange))
-            {
-                return textRange.Start + text.HitTestLocal(_viewer.TranslatePoint(point, text));
-            }
-
-            if (node is MdBlockItem item && item.TryGetAtomicRange(out var atomicRange))
-            {
-                return AtomicOffset(item, atomicRange, _viewer.TranslatePoint(point, item));
-            }
+            return null;
         }
 
-        return snapToText ? FindNearest(point) : null;
+        var local = _viewer.TranslatePoint(point, found.Target);
+        return found.Target is MdTextBlock text
+            ? found.Range.Start + text.HitTestLocal(local)
+            : AtomicOffset(found.Target, found.Range, local);
+    }
+
+    /// <summary>Двойной щелчок: выделяет слово под точкой, а среди пробелов — пробелы, иначе один знак.</summary>
+    public bool SelectWordAt(Point point)
+    {
+        if (!_viewer.IsSelectionEnabled || FindOffset(point, snapToText: true) is not { } offset)
+        {
+            return false;
+        }
+
+        var (start, end) = WordAround(_viewer.TextMap.Text, offset);
+        SelectBetween(start, end);
+        return true;
+    }
+
+    /// <summary>Тройной щелчок: выделяет весь текст блока под точкой — абзац, заголовок, ячейку, код.</summary>
+    public bool SelectBlockAt(Point point)
+    {
+        if (!_viewer.IsSelectionEnabled || _viewer.TextMap.Length == 0 || TargetAt(point, snapToText: true) is not { } found)
+        {
+            return false;
+        }
+
+        SelectBetween(found.Range.Start, found.Range.End);
+        return true;
     }
 
     /// <summary>Нажатие: ставит якорь или, с <paramref name="extend"/>, двигает активный конец.</summary>
@@ -243,6 +252,82 @@ internal sealed class SelectionController
     private static int AtomicOffset(FrameworkElement element, MdTextRange range, Point pointInElement)
         => pointInElement.Y > element.ActualHeight / 2 ? range.End : range.Start;
 
+    private static WordKind KindOf(char symbol)
+        => char.IsLetterOrDigit(symbol) || symbol == '_' ? WordKind.Word
+            : symbol != '\n' && char.IsWhiteSpace(symbol) ? WordKind.Space
+            : WordKind.Other;
+
+    /// <summary>Слово вокруг позиции: знак справа от неё, а если там не слово — знак слева.</summary>
+    private static (int Start, int End) WordAround(string text, int offset)
+    {
+        var at = offset < text.Length && KindOf(text[offset]) == WordKind.Word ? offset
+            : offset > 0 && KindOf(text[offset - 1]) == WordKind.Word ? offset - 1
+            : offset;
+        if (at >= text.Length || text[at] == '\n')
+        {
+            return (offset, offset);
+        }
+
+        var kind = KindOf(text[at]);
+        if (kind == WordKind.Other)
+        {
+            return (at, at + 1);
+        }
+
+        var start = at;
+        while (start > 0 && KindOf(text[start - 1]) == kind)
+        {
+            start--;
+        }
+
+        var end = at + 1;
+        while (end < text.Length && KindOf(text[end]) == kind)
+        {
+            end++;
+        }
+
+        return (start, end);
+    }
+
+    private void SelectBetween(int start, int end)
+    {
+        _pressed = false;
+        _dragging = false;
+        _anchor = start;
+        _active = end;
+        Changed?.Invoke();
+    }
+
+    /// <summary>Элемент со своим куском карты под точкой; с привязкой к тексту — ближайший к ней.</summary>
+    private (FrameworkElement Target, MdTextRange Range)? TargetAt(Point point, bool snapToText)
+    {
+        DependencyObject? hit = null;
+        VisualTreeHelper.HitTest(
+            _viewer,
+            null,
+            result =>
+            {
+                hit = result.VisualHit;
+                return HitTestResultBehavior.Stop;
+            },
+            new PointHitTestParameters(point));
+
+        for (var node = hit; node is not null && !ReferenceEquals(node, _viewer); node = ParentOf(node))
+        {
+            if (node is MdTextBlock text && text.TryGetMapRange(out var textRange))
+            {
+                return (text, textRange);
+            }
+
+            if (node is MdBlockItem item && item.TryGetAtomicRange(out var atomicRange))
+            {
+                return (item, atomicRange);
+            }
+        }
+
+        return snapToText ? Nearest(point) : null;
+    }
+
     private void MoveActive(Point point)
     {
         if (FindOffset(point, snapToText: true) is { } offset && offset != _active)
@@ -271,7 +356,7 @@ internal sealed class SelectionController
         }
     }
 
-    private int? FindNearest(Point point)
+    private (FrameworkElement Target, MdTextRange Range)? Nearest(Point point)
     {
         FrameworkElement? best = null;
         var bestDistance = double.MaxValue;
@@ -289,12 +374,18 @@ internal sealed class SelectionController
             }
         }
 
-        var local = best is null ? default : _viewer.TranslatePoint(point, best);
         return best switch
         {
-            MdTextBlock text when text.TryGetMapRange(out var range) => range.Start + text.HitTestLocal(local),
-            MdBlockItem item when item.TryGetAtomicRange(out var range) => AtomicOffset(item, range, local),
+            MdTextBlock text when text.TryGetMapRange(out var range) => (text, range),
+            MdBlockItem item when item.TryGetAtomicRange(out var range) => (item, range),
             _ => null
         };
+    }
+
+    private enum WordKind
+    {
+        Word,
+        Space,
+        Other
     }
 }

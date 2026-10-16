@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Input;
 using System.Windows.Media;
 using Extensions;
 using Selection;
@@ -161,6 +162,19 @@ public class MdTextBlock : TextBlock
 
     /// <summary>Строки исходника, которые начинаются в этом тексте, и экранные строки, где они начинаются.</summary>
     internal IReadOnlyList<(int Line, Rect Row)> SourceRows => _sourceRows ??= FindSourceRows();
+
+    /// <summary>Над текстом, пока выделение включено, — текстовый курсор; ссылки и виджеты ставят свой.</summary>
+    protected override void OnQueryCursor(QueryCursorEventArgs e)
+    {
+        base.OnQueryCursor(e);
+        if (!e.Handled
+            && e.OriginalSource is TextElement or MdTextBlock
+            && GetValue(LayerProperty) is MdDecorationLayer { IsSelectionEnabled: true })
+        {
+            e.Cursor = Cursors.IBeam;
+            e.Handled = true;
+        }
+    }
 
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
     {

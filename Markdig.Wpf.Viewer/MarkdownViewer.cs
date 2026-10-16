@@ -1,9 +1,6 @@
 ﻿namespace MarkdigWpfViewer;
 
 using System.Collections.Specialized;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -111,6 +108,22 @@ public sealed class MarkdownViewer : ItemsControl
             typeof(MarkdownViewer),
             new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
 
+    /// <summary>Кнопка копирования в блоках кода, видна при наведении; наследуется блоками кода.</summary>
+    public static readonly DependencyProperty ShowCodeCopyButtonProperty =
+        DependencyProperty.RegisterAttached(
+            nameof(ShowCodeCopyButton),
+            typeof(bool),
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.Inherits));
+
+    /// <summary>Копировать как markdown: разметка выделенного обычным текстом; Ctrl+Shift+C.</summary>
+    public static readonly RoutedUICommand CopyMarkdownCommand =
+        new(
+            "Copy as Markdown",
+            nameof(CopyMarkdownCommand),
+            typeof(MarkdownViewer),
+            new InputGestureCollection { new KeyGesture(Key.C, ModifierKeys.Control | ModifierKeys.Shift) });
+
     /// <summary>Флажок задачи нажали; текст правит приложение. Всплывающее.</summary>
     public static readonly RoutedEvent TaskToggledEvent =
         EventManager.RegisterRoutedEvent(
@@ -185,6 +198,13 @@ public sealed class MarkdownViewer : ItemsControl
             new(
                 ApplicationCommands.Copy,
                 (sender, _) => ((MarkdownViewer)sender).Copy(),
+                (sender, e) => e.CanExecute = sender is MarkdownViewer { IsCopyEnabled: true, SelectionLength: > 0 }));
+
+        CommandManager.RegisterClassCommandBinding(
+            typeof(MarkdownViewer),
+            new(
+                CopyMarkdownCommand,
+                (sender, _) => ((MarkdownViewer)sender).CopyMarkdown(),
                 (sender, e) => e.CanExecute = sender is MarkdownViewer { IsCopyEnabled: true, SelectionLength: > 0 }));
 
         CommandManager.RegisterClassCommandBinding(
@@ -302,6 +322,12 @@ public sealed class MarkdownViewer : ItemsControl
         set => SetValue(ShowCodeLineNumbersProperty, value);
     }
 
+    public bool ShowCodeCopyButton
+    {
+        get => (bool)GetValue(ShowCodeCopyButtonProperty);
+        set => SetValue(ShowCodeCopyButtonProperty, value);
+    }
+
     public MdTextMap TextMap
     {
         get => (MdTextMap)GetValue(TextMapProperty);
@@ -332,6 +358,12 @@ public sealed class MarkdownViewer : ItemsControl
 
     public static void SetCanToggleTasks(DependencyObject element, bool value)
         => element.SetValue(CanToggleTasksProperty, value);
+
+    public static bool GetShowCodeCopyButton(DependencyObject element)
+        => (bool)element.GetValue(ShowCodeCopyButtonProperty);
+
+    public static void SetShowCodeCopyButton(DependencyObject element, bool value)
+        => element.SetValue(ShowCodeCopyButtonProperty, value);
 
     public static bool GetShowCodeLineNumbers(DependencyObject element)
         => (bool)element.GetValue(ShowCodeLineNumbersProperty);
@@ -444,19 +476,18 @@ public sealed class MarkdownViewer : ItemsControl
     /// <summary>Кладёт выделенное в буфер обмена голым текстом и разметкой; перед этим поднимает <see cref="DataObject.CopyingEvent"/>.</summary>
     public void Copy()
     {
-        if (CreateCopyData() is not { } data)
+        if (CreateCopyData() is { } data)
         {
-            return;
+            MdClipboard.Put(data);
         }
+    }
 
-        try
+    /// <summary>Кладёт разметку выделенного обычным текстом — её можно вставить куда угодно; тоже через <see cref="DataObject.CopyingEvent"/>.</summary>
+    public void CopyMarkdown()
+    {
+        if (CreateCopyData(markdownAsText: true) is { } data)
         {
-            Clipboard.SetDataObject(data, true);
-        }
-        catch (COMException)
-        {
-            // BYDESIGN: буфер обмена бывает занят другим приложением — копирование тогда просто
-            // не удаётся, а вьюер работает дальше.
+            MdClipboard.Put(data);
         }
     }
 
@@ -486,20 +517,17 @@ public sealed class MarkdownViewer : ItemsControl
     }
 
     /// <summary>Оба вида выделенного для буфера обмена после <see cref="DataObject.CopyingEvent"/>; <c>null</c> — копировать нечего или приложение отменило.</summary>
-    internal DataObject? CreateCopyData()
+    internal DataObject? CreateCopyData(bool markdownAsText = false)
     {
         if (SelectionLength == 0)
         {
             return null;
         }
 
-        var data = new DataObject();
-        data.SetText(SelectedText);
-        data.SetData(MdDataFormats.Markdown, new MemoryStream(Encoding.UTF8.GetBytes(SelectedMarkdown)));
-
-        var copying = new DataObjectCopyingEventArgs(data, false);
-        RaiseEvent(copying);
-        return copying.CommandCancelled ? null : data;
+        var markdown = SelectedMarkdown;
+        var html = Markdig.Markdown.ToHtml(markdown, MarkdownPipeline ?? ModelBuilder.DefaultPipeline);
+        var data = MdClipboard.Data(markdownAsText ? markdown : SelectedText, markdown, html);
+        return MdClipboard.Approve(this, data) ? data : null;
     }
 
     protected override DependencyObject GetContainerForItemOverride() => new MdBlockItem();
@@ -510,12 +538,20 @@ public sealed class MarkdownViewer : ItemsControl
     {
         base.OnPreviewMouseLeftButtonDown(e);
 
-        if (e.ClickCount > 1 || SelectionController.IsInteractive(e.OriginalSource as DependencyObject, this))
+        if (SelectionController.IsInteractive(e.OriginalSource as DependencyObject, this))
         {
             return;
         }
 
-        if (Selection.Press(e.GetPosition(this), Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)))
+        var point = e.GetPosition(this);
+        var selected = e.ClickCount switch
+        {
+            2 => Selection.SelectWordAt(point),
+            3 => Selection.SelectBlockAt(point),
+            _ => Selection.Press(point, Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+        };
+
+        if (selected)
         {
             Focus();
         }
@@ -674,7 +710,7 @@ public sealed class MarkdownViewer : ItemsControl
 
     private void UpdateLayer()
     {
-        SetValue(MdSelection.LayerProperty, new MdDecorationLayer(TextMap, Selection.Range, SelectionBrush, Decorations ?? []));
+        SetValue(MdSelection.LayerProperty, new MdDecorationLayer(TextMap, Selection.Range, SelectionBrush, Decorations ?? [], IsSelectionEnabled));
     }
 
     private void ResetPipeline()

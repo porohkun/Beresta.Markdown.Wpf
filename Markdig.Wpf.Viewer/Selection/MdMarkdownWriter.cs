@@ -67,7 +67,8 @@ internal sealed partial class MdMarkdownWriter
         return fence + pad + text + pad + fence;
     }
 
-    private static int LongestRun(string text, char symbol)
+    /// <summary>Самый длинный ряд знака подряд — длина ограждения кода берётся на единицу больше.</summary>
+    internal static int LongestRun(string text, char symbol)
     {
         var longest = 0;
         var current = 0;

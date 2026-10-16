@@ -1,6 +1,13 @@
 ﻿<!-- Ключи вьюера от цветов HandyControl -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <!-- Подписи по-русски -->
+    <sys:String x:Key="Md.ContextMenu.Copy">Копировать</sys:String>
+    <sys:String x:Key="Md.ContextMenu.CopyMarkdown">Копировать как markdown</sys:String>
+    <sys:String x:Key="Md.ContextMenu.SelectAll">Выделить всё</sys:String>
+    <sys:String x:Key="Md.CodeBlock.CopyToolTip">Копировать код</sys:String>
 
     <!-- Текст и ссылки -->
     <SolidColorBrush x:Key="Md.Paragraph.Foreground" Color="{DynamicResource PrimaryTextColor}" />

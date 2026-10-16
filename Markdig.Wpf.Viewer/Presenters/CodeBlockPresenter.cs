@@ -1,14 +1,29 @@
 ﻿namespace MarkdigWpfViewer.Presenters;
 
+using System.Net;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Threading;
+using Selection;
 using ViewModels;
 
-/// <summary>Блок кода: рамка с шапкой языка и прокруткой вбок вокруг текста кода.</summary>
+/// <summary>Блок кода: рамка с шапкой языка, прокруткой вбок вокруг текста кода и кнопкой копирования.</summary>
 [TemplatePart(Name = HeaderPart, Type = typeof(FrameworkElement))]
 [TemplatePart(Name = CodePart, Type = typeof(MdTextBlock))]
+[TemplatePart(Name = CopyPart, Type = typeof(ButtonBase))]
 public class CodeBlockPresenter : Control
 {
+    private static readonly DependencyPropertyKey IsCopiedPropertyKey =
+        DependencyProperty.RegisterReadOnly(
+            nameof(IsCopied),
+            typeof(bool),
+            typeof(CodeBlockPresenter),
+            new(false));
+
+    /// <summary>Код только что скопирован кнопкой — на миг после нажатия.</summary>
+    public static readonly DependencyProperty IsCopiedProperty = IsCopiedPropertyKey.DependencyProperty;
+
     /// <summary>Код одним куском текста — тот же список, что у вьюмодели, ради выделения.</summary>
     public static readonly DependencyProperty RunsProperty =
         DependencyProperty.Register(
@@ -55,6 +70,12 @@ public class CodeBlockPresenter : Control
 
     private const string HeaderPart = "PART_Header";
     private const string CodePart = "PART_Code";
+    private const string CopyPart = "PART_Copy";
+
+    private static readonly TimeSpan CopiedFor = TimeSpan.FromSeconds(1.5);
+
+    private ButtonBase? _copy;
+    private DispatcherTimer? _copied;
 
     public IReadOnlyList<InlineVm>? Runs
     {
@@ -86,6 +107,66 @@ public class CodeBlockPresenter : Control
     {
         get => (bool)GetValue(IsFencedProperty);
         set => SetValue(IsFencedProperty, value);
+    }
+
+    public bool IsCopied => (bool)GetValue(IsCopiedProperty);
+
+    public override void OnApplyTemplate()
+    {
+        if (_copy is not null)
+        {
+            _copy.Click -= OnCopyClick;
+        }
+
+        base.OnApplyTemplate();
+
+        _copy = GetTemplateChild(CopyPart) as ButtonBase;
+        if (_copy is not null)
+        {
+            _copy.Click += OnCopyClick;
+        }
+    }
+
+    /// <summary>Кладёт код в буфер обмена: текстом, блоком кода markdown и HTML; через <see cref="DataObject.CopyingEvent"/>.</summary>
+    public void Copy()
+    {
+        if (CreateCopyData() is not { } data)
+        {
+            return;
+        }
+
+        MdClipboard.Put(data);
+        SetValue(IsCopiedPropertyKey, true);
+        _copied ??= new(CopiedFor, DispatcherPriority.Normal, (_, _) => EndCopied(), Dispatcher);
+        _copied.Stop();
+        _copied.Start();
+    }
+
+    /// <summary>Код для буфера после <see cref="DataObject.CopyingEvent"/>; <c>null</c> — кода нет или приложение отменило.</summary>
+    internal DataObject? CreateCopyData()
+    {
+        if (Code is not { } code)
+        {
+            return null;
+        }
+
+        var fence = new string('`', Math.Max(3, MdMarkdownWriter.LongestRun(code, '`') + 1));
+        var markdown = $"{fence}{InfoString}\n{code}\n{fence}";
+        var language = Syntax is { Length: > 0 } syntax
+            ? $" class=\"language-{WebUtility.HtmlEncode(syntax)}\""
+            : string.Empty;
+        var html = $"<pre><code{language}>{WebUtility.HtmlEncode(code)}</code></pre>";
+
+        var data = MdClipboard.Data(code, markdown, html);
+        return MdClipboard.Approve(this, data) ? data : null;
+    }
+
+    private void OnCopyClick(object sender, RoutedEventArgs e) => Copy();
+
+    private void EndCopied()
+    {
+        _copied?.Stop();
+        SetValue(IsCopiedPropertyKey, false);
     }
 
     /// <summary>Строки исходника блока — шапка и строки кода — и их полосы в своих координатах.</summary>
