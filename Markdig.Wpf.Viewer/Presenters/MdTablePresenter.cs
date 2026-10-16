@@ -93,6 +93,16 @@ public sealed class MdTablePresenter : Control
                     ContentTemplate = row.IsHeader ? HeaderTemplate : CellTemplate
                 };
 
+                if (Table.AlignmentOf(c) is not TableAlignment.Default and var alignment)
+                {
+                    presenter.SetValue(TextBlock.TextAlignmentProperty, alignment switch
+                    {
+                        TableAlignment.Center => TextAlignment.Center,
+                        TableAlignment.Right => TextAlignment.Right,
+                        _ => TextAlignment.Left
+                    });
+                }
+
                 Grid.SetRow(presenter, r);
                 Grid.SetColumn(presenter, c);
                 _grid.Children.Add(presenter);

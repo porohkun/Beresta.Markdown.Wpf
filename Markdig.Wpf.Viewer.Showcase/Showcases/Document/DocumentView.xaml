@@ -46,6 +46,8 @@
         <ScrollViewer>
             <mdv:MarkdownViewer x:Name="Viewer"
                                 Markdown="{Binding Text}"
+                                CanToggleTasks="True"
+                                TaskToggled="OnTaskToggled"
                                 ViewportChanged="OnViewportChanged"
                                 Margin="24,16" />
         </ScrollViewer>

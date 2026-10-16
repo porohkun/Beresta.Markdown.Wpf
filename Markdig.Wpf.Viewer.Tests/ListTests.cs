@@ -47,8 +47,8 @@ public sealed class ListTests
     }
 
     [Fact]
-    public void Отметка_задачи_показывается_исходным_текстом()
+    public void Отметка_задачи_становится_флажком()
     {
-        ModelDump.Of("- [ ] todo\n- [x] done").Should().Be("L[• P([ ] todo); • P([x] done)]");
+        ModelDump.Of("- [ ] todo\n- [x] done").Should().Be("L[• P(☐ todo); • P(☑ done)]");
     }
 }

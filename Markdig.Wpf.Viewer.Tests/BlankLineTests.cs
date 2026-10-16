@@ -34,7 +34,7 @@ public sealed class BlankLineTests
 
     [Theory]
     [InlineData("a\n\n[d]: https://example.com\n\nb", "P(a) _ _ P(b)")]
-    [InlineData("a[^1]\n\n[^1]: one\n\nb", "P(a[^1]) _ _ P(b) P(one)")]
+    [InlineData("a[^1]\n\n[^1]: one\n\nb", "P(a^1) _ F1[P(one↩)] _ P(b)")]
     [InlineData("::: note\ntext\n:::\n\nb", "P(text) _ P(b)")]
     public void Невидимые_строки_исходника_отступами_не_становятся(string markdown, string expected)
     {

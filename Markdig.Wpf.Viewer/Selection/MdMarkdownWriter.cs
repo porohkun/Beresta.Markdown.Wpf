@@ -107,7 +107,16 @@ internal sealed partial class MdMarkdownWriter
             ? "\\" + text
             : OrderedMarker().Replace(text, "$1\\$2");
 
-    private static string Separator(int columns) => "|" + string.Concat(Enumerable.Repeat(" --- |", columns));
+    private static string Separator(TableVm table)
+        => "|" + string.Concat(Enumerable
+            .Range(0, table.ColumnCount)
+            .Select(column => table.AlignmentOf(column) switch
+            {
+                TableAlignment.Left => " :--- |",
+                TableAlignment.Center => " :---: |",
+                TableAlignment.Right => " ---: |",
+                _ => " --- |"
+            }));
 
     private static List<Marker> Markers(RunVm run)
     {
@@ -130,6 +139,21 @@ internal sealed partial class MdMarkdownWriter
         if (run.Italic)
         {
             markers.Add(Italic);
+        }
+
+        if (run.Kbd)
+        {
+            markers.Add(new("<kbd>", "</kbd>", Emphasis: false));
+        }
+
+        if (run.Subscript)
+        {
+            markers.Add(new("<sub>", "</sub>", Emphasis: false));
+        }
+
+        if (run.Superscript)
+        {
+            markers.Add(new("<sup>", "</sup>", Emphasis: false));
         }
 
         return markers;
@@ -181,6 +205,13 @@ internal sealed partial class MdMarkdownWriter
             case ThematicBreakVm:
                 _other = true;
                 return ["---"];
+
+            case FootnoteVm footnote when _selection.Start <= range.Start && _selection.End >= range.End && SourceOf(footnote) is { } whole:
+                _other = true;
+                return whole.Split('\n');
+
+            case FootnoteVm footnote:
+                return Blocks(footnote.Blocks);
 
             case IMdTextSource widget:
                 return Widget(block, widget, range);
@@ -253,7 +284,7 @@ internal sealed partial class MdMarkdownWriter
         var lines = new List<string>
         {
             Row(header, whole: !touched.Any(row => ReferenceEquals(row, header))),
-            Separator(table.ColumnCount)
+            Separator(table)
         };
         lines.AddRange(touched.Where(row => !ReferenceEquals(row, header)).Select(row => Row(row, whole: false)));
         return lines;

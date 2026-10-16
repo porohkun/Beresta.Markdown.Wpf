@@ -36,9 +36,9 @@ public sealed class InlineTests
     }
 
     [Fact]
-    public void Тег_в_строке_показывается_как_есть()
+    public void Незнакомый_тег_в_строке_показывается_как_есть()
     {
-        ModelDump.Of("a <b>bold</b> c").Should().Be("P(a <b>bold</b> c)");
+        ModelDump.Of("a <span>x</span> c").Should().Be("P(a <span>x</span> c)");
     }
 
     [Fact]

@@ -17,6 +17,10 @@ public sealed class MdStyleProvider : IMdStyleProvider
     private DataTemplate? _table;
     private DataTemplate? _horizontalRule;
     private DataTemplate? _blankLine;
+    private DataTemplate? _footnote;
+    private DataTemplate? _image;
+    private DataTemplate? _task;
+    private DataTemplate? _footnoteLink;
 
     /// <summary>Провайдер, у которого берутся незаданные шаблоны.</summary>
     public IMdStyleProvider? BasedOn { get; set; }
@@ -67,5 +71,29 @@ public sealed class MdStyleProvider : IMdStyleProvider
     {
         get => _blankLine ?? BasedOn?.BlankLineTemplate;
         set => _blankLine = value;
+    }
+
+    public DataTemplate? FootnoteTemplate
+    {
+        get => _footnote ?? BasedOn?.FootnoteTemplate;
+        set => _footnote = value;
+    }
+
+    public DataTemplate? ImageTemplate
+    {
+        get => _image ?? BasedOn?.ImageTemplate;
+        set => _image = value;
+    }
+
+    public DataTemplate? TaskTemplate
+    {
+        get => _task ?? BasedOn?.TaskTemplate;
+        set => _task = value;
+    }
+
+    public DataTemplate? FootnoteLinkTemplate
+    {
+        get => _footnoteLink ?? BasedOn?.FootnoteLinkTemplate;
+        set => _footnoteLink = value;
     }
 }

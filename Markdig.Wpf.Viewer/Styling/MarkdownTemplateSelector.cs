@@ -45,6 +45,10 @@ public sealed class MarkdownTemplateSelector : DataTemplateSelector
             TableVm => provider.TableTemplate,
             ThematicBreakVm => provider.HorizontalRuleTemplate,
             BlankLineVm => provider.BlankLineTemplate,
+            FootnoteVm => provider.FootnoteTemplate,
+            ImageVm => provider.ImageTemplate,
+            TaskVm => provider.TaskTemplate,
+            FootnoteLinkVm => provider.FootnoteLinkTemplate,
             _ => null
         };
     }

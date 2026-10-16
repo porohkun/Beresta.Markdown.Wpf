@@ -6,7 +6,9 @@ using ViewModels;
 
 /// <summary>
 /// Модель документа одной строкой: <c>P(текст) _ L[1. P(а); 2. P(б)]</c> — абзац, отступ и список.
-/// Виджет без своего вида выводится именем типа в фигурных скобках.
+/// Флажок задачи — <c>☐</c> или <c>☑</c>, ссылка сноски — <c>^1</c> или <c>↩</c>, картинка —
+/// <c>![alt]</c>, определение сноски — <c>F1[...]</c>. Виджет без своего вида выводится именем типа в
+/// фигурных скобках.
 /// </summary>
 internal static class ModelDump
 {
@@ -24,6 +26,10 @@ internal static class ModelDump
         {
             RunVm run => run.Text,
             LineBreakVm => "\n",
+            TaskVm task => task.IsChecked ? "☑" : "☐",
+            FootnoteLinkVm { IsBack: true } => "↩",
+            FootnoteLinkVm link => $"^{link.Order}",
+            ImageVm image => $"![{image.Alt}]",
             _ => $"{{{inline.GetType().Name}}}"
         }));
 
@@ -48,6 +54,7 @@ internal static class ModelDump
         QuoteVm quote => $"Q[{Of(quote.Blocks)}]",
         ListVm list => $"L[{string.Join("; ", list.Items.Select(item => $"{item.MarkerText} {Of(item.Blocks)}"))}]",
         TableVm table => $"T({table.Rows.Count}x{table.ColumnCount})",
+        FootnoteVm footnote => $"F{footnote.Order}[{Of(footnote.Blocks)}]",
         _ => $"{{{block.GetType().Name}}}"
     };
 }

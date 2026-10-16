@@ -2,7 +2,7 @@
 
 using System.Windows;
 
-/// <summary>Шаблоны встроенных блоков, по одному на вид; <c>null</c> — блок не рисуется.</summary>
+/// <summary>Шаблоны встроенных блоков и строчных элементов, по одному на вид; <c>null</c> — элемент не рисуется.</summary>
 public interface IMdStyleProvider
 {
     DataTemplate? ParagraphTemplate { get; }
@@ -20,4 +20,16 @@ public interface IMdStyleProvider
     DataTemplate? HorizontalRuleTemplate { get; }
 
     DataTemplate? BlankLineTemplate { get; }
+
+    /// <summary>Определение сноски.</summary>
+    DataTemplate? FootnoteTemplate => null;
+
+    /// <summary>Картинка, строчная.</summary>
+    DataTemplate? ImageTemplate => null;
+
+    /// <summary>Флажок задачи, строчный.</summary>
+    DataTemplate? TaskTemplate => null;
+
+    /// <summary>Ссылка сноски, строчная: номер или ↩.</summary>
+    DataTemplate? FootnoteLinkTemplate => null;
 }

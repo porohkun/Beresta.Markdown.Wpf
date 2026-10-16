@@ -18,6 +18,13 @@
     <SolidColorBrush x:Key="Md.CodeBlock.LineNumberForeground" Color="{DynamicResource ThirdlyTextColor}" />
     <SolidColorBrush x:Key="Md.CodeBlock.HeaderForeground" Color="{DynamicResource ThirdlyTextColor}" />
 
+    <!-- Клавиши, картинки, сноски -->
+    <SolidColorBrush x:Key="Md.Kbd.Foreground" Color="{DynamicResource PrimaryTextColor}" />
+    <SolidColorBrush x:Key="Md.Kbd.Background" Color="{DynamicResource SecondaryRegionColor}" />
+    <SolidColorBrush x:Key="Md.Kbd.BorderBrush" Color="{DynamicResource BorderColor}" />
+    <SolidColorBrush x:Key="Md.Image.AltForeground" Color="{DynamicResource ThirdlyTextColor}" />
+    <SolidColorBrush x:Key="Md.Footnote.MarkerForeground" Color="{DynamicResource ThirdlyTextColor}" />
+
     <!-- Поля с номерами строк -->
     <SolidColorBrush x:Key="Md.Gutter.Foreground" Color="{DynamicResource ThirdlyTextColor}" />
 

@@ -44,7 +44,7 @@ public sealed class SelectedMarkdownTests
     [InlineData("a  \nb", "a\\\nb")]
     [InlineData("* x\n* y", "- x\n- y")]
     [InlineData("Title\n=====", "# Title")]
-    [InlineData("| a | b |\n|:--|--:|\n| 1 | 2 |", "| a | b |\n| --- | --- |\n| 1 | 2 |")]
+    [InlineData("| a | b |\n|:--|--:|\n| 1 | 2 |", "| a | b |\n| :--- | ---: |\n| 1 | 2 |")]
     [InlineData("    indented code", "```\nindented code\n```")]
     [InlineData("a &amp; b", "a & b")]
     [InlineData("```cs\r\nx\r\ny\r\n```\r\n\r\ntext\r\nmore", "```cs\nx\ny\n```\n\ntext\nmore")]

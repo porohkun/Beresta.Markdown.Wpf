@@ -359,6 +359,11 @@ public sealed class MdTextMap
                     Copies[Text.Length] = copy.CopyText;
                 }
 
+                if (inline is FootnoteLinkVm { IsBack: false } reference)
+                {
+                    Anchors.TryAdd($"fnref:{reference.Index}", new(Text.Length, text.Length));
+                }
+
                 Text.Append(text);
             }
 
@@ -401,6 +406,11 @@ public sealed class MdTextMap
 
                 case QuoteVm quote:
                     AppendBlocks(quote.Blocks);
+                    break;
+
+                case FootnoteVm footnote:
+                    AppendBlocks(footnote.Blocks);
+                    Anchors.TryAdd($"fn:{footnote.Order}", new(start, Text.Length - start));
                     break;
 
                 case ListVm list:

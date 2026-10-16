@@ -30,6 +30,7 @@
         <Style TargetType="{x:Type mdv:MarkdownViewer}" BasedOn="{StaticResource {x:Type mdv:MarkdownViewer}}">
             <Setter Property="ShowSourceLineNumbers" Value="{Binding Options.ShowSourceLineNumbers}" />
             <Setter Property="IsSelectionEnabled" Value="{Binding Options.IsSelectionEnabled}" />
+            <Setter Property="BaseUri" Value="pack://application:,,,/Markdig.Wpf.Viewer.Showcase;component/Samples/" />
         </Style>
 
         <!-- Капсулы HandyControl, полоса заголовков слева и прижата к верху -->

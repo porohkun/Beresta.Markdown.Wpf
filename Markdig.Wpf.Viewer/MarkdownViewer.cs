@@ -45,7 +45,7 @@ public sealed class MarkdownViewer : ItemsControl
             nameof(StyleProvider),
             typeof(IMdStyleProvider),
             typeof(MarkdownViewer),
-            new(null, OnStyleProviderChanged));
+            new(null, OnContainersSourceChanged));
 
     /// <summary>Расширения под свой синтаксис.</summary>
     public static readonly DependencyProperty ExtensionsProperty =
@@ -86,6 +86,38 @@ public sealed class MarkdownViewer : ItemsControl
             typeof(bool),
             typeof(MarkdownViewer),
             new(true, (_, _) => CommandManager.InvalidateRequerySuggested()));
+
+    /// <summary>Откуда берутся картинки; по умолчанию <see cref="MdImageLoader"/>.</summary>
+    public static readonly DependencyProperty ImageLoaderProperty =
+        DependencyProperty.Register(
+            nameof(ImageLoader),
+            typeof(IMdImageLoader),
+            typeof(MarkdownViewer),
+            new(MdImageLoader.Instance, OnContainersSourceChanged));
+
+    /// <summary>Адрес документа: от него разбираются относительные адреса картинок.</summary>
+    public static readonly DependencyProperty BaseUriProperty =
+        DependencyProperty.Register(
+            nameof(BaseUri),
+            typeof(Uri),
+            typeof(MarkdownViewer),
+            new(null, OnContainersSourceChanged));
+
+    /// <summary>Можно ли нажимать флажки задач; наследуется. Нажатие поднимает <see cref="TaskToggledEvent"/>.</summary>
+    public static readonly DependencyProperty CanToggleTasksProperty =
+        DependencyProperty.RegisterAttached(
+            nameof(CanToggleTasks),
+            typeof(bool),
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
+
+    /// <summary>Флажок задачи нажали; текст правит приложение. Всплывающее.</summary>
+    public static readonly RoutedEvent TaskToggledEvent =
+        EventManager.RegisterRoutedEvent(
+            nameof(TaskToggled),
+            RoutingStrategy.Bubble,
+            typeof(EventHandler<MdTaskToggledEventArgs>),
+            typeof(MarkdownViewer));
 
     /// <summary>Номера строк исходника на полях слева.</summary>
     public static readonly DependencyProperty ShowSourceLineNumbersProperty =
@@ -185,6 +217,12 @@ public sealed class MarkdownViewer : ItemsControl
     /// <summary>Видимая часть документа могла сместиться: прокрутка, уточнились высоты блоков.</summary>
     public event EventHandler? ViewportChanged;
 
+    public event EventHandler<MdTaskToggledEventArgs> TaskToggled
+    {
+        add => AddHandler(TaskToggledEvent, value);
+        remove => RemoveHandler(TaskToggledEvent, value);
+    }
+
     public string? Markdown
     {
         get => (string)GetValue(MarkdownProperty);
@@ -234,6 +272,24 @@ public sealed class MarkdownViewer : ItemsControl
         set => SetValue(IsCopyEnabledProperty, value);
     }
 
+    public IMdImageLoader? ImageLoader
+    {
+        get => (IMdImageLoader?)GetValue(ImageLoaderProperty);
+        set => SetValue(ImageLoaderProperty, value);
+    }
+
+    public Uri? BaseUri
+    {
+        get => (Uri?)GetValue(BaseUriProperty);
+        set => SetValue(BaseUriProperty, value);
+    }
+
+    public bool CanToggleTasks
+    {
+        get => (bool)GetValue(CanToggleTasksProperty);
+        set => SetValue(CanToggleTasksProperty, value);
+    }
+
     public bool ShowSourceLineNumbers
     {
         get => (bool)GetValue(ShowSourceLineNumbersProperty);
@@ -270,6 +326,12 @@ public sealed class MarkdownViewer : ItemsControl
     internal MdBlockPanel? BlockPanel { get; set; }
 
     internal MdLineGutter? Gutter { get; private set; }
+
+    public static bool GetCanToggleTasks(DependencyObject element)
+        => (bool)element.GetValue(CanToggleTasksProperty);
+
+    public static void SetCanToggleTasks(DependencyObject element, bool value)
+        => element.SetValue(CanToggleTasksProperty, value);
 
     public static bool GetShowCodeLineNumbers(DependencyObject element)
         => (bool)element.GetValue(ShowCodeLineNumbersProperty);
@@ -486,7 +548,8 @@ public sealed class MarkdownViewer : ItemsControl
     private static void OnPipelineChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownViewer)d).ResetPipeline();
 
-    private static void OnStyleProviderChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    /// <summary>Сменилось то, что контейнеры берут при создании: провайдер стилей, загрузчик картинок, адрес документа.</summary>
+    private static void OnContainersSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var viewer = (MarkdownViewer)d;
         viewer._templatesChanged = true;

@@ -2,6 +2,7 @@
 
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Media;
 using Extensions;
@@ -29,6 +30,14 @@ public class MdTextBlock : TextBlock
     public static readonly DependencyProperty InlineCodeStyleProperty =
         DependencyProperty.Register(
             nameof(InlineCodeStyle),
+            typeof(Style),
+            typeof(MdTextBlock),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
+
+    /// <summary>Стиль клавиши <c>&lt;kbd&gt;</c> — того же <see cref="InlineCodePresenter"/>, что и код посреди строки.</summary>
+    public static readonly DependencyProperty KbdStyleProperty =
+        DependencyProperty.Register(
+            nameof(KbdStyle),
             typeof(Style),
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
@@ -77,6 +86,9 @@ public class MdTextBlock : TextBlock
 
     private static readonly DataTemplateSelector SharedSelector = new MarkdownTemplateSelector();
 
+    /// <summary>Размер шрифта индекса <c>&lt;sub&gt;</c> и <c>&lt;sup&gt;</c> от размера текста.</summary>
+    private static readonly IValueConverter IndexFontSize = new MdScaleConverter(0.75);
+
     private readonly List<Segment> _segments = [];
     private List<Highlight> _highlights = [];
     private List<(int Line, Rect Row)>? _sourceRows;
@@ -111,6 +123,12 @@ public class MdTextBlock : TextBlock
     {
         get => (Style)GetValue(InlineCodeStyleProperty);
         set => SetValue(InlineCodeStyleProperty, value);
+    }
+
+    public Style? KbdStyle
+    {
+        get => (Style?)GetValue(KbdStyleProperty);
+        set => SetValue(KbdStyleProperty, value);
     }
 
     public Style? StrongStyle
@@ -274,11 +292,13 @@ public class MdTextBlock : TextBlock
     }
 
     /// <summary>Неделимый кусок строки с накладкой подсветки поверх.</summary>
-    private static (InlineUIContainer Container, Border Overlay) CreateAtomic(UIElement content)
+    private static (InlineUIContainer Container, Border Overlay) CreateAtomic(
+        UIElement content,
+        BaselineAlignment alignment = BaselineAlignment.Center)
     {
         var overlay = new Border { IsHitTestVisible = false };
         var host = new Grid { Children = { content, overlay } };
-        var container = new InlineUIContainer(host) { BaselineAlignment = BaselineAlignment.Center };
+        var container = new InlineUIContainer(host) { BaselineAlignment = alignment };
         return (container, overlay);
     }
 
@@ -379,8 +399,10 @@ public class MdTextBlock : TextBlock
                     _segments.Add(new(inline, start, length, lineBreak, null, null));
                     break;
 
-                case RunVm { Code: true } code:
-                    var (container, overlay) = CreateAtomic(new InlineCodePresenter { Text = code.Text, Style = InlineCodeStyle });
+                case RunVm { Code: true } or RunVm { Kbd: true }:
+                    var boxed = (RunVm)inline;
+                    var presenter = new InlineCodePresenter { Text = boxed.Text, Style = boxed.Code ? InlineCodeStyle : KbdStyle };
+                    var (container, overlay) = CreateAtomic(presenter);
                     Inlines.Add(container);
                     _segments.Add(new(inline, start, length, container, overlay, null));
                     break;
@@ -395,7 +417,9 @@ public class MdTextBlock : TextBlock
                         Content = inline,
                         ContentTemplateSelector = TryFindResource("Md.TemplateSelector") as DataTemplateSelector ?? SharedSelector
                     };
-                    var (host, cover) = CreateAtomic(widget);
+                    var (host, cover) = CreateAtomic(
+                        widget,
+                        inline is FootnoteLinkVm { IsBack: false } ? BaselineAlignment.Top : BaselineAlignment.Center);
                     Inlines.Add(host);
                     _segments.Add(new(inline, start, length, host, cover, widget));
                     break;
@@ -460,6 +484,16 @@ public class MdTextBlock : TextBlock
         if (run.Bold)
         {
             current = Wrap(current, StrongStyle, span => span.FontWeight = FontWeights.SemiBold);
+        }
+
+        if (run.Subscript || run.Superscript)
+        {
+            var shifted = new Span(current)
+            {
+                BaselineAlignment = run.Subscript ? BaselineAlignment.Subscript : BaselineAlignment.TextTop
+            };
+            shifted.SetBinding(TextElement.FontSizeProperty, new Binding(nameof(FontSize)) { Source = this, Converter = IndexFontSize });
+            current = shifted;
         }
 
         if (run.Hyperlink is not null)
