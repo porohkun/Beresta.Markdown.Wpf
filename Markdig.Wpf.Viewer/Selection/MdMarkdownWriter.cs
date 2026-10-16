@@ -230,6 +230,15 @@ internal sealed partial class MdMarkdownWriter
             case FooterVm footer:
                 return Blocks(footer.Blocks).Select(line => line.Length == 0 ? "^^" : "^^ " + line);
 
+            case CalloutVm callout:
+                return Callout(callout);
+
+            case DetailsVm details:
+                return Details(details);
+
+            case DefinitionListVm definitions:
+                return Definitions(definitions);
+
             case ThematicBreakVm:
                 _other = true;
                 return ["---"];
@@ -360,6 +369,59 @@ internal sealed partial class MdMarkdownWriter
 
         var text = _map.GetText(whole ? range : range.Intersect(_selection));
         return string.Join("<br>", text.Split('\n').Where(line => line.Length > 0).Select(Escape));
+    }
+
+    /// <summary>
+    /// Плашка цитатой с видом в первой строке, как у GitHub; свой заголовок и сворачиваемость —
+    /// после вида, как в Obsidian.
+    /// </summary>
+    private List<string> Callout(CalloutVm callout)
+    {
+        var fold = callout.IsFoldable ? callout.IsFolded ? "-" : "+" : string.Empty;
+        var title = Inlines(callout.Title) is { Length: > 0 } text ? " " + text : string.Empty;
+        var lines = new List<string> { $"> [!{callout.Kind.ToUpperInvariant()}]{fold}{title}" };
+        lines.AddRange(Blocks(callout.Blocks).Select(line => line.Length == 0 ? ">" : "> " + line));
+        return lines;
+    }
+
+    /// <summary>Сворачиваемый блок тегами <c>&lt;details&gt;</c> и <c>&lt;summary&gt;</c>, содержимое — markdown между ними.</summary>
+    private List<string> Details(DetailsVm details)
+    {
+        var lines = new List<string> { details.IsOpen ? "<details open>" : "<details>" };
+        if (Inlines(details.Summary) is { Length: > 0 } summary)
+        {
+            lines.Add($"<summary>{summary}</summary>");
+        }
+
+        lines.Add(string.Empty);
+        lines.AddRange(Blocks(details.Blocks));
+        lines.Add(string.Empty);
+        lines.Add("</details>");
+        return lines;
+    }
+
+    /// <summary>Термины — каждый своей строкой, определение — после <c>:</c> с отступом в четыре пробела.</summary>
+    private List<string> Definitions(DefinitionListVm definitions)
+    {
+        var lines = new List<string>();
+        foreach (var item in definitions.Items)
+        {
+            if (item.HasTerms && Inlines(item.Terms) is { Length: > 0 } terms)
+            {
+                lines.AddRange(terms.Split('\n'));
+            }
+
+            var content = Blocks(item.Blocks);
+            if (content.Count == 0)
+            {
+                continue;
+            }
+
+            lines.Add(":   " + content[0]);
+            lines.AddRange(content.Skip(1).Select(line => line.Length == 0 ? line : "    " + line));
+        }
+
+        return lines;
     }
 
     /// <summary>Фигура в ограждении <c>^^^</c>; подпись — на открывающей или закрывающей строке, где была.</summary>

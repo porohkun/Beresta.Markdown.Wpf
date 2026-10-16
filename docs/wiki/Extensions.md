@@ -279,6 +279,39 @@ the window resources:
 </DataTemplate>
 ```
 
+## Built-in blocks for your syntax
+
+An extension does not need a template of its own when a built-in block fits: it returns a callout
+`CalloutVm` or a collapsible block `DetailsVm`, and the viewer draws it with the theme and keeps
+whether it is folded by itself.
+
+**`SpoilerExtension.cs`**:
+
+```csharp
+using Markdig.Extensions.CustomContainers;
+using Markdig.Syntax;
+using MarkdigWpfViewer.Extensions;
+using MarkdigWpfViewer.ViewModels;
+
+public sealed class SpoilerExtension : MdExtension
+{
+    public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
+        => block is CustomContainer { Info: "spoiler" } container
+            ? new DetailsVm([new RunVm(container.Arguments ?? "Spoiler")], context.ConvertChildren(container))
+            : null;
+}
+```
+
+**Any `.md` file**, with the extension connected:
+
+```markdown
+:::spoiler The ending
+The butler did it.
+:::
+```
+
+A foldable callout is a `CalloutVm` with `IsFoldable = true`; `IsFolded = true` makes it start folded.
+
 ## Overriding built-in syntax
 
 Extensions see the Markdig nodes before the viewer, so they can take over any built-in construct.

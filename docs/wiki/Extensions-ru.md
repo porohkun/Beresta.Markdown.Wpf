@@ -277,6 +277,38 @@ public override object? CreateState(NodeVm node) => node is NoteVm ? new NoteSta
 </DataTemplate>
 ```
 
+## Встроенные блоки для своего синтаксиса
+
+Своему синтаксису не нужен свой шаблон, если подходит встроенный блок: расширение возвращает плашку
+`CalloutVm` или сворачиваемый блок `DetailsVm`, а вьюер рисует его темой и сам помнит, свёрнут ли он.
+
+**`SpoilerExtension.cs`**:
+
+```csharp
+using Markdig.Extensions.CustomContainers;
+using Markdig.Syntax;
+using MarkdigWpfViewer.Extensions;
+using MarkdigWpfViewer.ViewModels;
+
+public sealed class SpoilerExtension : MdExtension
+{
+    public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
+        => block is CustomContainer { Info: "spoiler" } container
+            ? new DetailsVm([new RunVm(container.Arguments ?? "Spoiler")], context.ConvertChildren(container))
+            : null;
+}
+```
+
+**Любой `.md`-файл**, когда расширение подключено:
+
+```markdown
+:::spoiler The ending
+The butler did it.
+:::
+```
+
+Сворачиваемая плашка — `CalloutVm` с `IsFoldable = true`; с `IsFolded = true` она сначала свёрнута.
+
 ## Перекрытие встроенного синтаксиса
 
 Расширения видят узлы Markdig раньше вьюера, поэтому могут взять на себя любую встроенную

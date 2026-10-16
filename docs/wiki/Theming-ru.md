@@ -74,6 +74,11 @@
     <SolidColorBrush x:Key="Md.Quote.BorderBrush" Color="#3D444D" />
     <SolidColorBrush x:Key="Md.Table.BorderBrush" Color="#3D444D" />
     <SolidColorBrush x:Key="Md.Table.HeaderBackground" Color="#161B22" />
+    <SolidColorBrush x:Key="Md.Callout.Note.Brush" Color="#4493F8" />
+    <SolidColorBrush x:Key="Md.Callout.Tip.Brush" Color="#3FB950" />
+    <SolidColorBrush x:Key="Md.Callout.Important.Brush" Color="#AB7DF8" />
+    <SolidColorBrush x:Key="Md.Callout.Warning.Brush" Color="#D29922" />
+    <SolidColorBrush x:Key="Md.Callout.Caution.Brush" Color="#F85149" />
 </ResourceDictionary>
 ```
 
@@ -99,8 +104,8 @@ public void SetDarkMarkdown(bool dark)
 
 ## Подписи интерфейса
 
-Пункты контекстного меню и имя кнопки копирования кода — тоже ключи, по умолчанию английские. Их
-переводят в ресурсах приложения.
+Пункты контекстного меню, имя кнопки копирования кода, заголовки видов плашек и сворачиваемого блока
+без своего заголовка — тоже ключи, по умолчанию английские. Их переводят в ресурсах приложения.
 
 **`App.xaml`**, ресурсы приложения:
 
@@ -109,7 +114,31 @@ public void SetDarkMarkdown(bool dark)
 <sys:String x:Key="Md.ContextMenu.CopyMarkdown">Копировать как Markdown</sys:String>
 <sys:String x:Key="Md.ContextMenu.SelectAll">Выделить всё</sys:String>
 <sys:String x:Key="Md.CodeBlock.CopyToolTip">Копировать код</sys:String>
+<sys:String x:Key="Md.Callout.Note.Title">Заметка</sys:String>
+<sys:String x:Key="Md.Callout.Tip.Title">Совет</sys:String>
+<sys:String x:Key="Md.Callout.Important.Title">Важно</sys:String>
+<sys:String x:Key="Md.Callout.Warning.Title">Предупреждение</sys:String>
+<sys:String x:Key="Md.Callout.Caution.Title">Осторожно</sys:String>
+<sys:String x:Key="Md.Details.Title">Подробности</sys:String>
 ```
+
+## Виды плашек
+
+Вид [плашки](Supported-Markdown-ru#плашки) выглядит так, как говорят три ключа:
+`Md.Callout.<Вид>.Brush` — цвет черты, значка и заголовка, `Md.Callout.<Вид>.Icon` — `Geometry`,
+`Md.Callout.<Вид>.Title` — заголовок. `<Вид>` — вид из Markdown с заглавной первой буквой:
+`[!question]` берёт `Md.Callout.Question.*`. Вид со своим `Brush` получает свои цвет и значок, любой
+другой рисуется заметкой; вид без своего `Title` подписан своим названием.
+
+**`App.xaml`**, ресурсы приложения:
+
+```xml
+<SolidColorBrush x:Key="Md.Callout.Question.Brush" Color="#BF8700" />
+<Geometry x:Key="Md.Callout.Question.Icon">F0 M0.5,8 A7.5,7.5 0 1 1 15.5,8 A7.5,7.5 0 1 1 0.5,8 Z M2,8 A6,6 0 1 0 14,8 A6,6 0 1 0 2,8 Z M7,7 L9,7 L9,9 L7,9 Z</Geometry>
+<sys:String x:Key="Md.Callout.Question.Title">Вопрос</sys:String>
+```
+
+Теперь `> [!QUESTION]` рисуется своим цветом, со своими значком и заголовком.
 
 ## Все ключи
 
@@ -123,7 +152,10 @@ public void SetDarkMarkdown(bool dark)
 | Шапка блока кода | `Md.CodeBlock.HeaderFontFamily`\*, `.HeaderForeground`, `.HeaderFontSize`, `.HeaderMargin` |
 | Кнопка копирования кода | `Md.CodeBlock.CopyToolTip`, `Md.CodeBlock.CopyIcon`, `Md.CodeBlock.CopiedIcon` (обе `Geometry`) |
 | Цитата | `Md.Quote.BorderBrush`, `.BorderThickness`, `.Padding`, `.Margin` |
+| Плашка | `Md.Callout.BorderThickness`, `.Padding`, `.Margin`, `.CornerRadius`, `.Background`, `.ChevronIcon` (`Geometry`, стрелка сворачивания); для видов `Note`, `Tip`, `Important`, `Warning`, `Caution` — `Md.Callout.<Вид>.Brush`, `.Icon` (`Geometry`), `.Title` |
+| Сворачиваемый блок | `Md.Details.Title`, `.Margin`, `.ContentMargin`, `.MarkerForeground`, `.MarkerIcon` (`Geometry`) |
 | Список | `Md.List.Margin`, `Md.List.MarkerWidth`, `Md.List.ItemSpacing` |
+| Список определений | `Md.DefinitionList.Margin`, `.DefinitionMargin` |
 | Таблица | `Md.Table.BorderBrush`, `.BorderThickness`, `.CellPadding`, `.HeaderBackground` |
 | Маркер, сокращение | `Md.Marked.Background`, `Md.Abbreviation.UnderlineBrush` |
 | Фигура | `Md.Figure.Margin`, `.CaptionForeground`, `.CaptionFontSize` |

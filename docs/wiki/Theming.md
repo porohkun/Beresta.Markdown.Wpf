@@ -75,6 +75,11 @@ your window, so switch them there.
     <SolidColorBrush x:Key="Md.Quote.BorderBrush" Color="#3D444D" />
     <SolidColorBrush x:Key="Md.Table.BorderBrush" Color="#3D444D" />
     <SolidColorBrush x:Key="Md.Table.HeaderBackground" Color="#161B22" />
+    <SolidColorBrush x:Key="Md.Callout.Note.Brush" Color="#4493F8" />
+    <SolidColorBrush x:Key="Md.Callout.Tip.Brush" Color="#3FB950" />
+    <SolidColorBrush x:Key="Md.Callout.Important.Brush" Color="#AB7DF8" />
+    <SolidColorBrush x:Key="Md.Callout.Warning.Brush" Color="#D29922" />
+    <SolidColorBrush x:Key="Md.Callout.Caution.Brush" Color="#F85149" />
 </ResourceDictionary>
 ```
 
@@ -100,8 +105,9 @@ public void SetDarkMarkdown(bool dark)
 
 ## Interface strings
 
-The captions of the context menu and the name of the code copy button are keys too, English by
-default. Translate them in the application resources.
+The captions of the context menu, the name of the code copy button, the titles of callout kinds and
+of a collapsible block without its own title are keys too, English by default. Translate them in the
+application resources.
 
 **`App.xaml`**, the application resources:
 
@@ -110,7 +116,31 @@ default. Translate them in the application resources.
 <sys:String x:Key="Md.ContextMenu.CopyMarkdown">Копировать как Markdown</sys:String>
 <sys:String x:Key="Md.ContextMenu.SelectAll">Выделить всё</sys:String>
 <sys:String x:Key="Md.CodeBlock.CopyToolTip">Копировать код</sys:String>
+<sys:String x:Key="Md.Callout.Note.Title">Заметка</sys:String>
+<sys:String x:Key="Md.Callout.Tip.Title">Совет</sys:String>
+<sys:String x:Key="Md.Callout.Important.Title">Важно</sys:String>
+<sys:String x:Key="Md.Callout.Warning.Title">Предупреждение</sys:String>
+<sys:String x:Key="Md.Callout.Caution.Title">Осторожно</sys:String>
+<sys:String x:Key="Md.Details.Title">Подробности</sys:String>
 ```
+
+## Callout kinds
+
+A [callout](Supported-Markdown#callouts) kind looks the way three keys say: `Md.Callout.<Kind>.Brush`
+is the color of the bar, the icon and the title, `Md.Callout.<Kind>.Icon` is a `Geometry`,
+`Md.Callout.<Kind>.Title` is the title. `<Kind>` is the kind from the Markdown with a capital first
+letter: `[!question]` takes `Md.Callout.Question.*`. A kind with its own `Brush` gets its own color and
+icon, any other kind is drawn as a note; a kind without its own `Title` is titled with its name.
+
+**`App.xaml`**, the application resources:
+
+```xml
+<SolidColorBrush x:Key="Md.Callout.Question.Brush" Color="#BF8700" />
+<Geometry x:Key="Md.Callout.Question.Icon">F0 M0.5,8 A7.5,7.5 0 1 1 15.5,8 A7.5,7.5 0 1 1 0.5,8 Z M2,8 A6,6 0 1 0 14,8 A6,6 0 1 0 2,8 Z M7,7 L9,7 L9,9 L7,9 Z</Geometry>
+<sys:String x:Key="Md.Callout.Question.Title">Question</sys:String>
+```
+
+Now `> [!QUESTION]` is drawn in its own color, with its own icon and title.
 
 ## All keys
 
@@ -124,7 +154,10 @@ default. Translate them in the application resources.
 | Code block header | `Md.CodeBlock.HeaderFontFamily`\*, `.HeaderForeground`, `.HeaderFontSize`, `.HeaderMargin` |
 | Code copy button | `Md.CodeBlock.CopyToolTip`, `Md.CodeBlock.CopyIcon`, `Md.CodeBlock.CopiedIcon` (both `Geometry`) |
 | Quote | `Md.Quote.BorderBrush`, `.BorderThickness`, `.Padding`, `.Margin` |
+| Callout | `Md.Callout.BorderThickness`, `.Padding`, `.Margin`, `.CornerRadius`, `.Background`, `.ChevronIcon` (`Geometry`, the fold arrow); for the kinds `Note`, `Tip`, `Important`, `Warning`, `Caution` — `Md.Callout.<Kind>.Brush`, `.Icon` (`Geometry`), `.Title` |
+| Collapsible block | `Md.Details.Title`, `.Margin`, `.ContentMargin`, `.MarkerForeground`, `.MarkerIcon` (`Geometry`) |
 | List | `Md.List.Margin`, `Md.List.MarkerWidth`, `Md.List.ItemSpacing` |
+| Definition list | `Md.DefinitionList.Margin`, `.DefinitionMargin` |
 | Table | `Md.Table.BorderBrush`, `.BorderThickness`, `.CellPadding`, `.HeaderBackground` |
 | Marked text, abbreviation | `Md.Marked.Background`, `Md.Abbreviation.UnderlineBrush` |
 | Figure | `Md.Figure.Margin`, `.CaptionForeground`, `.CaptionFontSize` |

@@ -10,7 +10,8 @@ Narrator and NVDA and testing tools use — with the same structure you see.
 | the viewer | a `Document` |
 | a paragraph, a table cell | `Text` with the paragraph's text |
 | a heading | `Text` with a heading level from 1 to 6: readers can jump between headings |
-| a list, a quote, a footnote | a `List` or a `Group` of the created content |
+| a list, a definition list, a quote, a footnote | a `List` or a `Group` of the created content |
+| a callout, a collapsible block | a `Group` named by its title; a collapsible one can be expanded and collapsed |
 | a link | a `Hyperlink` that can be invoked |
 | a footnote reference and `↩` | a `Hyperlink` named by the footnote number or `↩`; invoking it scrolls like a click |
 | an image | an `Image` named by its alt text |

@@ -8,6 +8,12 @@
     <sys:String x:Key="Md.ContextMenu.CopyMarkdown">Копировать как markdown</sys:String>
     <sys:String x:Key="Md.ContextMenu.SelectAll">Выделить всё</sys:String>
     <sys:String x:Key="Md.CodeBlock.CopyToolTip">Копировать код</sys:String>
+    <sys:String x:Key="Md.Callout.Note.Title">Заметка</sys:String>
+    <sys:String x:Key="Md.Callout.Tip.Title">Совет</sys:String>
+    <sys:String x:Key="Md.Callout.Important.Title">Важно</sys:String>
+    <sys:String x:Key="Md.Callout.Warning.Title">Предупреждение</sys:String>
+    <sys:String x:Key="Md.Callout.Caution.Title">Осторожно</sys:String>
+    <sys:String x:Key="Md.Details.Title">Подробности</sys:String>
 
     <!-- Текст и ссылки -->
     <SolidColorBrush x:Key="Md.Paragraph.Foreground" Color="{DynamicResource PrimaryTextColor}" />
@@ -44,5 +50,13 @@
     <SolidColorBrush x:Key="Md.Quote.BorderBrush" Color="{DynamicResource PrimaryColor}" />
     <SolidColorBrush x:Key="Md.Table.BorderBrush" Color="{DynamicResource BorderColor}" />
     <SolidColorBrush x:Key="Md.Table.HeaderBackground" Color="{DynamicResource SecondaryRegionColor}" />
+
+    <!-- Плашки и сворачиваемые блоки -->
+    <SolidColorBrush x:Key="Md.Callout.Note.Brush" Color="{DynamicResource PrimaryColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Tip.Brush" Color="{DynamicResource SuccessColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Important.Brush" Color="{DynamicResource VioletColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Warning.Brush" Color="{DynamicResource WarningColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Caution.Brush" Color="{DynamicResource DangerColor}" />
+    <SolidColorBrush x:Key="Md.Details.MarkerForeground" Color="{DynamicResource ThirdlyTextColor}" />
 
 </ResourceDictionary>

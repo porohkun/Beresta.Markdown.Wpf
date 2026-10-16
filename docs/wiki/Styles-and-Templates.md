@@ -46,6 +46,24 @@ rest of the theme.
 | `Md.FootnoteLink.Style` | `p:MdFootnoteLink` | footnote references and `↩` |
 | `Md.Footnote.MarkerStyle` | `TextBlock` | the number of a footnote definition |
 | `Md.Figure.CaptionStyle` | `p:MdTextBlock` | figure captions |
+| `Md.Callout.Style` | `p:MdCalloutPresenter` | callouts |
+| `Md.Callout.HeaderStyle` | `ToggleButton` | the title row of a callout; a click on it folds a foldable callout |
+| `Md.Callout.TitleStyle`, `Md.Callout.DefaultTitleStyle` | `p:MdTextBlock`, `TextBlock` | the own title of a callout and the title of its kind |
+| `Md.Details.Style` | `p:MdDetailsPresenter` | collapsible blocks |
+| `Md.Details.HeaderStyle` | `ToggleButton` | the title row of a collapsible block |
+| `Md.Details.SummaryStyle`, `Md.Details.DefaultSummaryStyle` | `p:MdTextBlock`, `TextBlock` | the own title of a collapsible block and `Md.Details.Title` |
+| `Md.DefinitionList.Style` | `ItemsControl` | definition lists |
+| `Md.DefinitionList.TermStyle` | `p:MdTextBlock` | terms of a definition list |
+
+A callout title in the color of the text instead of the color of its kind:
+
+**`App.xaml`**, the application resources:
+
+```xml
+<Style x:Key="Md.Callout.DefaultTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource Md.Callout.DefaultTitleStyle}">
+    <Setter Property="Foreground" Value="{DynamicResource Md.Paragraph.Foreground}" />
+</Style>
+```
 
 A quote on a tinted background instead of a bar on the left:
 
@@ -125,6 +143,9 @@ The data context of a template is the model of its block — an immutable record
 | `FigureTemplate` | `vm:FigureVm` | `Blocks`, the captions among them |
 | `FigureCaptionTemplate` | `vm:FigureCaptionVm` | `Inlines` |
 | `FooterTemplate` | `vm:FooterVm` | `Blocks` |
+| `CalloutTemplate` | `vm:CalloutVm` | `Kind`, `Title`, `Blocks`, `IsFoldable`, `IsFolded` |
+| `DetailsTemplate` | `vm:DetailsVm` | `Summary`, `Blocks`, `IsOpen` |
+| `DefinitionListTemplate` | `vm:DefinitionListVm` | `Items` of `vm:DefinitionItemVm` (`Terms`, `HasTerms`, `Blocks`); an item without terms is one more definition of the item before it |
 | `ImageTemplate` | `vm:ImageVm`, inline | `Url`, `Alt`, `Title`, `Width`, `Height`, `Href` |
 | `TaskTemplate` | `vm:TaskVm`, inline | `IsChecked` |
 | `FootnoteLinkTemplate` | `vm:FootnoteLinkVm`, inline | `Order`, `Index`, `IsBack`, `Target` |
@@ -132,6 +153,17 @@ The data context of a template is the model of its block — an immutable record
 The default templates are in
 [`Themes/Generic.xaml`](https://github.com/porohkun/Markdig.Wpf.Viewer/blob/main/Markdig.Wpf.Viewer/Themes/Generic.xaml)
 under the key `Md.DefaultStyleProvider` — copy one as a starting point.
+
+Whether a callout or a collapsible block is folded lives in its [widget state](Extensions#widget-state),
+an `MdFoldState` with `IsExpanded`: it survives scrolling and a new text. A template of your own binds
+the presenter to it the way the default one does (`xmlns:mdx="clr-namespace:MarkdigWpfViewer.Extensions;assembly=Markdig.Wpf.Viewer"`):
+
+```xml
+<p:MdDetailsPresenter Summary="{Binding Summary}"
+                      Blocks="{Binding Blocks}"
+                      Style="{DynamicResource Md.Details.Style}"
+                      IsExpanded="{Binding Path=(mdx:MdWidget.State).IsExpanded, RelativeSource={RelativeSource Self}, FallbackValue=True}" />
+```
 
 ### Keep selection working
 

@@ -180,6 +180,16 @@ public sealed class MarkdownViewer : ItemsControl
     /// <summary>Текстовая карта показанного документа; меняется с каждым новым текстом.</summary>
     public static readonly DependencyProperty TextMapProperty = TextMapPropertyKey.DependencyProperty;
 
+    private static readonly DependencyPropertyKey FrontMatterPropertyKey =
+        DependencyProperty.RegisterReadOnly(
+            nameof(FrontMatter),
+            typeof(string),
+            typeof(MarkdownViewer),
+            new(null));
+
+    /// <summary>Текст front matter документа без разбора; нет его — <c>null</c>.</summary>
+    public static readonly DependencyProperty FrontMatterProperty = FrontMatterPropertyKey.DependencyProperty;
+
     private const string GutterPart = "PART_Gutter";
 
     private readonly SourcePositions _positions;
@@ -335,6 +345,8 @@ public sealed class MarkdownViewer : ItemsControl
         get => (MdTextMap)GetValue(TextMapProperty);
         private set => SetValue(TextMapPropertyKey, value);
     }
+
+    public string? FrontMatter => (string?)GetValue(FrontMatterProperty);
 
     public int SelectionStart => (int)GetValue(SelectionStartProperty);
 
@@ -763,11 +775,13 @@ public sealed class MarkdownViewer : ItemsControl
             ? (Anchor: TextMap.Locate(selection.Ends.Anchor), Active: TextMap.Locate(selection.Ends.Active))
             : default;
 
+        string? frontMatter = null;
         var blocks = StyleProvider is null
             ? Array.Empty<BlockVm>()
-            : ModelBuilder.Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions, _identity);
+            : ModelBuilder.Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions, _identity, out frontMatter);
 
         TextMap = MdTextMap.Build(blocks);
+        SetValue(FrontMatterPropertyKey, frontMatter);
         _states.Retain(_identity.Contains);
         _blocks.Apply(blocks);
 

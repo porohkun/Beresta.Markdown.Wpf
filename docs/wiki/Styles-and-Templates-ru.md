@@ -46,6 +46,24 @@
 | `Md.FootnoteLink.Style` | `p:MdFootnoteLink` | ссылки на сноски и `↩` |
 | `Md.Footnote.MarkerStyle` | `TextBlock` | номер в определении сноски |
 | `Md.Figure.CaptionStyle` | `p:MdTextBlock` | подписи фигур |
+| `Md.Callout.Style` | `p:MdCalloutPresenter` | плашки |
+| `Md.Callout.HeaderStyle` | `ToggleButton` | строку заголовка плашки; щелчок по ней сворачивает сворачиваемую плашку |
+| `Md.Callout.TitleStyle`, `Md.Callout.DefaultTitleStyle` | `p:MdTextBlock`, `TextBlock` | свой заголовок плашки и заголовок её вида |
+| `Md.Details.Style` | `p:MdDetailsPresenter` | сворачиваемые блоки |
+| `Md.Details.HeaderStyle` | `ToggleButton` | строку заголовка сворачиваемого блока |
+| `Md.Details.SummaryStyle`, `Md.Details.DefaultSummaryStyle` | `p:MdTextBlock`, `TextBlock` | свой заголовок сворачиваемого блока и `Md.Details.Title` |
+| `Md.DefinitionList.Style` | `ItemsControl` | списки определений |
+| `Md.DefinitionList.TermStyle` | `p:MdTextBlock` | термины списка определений |
+
+Заголовок плашки цветом текста, а не цветом её вида:
+
+**`App.xaml`**, ресурсы приложения:
+
+```xml
+<Style x:Key="Md.Callout.DefaultTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource Md.Callout.DefaultTitleStyle}">
+    <Setter Property="Foreground" Value="{DynamicResource Md.Paragraph.Foreground}" />
+</Style>
+```
 
 Цитата на подкрашенном фоне вместо черты слева:
 
@@ -124,6 +142,9 @@
 | `FigureTemplate` | `vm:FigureVm` | `Blocks`, подписи — среди них |
 | `FigureCaptionTemplate` | `vm:FigureCaptionVm` | `Inlines` |
 | `FooterTemplate` | `vm:FooterVm` | `Blocks` |
+| `CalloutTemplate` | `vm:CalloutVm` | `Kind`, `Title`, `Blocks`, `IsFoldable`, `IsFolded` |
+| `DetailsTemplate` | `vm:DetailsVm` | `Summary`, `Blocks`, `IsOpen` |
+| `DefinitionListTemplate` | `vm:DefinitionListVm` | `Items` из `vm:DefinitionItemVm` (`Terms`, `HasTerms`, `Blocks`); пункт без терминов — ещё одно определение пункта перед ним |
 | `ImageTemplate` | `vm:ImageVm`, строчный | `Url`, `Alt`, `Title`, `Width`, `Height`, `Href` |
 | `TaskTemplate` | `vm:TaskVm`, строчный | `IsChecked` |
 | `FootnoteLinkTemplate` | `vm:FootnoteLinkVm`, строчный | `Order`, `Index`, `IsBack`, `Target` |
@@ -131,6 +152,18 @@
 Стандартные шаблоны лежат в
 [`Themes/Generic.xaml`](https://github.com/porohkun/Markdig.Wpf.Viewer/blob/main/Markdig.Wpf.Viewer/Themes/Generic.xaml)
 под ключом `Md.DefaultStyleProvider` — их удобно брать за основу.
+
+Свёрнута ли плашка или сворачиваемый блок — в его [состоянии виджета](Extensions-ru#состояние-виджета),
+`MdFoldState` со свойством `IsExpanded`: оно переживает прокрутку и новый текст. Свой шаблон
+привязывает к нему презентер так же, как стандартный
+(`xmlns:mdx="clr-namespace:MarkdigWpfViewer.Extensions;assembly=Markdig.Wpf.Viewer"`):
+
+```xml
+<p:MdDetailsPresenter Summary="{Binding Summary}"
+                      Blocks="{Binding Blocks}"
+                      Style="{DynamicResource Md.Details.Style}"
+                      IsExpanded="{Binding Path=(mdx:MdWidget.State).IsExpanded, RelativeSource={RelativeSource Self}, FallbackValue=True}" />
+```
 
 ### Чтобы выделение работало
 

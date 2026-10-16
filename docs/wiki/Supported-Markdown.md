@@ -2,8 +2,9 @@
 
 The viewer parses text with Markdig: CommonMark plus Markdig's advanced extensions
 (`UseAdvancedExtensions()`) — tables, task lists, footnotes, heading identifiers, autolinks,
-attributes, custom containers and more. Everything the parser recognizes gets on the screen: a construct
-without its own look is shown as its content or as its source text. Nothing disappears silently.
+attributes, custom containers and more — and front matter (`UseYamlFrontMatter()`). Everything the
+parser recognizes gets on the screen: a construct without its own look is shown as its content or as
+its source text. Nothing disappears silently.
 
 ![Most of the syntax in one document](images/overview.png)
 
@@ -14,9 +15,11 @@ without its own look is shown as its content or as its source text. Nothing disa
 | `# Heading` … `###### Heading`, underlined with `===` or `---` | six heading levels |
 | a paragraph | wrapped text; a line break in the source is a line break on the screen |
 | `> quote` | a bar on the left; any blocks inside |
+| `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]` | a callout: a bar, an icon and a title in the color of its kind — see below |
 | `- item`, `* item`, `1. item`, `7) item` | bullets by nesting level (`•`, `◦`, `▪`), numbers from the first item |
 | `a. item`, `A. item`, `i. item`, `I. item` | letters and roman numerals, also from the first item: `c.` starts with c |
 | `- [ ] task`, `- [x] task` | a check box before the item — see [Task Lists](Task-Lists) |
+| a term and `:   definition` on the next line | a definition list — see below |
 | ```` ```lang ```` fenced code | a code block with a language header — see [Code Blocks](Code-Blocks) |
 | code indented by four spaces | a code block without a header |
 | `\| a \| b \|` with a `\|---\|---\|` row | a table with a header row; `:---`, `:---:` and `---:` align columns |
@@ -26,6 +29,7 @@ without its own look is shown as its content or as its source text. Nothing disa
 | `^^^` … `^^^ Caption` | a figure: its content centered and a caption under it |
 | `^^ text` | a footer in small text |
 | `:::name` … `:::` | a custom container: shows its content; an [extension](Extensions) can draw it its own way |
+| `---` … `---` at the very start of the document | front matter: nothing — see below |
 | an HTML block | its source text |
 | `<!-- comment -->` | nothing |
 
@@ -82,10 +86,63 @@ The viewer is built on Markdig[^parser].
 To show footnotes your own way — for example, as a tooltip at the reference — take them over with an
 extension: [Extensions → Overriding built-in syntax](Extensions#overriding-built-in-syntax).
 
+## Callouts
+
+A quote whose first line is `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]` or `[!CAUTION]` is a
+callout, as on GitHub: a bar, an icon and a title in the color of its kind, any blocks inside. Letter
+case of the kind does not matter. A kind the viewer does not know is drawn as a note titled with the
+kind's name: `[!kitten]` gets the title "Kitten".
+
+**Any `.md` file**:
+
+```markdown
+> [!WARNING]
+> The operation cannot be undone.
+```
+
+Colors, icons and titles of the kinds are theme keys — see [Theming](Theming#all-keys); the titles are
+in English, translate them like other [interface strings](Theming#interface-strings).
+
+## Definition lists
+
+A term on its own line, its definition after `:` on the next line. Several terms in a row share the
+definitions under them, several `:` lines give several definitions. The term is drawn in semibold, its
+definitions under it with an indent.
+
+**Any `.md` file**:
+
+```markdown
+Markdig
+:   A Markdown parser for .NET.
+
+Callout
+Admonition
+:   A block with the color, icon and title of its kind.
+:   The kind is written on the first line of a quote.
+```
+
+## Front matter
+
+Front matter is a block between `---` lines at the very start of the document, usually YAML: a title,
+tags, a date. The viewer does not draw it: the document starts with what follows it, and source line
+numbers still count its lines. The text of the block, unparsed, is in the `FrontMatter` property;
+without the block it is `null`. Parsing the YAML is up to the application.
+
+**`MainWindow.xaml.cs`**, after the text is set:
+
+```csharp
+Viewer.Markdown = "---\ntitle: Release notes\n---\n\n# 0.6.0";
+string? yaml = Viewer.FrontMatter; // "title: Release notes"
+```
+
+`FrontMatter` is a read-only dependency property: it changes with every new text and can be bound to.
+
 ## Your own parser settings
 
 `MarkdownPipeline` replaces the default Markdig pipeline — for example, to switch syntax off. Viewer
-[extensions](Extensions) are added on top of it.
+[extensions](Extensions) are added on top of it. The default pipeline is `UseAdvancedExtensions()`
+plus `UseYamlFrontMatter()`: without the latter, front matter is read as ordinary Markdown and comes
+out as a rule and a heading.
 
 **`MainWindow.xaml.cs`**, in the constructor (`using Markdig;`):
 

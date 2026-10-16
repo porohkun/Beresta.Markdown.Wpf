@@ -7,12 +7,15 @@ using System.Net;
 using System.Text;
 using Markdig;
 using Markdig.Extensions.Abbreviations;
+using Markdig.Extensions.Alerts;
+using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Figures;
 using Markdig.Extensions.Footers;
 using Markdig.Extensions.Footnotes;
 using Markdig.Extensions.SmartyPants;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.TaskLists;
+using Markdig.Extensions.Yaml;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
@@ -22,6 +25,7 @@ internal sealed class ModelBuilder
 {
     public static readonly MarkdownPipeline DefaultPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
+        .UseYamlFrontMatter()
         .Build();
 
     private static readonly string[] Bullets = ["•", "◦", "▪"];
@@ -54,6 +58,18 @@ internal sealed class ModelBuilder
         MarkdownPipeline? pipeline = null,
         IReadOnlyList<MdExtension>? extensions = null,
         ModelIdentity? identity = null)
+        => Parse(markdown, pipeline, extensions, identity, out _);
+
+    /// <summary>
+    /// Разбирает документ, как <see cref="Parse(string, MarkdownPipeline?, IReadOnlyList{MdExtension}?, ModelIdentity?)"/>,
+    /// и отдаёт текст front matter без разбора; нет его — <c>null</c>.
+    /// </summary>
+    public static IReadOnlyList<BlockVm> Parse(
+        string markdown,
+        MarkdownPipeline? pipeline,
+        IReadOnlyList<MdExtension>? extensions,
+        ModelIdentity? identity,
+        out string? frontMatter)
     {
         markdown ??= string.Empty;
         identity ??= new();
@@ -61,6 +77,7 @@ internal sealed class ModelBuilder
 
         var document = Markdown.Parse(markdown, pipeline);
         identity.Match(document, markdown);
+        frontMatter = document is [YamlFrontMatterBlock yaml, ..] ? yaml.Lines.ToString() : null;
 
         var smartyPants = pipeline.Extensions.Find<SmartyPantsExtension>()?.Options.Mapping;
         var blocks = new ModelBuilder(markdown, extensions ?? [], identity, smartyPants).ConvertBlocks(document, listDepth: 0);
@@ -263,11 +280,23 @@ internal sealed class ModelBuilder
             case ThematicBreakBlock:
                 return [Stamp(new ThematicBreakVm(), block)];
 
+            case YamlFrontMatterBlock:
+                return [];
+
             case CodeBlock code:
                 return [Stamp(ConvertCodeBlock(code), block)];
 
+            case AlertBlock alert:
+                return [Stamp(new CalloutVm(alert.Kind.ToString().ToLowerInvariant(), [], ConvertBlocks(alert, listDepth)), block)];
+
             case QuoteBlock quote:
                 return [Stamp(new QuoteVm(ConvertBlocks(quote, listDepth)), block)];
+
+            case DefinitionList definitions:
+                return [Stamp(ConvertDefinitions(definitions, listDepth), block)];
+
+            case DefinitionTerm:
+                return [];
 
             case ListBlock list:
                 return [Stamp(ConvertList(list, listDepth), block)];
@@ -404,6 +433,40 @@ internal sealed class ModelBuilder
         {
             Alignments = alignments
         };
+    }
+
+    /// <summary>Список определений: термины пункта — строками одного текста, определения — блоками.</summary>
+    private DefinitionListVm ConvertDefinitions(DefinitionList list, int listDepth)
+    {
+        var items = new List<(List<InlineVm> Terms, List<BlockVm> Blocks, DefinitionItem Item)>();
+        var previousEnd = 0;
+
+        foreach (var item in list.OfType<DefinitionItem>())
+        {
+            var start = GetLineAt(item.Span.Start);
+            if (items.Count > 0)
+            {
+                var previous = items[^1];
+                var previousId = previous.Blocks is [.., var last] ? last.NodeId : _identity.IdOf(previous.Item);
+                AddBlankLines(previous.Blocks, previousEnd, start, previousId);
+            }
+
+            var terms = new List<InlineVm>();
+            foreach (var term in item.OfType<DefinitionTerm>())
+            {
+                if (terms.Count > 0)
+                {
+                    terms.Add(new LineBreakVm());
+                }
+
+                terms.AddRange(ConvertInlines(term.Inline));
+            }
+
+            items.Add((terms, ConvertBlocks(item, listDepth), item));
+            previousEnd = GetLines(item).End;
+        }
+
+        return new(items.Select(entry => Stamp(new DefinitionItemVm(entry.Terms, entry.Blocks), entry.Item)).ToList());
     }
 
     /// <summary>Ячейка из одного абзаца — строкой текста, ячейка сетки-таблицы с другими блоками — блоками.</summary>

@@ -8,8 +8,9 @@ using ViewModels;
 /// Модель документа одной строкой: <c>P(текст) _ L[1. P(а); 2. P(б)]</c> — абзац, отступ и список.
 /// Флажок задачи — <c>☐</c> или <c>☑</c>, ссылка сноски — <c>^1</c> или <c>↩</c>, картинка —
 /// <c>![alt]</c>, определение сноски — <c>F1[...]</c>, фигура — <c>Fig[...]</c> с подписью
-/// <c>Cap(...)</c>, подвал — <c>Foot[...]</c>. Виджет без своего вида выводится именем типа в
-/// фигурных скобках.
+/// <c>Cap(...)</c>, подвал — <c>Foot[...]</c>, плашка — <c>Callout:вид(заголовок)[...]</c>,
+/// сворачиваемый блок — <c>Det(заголовок)[...]</c>, список определений —
+/// <c>DL[термины: блоки; ...]</c>. Виджет без своего вида выводится именем типа в фигурных скобках.
 /// </summary>
 internal static class ModelDump
 {
@@ -59,6 +60,9 @@ internal static class ModelDump
         FigureVm figure => $"Fig[{Of(figure.Blocks)}]",
         FigureCaptionVm caption => $"Cap({Text(caption.Inlines)})",
         FooterVm footer => $"Foot[{Of(footer.Blocks)}]",
+        CalloutVm callout => $"Callout:{callout.Kind}{(callout.Title.Count > 0 ? $"({Text(callout.Title)})" : "")}[{Of(callout.Blocks)}]",
+        DetailsVm details => $"Det({Text(details.Summary)})[{Of(details.Blocks)}]",
+        DefinitionListVm definitions => $"DL[{string.Join("; ", definitions.Items.Select(item => $"{Text(item.Terms)}: {Of(item.Blocks)}"))}]",
         _ => $"{{{block.GetType().Name}}}"
     };
 }

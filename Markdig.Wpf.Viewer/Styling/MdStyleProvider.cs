@@ -24,6 +24,9 @@ public sealed class MdStyleProvider : IMdStyleProvider
     private DataTemplate? _figure;
     private DataTemplate? _figureCaption;
     private DataTemplate? _footer;
+    private DataTemplate? _callout;
+    private DataTemplate? _details;
+    private DataTemplate? _definitionList;
 
     /// <summary>Провайдер, у которого берутся незаданные шаблоны.</summary>
     public IMdStyleProvider? BasedOn { get; set; }
@@ -116,5 +119,23 @@ public sealed class MdStyleProvider : IMdStyleProvider
     {
         get => _footer ?? BasedOn?.FooterTemplate;
         set => _footer = value;
+    }
+
+    public DataTemplate? CalloutTemplate
+    {
+        get => _callout ?? BasedOn?.CalloutTemplate;
+        set => _callout = value;
+    }
+
+    public DataTemplate? DetailsTemplate
+    {
+        get => _details ?? BasedOn?.DetailsTemplate;
+        set => _details = value;
+    }
+
+    public DataTemplate? DefinitionListTemplate
+    {
+        get => _definitionList ?? BasedOn?.DefinitionListTemplate;
+        set => _definitionList = value;
     }
 }

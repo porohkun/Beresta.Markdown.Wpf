@@ -10,12 +10,6 @@ public sealed class UnknownBlockTests
     }
 
     [Fact]
-    public void Список_определений_не_теряется()
-    {
-        ModelDump.Of("Term\n:   Definition").Should().Be("P(Term) P(Definition)");
-    }
-
-    [Fact]
     public void Блок_HTML_показывается_исходным_текстом()
     {
         ModelDump.Of("<div>html text</div>").Should().Be("P(<div>html text</div>)");
