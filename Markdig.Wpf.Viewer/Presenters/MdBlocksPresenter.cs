@@ -1,7 +1,9 @@
 ﻿namespace MarkdigWpfViewer.Presenters;
 
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
+using Automation;
 using Identity;
 using ViewModels;
 
@@ -36,6 +38,8 @@ public class MdBlocksPresenter : ItemsControl
         get => (IReadOnlyList<BlockVm>?)GetValue(BlocksProperty);
         set => SetValue(BlocksProperty, value);
     }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new MdBlocksAutomationPeer(this);
 
     protected override DependencyObject GetContainerForItemOverride() => new MdBlockItem();
 

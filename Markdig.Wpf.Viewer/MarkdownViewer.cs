@@ -2,12 +2,14 @@
 
 using System.Collections.Specialized;
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 using Abstractions;
+using Automation;
 using Extensions;
 using Identity;
 using Markdig;
@@ -529,6 +531,8 @@ public sealed class MarkdownViewer : ItemsControl
         var data = MdClipboard.Data(markdownAsText ? markdown : SelectedText, markdown, html);
         return MdClipboard.Approve(this, data) ? data : null;
     }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new MdDocumentAutomationPeer(this);
 
     protected override DependencyObject GetContainerForItemOverride() => new MdBlockItem();
 

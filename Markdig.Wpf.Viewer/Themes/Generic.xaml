@@ -338,6 +338,7 @@
         <Setter Property="Background" Value="{DynamicResource Md.CodeBlock.Background}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Md.CodeBlock.BorderBrush}" />
         <Setter Property="ToolTip" Value="{DynamicResource Md.CodeBlock.CopyToolTip}" />
+        <Setter Property="AutomationProperties.Name" Value="{DynamicResource Md.CodeBlock.CopyToolTip}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Button}">
@@ -588,7 +589,7 @@
 
         <s:MdStyleProvider.ListTemplate>
             <DataTemplate DataType="{x:Type vm:ListVm}">
-                <ItemsControl ItemsSource="{Binding Items}" Style="{DynamicResource Md.List.Style}" />
+                <p:MdListPresenter ItemsSource="{Binding Items}" Style="{DynamicResource Md.List.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.ListTemplate>
 

@@ -1,8 +1,10 @@
 ﻿namespace MarkdigWpfViewer.Presenters;
 
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Automation;
 using ViewModels;
 
 /// <summary>Ссылка сноски: номер к определению или ↩ обратно; нажатие идёт тем же путём, что у ссылок.</summary>
@@ -29,14 +31,25 @@ public sealed class MdFootnoteLink : Control
         _pressed = true;
     }
 
+    /// <summary>Переходит по ссылке тем же путём, что и ссылки текста.</summary>
+    public void Activate()
+    {
+        if (Link is { } link)
+        {
+            MarkdownLink.Activate(this, "#" + link.Target, null);
+        }
+    }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new MdFootnoteLinkAutomationPeer(this);
+
     protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
     {
         base.OnMouseLeftButtonUp(e);
-        if (_pressed && Link is { } link)
+        if (_pressed)
         {
             _pressed = false;
             e.Handled = true;
-            MarkdownLink.Activate(this, "#" + link.Target, null);
+            Activate();
         }
     }
 

@@ -1,11 +1,12 @@
 ﻿namespace MarkdigWpfViewer.Presenters;
 
 using System.Windows;
-using System.Windows.Automation;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Automation;
 using ViewModels;
 
 /// <summary>
@@ -69,6 +70,8 @@ public sealed class MdImage : Control
         return size;
     }
 
+    protected override AutomationPeer OnCreateAutomationPeer() => new MdImageAutomationPeer(this);
+
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
     {
         base.OnMouseLeftButtonDown(e);
@@ -98,7 +101,6 @@ public sealed class MdImage : Control
         var image = e.NewValue as ImageVm;
         view.Cursor = image?.Href is null ? null : Cursors.Hand;
         view.ToolTip = image?.Title;
-        AutomationProperties.SetName(view, image?.Alt ?? string.Empty);
         view.Load();
     }
 
