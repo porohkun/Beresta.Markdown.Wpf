@@ -3,7 +3,8 @@
 A fenced code block gets a header with its language — the first word after the opening fence — and
 monospace text that scrolls sideways instead of wrapping words. While the pointer is over the block,
 a copy button shows in its corner. Code indented by four spaces is drawn the same way, without the
-header.
+header. A block in `csv` or `tsv` can be drawn as a table by the ready-made
+[tables from CSV](Kit-Media#tables-from-csv).
 
 ![A code block with the copy button](images/code-block.png)
 

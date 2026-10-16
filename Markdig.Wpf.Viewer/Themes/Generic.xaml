@@ -1084,6 +1084,7 @@
     <CornerRadius x:Key="Md.Mention.CornerRadius">8</CornerRadius>
     <DataTemplate x:Key="Md.Mention.Template" DataType="{x:Type kit:MentionVm}">
         <Button Style="{x:Null}"
+                OverridesDefaultStyle="True"
                 Focusable="False"
                 Cursor="Hand"
                 ToolTip="{Binding Href}"
@@ -1320,6 +1321,162 @@
                 </ToolTip>
             </TextBlock.ToolTip>
         </TextBlock>
+    </DataTemplate>
+
+    <!-- ======== Готовые расширения: медиа и данные ======== -->
+    <sys:Double x:Key="Md.VideoCard.Width">320</sys:Double>
+    <sys:Double x:Key="Md.VideoCard.PreviewHeight">180</sys:Double>
+    <CornerRadius x:Key="Md.VideoCard.CornerRadius">6</CornerRadius>
+    <Thickness x:Key="Md.VideoCard.TitlePadding">8,6</Thickness>
+    <Brush x:Key="Md.VideoCard.PreviewBackground">#24292F</Brush>
+    <Brush x:Key="Md.VideoCard.PlayBackground">#CC000000</Brush>
+    <Brush x:Key="Md.VideoCard.PlayForeground">White</Brush>
+    <Geometry x:Key="Md.VideoCard.PlayIcon">M0,0 L10,6 L0,12 Z</Geometry>
+    <!-- Превью заполняет место целиком и обрезается по центру -->
+    <Style x:Key="Md.VideoCard.PreviewStyle" TargetType="{x:Type p:MdImage}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type p:MdImage}">
+                    <Border>
+                        <Border.Background>
+                            <ImageBrush ImageSource="{Binding ImageSource, RelativeSource={RelativeSource TemplatedParent}}"
+                                        Stretch="UniformToFill" />
+                        </Border.Background>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <DataTemplate x:Key="Md.VideoCard.Template" DataType="{x:Type kit:VideoCardVm}">
+        <Button Style="{x:Null}"
+                OverridesDefaultStyle="True"
+                Focusable="False"
+                Cursor="Hand"
+                ToolTip="{Binding Href}"
+                Command="{x:Static local:MarkdownLink.ActivateCommand}"
+                CommandParameter="{Binding Href}">
+            <Button.Template>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border Width="{DynamicResource Md.VideoCard.Width}"
+                            Background="Transparent"
+                            BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{DynamicResource Md.VideoCard.CornerRadius}">
+                        <StackPanel>
+                            <Grid Height="{DynamicResource Md.VideoCard.PreviewHeight}"
+                                  Background="{DynamicResource Md.VideoCard.PreviewBackground}"
+                                  ClipToBounds="True">
+                                <p:MdImage Image="{Binding Preview}"
+                                           Width="{DynamicResource Md.VideoCard.Width}"
+                                           Height="{DynamicResource Md.VideoCard.PreviewHeight}"
+                                           Style="{DynamicResource Md.VideoCard.PreviewStyle}" />
+                                <Border Width="48"
+                                        Height="48"
+                                        CornerRadius="24"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Background="{DynamicResource Md.VideoCard.PlayBackground}">
+                                    <Path Data="{DynamicResource Md.VideoCard.PlayIcon}"
+                                          Fill="{DynamicResource Md.VideoCard.PlayForeground}"
+                                          Width="16"
+                                          Height="18"
+                                          Margin="4,0,0,0"
+                                          Stretch="Fill"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                                </Border>
+                            </Grid>
+                            <TextBlock Text="{Binding Title}"
+                                       Padding="{DynamicResource Md.VideoCard.TitlePadding}"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+    </DataTemplate>
+
+    <Thickness x:Key="Md.LinkCard.Padding">10,6</Thickness>
+    <CornerRadius x:Key="Md.LinkCard.CornerRadius">6</CornerRadius>
+    <Brush x:Key="Md.LinkCard.AddressForeground">Gray</Brush>
+    <sys:Double x:Key="Md.LinkCard.AddressFontSize">12</sys:Double>
+    <Geometry x:Key="Md.LinkCard.Icon">M6,2 L2,2 L2,14 L14,14 L14,10 M9,2 L14,2 L14,7 M14,2 L7,9</Geometry>
+    <DataTemplate x:Key="Md.LinkCard.Template" DataType="{x:Type kit:LinkCardVm}">
+        <Button Style="{x:Null}"
+                OverridesDefaultStyle="True"
+                Focusable="False"
+                Cursor="Hand"
+                ToolTip="{Binding Href}"
+                Command="{x:Static local:MarkdownLink.ActivateCommand}"
+                CommandParameter="{Binding Href}">
+            <Button.Template>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border Background="Transparent"
+                            BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{DynamicResource Md.LinkCard.CornerRadius}"
+                            Padding="{DynamicResource Md.LinkCard.Padding}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Path Data="{DynamicResource Md.LinkCard.Icon}"
+                                  Stroke="{DynamicResource Md.Paragraph.LinkForeground}"
+                                  StrokeThickness="1.5"
+                                  Width="16"
+                                  Height="16"
+                                  Margin="0,0,8,0"
+                                  Stretch="Uniform"
+                                  VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{Binding Title}"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource Md.Paragraph.LinkForeground}" />
+                                <TextBlock Text="{Binding Href}"
+                                           TextTrimming="CharacterEllipsis"
+                                           FontSize="{DynamicResource Md.LinkCard.AddressFontSize}"
+                                           Foreground="{DynamicResource Md.LinkCard.AddressForeground}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+    </DataTemplate>
+
+    <Style x:Key="Md.Properties.KeyStyle" TargetType="{x:Type p:MdTextBlock}" BasedOn="{StaticResource Md.Paragraph.Style}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <DataTemplate x:Key="Md.Properties.Template" DataType="{x:Type kit:PropertiesVm}">
+        <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                Grid.IsSharedSizeScope="True">
+            <ItemsControl ItemsSource="{Binding Items}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type kit:PropertyVm}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="MdPropertyKey" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                                    BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                                    Padding="{DynamicResource Md.Table.CellPadding}"
+                                    Background="{DynamicResource Md.Table.HeaderBackground}">
+                                <p:MdTextBlock Runs="{Binding Key}" Style="{DynamicResource Md.Properties.KeyStyle}" />
+                            </Border>
+                            <Border Grid.Column="1"
+                                    BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                                    BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                                    Padding="{DynamicResource Md.Table.CellPadding}">
+                                <p:MdTextBlock Runs="{Binding Value}" Style="{DynamicResource Md.Paragraph.Style}" />
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
     </DataTemplate>
 
     <Style TargetType="{x:Type p:MdBlockItem}">

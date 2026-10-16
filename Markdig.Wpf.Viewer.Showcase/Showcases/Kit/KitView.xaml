@@ -10,7 +10,7 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:KitViewModel}">
     <DockPanel>
-        <!-- Свои схемы ссылок обрабатывает витрина: показывает цель вместо перехода -->
+        <!-- Свои схемы ссылок и адреса-примеры витрина не открывает, а показывает цель -->
         <TextBlock DockPanel.Dock="Top"
                    Margin="24,8,24,0"
                    Foreground="{DynamicResource SecondaryTextBrush}"
@@ -44,6 +44,11 @@
                     <kit:Spoilers />
                     <kit:TaskStatuses />
                     <kit:FootnoteTips />
+                    <kit:VideoCards />
+                    <kit:EmojiShortcodes />
+                    <kit:Shortcodes x:Name="ShortcodeHandlers" />
+                    <kit:CsvTables />
+                    <kit:PropertiesCard />
                 </mdv:MarkdownViewer.Extensions>
             </mdv:MarkdownViewer>
         </ScrollViewer>

@@ -56,6 +56,7 @@ What you get:
 - [Callouts and Collapsibles](Kit-Callouts) — Obsidian callouts, MkDocs admonitions, `:::kind` containers
 - [Links and References](Kit-Links) — wiki links, tags, mentions, issue links, a table of contents in place
 - [Chips and Text Review](Kit-Text) — chips, color codes, CriticMarkup, comments, spoilers, task statuses
+- [Media and Data](Kit-Media) — video cards, emoji, shortcodes, tables from CSV, a properties card
 
 ## Showcase
 

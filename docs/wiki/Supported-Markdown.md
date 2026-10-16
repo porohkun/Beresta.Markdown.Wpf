@@ -176,6 +176,8 @@ string? yaml = Viewer.FrontMatter; // "title: Release notes"
 
 `FrontMatter` is a read-only dependency property: it changes with every new text and can be bound to.
 
+The ready-made [properties card](Kit-Media#properties-card) draws front matter as a «key — value» table.
+
 ## Your own parser settings
 
 `MarkdownPipeline` replaces the default Markdig pipeline — for example, to switch syntax off. Viewer

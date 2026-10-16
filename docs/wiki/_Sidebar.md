@@ -35,6 +35,7 @@
 - [Callouts and Collapsibles](Kit-Callouts)
 - [Links and References](Kit-Links)
 - [Chips and Text Review](Kit-Text)
+- [Media and Data](Kit-Media)
 
 ---
 
@@ -75,3 +76,4 @@
 - [Плашки и сворачиваемое](Kit-Callouts-ru)
 - [Связи](Kit-Links-ru)
 - [Чипы и работа над текстом](Kit-Text-ru)
+- [Медиа и данные](Kit-Media-ru)
