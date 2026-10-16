@@ -15,10 +15,10 @@ using System.Windows.Input;
 /// </para>
 ///
 /// <para>
-/// Необработанная ссылка остаётся ссылкой наружу: вьюер открывает абсолютный адрес системным
-/// обработчиком. Поэтому команда, отказавшаяся исполняться (<c>CanExecute</c> вернул
-/// <c>false</c>), событие не гасит — «не моя ссылка» и «моя, но сейчас нельзя» здесь одно и то
-/// же, а внешние ссылки в тексте обязаны продолжать работать.
+/// Необработанная ссылка на якорь документа (<c>#id</c>) прокручивает вьюер к якорю, остальное
+/// получает открыватель <see cref="OpenerProperty"/>. Поэтому команда, отказавшаяся исполняться
+/// (<c>CanExecute</c> вернул <c>false</c>), событие не гасит — «не моя ссылка» и «моя, но сейчас
+/// нельзя» здесь одно и то же, а внешние ссылки в тексте обязаны продолжать работать.
 /// </para>
 /// </summary>
 public static class MarkdownLink
@@ -30,6 +30,17 @@ public static class MarkdownLink
             RoutingStrategy.Bubble,
             typeof(MarkdownLinkEventHandler),
             typeof(MarkdownLink));
+
+    /// <summary>
+    /// Кто открывает ссылку, которую не обработало приложение; наследуется — ставится на вьюер, на
+    /// окно или стилем. По умолчанию <see cref="MdSystemLinkOpener"/>, <c>null</c> — не открывает никто.
+    /// </summary>
+    public static readonly DependencyProperty OpenerProperty =
+        DependencyProperty.RegisterAttached(
+            "Opener",
+            typeof(IMdLinkOpener),
+            typeof(MarkdownLink),
+            new FrameworkPropertyMetadata(MdSystemLinkOpener.Instance, FrameworkPropertyMetadataOptions.Inherits));
 
     /// <summary>
     /// Команда, которой достаётся нажатая ссылка; параметр — <see cref="MarkdownLinkEventArgs.Href"/>.
@@ -52,6 +63,26 @@ public static class MarkdownLink
 
     public static void SetCommand(DependencyObject element, ICommand? value) =>
         element.SetValue(CommandProperty, value);
+
+    public static IMdLinkOpener? GetOpener(DependencyObject element) =>
+        (IMdLinkOpener?)element.GetValue(OpenerProperty);
+
+    public static void SetOpener(DependencyObject element, IMdLinkOpener? value) =>
+        element.SetValue(OpenerProperty, value);
+
+    /// <summary>Нажатие ссылки: сначала событие приложению, затем якорь документа, затем открыватель.</summary>
+    internal static void Activate(UIElement source, string href, Uri? uri)
+    {
+        var args = new MarkdownLinkEventArgs(NavigateEvent, source, href, uri);
+        source.RaiseEvent(args);
+        if (args.Handled)
+            return;
+
+        if (href.StartsWith('#') && MarkdownViewer.Owning(source) is { } viewer && viewer.ScrollToAnchor(href[1..]))
+            return;
+
+        GetOpener(source)?.Open(href, uri);
+    }
 
     private static void OnCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {

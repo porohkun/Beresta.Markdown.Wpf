@@ -7,79 +7,134 @@
                     xmlns:local="clr-namespace:MarkdigWpfViewer"
                     xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
-    <s:MarkdownTemplateSelector x:Key="Md.TemplateSelector"/>
+    <s:MarkdownTemplateSelector x:Key="Md.TemplateSelector" />
 
     <!-- ======== Md.Paragraph ======== -->
-    <FontFamily   x:Key="Md.Paragraph.FontFamily">Segoe UI</FontFamily>
-    <sys:Double   x:Key="Md.Paragraph.FontSize">14</sys:Double>
-    <Brush        x:Key="Md.Paragraph.Foreground">Black</Brush>
-    <Brush        x:Key="Md.Paragraph.LinkForeground">Blue</Brush>
+    <!-- Md.Paragraph.FontFamily и Md.Paragraph.Foreground не заданы: текст берёт их у приложения -->
+    <sys:Double x:Key="Md.Paragraph.FontSize">14</sys:Double>
+    <Brush x:Key="Md.Paragraph.LinkForeground">Blue</Brush>
+
+    <!-- ======== Начертания ======== -->
+    <Style x:Key="Md.Strong.Style" TargetType="{x:Type Span}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style x:Key="Md.Emphasis.Style" TargetType="{x:Type Span}">
+        <Setter Property="FontStyle" Value="Italic" />
+    </Style>
+    <Style x:Key="Md.Strike.Style" TargetType="{x:Type Span}">
+        <Setter Property="TextDecorations" Value="Strikethrough" />
+    </Style>
+    <Style x:Key="Md.Link.Style" TargetType="{x:Type Hyperlink}" />
 
     <!-- ======== Md.InlineCode ======== -->
-    <FontFamily   x:Key="Md.InlineCode.FontFamily">Consolas</FontFamily>
-    <sys:Double   x:Key="Md.InlineCode.FontSize">14</sys:Double>
-    <Brush        x:Key="Md.InlineCode.Background">Bisque</Brush>
-    <Brush        x:Key="Md.InlineCode.Foreground">Brown</Brush>
-    <Brush        x:Key="Md.InlineCode.BorderBrush">#dadada</Brush>
-    <Thickness    x:Key="Md.InlineCode.BorderThickness">1</Thickness>
-    <Thickness    x:Key="Md.InlineCode.Padding">3,1</Thickness>
+    <FontFamily x:Key="Md.InlineCode.FontFamily">Consolas</FontFamily>
+    <sys:Double x:Key="Md.InlineCode.FontSize">14</sys:Double>
+    <Brush x:Key="Md.InlineCode.Background">Bisque</Brush>
+    <Brush x:Key="Md.InlineCode.Foreground">Brown</Brush>
+    <Brush x:Key="Md.InlineCode.BorderBrush">#dadada</Brush>
+    <Thickness x:Key="Md.InlineCode.BorderThickness">1</Thickness>
+    <Thickness x:Key="Md.InlineCode.Padding">3,1</Thickness>
     <CornerRadius x:Key="Md.InlineCode.CornerRadius">3</CornerRadius>
 
+    <!-- ======== Md.Kbd: клавиша <kbd> ======== -->
+    <FontFamily x:Key="Md.Kbd.FontFamily">Consolas</FontFamily>
+    <Brush x:Key="Md.Kbd.Foreground">#24292F</Brush>
+    <Brush x:Key="Md.Kbd.Background">#F6F8FA</Brush>
+    <Brush x:Key="Md.Kbd.BorderBrush">#D0D7DE</Brush>
+    <Thickness x:Key="Md.Kbd.BorderThickness">1,1,1,2</Thickness>
+    <Thickness x:Key="Md.Kbd.Padding">4,0</Thickness>
+    <CornerRadius x:Key="Md.Kbd.CornerRadius">4</CornerRadius>
+
+    <!-- ======== Md.Image, Md.Task, Md.Footnote ======== -->
+    <Brush x:Key="Md.Image.AltForeground">Gray</Brush>
+    <Thickness x:Key="Md.Task.Margin">0,0,6,0</Thickness>
+    <GridLength x:Key="Md.Footnote.MarkerWidth">24</GridLength>
+    <Brush x:Key="Md.Footnote.MarkerForeground">Gray</Brush>
+    <sys:Double x:Key="Md.Footnote.LinkFontSize">11</sys:Double>
+
     <!-- ======== Md.Heading ======== -->
-    <FontFamily   x:Key="Md.Heading.FontFamily">Segoe UI</FontFamily>
-    <Brush        x:Key="Md.Heading.Foreground">Black</Brush>
-    <Brush        x:Key="Md.Heading.LinkForeground">Blue</Brush>
+    <!-- Md.Heading.FontFamily и Md.Heading.Foreground не заданы: заголовок берёт их у приложения -->
+    <Brush x:Key="Md.Heading.LinkForeground">Blue</Brush>
 
-    <Thickness    x:Key="Md.Heading1.Margin">0,14,0,0</Thickness>
-    <sys:Double   x:Key="Md.Heading1.FontSize">28</sys:Double>
-    <FontWeight   x:Key="Md.Heading1.FontWeight">Bold</FontWeight>
+    <Thickness x:Key="Md.Heading1.Margin">0,14,0,0</Thickness>
+    <sys:Double x:Key="Md.Heading1.FontSize">28</sys:Double>
+    <FontWeight x:Key="Md.Heading1.FontWeight">Bold</FontWeight>
 
-    <Thickness    x:Key="Md.Heading2.Margin">0,12,0,0</Thickness>
-    <sys:Double   x:Key="Md.Heading2.FontSize">24</sys:Double>
-    <FontWeight   x:Key="Md.Heading2.FontWeight">Bold</FontWeight>
+    <Thickness x:Key="Md.Heading2.Margin">0,12,0,0</Thickness>
+    <sys:Double x:Key="Md.Heading2.FontSize">24</sys:Double>
+    <FontWeight x:Key="Md.Heading2.FontWeight">Bold</FontWeight>
 
-    <Thickness    x:Key="Md.Heading3.Margin">0,10,0,0</Thickness>
-    <sys:Double   x:Key="Md.Heading3.FontSize">20</sys:Double>
-    <FontWeight   x:Key="Md.Heading3.FontWeight">SemiBold</FontWeight>
+    <Thickness x:Key="Md.Heading3.Margin">0,10,0,0</Thickness>
+    <sys:Double x:Key="Md.Heading3.FontSize">20</sys:Double>
+    <FontWeight x:Key="Md.Heading3.FontWeight">SemiBold</FontWeight>
 
-    <Thickness    x:Key="Md.Heading4.Margin">0,8,0,0</Thickness>
-    <sys:Double   x:Key="Md.Heading4.FontSize">18</sys:Double>
-    <FontWeight   x:Key="Md.Heading4.FontWeight">SemiBold</FontWeight>
+    <Thickness x:Key="Md.Heading4.Margin">0,8,0,0</Thickness>
+    <sys:Double x:Key="Md.Heading4.FontSize">18</sys:Double>
+    <FontWeight x:Key="Md.Heading4.FontWeight">SemiBold</FontWeight>
 
-    <Thickness    x:Key="Md.Heading5.Margin">0,8,0,0</Thickness>
-    <sys:Double   x:Key="Md.Heading5.FontSize">16</sys:Double>
-    <FontWeight   x:Key="Md.Heading5.FontWeight">SemiBold</FontWeight>
+    <Thickness x:Key="Md.Heading5.Margin">0,8,0,0</Thickness>
+    <sys:Double x:Key="Md.Heading5.FontSize">16</sys:Double>
+    <FontWeight x:Key="Md.Heading5.FontWeight">SemiBold</FontWeight>
 
-    <Thickness    x:Key="Md.Heading6.Margin">0,8,0,0</Thickness>
-    <sys:Double   x:Key="Md.Heading6.FontSize">14</sys:Double>
-    <FontWeight   x:Key="Md.Heading6.FontWeight">SemiBold</FontWeight>
+    <Thickness x:Key="Md.Heading6.Margin">0,8,0,0</Thickness>
+    <sys:Double x:Key="Md.Heading6.FontSize">14</sys:Double>
+    <FontWeight x:Key="Md.Heading6.FontWeight">SemiBold</FontWeight>
 
     <!-- ======== Md.CodeBlock ======== -->
-    <FontFamily   x:Key="Md.CodeBlock.FontFamily">Consolas</FontFamily>
-    <sys:Double   x:Key="Md.CodeBlock.FontSize">14</sys:Double>
-    <Brush        x:Key="Md.CodeBlock.Background">#f9f9f9</Brush>
-    <Brush        x:Key="Md.CodeBlock.Foreground">Brown</Brush>
-    <Brush        x:Key="Md.CodeBlock.BorderBrush">#dadada</Brush>
-    <Thickness    x:Key="Md.CodeBlock.BorderThickness">1</Thickness>
-    <Thickness    x:Key="Md.CodeBlock.Padding">12</Thickness>
+    <FontFamily x:Key="Md.CodeBlock.FontFamily">Consolas</FontFamily>
+    <sys:Double x:Key="Md.CodeBlock.FontSize">14</sys:Double>
+    <Brush x:Key="Md.CodeBlock.Background">#f9f9f9</Brush>
+    <Brush x:Key="Md.CodeBlock.Foreground">Brown</Brush>
+    <Brush x:Key="Md.CodeBlock.BorderBrush">#dadada</Brush>
+    <Thickness x:Key="Md.CodeBlock.BorderThickness">1</Thickness>
+    <Thickness x:Key="Md.CodeBlock.Padding">12</Thickness>
     <CornerRadius x:Key="Md.CodeBlock.CornerRadius">4</CornerRadius>
+    <Brush x:Key="Md.CodeBlock.LineNumberForeground">Gray</Brush>
+    <Thickness x:Key="Md.CodeBlock.LineNumberMargin">0,0,12,0</Thickness>
+    <!-- Md.CodeBlock.HeaderFontFamily не задан: шапка берёт шрифт у приложения -->
+    <Brush x:Key="Md.CodeBlock.HeaderForeground">Gray</Brush>
+    <sys:Double x:Key="Md.CodeBlock.HeaderFontSize">12</sys:Double>
+    <Thickness x:Key="Md.CodeBlock.HeaderMargin">0,0,0,8</Thickness>
+    <sys:String x:Key="Md.CodeBlock.CopyToolTip">Copy</sys:String>
+    <Geometry x:Key="Md.CodeBlock.CopyIcon">M16,1H4C2.9,1 2,1.9 2,3v14h2V3h12V1z M19,5H8C6.9,5 6,5.9 6,7v14c0,1.1 0.9,2 2,2h11c1.1,0 2,-0.9 2,-2V7C21,5.9 20.1,5 19,5z M19,21H8V7h11V21z</Geometry>
+    <Geometry x:Key="Md.CodeBlock.CopiedIcon">M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41,-1.41z</Geometry>
+
+    <!-- ======== Md.ContextMenu: меню вьюера по умолчанию ======== -->
+    <sys:String x:Key="Md.ContextMenu.Copy">Copy</sys:String>
+    <sys:String x:Key="Md.ContextMenu.CopyMarkdown">Copy as Markdown</sys:String>
+    <sys:String x:Key="Md.ContextMenu.SelectAll">Select All</sys:String>
+
+    <!-- ======== Md.Gutter: поля с номерами строк исходника ======== -->
+    <!-- Md.Gutter.FontFamily не задан: номера берут шрифт у приложения -->
+    <Brush x:Key="Md.Gutter.Foreground">Gray</Brush>
+    <sys:Double x:Key="Md.Gutter.FontSize">12</sys:Double>
+    <Thickness x:Key="Md.Gutter.Padding">0,0,12,0</Thickness>
 
     <!-- ======== Md.Quote ======== -->
-    <Brush        x:Key="Md.Quote.BorderBrush">#dadada</Brush>
-    <Thickness    x:Key="Md.Quote.BorderThickness">6,0,0,0</Thickness>
-    <Thickness    x:Key="Md.Quote.Padding">6,0,0,0</Thickness>
-    <Thickness    x:Key="Md.Quote.Margin">0,0,0,4</Thickness>
+    <Brush x:Key="Md.Quote.BorderBrush">#dadada</Brush>
+    <Thickness x:Key="Md.Quote.BorderThickness">6,0,0,0</Thickness>
+    <Thickness x:Key="Md.Quote.Padding">6,0,0,0</Thickness>
+    <Thickness x:Key="Md.Quote.Margin">0,0,0,4</Thickness>
 
     <!-- ======== Md.List ======== -->
-    <Thickness    x:Key="Md.List.Margin">0,0,0,0</Thickness>
-    <GridLength   x:Key="Md.List.MarkerWidth">16</GridLength>
-    <Thickness    x:Key="Md.List.ItemSpacing">0,0,4,0</Thickness>
+    <Thickness x:Key="Md.List.Margin">0,0,0,0</Thickness>
+    <GridLength x:Key="Md.List.MarkerWidth">16</GridLength>
+    <Thickness x:Key="Md.List.ItemSpacing">0,0,4,0</Thickness>
 
     <!-- ======== Md.Table ======== -->
-    <Brush        x:Key="Md.Table.BorderBrush">#dadada</Brush>
-    <Thickness    x:Key="Md.Table.BorderThickness">1</Thickness>
-    <Thickness    x:Key="Md.Table.CellPadding">8,4</Thickness>
-    <Brush        x:Key="Md.Table.HeaderBackground">#dfdfdf</Brush>
+    <Brush x:Key="Md.Table.BorderBrush">#dadada</Brush>
+    <Thickness x:Key="Md.Table.BorderThickness">1</Thickness>
+    <Thickness x:Key="Md.Table.CellPadding">8,4</Thickness>
+    <Brush x:Key="Md.Table.HeaderBackground">#dfdfdf</Brush>
+
+    <!-- ======== Md.HorizontalRule ======== -->
+    <Thickness x:Key="Md.HorizontalRule.Margin">28,0,28,14</Thickness>
+
+    <!-- ======== Md.BlankLine ======== -->
+    <sys:Double x:Key="Md.BlankLine.Height">14</sys:Double>
+
+    <!-- ======== Выделение ======== -->
+    <SolidColorBrush x:Key="Md.Selection.Brush" Color="#3399FF" Opacity="0.35" />
 
     <Style x:Key="Md.Paragraph.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}">
         <Setter Property="FontSize" Value="{DynamicResource Md.InlineCode.FontSize}" />
@@ -102,27 +157,107 @@
         </Setter>
     </Style>
 
-    <Style x:Key="Md.Heading1.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}" BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
+    <Style x:Key="Md.Kbd.Style" TargetType="{x:Type p:InlineCodePresenter}">
+        <Setter Property="FontFamily" Value="{DynamicResource Md.Kbd.FontFamily}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type p:InlineCodePresenter}">
+                    <Border Background="{DynamicResource Md.Kbd.Background}"
+                            BorderBrush="{DynamicResource Md.Kbd.BorderBrush}"
+                            BorderThickness="{DynamicResource Md.Kbd.BorderThickness}"
+                            CornerRadius="{DynamicResource Md.Kbd.CornerRadius}"
+                            Padding="{DynamicResource Md.Kbd.Padding}">
+                        <TextBlock Text="{TemplateBinding Text}"
+                                   FontSize="{TemplateBinding FontSize}"
+                                   FontFamily="{TemplateBinding FontFamily}"
+                                   Foreground="{DynamicResource Md.Kbd.Foreground}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Md.Image.Style" TargetType="{x:Type p:MdImage}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type p:MdImage}">
+                    <Grid>
+                        <Image x:Name="Picture"
+                               Source="{TemplateBinding ImageSource}"
+                               Stretch="Fill"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                        <TextBlock x:Name="Alt"
+                                   Visibility="Collapsed"
+                                   Text="{Binding Image.Alt, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Foreground="{DynamicResource Md.Image.AltForeground}"
+                                   FontStyle="Italic" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="ImageSource" Value="{x:Null}">
+                            <Setter TargetName="Picture" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="Alt" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Md.FootnoteLink.Style" TargetType="{x:Type p:MdFootnoteLink}">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Paragraph.LinkForeground}" />
+        <Setter Property="FontSize" Value="{DynamicResource Md.Footnote.LinkFontSize}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type p:MdFootnoteLink}">
+                    <TextBlock x:Name="Label"
+                               Text="{Binding Link.Order, RelativeSource={RelativeSource TemplatedParent}}"
+                               Foreground="{TemplateBinding Foreground}"
+                               FontSize="{TemplateBinding FontSize}"
+                               Background="Transparent" />
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Link.IsBack, RelativeSource={RelativeSource Self}}" Value="True">
+                            <Setter TargetName="Label" Property="Text" Value="↩" />
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Md.Footnote.MarkerStyle" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="{DynamicResource Md.Paragraph.FontSize}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Md.Paragraph.FontFamily}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Footnote.MarkerForeground}" />
+    </Style>
+
+    <Style x:Key="Md.Heading1.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}"
+           BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading1.FontSize}" />
     </Style>
 
-    <Style x:Key="Md.Heading2.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}" BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
+    <Style x:Key="Md.Heading2.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}"
+           BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading2.FontSize}" />
     </Style>
 
-    <Style x:Key="Md.Heading3.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}" BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
+    <Style x:Key="Md.Heading3.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}"
+           BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading3.FontSize}" />
     </Style>
 
-    <Style x:Key="Md.Heading4.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}" BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
+    <Style x:Key="Md.Heading4.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}"
+           BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading4.FontSize}" />
     </Style>
 
-    <Style x:Key="Md.Heading5.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}" BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
+    <Style x:Key="Md.Heading5.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}"
+           BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading5.FontSize}" />
     </Style>
 
-    <Style x:Key="Md.Heading6.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}" BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
+    <Style x:Key="Md.Heading6.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}"
+           BasedOn="{StaticResource Md.Paragraph.InlineCodeStyle}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading6.FontSize}" />
     </Style>
 
@@ -132,51 +267,105 @@
         <Setter Property="Foreground" Value="{DynamicResource Md.Paragraph.Foreground}" />
         <Setter Property="LinkForeground" Value="{DynamicResource Md.Paragraph.LinkForeground}" />
         <Setter Property="TextWrapping" Value="Wrap" />
-        <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Paragraph.InlineCodeStyle}"/>
+        <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Paragraph.InlineCodeStyle}" />
+        <Setter Property="KbdStyle" Value="{DynamicResource Md.Kbd.Style}" />
+        <Setter Property="StrongStyle" Value="{DynamicResource Md.Strong.Style}" />
+        <Setter Property="EmphasisStyle" Value="{DynamicResource Md.Emphasis.Style}" />
+        <Setter Property="StrikeStyle" Value="{DynamicResource Md.Strike.Style}" />
+        <Setter Property="LinkStyle" Value="{DynamicResource Md.Link.Style}" />
     </Style>
 
-    <Style x:Key="Md.Heading.Style" TargetType="{x:Type p:MdTextBlock}">
+    <Style x:Key="Md.Heading.Style" TargetType="{x:Type p:MdHeadingBlock}">
         <Setter Property="FontFamily" Value="{DynamicResource Md.Heading.FontFamily}" />
         <Setter Property="Foreground" Value="{DynamicResource Md.Heading.Foreground}" />
         <Setter Property="LinkForeground" Value="{DynamicResource Md.Heading.LinkForeground}" />
         <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="KbdStyle" Value="{DynamicResource Md.Kbd.Style}" />
+        <Setter Property="StrongStyle" Value="{DynamicResource Md.Strong.Style}" />
+        <Setter Property="EmphasisStyle" Value="{DynamicResource Md.Emphasis.Style}" />
+        <Setter Property="StrikeStyle" Value="{DynamicResource Md.Strike.Style}" />
+        <Setter Property="LinkStyle" Value="{DynamicResource Md.Link.Style}" />
         <Setter Property="Margin" Value="{DynamicResource Md.Heading6.Margin}" />
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading6.FontSize}" />
         <Setter Property="FontWeight" Value="{DynamicResource Md.Heading6.FontWeight}" />
-        <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading6.InlineCodeStyle}"/>
+        <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading6.InlineCodeStyle}" />
 
         <Style.Triggers>
-            <DataTrigger Binding="{Binding Level}" Value="1">
+            <Trigger Property="Level" Value="1">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading1.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading1.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading1.FontWeight}" />
-                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading1.InlineCodeStyle}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding Level}" Value="2">
+                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading1.InlineCodeStyle}" />
+            </Trigger>
+            <Trigger Property="Level" Value="2">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading2.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading2.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading2.FontWeight}" />
-                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading2.InlineCodeStyle}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding Level}" Value="3">
+                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading2.InlineCodeStyle}" />
+            </Trigger>
+            <Trigger Property="Level" Value="3">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading3.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading3.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading3.FontWeight}" />
-                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading3.InlineCodeStyle}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding Level}" Value="4">
+                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading3.InlineCodeStyle}" />
+            </Trigger>
+            <Trigger Property="Level" Value="4">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading4.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading4.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading4.FontWeight}" />
-                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading4.InlineCodeStyle}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding Level}" Value="5">
+                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading4.InlineCodeStyle}" />
+            </Trigger>
+            <Trigger Property="Level" Value="5">
                 <Setter Property="Margin" Value="{DynamicResource Md.Heading5.Margin}" />
                 <Setter Property="FontSize" Value="{DynamicResource Md.Heading5.FontSize}" />
                 <Setter Property="FontWeight" Value="{DynamicResource Md.Heading5.FontWeight}" />
-                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading5.InlineCodeStyle}"/>
-            </DataTrigger>
+                <Setter Property="InlineCodeStyle" Value="{DynamicResource Md.Heading5.InlineCodeStyle}" />
+            </Trigger>
         </Style.Triggers>
+    </Style>
+
+    <Style x:Key="Md.CodeBlock.HeaderStyle" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontFamily" Value="{DynamicResource Md.CodeBlock.HeaderFontFamily}" />
+        <Setter Property="FontSize" Value="{DynamicResource Md.CodeBlock.HeaderFontSize}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.CodeBlock.HeaderForeground}" />
+        <Setter Property="Margin" Value="{DynamicResource Md.CodeBlock.HeaderMargin}" />
+    </Style>
+
+    <Style x:Key="Md.CodeBlock.CopyButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.CodeBlock.HeaderForeground}" />
+        <Setter Property="Background" Value="{DynamicResource Md.CodeBlock.Background}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Md.CodeBlock.BorderBrush}" />
+        <Setter Property="ToolTip" Value="{DynamicResource Md.CodeBlock.CopyToolTip}" />
+        <Setter Property="AutomationProperties.Name" Value="{DynamicResource Md.CodeBlock.CopyToolTip}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="Frame"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="5">
+                        <Path x:Name="Icon"
+                              Data="{DynamicResource Md.CodeBlock.CopyIcon}"
+                              Fill="{TemplateBinding Foreground}"
+                              Width="14"
+                              Height="14"
+                              Stretch="Uniform" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource Md.CodeBlock.HeaderForeground}" />
+                        </Trigger>
+                        <DataTrigger Binding="{Binding IsCopied, RelativeSource={RelativeSource AncestorType={x:Type p:CodeBlockPresenter}}}" Value="True">
+                            <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.CodeBlock.CopiedIcon}" />
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="Md.CodeBlock.Style" TargetType="{x:Type p:CodeBlockPresenter}">
@@ -190,18 +379,71 @@
                             BorderBrush="{DynamicResource Md.CodeBlock.BorderBrush}"
                             Background="{DynamicResource Md.CodeBlock.Background}">
 
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                                      VerticalScrollBarVisibility="Disabled"
-                                      b:NestedScroll.PassWheelToParent="True">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
 
-                            <TextBlock Text="{TemplateBinding Code}"
-                                       Foreground="{DynamicResource Md.CodeBlock.Foreground}"
-                                       FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
-                                       FontSize="{DynamicResource Md.CodeBlock.FontSize}"
-                                       TextWrapping="WrapWithOverflow"/>
-                        </ScrollViewer>
+                            <TextBlock x:Name="PART_Header"
+                                       Text="{TemplateBinding Syntax}"
+                                       Style="{DynamicResource Md.CodeBlock.HeaderStyle}" />
+
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock x:Name="LineNumbers"
+                                           Visibility="Collapsed"
+                                           Text="{TemplateBinding LineNumbers}"
+                                           Foreground="{DynamicResource Md.CodeBlock.LineNumberForeground}"
+                                           FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
+                                           FontSize="{DynamicResource Md.CodeBlock.FontSize}"
+                                           Margin="{DynamicResource Md.CodeBlock.LineNumberMargin}"
+                                           TextAlignment="Right" />
+
+                                <ScrollViewer Grid.Column="1"
+                                              HorizontalScrollBarVisibility="Auto"
+                                              VerticalScrollBarVisibility="Disabled"
+                                              b:NestedScroll.PassWheelToParent="True">
+
+                                    <p:MdTextBlock x:Name="PART_Code"
+                                                   Runs="{TemplateBinding Runs}"
+                                                   Foreground="{DynamicResource Md.CodeBlock.Foreground}"
+                                                   FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
+                                                   FontSize="{DynamicResource Md.CodeBlock.FontSize}"
+                                                   TextWrapping="WrapWithOverflow" />
+                                </ScrollViewer>
+                            </Grid>
+
+                            <!-- Кнопка копирования поверх угла, видна при наведении -->
+                            <Button x:Name="PART_Copy"
+                                    Grid.RowSpan="2"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Margin="0,-6,-6,0"
+                                    Visibility="Collapsed"
+                                    Style="{DynamicResource Md.CodeBlock.CopyButtonStyle}" />
+                        </Grid>
 
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsFenced" Value="False">
+                            <Setter TargetName="PART_Header" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="local:MarkdownViewer.ShowCodeCopyButton" Value="True" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="PART_Copy" Property="Visibility" Value="Visible" />
+                        </MultiTrigger>
+                        <Trigger Property="local:MarkdownViewer.ShowCodeLineNumbers" Value="True">
+                            <Setter TargetName="LineNumbers" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -215,25 +457,27 @@
                             BorderBrush="{DynamicResource Md.Quote.BorderBrush}"
                             Padding="{DynamicResource Md.Quote.Padding}"
                             Margin="{DynamicResource Md.Quote.Margin}">
-                        <ItemsControl ItemsSource="{TemplateBinding Blocks}" ItemTemplateSelector="{DynamicResource Md.TemplateSelector}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <VirtualizingStackPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
+                        <p:MdBlocksPresenter Blocks="{TemplateBinding Blocks}" />
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
 
+    <Style x:Key="Md.List.MarkerStyle" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="{DynamicResource Md.Paragraph.FontSize}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Md.Paragraph.FontFamily}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Paragraph.Foreground}" />
+        <Setter Property="Margin" Value="{DynamicResource Md.List.ItemSpacing}" />
+    </Style>
+
     <Style x:Key="Md.List.Style" TargetType="{x:Type ItemsControl}">
         <Setter Property="Margin" Value="{DynamicResource Md.List.Margin}" />
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
         <Setter Property="ItemsPanel">
             <Setter.Value>
                 <ItemsPanelTemplate>
-                    <VirtualizingStackPanel />
+                    <p:MdBlockPanel />
                 </ItemsPanelTemplate>
             </Setter.Value>
         </Setter>
@@ -242,23 +486,32 @@
                 <DataTemplate DataType="{x:Type vm:ListItemVm}">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="{DynamicResource Md.List.MarkerWidth}"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="{DynamicResource Md.List.MarkerWidth}" />
+                            <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{Binding MarkerText}"
-                                   FontSize="{DynamicResource Md.Paragraph.FontSize}"
-                                   FontFamily="{DynamicResource Md.Paragraph.FontFamily}"
-                                   Foreground="{DynamicResource Md.Paragraph.Foreground}"
-                                   Margin="{DynamicResource Md.List.ItemSpacing}" />
-                        <ItemsControl Grid.Column="1" ItemsSource="{Binding Blocks}" ItemTemplateSelector="{DynamicResource Md.TemplateSelector}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <VirtualizingStackPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
+                        <TextBlock Text="{Binding MarkerText}" Style="{DynamicResource Md.List.MarkerStyle}" />
+                        <p:MdBlocksPresenter Grid.Column="1" Blocks="{Binding Blocks}" />
                     </Grid>
                 </DataTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type p:MdBlocksPresenter}">
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+        <Setter Property="ItemTemplateSelector" Value="{DynamicResource Md.TemplateSelector}" />
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <p:MdBlockPanel />
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type p:MdBlocksPresenter}">
+                    <ItemsPresenter />
+                </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
@@ -274,7 +527,7 @@
                         <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
                                 BorderThickness="{DynamicResource Md.Table.BorderThickness}"
                                 HorizontalAlignment="Left">
-                            <Grid x:Name="PART_Grid" SnapsToDevicePixels="True"/>
+                            <Grid x:Name="PART_Grid" SnapsToDevicePixels="True" />
                         </Border>
                     </ScrollViewer>
                 </ControlTemplate>
@@ -287,7 +540,7 @@
                             BorderThickness="{DynamicResource Md.Table.BorderThickness}"
                             Padding="{DynamicResource Md.Table.CellPadding}"
                             Background="{DynamicResource Md.Table.HeaderBackground}">
-                        <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}"/>
+                        <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
                     </Border>
                 </DataTemplate>
             </Setter.Value>
@@ -296,80 +549,161 @@
             <Setter.Value>
                 <DataTemplate DataType="{x:Type vm:TableCellVm}">
                     <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
-                                BorderThickness="{DynamicResource Md.Table.BorderThickness}"
-                                Padding="{DynamicResource Md.Table.CellPadding}">
-                        <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}"/>
+                            BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                            Padding="{DynamicResource Md.Table.CellPadding}">
+                        <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
                     </Border>
                 </DataTemplate>
             </Setter.Value>
         </Setter>
     </Style>
 
-        <!-- ======== Templates ======== -->
+    <!-- ======== Templates ======== -->
     <s:MdStyleProvider x:Key="Md.DefaultStyleProvider">
 
         <s:MdStyleProvider.ParagraphTemplate>
             <DataTemplate DataType="{x:Type vm:ParagraphVm}">
-                <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}"/>
+                <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.ParagraphTemplate>
 
         <s:MdStyleProvider.HeadingTemplate>
             <DataTemplate DataType="{x:Type vm:HeadingVm}">
-                <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Heading.Style}"/>
+                <p:MdHeadingBlock Level="{Binding Level}" Runs="{Binding Inlines}"
+                                  Style="{DynamicResource Md.Heading.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.HeadingTemplate>
 
         <s:MdStyleProvider.CodeBlockTemplate>
             <DataTemplate DataType="{x:Type vm:CodeBlockVm}">
-                <p:CodeBlockPresenter InfoString="{Binding InfoString}" Syntax="{Binding Syntax}" Code="{Binding Code}" Style="{DynamicResource Md.CodeBlock.Style}"/>
+                <p:CodeBlockPresenter InfoString="{Binding InfoString}" Syntax="{Binding Syntax}" Code="{Binding Code}"
+                                      IsFenced="{Binding IsFenced}" Runs="{Binding Runs}" Style="{DynamicResource Md.CodeBlock.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.CodeBlockTemplate>
 
         <s:MdStyleProvider.QuoteTemplate>
             <DataTemplate DataType="{x:Type vm:QuoteVm}">
-                <p:QuotePresenter Blocks="{Binding Blocks}" Style="{DynamicResource Md.Quote.Style}"/>
+                <p:QuotePresenter Blocks="{Binding Blocks}" Style="{DynamicResource Md.Quote.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.QuoteTemplate>
 
         <s:MdStyleProvider.ListTemplate>
             <DataTemplate DataType="{x:Type vm:ListVm}">
-                <ItemsControl ItemsSource="{Binding Items}" Style="{DynamicResource Md.List.Style}"/>
+                <p:MdListPresenter ItemsSource="{Binding Items}" Style="{DynamicResource Md.List.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.ListTemplate>
 
         <s:MdStyleProvider.TableTemplate>
             <DataTemplate DataType="{x:Type vm:TableVm}">
-                <p:MdTablePresenter Table="{Binding}" Style="{DynamicResource Md.Table.Style}"/>
+                <p:MdTablePresenter Table="{Binding}" Style="{DynamicResource Md.Table.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.TableTemplate>
 
         <s:MdStyleProvider.HorizontalRuleTemplate>
             <DataTemplate DataType="{x:Type vm:ThematicBreakVm}">
-                <Separator Margin="28,0,28,14"/>
+                <Separator Margin="{DynamicResource Md.HorizontalRule.Margin}" />
             </DataTemplate>
         </s:MdStyleProvider.HorizontalRuleTemplate>
 
         <s:MdStyleProvider.BlankLineTemplate>
             <DataTemplate DataType="{x:Type vm:BlankLineVm}">
-                <Border Height="14" Background="Transparent" />
+                <Border Height="{DynamicResource Md.BlankLine.Height}" Background="Transparent" />
             </DataTemplate>
         </s:MdStyleProvider.BlankLineTemplate>
 
+        <s:MdStyleProvider.FootnoteTemplate>
+            <DataTemplate DataType="{x:Type vm:FootnoteVm}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="{DynamicResource Md.Footnote.MarkerWidth}" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Order, StringFormat={}{0}.}" Style="{DynamicResource Md.Footnote.MarkerStyle}" />
+                    <p:MdBlocksPresenter Grid.Column="1" Blocks="{Binding Blocks}" />
+                </Grid>
+            </DataTemplate>
+        </s:MdStyleProvider.FootnoteTemplate>
+
+        <s:MdStyleProvider.ImageTemplate>
+            <DataTemplate DataType="{x:Type vm:ImageVm}">
+                <p:MdImage Image="{Binding}" Style="{DynamicResource Md.Image.Style}" />
+            </DataTemplate>
+        </s:MdStyleProvider.ImageTemplate>
+
+        <s:MdStyleProvider.TaskTemplate>
+            <DataTemplate DataType="{x:Type vm:TaskVm}">
+                <p:MdTaskCheckBox Task="{Binding}"
+                                  Focusable="False"
+                                  Margin="{DynamicResource Md.Task.Margin}"
+                                  Style="{DynamicResource {x:Type CheckBox}}" />
+            </DataTemplate>
+        </s:MdStyleProvider.TaskTemplate>
+
+        <s:MdStyleProvider.FootnoteLinkTemplate>
+            <DataTemplate DataType="{x:Type vm:FootnoteLinkVm}">
+                <p:MdFootnoteLink Link="{Binding}" Style="{DynamicResource Md.FootnoteLink.Style}" />
+            </DataTemplate>
+        </s:MdStyleProvider.FootnoteLinkTemplate>
+
     </s:MdStyleProvider>
 
+    <Style TargetType="{x:Type p:MdBlockItem}">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type p:MdBlockItem}">
+                    <Grid>
+                        <ContentPresenter />
+                        <Border Background="{TemplateBinding Highlight}" IsHitTestVisible="False" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type p:MdLineGutter}">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="FontFamily" Value="{DynamicResource Md.Gutter.FontFamily}" />
+        <Setter Property="FontSize" Value="{DynamicResource Md.Gutter.FontSize}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Gutter.Foreground}" />
+        <Setter Property="Padding" Value="{DynamicResource Md.Gutter.Padding}" />
+    </Style>
+
+    <ContextMenu x:Key="Md.ContextMenu" x:Shared="False">
+        <MenuItem Header="{DynamicResource Md.ContextMenu.Copy}"
+                  Command="ApplicationCommands.Copy"
+                  CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}" />
+        <MenuItem Header="{DynamicResource Md.ContextMenu.CopyMarkdown}"
+                  Command="{x:Static local:MarkdownViewer.CopyMarkdownCommand}"
+                  CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}" />
+        <Separator />
+        <MenuItem Header="{DynamicResource Md.ContextMenu.SelectAll}"
+                  Command="ApplicationCommands.SelectAll"
+                  CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}" />
+    </ContextMenu>
+
     <Style TargetType="{x:Type local:MarkdownViewer}">
+        <Setter Property="ContextMenu" Value="{DynamicResource Md.ContextMenu}" />
+        <Setter Property="Focusable" Value="True" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource Md.Selection.Brush}" />
         <Setter Property="ItemsPanel">
             <Setter.Value>
                 <ItemsPanelTemplate>
-                    <VirtualizingStackPanel Orientation="Vertical"/>
+                    <p:MdBlockPanel />
                 </ItemsPanelTemplate>
             </Setter.Value>
         </Setter>
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="0" />
-        <Setter Property="StyleProvider" Value="{DynamicResource Md.DefaultStyleProvider}"/>
-        <Setter Property="ItemTemplateSelector" Value="{DynamicResource Md.TemplateSelector}"/>
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+        <Setter Property="StyleProvider" Value="{DynamicResource Md.DefaultStyleProvider}" />
+        <Setter Property="ItemTemplateSelector" Value="{DynamicResource Md.TemplateSelector}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:MarkdownViewer}">
@@ -380,9 +714,24 @@
                         Padding="{TemplateBinding Padding}"
                         SnapsToDevicePixels="True">
 
-                        <ItemsPresenter />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <ItemsPresenter Grid.Column="1" />
+
+                            <!-- BYDESIGN: поля идут после блоков — раскладываются позже и видят их уже на местах -->
+                            <p:MdLineGutter x:Name="PART_Gutter" Visibility="Collapsed" />
+                        </Grid>
 
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="ShowSourceLineNumbers" Value="True">
+                            <Setter TargetName="PART_Gutter" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

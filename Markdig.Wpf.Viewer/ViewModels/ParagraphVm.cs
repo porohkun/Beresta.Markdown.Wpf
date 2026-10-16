@@ -1,6 +1,5 @@
 ﻿namespace MarkdigWpfViewer.ViewModels;
 
-using Abstractions;
-
+/// <summary>Абзац.</summary>
 public sealed record ParagraphVm(IReadOnlyList<InlineVm> Inlines)
-    : IMdBlockVm;
+    : BlockVm;

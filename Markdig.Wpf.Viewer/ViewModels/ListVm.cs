@@ -1,6 +1,5 @@
 ﻿namespace MarkdigWpfViewer.ViewModels;
 
-using Abstractions;
-
+/// <summary>Список; <paramref name="Depth"/> — вложенность среди списков, считая с нуля.</summary>
 public sealed record ListVm(bool Ordered, int Start, int Depth, IReadOnlyList<ListItemVm> Items)
-    : IMdBlockVm;
+    : BlockVm;

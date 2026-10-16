@@ -2,19 +2,20 @@
 
 using System.Windows;
 using System.Windows.Controls;
-using Abstractions;
+using ViewModels;
 
+/// <summary>Цитата: рамка вокруг вложенных блоков.</summary>
 public class QuotePresenter : Control
 {
     public static readonly DependencyProperty BlocksProperty =
         DependencyProperty.Register(
             nameof(Blocks),
-            typeof(IReadOnlyList<IMdBlockVm>),
+            typeof(IReadOnlyList<BlockVm>),
             typeof(QuotePresenter));
 
-    public IReadOnlyList<IMdBlockVm>? Blocks
+    public IReadOnlyList<BlockVm>? Blocks
     {
-        get => (IReadOnlyList<IMdBlockVm>?)GetValue(BlocksProperty);
+        get => (IReadOnlyList<BlockVm>?)GetValue(BlocksProperty);
         set => SetValue(BlocksProperty, value);
     }
 }

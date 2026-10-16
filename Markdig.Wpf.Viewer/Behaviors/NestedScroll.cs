@@ -18,7 +18,7 @@ public static class NestedScroll
             "PassWheelToParent",
             typeof(bool),
             typeof(NestedScroll),
-            new PropertyMetadata(false, OnPassWheelToParentChanged));
+            new(false, OnPassWheelToParentChanged));
 
     public static bool GetPassWheelToParent(DependencyObject element)
         => (bool)element.GetValue(PassWheelToParentProperty);

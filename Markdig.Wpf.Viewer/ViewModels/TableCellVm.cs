@@ -1,6 +1,5 @@
 ﻿namespace MarkdigWpfViewer.ViewModels;
 
-using Abstractions;
-
+/// <summary>Ячейка таблицы.</summary>
 public sealed record TableCellVm(IReadOnlyList<InlineVm> Inlines)
-    : IMdBlockVm;
+    : NodeVm;

@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<RootNamespace>MarkdigWpfViewer.Showcase</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="HandyControls" Version="3.6.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Markdig.Wpf.Viewer\Markdig.Wpf.Viewer.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Remove="Samples\*.md;Showcases\**\*.md" />
+		<EmbeddedResource Include="Samples\*.md;Showcases\**\*.md" />
+		<None Update="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
+		<Resource Include="Samples\*.png" />
+	</ItemGroup>
+
+</Project>

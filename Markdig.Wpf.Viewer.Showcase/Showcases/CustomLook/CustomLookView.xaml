@@ -1,0 +1,39 @@
+﻿<UserControl x:Class="MarkdigWpfViewer.Showcase.Showcases.CustomLook.CustomLookView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
+             xmlns:p="clr-namespace:MarkdigWpfViewer.Presenters;assembly=Markdig.Wpf.Viewer"
+             xmlns:s="clr-namespace:MarkdigWpfViewer.Styling;assembly=Markdig.Wpf.Viewer"
+             xmlns:vm="clr-namespace:MarkdigWpfViewer.ViewModels;assembly=Markdig.Wpf.Viewer"
+             xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.CustomLook"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance local:CustomLookViewModel}">
+    <UserControl.Resources>
+        <!-- Заголовок с полосой слева, остальные шаблоны стандартные -->
+        <s:MdStyleProvider x:Key="AccentProvider"
+                           BasedOn="{StaticResource Md.DefaultStyleProvider}">
+            <s:MdStyleProvider.HeadingTemplate>
+                <DataTemplate DataType="{x:Type vm:HeadingVm}">
+                    <Border Margin="0,12,0,4"
+                            Padding="10,0,0,0"
+                            BorderThickness="4,0,0,0"
+                            BorderBrush="{DynamicResource PrimaryBrush}">
+                        <p:MdHeadingBlock Level="{Binding Level}"
+                                          Runs="{Binding Inlines}"
+                                          Style="{DynamicResource Md.Heading.Style}"
+                                          Margin="0" />
+                    </Border>
+                </DataTemplate>
+            </s:MdStyleProvider.HeadingTemplate>
+        </s:MdStyleProvider>
+    </UserControl.Resources>
+
+    <ScrollViewer>
+        <mdv:MarkdownViewer Markdown="{Binding Text}"
+                            Margin="24,16"
+                            FontFamily="Georgia"
+                            StyleProvider="{StaticResource AccentProvider}" />
+    </ScrollViewer>
+</UserControl>

@@ -1,38 +1,99 @@
 ﻿# Markdig.Wpf.Viewer v0.4.0
 
-Markdown viewer for WPF based on Markdig.
+**English** | [Русский](https://github.com/porohkun/Markdig.Wpf.Viewer/blob/main/README.ru.md)
 
-## Ссылки
+A WPF control that shows Markdown as native WPF elements: [Markdig](https://github.com/xoofx/markdig)
+parses the text, WPF templates draw it.
 
-По умолчанию нажатая ссылка открывается системным обработчиком, как и раньше. Но сначала вьюер
-спрашивает приложение: поднимает всплывающее `MarkdownLink.Navigate`, и обработанное событие
-внешнее открытие отменяет.
+![The viewer in the showcase theme](https://raw.githubusercontent.com/porohkun/Markdig.Wpf.Viewer/main/docs/wiki/images/overview.png)
 
-Это и есть точка для своих ссылок вида `[подпись](своя_схема:идентификатор)`. Подключается она
-двумя способами, оба — на вьюер или любого его предка:
+- **Virtualized.** The viewer lives in your own scrolling and creates only the blocks you see: a long
+  document, a page with other content or a chat list stay fast.
+- **Selectable.** Selection runs across blocks; copying puts plain text, Markdown and HTML on the
+  clipboard at once.
+- **Navigable.** Links, anchors, footnotes, a table of contents, scrolling to a source line; your
+  application can take over any link.
+- **Themable.** Every color, font and margin is a resource key; any block can get your own template.
+- **Extensible.** Your own Markdown syntax becomes your own widgets.
+- **Live.** A new text is applied as edits: fit for a live preview and streamed answers.
+
+## Install
+
+```bash
+dotnet add package Markdig.Wpf.Viewer
+```
+
+Or add the repository as a Git submodule and reference `Markdig.Wpf.Viewer/Markdig.Wpf.Viewer.csproj`.
+
+Requires .NET 10 (`net10.0-windows`) with WPF.
+
+## Connect the theme
+
+Merge the theme of the viewer into the application resources once — without it the viewer stays
+empty.
+
+`App.xaml`:
 
 ```xml
-<!-- обработчиком -->
-<mdv:MarkdownViewer Markdown="{Binding Text}"
-                    mdv:MarkdownLink.Navigate="OnMarkdownLink" />
-
-<!-- командой; параметр — Href -->
-<mdv:MarkdownViewer Markdown="{Binding Text}"
-                    mdv:MarkdownLink.Command="{Binding OpenLinkCommand}" />
+<Application.Resources>
+    <ResourceDictionary>
+        <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/Markdig.Wpf.Viewer;component/Themes/Generic.xaml" />
+        </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+</Application.Resources>
 ```
 
-```csharp
-private void OnMarkdownLink(object sender, MarkdownLinkEventArgs e)
-{
-    if (!MyId.TryParse(e.Href, out var id))
-        return;         // не наша ссылка — пусть открывается наружу
+## Show a document
 
-    Open(id);
-    e.Handled = true;   // наша — наружу не отдаём
-}
+The viewer has no scroll bars of its own: put it into a `ScrollViewer`.
+
+`MainWindow.xaml`:
+
+```xml
+<Window x:Class="YourApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
+        Title="Markdown" Width="800" Height="600">
+    <ScrollViewer>
+        <mdv:MarkdownViewer Markdown="{Binding Text}" Margin="24,16" />
+    </ScrollViewer>
+</Window>
 ```
 
-Цель ссылки приходит дважды: `Href` — строка ровно из markdown, `Uri` — её разбор. Для своих
-схем нужен `Href`: схема с подчёркиванием (`codex_page:...`) по RFC 3986 незаконна, и такой
-адрес разбирается в относительный `Uri`. Команда, у которой `CanExecute(href)` вернул `false`,
-событие не гасит — ссылка уходит наружу, как если бы команды не было вовсе.
+The font and the text color come from your application.
+
+## Documentation
+
+The [wiki](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki) describes every feature with a working
+example:
+
+- **Basics:** [Getting Started](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Getting-Started),
+  [Supported Markdown](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Supported-Markdown),
+  [Scrolling and Virtualization](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Scrolling-and-Virtualization).
+- **Working with text:** [Selection](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Selection),
+  [Copying](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Copying),
+  [Links and Anchors](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Links-and-Anchors),
+  [Accessibility](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Accessibility).
+- **Appearance:** [Theming](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Theming),
+  [Styles and Templates](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Styles-and-Templates),
+  [Code Blocks](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Code-Blocks),
+  [Line Numbers](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Line-Numbers).
+- **Extensibility and integration:** [Extensions](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Extensions),
+  [Images](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Images),
+  [Task Lists](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Task-Lists),
+  [Application Links](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Application-Links),
+  [Source Lines and Two Panes](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Source-Lines-and-Two-Panes),
+  [Live Preview](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Live-Preview),
+  [Search Highlighting](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Search-Highlighting).
+
+The repository also has a showcase application with these scenarios:
+
+```bash
+dotnet run --project Markdig.Wpf.Viewer.Showcase
+```
+
+## License
+
+[MIT](https://github.com/porohkun/Markdig.Wpf.Viewer/blob/main/LICENSE).

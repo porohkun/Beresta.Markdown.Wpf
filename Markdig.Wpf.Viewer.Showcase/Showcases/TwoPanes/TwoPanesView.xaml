@@ -1,0 +1,36 @@
+﻿<UserControl x:Class="MarkdigWpfViewer.Showcase.Showcases.TwoPanes.TwoPanesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
+             xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.TwoPanes"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance local:TwoPanesViewModel}"
+             Loaded="OnLoaded"
+             Unloaded="OnUnloaded">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Было" Margin="24,8,24,0" FontWeight="SemiBold" />
+        <TextBlock Grid.Column="1" Text="Стало" Margin="24,8,24,0" FontWeight="SemiBold" />
+
+        <ScrollViewer Grid.Row="1">
+            <mdv:MarkdownViewer x:Name="LeftViewer"
+                                Markdown="{Binding Left}"
+                                Margin="24,16" />
+        </ScrollViewer>
+        <ScrollViewer Grid.Row="1" Grid.Column="1">
+            <mdv:MarkdownViewer x:Name="RightViewer"
+                                Markdown="{Binding Right}"
+                                Margin="24,16" />
+        </ScrollViewer>
+    </Grid>
+</UserControl>

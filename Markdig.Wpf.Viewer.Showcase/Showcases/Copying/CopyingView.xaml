@@ -1,0 +1,113 @@
+﻿<UserControl x:Class="MarkdigWpfViewer.Showcase.Showcases.Copying.CopyingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
+             xmlns:selection="clr-namespace:MarkdigWpfViewer.Selection;assembly=Markdig.Wpf.Viewer"
+             xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Copying"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance local:CopyingViewModel}"
+             Loaded="OnRefresh">
+    <!-- Ctrl+C во вьюере приходит сюда: сам вьюер команду не берёт -->
+    <UserControl.CommandBindings>
+        <CommandBinding Command="Copy"
+                        CanExecute="OnCanCopy"
+                        Executed="OnCopy" />
+    </UserControl.CommandBindings>
+
+    <DockPanel>
+        <!-- Пояснение и выбор того, что кладёт приложение -->
+        <DockPanel DockPanel.Dock="Top"
+                   Margin="24,8,12,0">
+            <ComboBox DockPanel.Dock="Right"
+                      Width="240"
+                      Margin="16,0,0,0"
+                      Style="{StaticResource ComboBoxExtend}"
+                      hc:InfoElement.TitlePlacement="Top"
+                      hc:InfoElement.Title="Ctrl+C кладёт в буфер"
+                      ItemsSource="{Binding Choices}"
+                      SelectedItem="{Binding Choice}"
+                      DisplayMemberPath="Title" />
+            <TextBlock TextWrapping="Wrap"
+                       VerticalAlignment="Center"
+                       Text="Здесь копирование отдано приложению: у вьюера выключен IsCopyEnabled, и Ctrl+C уходит к привязке команды Copy во вкладке — она кладёт в буфер то, что выбрано справа. Кнопка у выделения стоит по GetRangeBounds и вызывает ту же команду." />
+        </DockPanel>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+
+            <ScrollViewer>
+                <Grid Margin="24,16">
+                    <mdv:MarkdownViewer x:Name="Viewer"
+                                        Markdown="{Binding Text}"
+                                        IsCopyEnabled="False"
+                                        SelectionChanged="OnSelectionMoved"
+                                        ViewportChanged="OnSelectionMoved"
+                                        SizeChanged="OnSelectionMoved" />
+
+                    <!-- Кнопка у выделения -->
+                    <Canvas>
+                        <Button x:Name="SelectionButton"
+                                Content="Копировать"
+                                Style="{StaticResource ButtonPrimary}"
+                                Focusable="False"
+                                Visibility="Collapsed"
+                                Command="Copy"
+                                CommandTarget="{Binding ElementName=Viewer}" />
+                    </Canvas>
+                </Grid>
+            </ScrollViewer>
+
+            <!-- Что сейчас лежит в буфере обмена -->
+            <Grid Grid.Column="1"
+                  Margin="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+
+                <DockPanel>
+                    <Button DockPanel.Dock="Right"
+                            Content="Обновить"
+                            Margin="8,0,0,0"
+                            Click="OnRefresh" />
+                    <TextBlock Text="{Binding Formats}"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center" />
+                </DockPanel>
+
+                <TextBlock Grid.Row="1"
+                           Text="Обычный текст"
+                           FontWeight="SemiBold"
+                           Margin="0,12,0,4" />
+                <TextBox Grid.Row="2"
+                         Text="{Binding PlainText, Mode=OneWay}"
+                         IsReadOnly="True"
+                         TextWrapping="Wrap"
+                         VerticalContentAlignment="Top"
+                         VerticalScrollBarVisibility="Auto"
+                         FontFamily="Consolas" />
+
+                <TextBlock Grid.Row="3"
+                           Text="{x:Static selection:MdDataFormats.Markdown}"
+                           FontWeight="SemiBold"
+                           Margin="0,12,0,4" />
+                <TextBox Grid.Row="4"
+                         Text="{Binding Markdown, Mode=OneWay}"
+                         IsReadOnly="True"
+                         TextWrapping="Wrap"
+                         VerticalContentAlignment="Top"
+                         VerticalScrollBarVisibility="Auto"
+                         FontFamily="Consolas" />
+            </Grid>
+        </Grid>
+    </DockPanel>
+</UserControl>

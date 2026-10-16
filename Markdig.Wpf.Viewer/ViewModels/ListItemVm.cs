@@ -1,6 +1,5 @@
 ﻿namespace MarkdigWpfViewer.ViewModels;
 
-using Abstractions;
-
-public sealed record ListItemVm(string MarkerText, IReadOnlyList<IMdBlockVm> Blocks)
-    : IMdBlockVm;
+/// <summary>Пункт списка с готовым маркером.</summary>
+public sealed record ListItemVm(string MarkerText, IReadOnlyList<BlockVm> Blocks)
+    : NodeVm;
