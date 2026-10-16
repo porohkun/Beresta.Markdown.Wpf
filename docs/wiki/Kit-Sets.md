@@ -19,13 +19,13 @@ the root element):
 
 | Set | Parts, in order | Settings |
 |---|---|---|
-| `GitHubSet` | [properties card](Kit-Media#properties-card), [mentions](Kit-Links#mentions), [issue links](Kit-Links#issue-links), [color codes](Kit-Text#color-codes), [emoji](Kit-Media#emoji-shortcodes) | `Resolver`, `IssueTemplates` |
-| `GitLabSet` | [table of contents](Kit-Links#table-of-contents), issue links, color codes, emoji | `IssueTemplates` |
-| `ObsidianSet` | properties card, [Obsidian callouts](Kit-Callouts#obsidian-callouts), [comments](Kit-Text#comments), [embedded images](Kit-Links#embedded-images), [wiki links](Kit-Links#wiki-links), [tags](Kit-Links#tags), [task statuses](Kit-Text#task-statuses) | `Resolver` |
-| `MkDocsSet` | [MkDocs admonitions](Kit-Callouts#mkdocs-admonitions) | — |
-| `DocusaurusSet` | [`:::kind` containers](Kit-Callouts#containers-kind); fits VuePress too | — |
-| `HackMDSet` | `:::kind` containers, table of contents, [shortcodes](Kit-Media#shortcodes) | `ShortcodeHandlers`, `LoadThumbnails` |
-| `ChatSet` | mentions, [spoilers](Kit-Text#spoilers), emoji | `Resolver` |
+| [`GitHubSet`](Kit-Set-GitHub) | [properties card](Kit-Media#properties-card), [mentions](Kit-Links#mentions), [issue links](Kit-Links#issue-links), [color codes](Kit-Text#color-codes), [emoji](Kit-Media#emoji-shortcodes) | `Resolver`, `IssueTemplates` |
+| [`GitLabSet`](Kit-Set-GitLab) | [table of contents](Kit-Links#table-of-contents), issue links, color codes, emoji | `IssueTemplates` |
+| [`ObsidianSet`](Kit-Set-Obsidian) | properties card, [Obsidian callouts](Kit-Callouts#obsidian-callouts), [comments](Kit-Text#comments), [embedded images](Kit-Links#embedded-images), [wiki links](Kit-Links#wiki-links), [tags](Kit-Links#tags), [task statuses](Kit-Text#task-statuses) | `Resolver` |
+| [`MkDocsSet`](Kit-Set-MkDocs) | [MkDocs admonitions](Kit-Callouts#mkdocs-admonitions) | — |
+| [`DocusaurusSet`](Kit-Set-Docusaurus) | [`:::kind` containers](Kit-Callouts#containers-kind); fits VuePress too | — |
+| [`HackMDSet`](Kit-Set-HackMD) | `:::kind` containers, table of contents, [shortcodes](Kit-Media#shortcodes) | `ShortcodeHandlers`, `LoadThumbnails` |
+| [`ChatSet`](Kit-Set-Chat) | mentions, [spoilers](Kit-Text#spoilers), emoji | `Resolver` |
 
 ## Settings
 

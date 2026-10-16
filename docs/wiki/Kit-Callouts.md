@@ -4,6 +4,8 @@ Ready-made extensions for callouts and collapsible blocks in the syntax of Obsid
 Docusaurus, VuePress and HackMD. They come with the package, are off by default and are connected
 with one line each.
 
+![Callouts of Obsidian, MkDocs and Docusaurus](images/kit-callouts.png)
+
 ## Connecting
 
 The ready-made extensions live in the namespace `MarkdigWpfViewer.Kit`.

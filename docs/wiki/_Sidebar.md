@@ -33,6 +33,13 @@
 **Ready-made Extensions**
 
 - [Sets](Kit-Sets)
+  - [GitHub](Kit-Set-GitHub)
+  - [GitLab](Kit-Set-GitLab)
+  - [Obsidian](Kit-Set-Obsidian)
+  - [MkDocs](Kit-Set-MkDocs)
+  - [Docusaurus and VuePress](Kit-Set-Docusaurus)
+  - [HackMD](Kit-Set-HackMD)
+  - [Chat](Kit-Set-Chat)
 - [Callouts and Collapsibles](Kit-Callouts)
 - [Links and References](Kit-Links)
 - [Chips and Text Review](Kit-Text)
@@ -75,6 +82,13 @@
 **Готовые расширения**
 
 - [Наборы](Kit-Sets-ru)
+  - [GitHub](Kit-Set-GitHub-ru)
+  - [GitLab](Kit-Set-GitLab-ru)
+  - [Obsidian](Kit-Set-Obsidian-ru)
+  - [MkDocs](Kit-Set-MkDocs-ru)
+  - [Docusaurus и VuePress](Kit-Set-Docusaurus-ru)
+  - [HackMD](Kit-Set-HackMD-ru)
+  - [Чат](Kit-Set-Chat-ru)
 - [Плашки и сворачиваемое](Kit-Callouts-ru)
 - [Связи](Kit-Links-ru)
 - [Чипы и работа над текстом](Kit-Text-ru)

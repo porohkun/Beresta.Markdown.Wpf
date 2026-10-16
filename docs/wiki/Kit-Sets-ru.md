@@ -19,13 +19,13 @@ Obsidian, MkDocs, Docusaurus, HackMD или чата. Порядок часте�
 
 | Набор | Части по порядку | Настройки |
 |---|---|---|
-| `GitHubSet` | [карточка свойств](Kit-Media-ru#карточка-свойств), [упоминания](Kit-Links-ru#упоминания), [ссылки на задачи](Kit-Links-ru#ссылки-на-задачи), [коды цветов](Kit-Text-ru#коды-цветов), [эмодзи](Kit-Media-ru#эмодзи-шорткоды) | `Resolver`, `IssueTemplates` |
-| `GitLabSet` | [оглавление](Kit-Links-ru#оглавление), ссылки на задачи, коды цветов, эмодзи | `IssueTemplates` |
-| `ObsidianSet` | карточка свойств, [плашки Obsidian](Kit-Callouts-ru#плашки-obsidian), [комментарии](Kit-Text-ru#комментарии), [встраивание картинок](Kit-Links-ru#встраивание-картинок), [вики-ссылки](Kit-Links-ru#вики-ссылки), [теги](Kit-Links-ru#теги), [статусы задач](Kit-Text-ru#статусы-задач) | `Resolver` |
-| `MkDocsSet` | [предупреждения MkDocs](Kit-Callouts-ru#предупреждения-mkdocs) | — |
-| `DocusaurusSet` | [контейнеры `:::вид`](Kit-Callouts-ru#контейнеры-вид); годится и для VuePress | — |
-| `HackMDSet` | контейнеры `:::вид`, оглавление, [шорткоды](Kit-Media-ru#шорткоды) | `ShortcodeHandlers`, `LoadThumbnails` |
-| `ChatSet` | упоминания, [спойлеры](Kit-Text-ru#спойлеры), эмодзи | `Resolver` |
+| [`GitHubSet`](Kit-Set-GitHub-ru) | [карточка свойств](Kit-Media-ru#карточка-свойств), [упоминания](Kit-Links-ru#упоминания), [ссылки на задачи](Kit-Links-ru#ссылки-на-задачи), [коды цветов](Kit-Text-ru#коды-цветов), [эмодзи](Kit-Media-ru#эмодзи-шорткоды) | `Resolver`, `IssueTemplates` |
+| [`GitLabSet`](Kit-Set-GitLab-ru) | [оглавление](Kit-Links-ru#оглавление), ссылки на задачи, коды цветов, эмодзи | `IssueTemplates` |
+| [`ObsidianSet`](Kit-Set-Obsidian-ru) | карточка свойств, [плашки Obsidian](Kit-Callouts-ru#плашки-obsidian), [комментарии](Kit-Text-ru#комментарии), [встраивание картинок](Kit-Links-ru#встраивание-картинок), [вики-ссылки](Kit-Links-ru#вики-ссылки), [теги](Kit-Links-ru#теги), [статусы задач](Kit-Text-ru#статусы-задач) | `Resolver` |
+| [`MkDocsSet`](Kit-Set-MkDocs-ru) | [предупреждения MkDocs](Kit-Callouts-ru#предупреждения-mkdocs) | — |
+| [`DocusaurusSet`](Kit-Set-Docusaurus-ru) | [контейнеры `:::вид`](Kit-Callouts-ru#контейнеры-вид); годится и для VuePress | — |
+| [`HackMDSet`](Kit-Set-HackMD-ru) | контейнеры `:::вид`, оглавление, [шорткоды](Kit-Media-ru#шорткоды) | `ShortcodeHandlers`, `LoadThumbnails` |
+| [`ChatSet`](Kit-Set-Chat-ru) | упоминания, [спойлеры](Kit-Text-ru#спойлеры), эмодзи | `Resolver` |
 
 ## Настройки
 

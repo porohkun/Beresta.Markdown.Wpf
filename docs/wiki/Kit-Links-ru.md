@@ -10,6 +10,8 @@
 как зовут человека, расширение спрашивает у резолвера — `IMdLinkResolver`, который реализует
 приложение.
 
+![Вики-ссылки, тег, упоминание, ссылка на задачу и оглавление](images/kit-links.png)
+
 ## Подключение
 
 **`MainWindow.xaml`** (`xmlns:kit="clr-namespace:MarkdigWpfViewer.Kit;assembly=Markdig.Wpf.Viewer"` и

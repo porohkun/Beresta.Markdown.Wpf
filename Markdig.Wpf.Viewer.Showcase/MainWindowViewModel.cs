@@ -9,6 +9,7 @@ using Showcases.Extensions;
 using Showcases.Kit;
 using Showcases.LargeDocument;
 using Showcases.Preview;
+using Showcases.Sets;
 using Showcases.TwoPanes;
 
 /// <summary>Витрины, выбранная из них и общие настройки.</summary>
@@ -21,6 +22,7 @@ public sealed class MainWindowViewModel : BindableBase
             new DocumentViewModel(Options),
             new ExtensionsViewModel(Options),
             new KitViewModel(Options),
+            new SetsViewModel(Options),
             new CustomLookViewModel(Options),
             new TwoPanesViewModel(Options),
             new LargeDocumentViewModel(Options),

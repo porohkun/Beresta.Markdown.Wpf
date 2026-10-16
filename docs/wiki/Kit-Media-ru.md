@@ -5,6 +5,8 @@
 строкой (`xmlns:kit="clr-namespace:MarkdigWpfViewer.Kit;assembly=Markdig.Wpf.Viewer"`), как
 [плашки](Kit-Callouts-ru#подключение).
 
+![Карточка свойств, карточка видео, карточка-ссылка и таблица из CSV](images/kit-media.png)
+
 **`MainWindow.xaml`**:
 
 ```xml

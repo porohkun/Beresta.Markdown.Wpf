@@ -4,6 +4,8 @@
 VuePress и HackMD. Они поставляются с пакетом, по умолчанию выключены и подключаются каждое одной
 строкой.
 
+![Плашки Obsidian, MkDocs и Docusaurus](images/kit-callouts.png)
+
 ## Подключение
 
 Готовые расширения лежат в пространстве имён `MarkdigWpfViewer.Kit`.

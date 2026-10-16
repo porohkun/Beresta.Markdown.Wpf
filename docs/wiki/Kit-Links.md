@@ -10,6 +10,8 @@ The meaning comes from your application. A click on a wiki link, a tag or a ment
 a person is called, the extension asks a resolver — `IMdLinkResolver`, implemented by your
 application.
 
+![Wiki links, a tag, a mention, an issue link and a table of contents](images/kit-links.png)
+
 ## Connecting
 
 **`MainWindow.xaml`** (`xmlns:kit="clr-namespace:MarkdigWpfViewer.Kit;assembly=Markdig.Wpf.Viewer"` and

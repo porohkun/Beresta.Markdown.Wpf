@@ -5,6 +5,8 @@ comments, spoilers, task statuses and footnotes as tooltips. Off by default, con
 (`xmlns:kit="clr-namespace:MarkdigWpfViewer.Kit;assembly=Markdig.Wpf.Viewer"`), like the
 [callouts](Kit-Callouts#connecting).
 
+![Chips, a color code, review marks, a spoiler and task statuses](images/kit-text.png)
+
 **`MainWindow.xaml`**:
 
 ```xml

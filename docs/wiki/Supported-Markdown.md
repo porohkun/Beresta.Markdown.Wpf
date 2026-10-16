@@ -4,7 +4,8 @@ The viewer parses text with Markdig: CommonMark plus Markdig's advanced extensio
 (`UseAdvancedExtensions()`) — tables, task lists, footnotes, heading identifiers, autolinks,
 attributes, custom containers and more — and front matter (`UseYamlFrontMatter()`). Everything the
 parser recognizes gets on the screen: a construct without its own look is shown as its content or as
-its source text. Nothing disappears silently.
+its source text. Nothing disappears silently. The syntax of other programs — Obsidian, MkDocs,
+Hugo and more — comes with the package as [ready-made extensions](Kit-Sets), off by default.
 
 ![Most of the syntax in one document](images/overview.png)
 

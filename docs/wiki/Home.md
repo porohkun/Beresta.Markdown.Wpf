@@ -62,8 +62,9 @@ What you get:
 ## Showcase
 
 The repository has a showcase application with the scenarios from this wiki: a full document with a
-table of contents, a custom look, extensions, copying, live preview, two panes and a large document.
-Run it from the repository root:
+table of contents, a custom look, extensions, ready-made extensions and sets with a document in the
+syntax of every program, copying, live preview, two panes and a large document. Run it from the
+repository root:
 
 ```bash
 dotnet run --project Markdig.Wpf.Viewer.Showcase

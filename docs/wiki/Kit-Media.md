@@ -5,6 +5,8 @@ tables from CSV and a properties card for front matter. Off by default, connecte
 (`xmlns:kit="clr-namespace:MarkdigWpfViewer.Kit;assembly=Markdig.Wpf.Viewer"`), like the
 [callouts](Kit-Callouts#connecting).
 
+![A properties card, a video card, a link card and a table from CSV](images/kit-media.png)
+
 **`MainWindow.xaml`**:
 
 ```xml
