@@ -123,6 +123,7 @@ public class MdTextBlock : TextBlock
     private static readonly IValueConverter IndexFontSize = new MdScaleConverter(0.75);
 
     private readonly List<Segment> _segments = [];
+    private readonly List<(RunVm Run, Span Span)> _styled = [];
     private List<Highlight> _highlights = [];
     private List<(int Line, Rect Row)>? _sourceRows;
     private AdornerLayer? _adornerLayer;
@@ -454,6 +455,7 @@ public class MdTextBlock : TextBlock
     {
         Inlines.Clear();
         _segments.Clear();
+        _styled.Clear();
         _sourceRows = null;
 
         foreach (var inline in Runs ?? [])
@@ -534,6 +536,21 @@ public class MdTextBlock : TextBlock
                 MdWidget.SetState(widget, states?.StateOf(widget.Content));
             }
         }
+
+        foreach (var (run, span) in _styled)
+        {
+            MdWidget.SetState(span, states?.StateOf(run));
+        }
+    }
+
+    /// <summary>Щелчок по оформленному куску без выделения текста отдаётся его состоянию.</summary>
+    private void OnStyledClick(object sender, MouseButtonEventArgs e)
+    {
+        if (MdWidget.GetState((Span)sender) is IMdClickableState state && MarkdownViewer.Owning(this) is not { SelectionLength: > 0 })
+        {
+            state.OnClick();
+            e.Handled = true;
+        }
     }
 
     private Run AddRun(RunVm run)
@@ -592,6 +609,8 @@ public class MdTextBlock : TextBlock
         {
             var styled = new Span(current);
             styled.SetResourceReference(FrameworkContentElement.StyleProperty, $"Md.{name}.Style");
+            styled.MouseLeftButtonUp += OnStyledClick;
+            _styled.Add((run, styled));
             current = styled;
         }
 

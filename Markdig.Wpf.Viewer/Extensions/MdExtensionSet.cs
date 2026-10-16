@@ -30,6 +30,11 @@ public class MdExtensionSet : MdExtension
             .Select(extension => extension.ConvertBlock(block, context))
             .FirstOrDefault(converted => converted is not null);
 
+    public override IReadOnlyList<BlockVm>? ConvertBlocks(Block block, MdConvertContext context)
+        => Extensions
+            .Select(extension => extension.ConvertBlocks(block, context))
+            .FirstOrDefault(converted => converted is not null);
+
     public override InlineVm? ConvertInline(Inline inline, MdConvertContext context)
         => Extensions
             .Select(extension => extension.ConvertInline(inline, context))

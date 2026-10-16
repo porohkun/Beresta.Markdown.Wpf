@@ -55,3 +55,8 @@ private void OnTaskToggled(object? sender, MdTaskToggledEventArgs e)
 Задача копируется как `[x]` или `[ ]` в обычном тексте и как `- [x]` в Markdown. Флажок берёт стиль
 `CheckBox` приложения; его отступ — ключ `Md.Task.Margin`, а `TaskTemplate` провайдера стилей
 заменяет его — см. [Стили и шаблоны](Styles-and-Templates-ru).
+
+## Статусы задач
+
+Статусы Obsidian `[/]`, `[-]`, `[>]`, `[?]` и `[!]` даёт [готовое расширение](Kit-Text-ru#статусы-задач)
+`TaskStatuses`: значок вместо флажка и тот же `TaskToggled` по щелчку, где `Task.Status` — знак статуса.

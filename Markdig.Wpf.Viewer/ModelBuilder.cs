@@ -253,19 +253,31 @@ internal sealed partial class ModelBuilder
         int listDepth)
         => ConvertByExtension(block, listDepth) ?? ConvertBuiltInBlock(block, listDepth);
 
+    /// <summary>Блоки расширения из узла; первый берёт идентификатор узла, следующие — производные от него.</summary>
     private IReadOnlyList<BlockVm>? ConvertByExtension(
         Block block,
         int listDepth)
     {
         foreach (var extension in _extensions)
         {
-            if (extension.ConvertBlock(block, new(this, listDepth)) is { } custom)
+            if (extension.ConvertBlocks(block, new(this, listDepth)) is { } custom)
             {
-                return [Stamp(custom, block)];
+                return custom.Select((part, index) => (BlockVm)StampPart(part, block, index)).ToList();
             }
         }
 
         return null;
+    }
+
+    /// <summary><paramref name="index"/>-я часть узла: первая — с идентификатором узла, следующие — с производными.</summary>
+    private NodeVm StampPart(NodeVm part, MarkdownObject node, int index)
+    {
+        if (index > 0 && part.NodeId == 0)
+        {
+            part = part with { NodeId = _identity.PartId(_identity.IdOf(node), index) };
+        }
+
+        return Stamp(part, node);
     }
 
     private IReadOnlyList<BlockVm> ConvertBuiltInBlock(
@@ -1076,13 +1088,7 @@ internal sealed partial class ModelBuilder
 
             for (var i = 0; i < custom.Count; i++)
             {
-                NodeVm part = custom[i];
-                if (i > 0 && part.NodeId == 0)
-                {
-                    part = part with { NodeId = _identity.PartId(_identity.IdOf(node), i) };
-                }
-
-                output.Add((InlineVm)Stamp(part, node));
+                output.Add((InlineVm)StampPart(custom[i], node, i));
             }
 
             return true;

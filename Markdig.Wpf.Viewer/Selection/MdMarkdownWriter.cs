@@ -133,7 +133,7 @@ internal sealed partial class MdMarkdownWriter
 
         if (run.Markup is { } frame)
         {
-            markers.Add(new(frame.Open, frame.Close, Emphasis: false));
+            markers.Add(new(frame.Open, frame.Close, Emphasis: false, IsFrame: true));
         }
 
         if (run.Strike)
@@ -540,7 +540,7 @@ internal sealed partial class MdMarkdownWriter
             : null;
 
     /// <summary>Начертание или ссылка: что ставится до куска текста и что после.</summary>
-    private readonly record struct Marker(string Open, string Close, bool Emphasis);
+    private readonly record struct Marker(string Open, string Close, bool Emphasis, bool IsFrame = false);
 
     /// <summary>Строчная разметка: начертания и ссылки открываются и закрываются, когда меняются у кусков текста.</summary>
     private sealed class InlineMarkdown(MdMarkdownWriter writer)
@@ -573,7 +573,7 @@ internal sealed partial class MdMarkdownWriter
                     break;
 
                 case ImageVm image:
-                    var wanted = _open.Where(marker => !marker.Close.StartsWith("](", StringComparison.Ordinal)).ToList();
+                    var wanted = _open.Where(marker => !marker.IsFrame && !marker.Close.StartsWith("](", StringComparison.Ordinal)).ToList();
                     if ((image.Href ?? image.Hyperlink?.OriginalString) is { } link)
                     {
                         wanted.Add(new("[", $"]({Destination(link)})", Emphasis: false));
@@ -583,7 +583,8 @@ internal sealed partial class MdMarkdownWriter
                     break;
 
                 default:
-                    Append(writer.SourceOf(inline) ?? (inline as IMdCopyText)?.CopyText ?? string.Empty);
+                    Open(_open.Where(marker => !marker.IsFrame).ToList(), string.Empty);
+                    Append((inline as IMdMarkdownText)?.MarkdownText ?? writer.SourceOf(inline) ?? (inline as IMdCopyText)?.CopyText ?? string.Empty);
                     break;
             }
         }

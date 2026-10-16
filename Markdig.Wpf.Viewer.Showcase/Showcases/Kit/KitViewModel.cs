@@ -10,7 +10,20 @@ public sealed class KitViewModel : ShowcaseViewModel
 
     public override string Title => "Готовые расширения";
 
-    public string Text { get; } = Samples.Near<KitViewModel>("Kit.md");
+    public string Text
+    {
+        get;
+        set => Set(ref field, value);
+    } = Samples.Near<KitViewModel>("Kit.md");
+
+    /// <summary>Заменяет кусок исходника: решение по правке, переключённая задача.</summary>
+    public void Replace(int start, int length, string replacement)
+    {
+        if (start + length <= Text.Length)
+        {
+            Text = Text[..start] + replacement + Text[(start + length)..];
+        }
+    }
 
     /// <summary>Последняя нажатая ссылка своей схемы: <c>wiki:</c>, <c>tag:</c>, <c>mention:</c>.</summary>
     public string LastLink

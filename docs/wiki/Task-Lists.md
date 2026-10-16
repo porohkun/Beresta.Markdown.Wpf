@@ -55,3 +55,9 @@ does not move — see [Live Preview](Live-Preview).
 A task is copied as `[x]` or `[ ]` in plain text and as `- [x]` in Markdown. The box uses the
 `CheckBox` style of your application; its margin is the key `Md.Task.Margin`, and the `TaskTemplate`
 of a style provider replaces it — see [Styles and Templates](Styles-and-Templates).
+
+## Task statuses
+
+Obsidian statuses `[/]`, `[-]`, `[>]`, `[?]` and `[!]` come with the
+[ready-made extension](Kit-Text#task-statuses) `TaskStatuses`: an icon instead of the box, and the same
+`TaskToggled` on a click, where `Task.Status` is the status character.

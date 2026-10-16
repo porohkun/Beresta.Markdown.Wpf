@@ -14,6 +14,7 @@ An extension derives from `MdExtension` and overrides what it needs:
 |---|---|
 | `SetupPipeline(builder)` | adds Markdig extensions and parsers for your syntax |
 | `ConvertBlock(block, context)` | turns a Markdig block into your block model; `null` — not yours |
+| `ConvertBlocks(block, context)` | turns a Markdig block into several block models; an empty list hides the block; `null` — not yours |
 | `ConvertInline(inline, context)` | turns a Markdig inline into your inline model; `null` — not yours |
 | `ConvertInlines(inline, context)` | turns a Markdig inline into several inline models — text, [styled text](#styled-text), widgets; `null` — not yours |
 | `SelectTemplate(item, container)` | returns the template of your model; `null` — not yours |
@@ -226,7 +227,9 @@ How a widget takes part in [selection](Selection) and [copying](Copying) depends
 | `IMdCopyText` | one character | `CopyText` |
 | neither | one character | nothing |
 
-When a widget is selected as a whole, «Copy as Markdown» writes its source text.
+When a widget is selected as a whole, «Copy as Markdown» writes its source text. An inline widget
+that is only a helper — buttons next to a piece of text made from the same node — implements
+`IMdMarkdownText` with an empty `MarkdownText`, so the source of the node is not written twice.
 
 ## Widget state
 
@@ -392,7 +395,8 @@ public sealed class FootnoteTipExtension : MdExtension
 </mdv:MarkdownViewer>
 ```
 
-The blank lines around a definition stay as space.
+The blank lines around a definition stay as space. The same comes ready-made with a template of the
+theme: [`FootnoteTips`](Kit-Text#footnotes-as-tooltips).
 
 ### A code block of one language
 
@@ -437,6 +441,10 @@ One Markdig node often gives several pieces — plain and bold text in one chip 
 of its place — bold, italic, the link around it — from `context.CreateRun(text)`. When the frame
 writes the link of the piece itself, as `[[Page]]` does, `ReplacesLink = true` keeps the Markdown link
 syntax off it.
+
+A piece of styled text has a [state](#widget-state) too: `CreateState` gets its `RunVm`, the `Span`
+style reads the state through `mdx:MdWidget.State`, and a state that implements `IMdClickableState`
+gets a click on the piece that selected nothing — that is how a spoiler opens.
 
 **`ChipExtension.cs`**, for `::text::`, Markdig's inline custom container:
 

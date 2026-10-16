@@ -14,6 +14,7 @@
 |---|---|
 | `SetupPipeline(builder)` | добавляет расширения и разборщики Markdig для своего синтаксиса |
 | `ConvertBlock(block, context)` | превращает блок Markdig в свою модель блока; `null` — не свой |
+| `ConvertBlocks(block, context)` | превращает блок Markdig в несколько моделей блоков; пустой список прячет блок; `null` — не свой |
 | `ConvertInline(inline, context)` | превращает инлайн Markdig в свою строчную модель; `null` — не свой |
 | `ConvertInlines(inline, context)` | превращает инлайн Markdig в несколько строчных моделей — текст, [оформленный текст](#оформленный-текст), виджеты; `null` — не свой |
 | `SelectTemplate(item, container)` | возвращает шаблон своей модели; `null` — не своя |
@@ -225,7 +226,9 @@ public sealed class MentionExtension : MdExtension
 | `IMdCopyText` | один знак | `CopyText` |
 | ничего | один знак | ничего |
 
-Если виджет выделен целиком, «Copy as Markdown» записывает его исходный текст.
+Если виджет выделен целиком, «Copy as Markdown» записывает его исходный текст. Строчный виджет, который
+лишь помогает — кнопки рядом с куском текста из того же узла, — реализует `IMdMarkdownText` с пустым
+`MarkdownText`, чтобы исходник узла не записался дважды.
 
 ## Состояние виджета
 
@@ -390,7 +393,8 @@ public sealed class FootnoteTipExtension : MdExtension
 </mdv:MarkdownViewer>
 ```
 
-Пустые строки вокруг определения остаются отступами.
+Пустые строки вокруг определения остаются отступами. То же самое есть готовым, с шаблоном темы:
+[`FootnoteTips`](Kit-Text-ru#сноски-подсказкой).
 
 ### Блок кода одного языка
 
@@ -433,6 +437,10 @@ public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
 начертание своего места — жирный, курсив, ссылку вокруг — из `context.CreateRun(text)`. Когда
 обрамление само записывает ссылку куска, как `[[Страница]]`, `ReplacesLink = true` не даёт поставить
 вокруг него разметку ссылки Markdown.
+
+У оформленного куска тоже бывает [состояние](#состояние-виджета): `CreateState` получает его `RunVm`,
+стиль `Span` читает состояние через `mdx:MdWidget.State`, а состояние с `IMdClickableState` получает
+щелчок по куску, который ничего не выделил, — так раскрывается спойлер.
 
 **`ChipExtension.cs`**, для `::text::` — строчного контейнера Markdig:
 
