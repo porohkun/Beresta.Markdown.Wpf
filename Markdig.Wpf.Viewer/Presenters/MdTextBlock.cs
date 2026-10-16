@@ -588,6 +588,13 @@ public class MdTextBlock : TextBlock
             current = shifted;
         }
 
+        if (run.StyleName is { } name)
+        {
+            var styled = new Span(current);
+            styled.SetResourceReference(FrameworkContentElement.StyleProperty, $"Md.{name}.Style");
+            current = styled;
+        }
+
         if (run.Hyperlink is not null)
         {
             var link = new Hyperlink

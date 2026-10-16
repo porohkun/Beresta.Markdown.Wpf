@@ -15,6 +15,7 @@ An extension derives from `MdExtension` and overrides what it needs:
 | `SetupPipeline(builder)` | adds Markdig extensions and parsers for your syntax |
 | `ConvertBlock(block, context)` | turns a Markdig block into your block model; `null` — not yours |
 | `ConvertInline(inline, context)` | turns a Markdig inline into your inline model; `null` — not yours |
+| `ConvertInlines(inline, context)` | turns a Markdig inline into several inline models — text, [styled text](#styled-text), widgets; `null` — not yours |
 | `SelectTemplate(item, container)` | returns the template of your model; `null` — not yours |
 | `CreateState(node)` | creates the state of a widget that outlives its control; `null` — no state |
 
@@ -405,9 +406,111 @@ public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
     => block is FencedCodeBlock { Info: "mermaid" } code ? new DiagramVm(code.Lines.ToString()) : null;
 ```
 
-## One set of extensions for many viewers
+## Links from a widget
 
-`Extensions` can be set by a style: all viewers of a window or an application then share one set.
+A button or any other control of your widget follows a link the way a link in the text does: the
+`MarkdownLink.Navigate` handlers of the application first, then an anchor of the document, then the
+link opener — see [Application Links](Application-Links). In a template, use the command
+`MarkdownLink.ActivateCommand` with the link as its parameter — here it is `Url` of the widget's model.
+
+**`MainWindow.xaml`**, in the template of your widget:
+
+```xml
+<Button Content="Open the plan"
+        Command="{x:Static mdv:MarkdownLink.ActivateCommand}"
+        CommandParameter="{Binding Url}" />
+```
+
+From code, `MarkdownLink.Activate(element, href)` does the same; `element` is the control of your
+widget.
+
+## Styled text
+
+Not every syntax of yours needs a widget: a piece of text with a look of its own — a chip, an insertion
+or a deletion of a review — can stay text. Then it is selected by pieces, found by search and wrapped
+like the rest of the text. A text piece `RunVm` carries the name of its look in `StyleName` and is drawn
+with the `Span` style under the theme key `Md.<StyleName>.Style`; `Markup` is the frame it gets in
+«Copy as Markdown».
+
+One Markdig node often gives several pieces — plain and bold text in one chip — so return them from
+`ConvertInlines`. An empty list hides the node.
+
+**`ChipExtension.cs`**, for `::text::`, Markdig's inline custom container:
+
+```csharp
+using Markdig.Extensions.CustomContainers;
+using Markdig.Syntax.Inlines;
+using MarkdigWpfViewer.Extensions;
+using MarkdigWpfViewer.ViewModels;
+
+public sealed class ChipExtension : MdExtension
+{
+    public override IReadOnlyList<InlineVm>? ConvertInlines(Inline inline, MdConvertContext context)
+        => inline is CustomContainerInline chip
+            ? context.ConvertInlines(chip)
+                .Select(converted => converted is RunVm run ? run with { StyleName = "Chip", Markup = new("::", "::") } : converted)
+                .ToList()
+            : null;
+}
+```
+
+**`App.xaml`**, the application resources:
+
+```xml
+<Style x:Key="Md.Chip.Style" TargetType="Span">
+    <Setter Property="Background" Value="#DDF4FF" />
+    <Setter Property="Foreground" Value="#0969DA" />
+</Style>
+```
+
+## Extension sets
+
+`MdExtensionSet` connects several extensions as one: the viewer asks the set, the set asks its
+extensions in order. A set goes into `Extensions` next to single extensions; assemble it before
+connecting.
+
+**`MainWindow.xaml`**:
+
+```xml
+<mdv:MarkdownViewer Markdown="{Binding Text}">
+    <mdv:MarkdownViewer.Extensions>
+        <mdx:MdExtensionSet>
+            <local:ChipExtension />
+            <local:SpoilerExtension />
+        </mdx:MdExtensionSet>
+        <local:MentionExtension />
+    </mdv:MarkdownViewer.Extensions>
+</mdv:MarkdownViewer>
+```
+
+A set of your own derives from `MdExtensionSet` and fills `Extensions` in its constructor; then it is
+connected in one line.
+
+**`ReviewSet.cs`**:
+
+```csharp
+using MarkdigWpfViewer.Extensions;
+
+public sealed class ReviewSet : MdExtensionSet
+{
+    public ReviewSet()
+    {
+        Extensions.Add(new ChipExtension());
+        Extensions.Add(new SpoilerExtension());
+    }
+}
+```
+
+**`MainWindow.xaml.cs`**, in the constructor:
+
+```csharp
+Viewer.Extensions.Add(new ReviewSet());
+```
+
+## Shared extensions for many viewers
+
+`Extensions` can be set by a style: all viewers of a window or an application then share one
+collection.
 
 **`App.xaml`**, the application resources, after the templates `NoteTemplate` and `MentionTemplate`:
 
@@ -422,7 +525,7 @@ public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
 </Style>
 ```
 
-Under such a style a viewer uses the shared set: extensions declared inside its own
+Under such a style a viewer uses the shared collection: extensions declared inside its own
 `<mdv:MarkdownViewer.Extensions>` are replaced by it.
 
 ## Good to know

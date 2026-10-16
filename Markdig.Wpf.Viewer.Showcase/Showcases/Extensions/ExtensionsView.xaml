@@ -50,14 +50,32 @@
             </DataTemplate.Triggers>
         </DataTemplate>
 
+        <!-- Упоминание — кнопка: щелчок идёт по ссылке тем же путём, что ссылка в тексте -->
         <DataTemplate x:Key="MentionTemplate" DataType="{x:Type local:MentionVm}">
-            <Border Padding="6,0"
-                    CornerRadius="8"
-                    Background="{DynamicResource PrimaryBrush}">
-                <TextBlock Text="{Binding Name, StringFormat='@{0}'}"
-                           Foreground="White" />
-            </Border>
+            <Button Command="{x:Static mdv:MarkdownLink.ActivateCommand}"
+                    CommandParameter="{Binding Url}"
+                    ToolTip="{Binding Url}"
+                    Height="Auto"
+                    MinHeight="0"
+                    Cursor="Hand">
+                <Button.Template>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Padding="6,0"
+                                CornerRadius="8"
+                                Background="{DynamicResource PrimaryBrush}">
+                            <TextBlock Text="{Binding Name, StringFormat='@{0}'}"
+                                       Foreground="White" />
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
         </DataTemplate>
+
+        <!-- Оформление «Chip» для чипов ::текст:: -->
+        <Style x:Key="Md.Chip.Style" TargetType="{x:Type Span}">
+            <Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+        </Style>
     </UserControl.Resources>
 
     <ScrollViewer>
@@ -65,7 +83,10 @@
                             Margin="24,16">
             <mdv:MarkdownViewer.Extensions>
                 <local:NoteExtension Template="{StaticResource NoteTemplate}" />
-                <local:MentionExtension Template="{StaticResource MentionTemplate}" />
+                <mdx:MdExtensionSet>
+                    <local:MentionExtension Template="{StaticResource MentionTemplate}" />
+                    <local:ChipExtension />
+                </mdx:MdExtensionSet>
             </mdv:MarkdownViewer.Extensions>
         </mdv:MarkdownViewer>
     </ScrollViewer>

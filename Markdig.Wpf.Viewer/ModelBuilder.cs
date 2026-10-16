@@ -1060,15 +1060,28 @@ internal sealed partial class ModelBuilder
         return text.ToString();
     }
 
+    /// <summary>Инлайны расширения из узла; первый берёт идентификатор узла, следующие — производные от него.</summary>
     private bool TryConvertByExtension(Inline node, List<InlineVm> output)
     {
         foreach (var extension in _extensions)
         {
-            if (extension.ConvertInline(node, new(this, listDepth: 0)) is { } custom)
+            if (extension.ConvertInlines(node, new(this, listDepth: 0)) is not { } custom)
             {
-                output.Add(Stamp(custom, node));
-                return true;
+                continue;
             }
+
+            for (var i = 0; i < custom.Count; i++)
+            {
+                NodeVm part = custom[i];
+                if (i > 0 && part.NodeId == 0)
+                {
+                    part = part with { NodeId = _identity.PartId(_identity.IdOf(node), i) };
+                }
+
+                output.Add((InlineVm)Stamp(part, node));
+            }
+
+            return true;
         }
 
         return false;

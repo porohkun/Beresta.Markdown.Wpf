@@ -131,6 +131,11 @@ internal sealed partial class MdMarkdownWriter
             markers.Add(new("[", $"]({Destination(href)})", Emphasis: false));
         }
 
+        if (run.Markup is { } frame)
+        {
+            markers.Add(new(frame.Open, frame.Close, Emphasis: false));
+        }
+
         if (run.Strike)
         {
             markers.Add(Strike);
@@ -568,7 +573,7 @@ internal sealed partial class MdMarkdownWriter
                     break;
 
                 case ImageVm image:
-                    var wanted = _open.Where(marker => marker.Open != "[").ToList();
+                    var wanted = _open.Where(marker => !marker.Close.StartsWith("](", StringComparison.Ordinal)).ToList();
                     if ((image.Href ?? image.Hyperlink?.OriginalString) is { } link)
                     {
                         wanted.Add(new("[", $"]({Destination(link)})", Emphasis: false));

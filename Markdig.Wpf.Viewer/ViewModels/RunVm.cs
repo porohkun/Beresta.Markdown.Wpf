@@ -27,4 +27,11 @@ public sealed record RunVm(
     bool Inserted = false,
     bool Cite = false,
     string? Abbreviation = null)
-    : InlineVm;
+    : InlineVm
+{
+    /// <summary>Имя оформления: кусок рисуется стилем <c>Span</c> с ключом темы <c>Md.&lt;имя&gt;.Style</c>; нет — <c>null</c>.</summary>
+    public string? StyleName { get; init; }
+
+    /// <summary>Обрамление куска в разметке выделенного; нет — кусок пишется без обрамления.</summary>
+    public MarkupFrame? Markup { get; init; }
+}

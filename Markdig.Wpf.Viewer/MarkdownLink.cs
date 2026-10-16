@@ -43,6 +43,12 @@ public static class MarkdownLink
             new FrameworkPropertyMetadata(MdSystemLinkOpener.Instance, FrameworkPropertyMetadataOptions.Inherits));
 
     /// <summary>
+    /// Нажатие ссылки из шаблона своего виджета, параметр — цель ссылки строкой: тот же путь, что у
+    /// ссылки в тексте. Исполняет вьюер, в котором лежит виджет.
+    /// </summary>
+    public static readonly RoutedCommand ActivateCommand = new(nameof(ActivateCommand), typeof(MarkdownLink));
+
+    /// <summary>
     /// Команда, которой достаётся нажатая ссылка; параметр — <see cref="MarkdownLinkEventArgs.Href"/>.
     /// </summary>
     public static readonly DependencyProperty CommandProperty =
@@ -69,6 +75,10 @@ public static class MarkdownLink
 
     public static void SetOpener(DependencyObject element, IMdLinkOpener? value) =>
         element.SetValue(OpenerProperty, value);
+
+    /// <summary>Нажатие ссылки из своего виджета: тот же путь, что у ссылки в тексте.</summary>
+    public static void Activate(UIElement source, string href)
+        => Activate(source, href, Uri.TryCreate(href, UriKind.RelativeOrAbsolute, out var uri) ? uri : null);
 
     /// <summary>Нажатие ссылки: сначала событие приложению, затем якорь документа, затем открыватель.</summary>
     internal static void Activate(UIElement source, string href, Uri? uri)

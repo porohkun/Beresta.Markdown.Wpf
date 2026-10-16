@@ -15,6 +15,7 @@
 | `SetupPipeline(builder)` | добавляет расширения и разборщики Markdig для своего синтаксиса |
 | `ConvertBlock(block, context)` | превращает блок Markdig в свою модель блока; `null` — не свой |
 | `ConvertInline(inline, context)` | превращает инлайн Markdig в свою строчную модель; `null` — не свой |
+| `ConvertInlines(inline, context)` | превращает инлайн Markdig в несколько строчных моделей — текст, [оформленный текст](#оформленный-текст), виджеты; `null` — не свой |
 | `SelectTemplate(item, container)` | возвращает шаблон своей модели; `null` — не своя |
 | `CreateState(node)` | создаёт состояние виджета, которое переживает его контрол; `null` — состояния нет |
 
@@ -402,9 +403,109 @@ public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
     => block is FencedCodeBlock { Info: "mermaid" } code ? new DiagramVm(code.Lines.ToString()) : null;
 ```
 
-## Один набор расширений на много вьюеров
+## Ссылка из виджета
 
-`Extensions` можно задать стилем: тогда все вьюеры окна или приложения пользуются одним набором.
+Кнопка или другой контрол своего виджета переходит по ссылке так же, как ссылка в тексте: сначала
+обработчики `MarkdownLink.Navigate` приложения, затем якорь документа, затем открыватель ссылок — см.
+[Ссылки приложения](Application-Links-ru). В шаблоне для этого есть команда
+`MarkdownLink.ActivateCommand`, её параметр — ссылка; здесь это `Url` модели виджета.
+
+**`MainWindow.xaml`**, в шаблоне своего виджета:
+
+```xml
+<Button Content="Open the plan"
+        Command="{x:Static mdv:MarkdownLink.ActivateCommand}"
+        CommandParameter="{Binding Url}" />
+```
+
+Из кода то же делает `MarkdownLink.Activate(element, href)`; `element` — контрол своего виджета.
+
+## Оформленный текст
+
+Не всякому своему синтаксису нужен виджет: кусок текста со своим видом — чип, вставка или удаление
+правки — может остаться текстом. Тогда он выделяется кусками, находится поиском и переносится, как
+остальной текст. Кусок текста `RunVm` несёт имя своего оформления в `StyleName` и рисуется стилем
+`Span` с ключом темы `Md.<StyleName>.Style`; `Markup` — обрамление, с которым он попадает в
+«Копировать как Markdown».
+
+Один узел Markdig часто даёт несколько кусков — простой и жирный текст в одном чипе, — поэтому их
+возвращают из `ConvertInlines`. Пустой список прячет узел.
+
+**`ChipExtension.cs`**, для `::text::` — строчного контейнера Markdig:
+
+```csharp
+using Markdig.Extensions.CustomContainers;
+using Markdig.Syntax.Inlines;
+using MarkdigWpfViewer.Extensions;
+using MarkdigWpfViewer.ViewModels;
+
+public sealed class ChipExtension : MdExtension
+{
+    public override IReadOnlyList<InlineVm>? ConvertInlines(Inline inline, MdConvertContext context)
+        => inline is CustomContainerInline chip
+            ? context.ConvertInlines(chip)
+                .Select(converted => converted is RunVm run ? run with { StyleName = "Chip", Markup = new("::", "::") } : converted)
+                .ToList()
+            : null;
+}
+```
+
+**`App.xaml`**, ресурсы приложения:
+
+```xml
+<Style x:Key="Md.Chip.Style" TargetType="Span">
+    <Setter Property="Background" Value="#DDF4FF" />
+    <Setter Property="Foreground" Value="#0969DA" />
+</Style>
+```
+
+## Наборы расширений
+
+`MdExtensionSet` подключает несколько расширений одним: вьюер опрашивает набор, набор — свои расширения
+по порядку. Набор ставится в `Extensions` рядом с одиночными расширениями; собирают его до
+подключения.
+
+**`MainWindow.xaml`**:
+
+```xml
+<mdv:MarkdownViewer Markdown="{Binding Text}">
+    <mdv:MarkdownViewer.Extensions>
+        <mdx:MdExtensionSet>
+            <local:ChipExtension />
+            <local:SpoilerExtension />
+        </mdx:MdExtensionSet>
+        <local:MentionExtension />
+    </mdv:MarkdownViewer.Extensions>
+</mdv:MarkdownViewer>
+```
+
+Свой набор наследуется от `MdExtensionSet` и заполняет `Extensions` в конструкторе — тогда он
+подключается одной строкой.
+
+**`ReviewSet.cs`**:
+
+```csharp
+using MarkdigWpfViewer.Extensions;
+
+public sealed class ReviewSet : MdExtensionSet
+{
+    public ReviewSet()
+    {
+        Extensions.Add(new ChipExtension());
+        Extensions.Add(new SpoilerExtension());
+    }
+}
+```
+
+**`MainWindow.xaml.cs`**, в конструкторе:
+
+```csharp
+Viewer.Extensions.Add(new ReviewSet());
+```
+
+## Общие расширения на много вьюеров
+
+`Extensions` можно задать стилем: тогда все вьюеры окна или приложения пользуются одной коллекцией.
 
 **`App.xaml`**, ресурсы приложения, после шаблонов `NoteTemplate` и `MentionTemplate`:
 
@@ -419,8 +520,8 @@ public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
 </Style>
 ```
 
-Под таким стилем вьюер пользуется общим набором: расширения, объявленные внутри его собственного
-`<mdv:MarkdownViewer.Extensions>`, им заменяются.
+Под таким стилем вьюер пользуется общей коллекцией: расширения, объявленные внутри его собственного
+`<mdv:MarkdownViewer.Extensions>`, ею заменяются.
 
 ## Что полезно знать
 

@@ -222,6 +222,13 @@ public sealed class MarkdownViewer : ItemsControl
         CommandManager.RegisterClassCommandBinding(
             typeof(MarkdownViewer),
             new(ApplicationCommands.SelectAll, (sender, _) => ((MarkdownViewer)sender).SelectAll()));
+
+        CommandManager.RegisterClassCommandBinding(
+            typeof(MarkdownViewer),
+            new(
+                MarkdownLink.ActivateCommand,
+                (sender, e) => MarkdownLink.Activate(ElementOf(e.OriginalSource) ?? (UIElement)sender, (string)e.Parameter),
+                (sender, e) => e.CanExecute = e.Parameter is string { Length: > 0 }));
     }
 
     public MarkdownViewer()
@@ -613,6 +620,20 @@ public sealed class MarkdownViewer : ItemsControl
 
     private static void OnIsSelectionEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownViewer)d).ClearSelection();
+
+    /// <summary>Ближайший к источнику команды элемент интерфейса: у куска текста — его текстовый блок.</summary>
+    private static UIElement? ElementOf(object source)
+    {
+        for (var node = source as DependencyObject; node is not null; node = LogicalTreeHelper.GetParent(node))
+        {
+            if (node is UIElement element)
+            {
+                return element;
+            }
+        }
+
+        return null;
+    }
 
     private static void OnExtensionsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {

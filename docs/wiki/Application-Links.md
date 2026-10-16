@@ -8,7 +8,8 @@ whole order of a click is in [Links and Anchors](Links-and-Anchors#what-a-click-
 ## The Navigate event
 
 `MarkdownLink.Navigate` is a bubbling routed event: a handler on the viewer or on any of its ancestors
-gets every click on a link, a linked image, a footnote reference or `↩`. A handled event stops there.
+gets every click on a link, a linked image, a footnote reference or `↩` — and on a link of an
+[extension widget](Extensions#links-from-a-widget). A handled event stops there.
 
 **`MainWindow.xaml`**:
 
