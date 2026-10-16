@@ -64,13 +64,6 @@ internal sealed partial class MdMarkdownWriter
                 .Reverse());
     }
 
-    private static string CodeSpan(string text)
-    {
-        var fence = new string('`', LongestRun(text, '`') + 1);
-        var pad = text.StartsWith('`') || text.EndsWith('`') ? " " : string.Empty;
-        return fence + pad + text + pad + fence;
-    }
-
     /// <summary>Самый длинный ряд знака подряд — длина ограждения кода берётся на единицу больше.</summary>
     internal static int LongestRun(string text, char symbol)
     {
@@ -83,6 +76,13 @@ internal sealed partial class MdMarkdownWriter
         }
 
         return longest;
+    }
+
+    private static string CodeSpan(string text)
+    {
+        var fence = new string('`', LongestRun(text, '`') + 1);
+        var pad = text.StartsWith('`') || text.EndsWith('`') ? " " : string.Empty;
+        return fence + pad + text + pad + fence;
     }
 
     private static string Destination(string href)
@@ -108,7 +108,7 @@ internal sealed partial class MdMarkdownWriter
 
     /// <summary>Текст в начале строки не должен начинать блок: заголовок, цитату, пункт списка.</summary>
     private static string EscapeLineStart(string text)
-        => text is [('#' or '>' or '+' or '-' or '=' or '|'), ..]
+        => text is ['#' or '>' or '+' or '-' or '=' or '|', ..]
             ? "\\" + text
             : OrderedMarker().Replace(text, "$1\\$2");
 

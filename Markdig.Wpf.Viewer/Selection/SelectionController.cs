@@ -33,6 +33,13 @@ internal sealed class SelectionController
 
     public event Action? Changed;
 
+    private enum WordKind
+    {
+        Word,
+        Space,
+        Other
+    }
+
     public MdTextRange Range => MdTextRange.Between(_anchor, _active);
 
     /// <summary>Якорь и активный конец в текстовой карте.</summary>
@@ -380,12 +387,5 @@ internal sealed class SelectionController
             MdBlockItem item when item.TryGetAtomicRange(out var range) => (item, range),
             _ => null
         };
-    }
-
-    private enum WordKind
-    {
-        Word,
-        Space,
-        Other
     }
 }

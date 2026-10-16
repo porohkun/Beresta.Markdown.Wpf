@@ -71,7 +71,8 @@ public sealed class SelectedMarkdownTests
     [InlineData("<details open><summary>S</summary>x</details>", "<details open>\n<summary>S</summary>\n\nx\n\n</details>")]
     [InlineData("<a href=\"https://x.example\"><img src=\"y.svg\" alt=\"Y\"></a>", "[![Y](y.svg)](https://x.example)")]
     [InlineData("<img src=\"x.png\" width=\"100\" title=\"T\">", "![](x.png \"T\"){width=100}")]
-    [InlineData("<p align=\"center\"><a href=\"x\"><img src=\"a.svg\"></a> <a href=\"y\"><img src=\"b.svg\"></a></p>", "<div align=\"center\">\n\n[![](a.svg)](x) [![](b.svg)](y)\n\n</div>")]
+    [InlineData("<p align=\"center\"><a href=\"x\"><img src=\"a.svg\"></a> <a href=\"y\"><img src=\"b.svg\"></a></p>",
+        "<div align=\"center\">\n\n[![](a.svg)](x) [![](b.svg)](y)\n\n</div>")]
     public void Разметка_записывается_заново_а_не_копируется_из_исходника(string markdown, string expected)
     {
         CopyAll(markdown).Should().Be(expected);

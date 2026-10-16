@@ -48,7 +48,8 @@
                 <TextDecorationCollection>
                     <TextDecoration Location="Underline" PenOffset="1">
                         <TextDecoration.Pen>
-                            <Pen Thickness="1" DashStyle="{x:Static DashStyles.Dot}" Brush="{StaticResource Md.Abbreviation.UnderlineBrush}" />
+                            <Pen Thickness="1" DashStyle="{x:Static DashStyles.Dot}"
+                                 Brush="{StaticResource Md.Abbreviation.UnderlineBrush}" />
                         </TextDecoration.Pen>
                     </TextDecoration>
                 </TextDecorationCollection>
@@ -397,7 +398,8 @@
         <Setter Property="AbbreviationStyle" Value="{DynamicResource Md.Abbreviation.Style}" />
     </Style>
 
-    <Style x:Key="Md.Figure.CaptionStyle" TargetType="{x:Type p:MdTextBlock}" BasedOn="{StaticResource Md.Paragraph.Style}">
+    <Style x:Key="Md.Figure.CaptionStyle" TargetType="{x:Type p:MdTextBlock}"
+           BasedOn="{StaticResource Md.Paragraph.Style}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Figure.CaptionFontSize}" />
         <Setter Property="Foreground" Value="{DynamicResource Md.Figure.CaptionForeground}" />
         <Setter Property="FontStyle" Value="Italic" />
@@ -489,9 +491,12 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource Md.CodeBlock.HeaderForeground}" />
+                            <Setter TargetName="Frame" Property="BorderBrush"
+                                    Value="{DynamicResource Md.CodeBlock.HeaderForeground}" />
                         </Trigger>
-                        <DataTrigger Binding="{Binding IsCopied, RelativeSource={RelativeSource AncestorType={x:Type p:CodeBlockPresenter}}}" Value="True">
+                        <DataTrigger
+                            Binding="{Binding IsCopied, RelativeSource={RelativeSource AncestorType={x:Type p:CodeBlockPresenter}}}"
+                            Value="True">
                             <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.CodeBlock.CopiedIcon}" />
                         </DataTrigger>
                     </ControlTemplate.Triggers>
@@ -597,16 +602,19 @@
         </Setter>
     </Style>
 
-    <Style x:Key="Md.Callout.TitleStyle" TargetType="{x:Type p:MdTextBlock}" BasedOn="{StaticResource Md.Paragraph.Style}">
+    <Style x:Key="Md.Callout.TitleStyle" TargetType="{x:Type p:MdTextBlock}"
+           BasedOn="{StaticResource Md.Paragraph.Style}">
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{Binding Accent, RelativeSource={RelativeSource AncestorType={x:Type p:MdCalloutPresenter}}}" />
+        <Setter Property="Foreground"
+                Value="{Binding Accent, RelativeSource={RelativeSource AncestorType={x:Type p:MdCalloutPresenter}}}" />
     </Style>
 
     <Style x:Key="Md.Callout.DefaultTitleStyle" TargetType="{x:Type TextBlock}">
         <Setter Property="FontFamily" Value="{DynamicResource Md.Paragraph.FontFamily}" />
         <Setter Property="FontSize" Value="{DynamicResource Md.Paragraph.FontSize}" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{Binding Accent, RelativeSource={RelativeSource AncestorType={x:Type p:MdCalloutPresenter}}}" />
+        <Setter Property="Foreground"
+                Value="{Binding Accent, RelativeSource={RelativeSource AncestorType={x:Type p:MdCalloutPresenter}}}" />
     </Style>
 
     <!-- Заголовок-переключатель плашки и сворачиваемого блока: без своей рамки и фона -->
@@ -695,7 +703,8 @@
         </Setter>
     </Style>
 
-    <Style x:Key="Md.Details.SummaryStyle" TargetType="{x:Type p:MdTextBlock}" BasedOn="{StaticResource Md.Paragraph.Style}">
+    <Style x:Key="Md.Details.SummaryStyle" TargetType="{x:Type p:MdTextBlock}"
+           BasedOn="{StaticResource Md.Paragraph.Style}">
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
@@ -705,7 +714,8 @@
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
-    <Style x:Key="Md.Details.HeaderStyle" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource Md.Callout.HeaderStyle}" />
+    <Style x:Key="Md.Details.HeaderStyle" TargetType="{x:Type ToggleButton}"
+           BasedOn="{StaticResource Md.Callout.HeaderStyle}" />
 
     <Style x:Key="Md.Details.Style" TargetType="{x:Type p:MdDetailsPresenter}">
         <Setter Property="DefaultTitle" Value="{DynamicResource Md.Details.Title}" />
@@ -713,9 +723,10 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type p:MdDetailsPresenter}">
                     <StackPanel Margin="{DynamicResource Md.Details.Margin}">
-                        <ToggleButton IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
-                                      HorizontalAlignment="Left"
-                                      Style="{DynamicResource Md.Details.HeaderStyle}">
+                        <ToggleButton
+                            IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                            HorizontalAlignment="Left"
+                            Style="{DynamicResource Md.Details.HeaderStyle}">
                             <StackPanel Orientation="Horizontal">
                                 <Path x:Name="Marker"
                                       Data="{DynamicResource Md.Details.MarkerIcon}"
@@ -753,7 +764,8 @@
                         </Trigger>
                         <Trigger Property="IsExpanded" Value="True">
                             <Setter TargetName="Body" Property="Visibility" Value="Visible" />
-                            <Setter TargetName="Marker" Property="RenderTransform" Value="{x:Static Transform.Identity}" />
+                            <Setter TargetName="Marker" Property="RenderTransform"
+                                    Value="{x:Static Transform.Identity}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -761,7 +773,8 @@
         </Setter>
     </Style>
 
-    <Style x:Key="Md.DefinitionList.TermStyle" TargetType="{x:Type p:MdTextBlock}" BasedOn="{StaticResource Md.Paragraph.Style}">
+    <Style x:Key="Md.DefinitionList.TermStyle" TargetType="{x:Type p:MdTextBlock}"
+           BasedOn="{StaticResource Md.Paragraph.Style}">
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
@@ -779,8 +792,10 @@
             <Setter.Value>
                 <DataTemplate DataType="{x:Type vm:DefinitionItemVm}">
                     <StackPanel>
-                        <p:MdTextBlock x:Name="Terms" Runs="{Binding Terms}" Style="{DynamicResource Md.DefinitionList.TermStyle}" />
-                        <p:MdBlocksPresenter Blocks="{Binding Blocks}" Margin="{DynamicResource Md.DefinitionList.DefinitionMargin}" />
+                        <p:MdTextBlock x:Name="Terms" Runs="{Binding Terms}"
+                                       Style="{DynamicResource Md.DefinitionList.TermStyle}" />
+                        <p:MdBlocksPresenter Blocks="{Binding Blocks}"
+                                             Margin="{DynamicResource Md.DefinitionList.DefinitionMargin}" />
                     </StackPanel>
                     <DataTemplate.Triggers>
                         <DataTrigger Binding="{Binding HasTerms}" Value="False">
@@ -869,7 +884,8 @@
                             Padding="{DynamicResource Md.Table.CellPadding}"
                             Background="{DynamicResource Md.Table.HeaderBackground}">
                         <Grid>
-                            <p:MdTextBlock x:Name="Text" Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
+                            <p:MdTextBlock x:Name="Text" Runs="{Binding Inlines}"
+                                           Style="{DynamicResource Md.Paragraph.Style}" />
                             <p:MdBlocksPresenter x:Name="Blocks" Blocks="{Binding Blocks}" Visibility="Collapsed" />
                         </Grid>
                     </Border>
@@ -889,7 +905,8 @@
                             BorderThickness="{DynamicResource Md.Table.BorderThickness}"
                             Padding="{DynamicResource Md.Table.CellPadding}">
                         <Grid>
-                            <p:MdTextBlock x:Name="Text" Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
+                            <p:MdTextBlock x:Name="Text" Runs="{Binding Inlines}"
+                                           Style="{DynamicResource Md.Paragraph.Style}" />
                             <p:MdBlocksPresenter x:Name="Blocks" Blocks="{Binding Blocks}" Visibility="Collapsed" />
                         </Grid>
                     </Border>
@@ -923,7 +940,8 @@
         <s:MdStyleProvider.CodeBlockTemplate>
             <DataTemplate DataType="{x:Type vm:CodeBlockVm}">
                 <p:CodeBlockPresenter InfoString="{Binding InfoString}" Syntax="{Binding Syntax}" Code="{Binding Code}"
-                                      IsFenced="{Binding IsFenced}" Runs="{Binding Runs}" Style="{DynamicResource Md.CodeBlock.Style}" />
+                                      IsFenced="{Binding IsFenced}" Runs="{Binding Runs}"
+                                      Style="{DynamicResource Md.CodeBlock.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.CodeBlockTemplate>
 
@@ -964,7 +982,8 @@
                         <ColumnDefinition Width="{DynamicResource Md.Footnote.MarkerWidth}" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="{Binding Order, StringFormat={}{0}.}" Style="{DynamicResource Md.Footnote.MarkerStyle}" />
+                    <TextBlock Text="{Binding Order, StringFormat={}{0}.}"
+                               Style="{DynamicResource Md.Footnote.MarkerStyle}" />
                     <p:MdBlocksPresenter Grid.Column="1" Blocks="{Binding Blocks}" />
                 </Grid>
             </DataTemplate>
@@ -1010,7 +1029,8 @@
                 <p:MdBlocksPresenter Blocks="{Binding Blocks}" Margin="{DynamicResource Md.Footer.Margin}">
                     <p:MdBlocksPresenter.Resources>
                         <!-- Абзацы подвала — мелким текстом: свой стиль абзаца на основе общего -->
-                        <Style x:Key="Md.Paragraph.Style" TargetType="{x:Type p:MdTextBlock}" BasedOn="{StaticResource Md.Paragraph.Style}">
+                        <Style x:Key="Md.Paragraph.Style" TargetType="{x:Type p:MdTextBlock}"
+                               BasedOn="{StaticResource Md.Paragraph.Style}">
                             <Setter Property="FontSize" Value="{DynamicResource Md.Footer.FontSize}" />
                             <Setter Property="Foreground" Value="{DynamicResource Md.Footer.Foreground}" />
                         </Style>
@@ -1041,7 +1061,8 @@
 
         <s:MdStyleProvider.DefinitionListTemplate>
             <DataTemplate DataType="{x:Type vm:DefinitionListVm}">
-                <p:MdDefinitionListPresenter ItemsSource="{Binding Items}" Style="{DynamicResource Md.DefinitionList.Style}" />
+                <p:MdDefinitionListPresenter ItemsSource="{Binding Items}"
+                                             Style="{DynamicResource Md.DefinitionList.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.DefinitionListTemplate>
 
@@ -1112,8 +1133,9 @@
     <Thickness x:Key="Md.Toc.Level5.Margin">64,0,0,2</Thickness>
     <Thickness x:Key="Md.Toc.Level6.Margin">80,0,0,2</Thickness>
     <DataTemplate x:Key="Md.Toc.Template" DataType="{x:Type kit:TocVm}">
-        <p:MdListPresenter ItemsSource="{Binding TextMap.Headings, RelativeSource={RelativeSource AncestorType={x:Type local:MarkdownViewer}}}"
-                           Margin="{DynamicResource Md.Toc.Margin}">
+        <p:MdListPresenter
+            ItemsSource="{Binding TextMap.Headings, RelativeSource={RelativeSource AncestorType={x:Type local:MarkdownViewer}}}"
+            Margin="{DynamicResource Md.Toc.Margin}">
             <p:MdListPresenter.ItemTemplate>
                 <DataTemplate DataType="{x:Type sel:MdHeading}">
                     <TextBlock x:Name="Item"
@@ -1226,7 +1248,9 @@
                 <Button.Template>
                     <ControlTemplate TargetType="{x:Type Button}">
                         <Border Background="Transparent" Padding="1">
-                            <Path Data="{DynamicResource Md.Critic.AcceptIcon}" Fill="{DynamicResource Md.Critic.AcceptForeground}" Width="10" Height="10" Stretch="Uniform" />
+                            <Path Data="{DynamicResource Md.Critic.AcceptIcon}"
+                                  Fill="{DynamicResource Md.Critic.AcceptForeground}" Width="10" Height="10"
+                                  Stretch="Uniform" />
                         </Border>
                     </ControlTemplate>
                 </Button.Template>
@@ -1240,7 +1264,9 @@
                 <Button.Template>
                     <ControlTemplate TargetType="{x:Type Button}">
                         <Border Background="Transparent" Padding="1">
-                            <Path Data="{DynamicResource Md.Critic.RejectIcon}" Fill="{DynamicResource Md.Critic.RejectForeground}" Width="10" Height="10" Stretch="Uniform" />
+                            <Path Data="{DynamicResource Md.Critic.RejectIcon}"
+                                  Fill="{DynamicResource Md.Critic.RejectForeground}" Width="10" Height="10"
+                                  Stretch="Uniform" />
                         </Border>
                     </ControlTemplate>
                 </Button.Template>
@@ -1254,7 +1280,8 @@
     <Style x:Key="Md.Spoiler.Style" TargetType="{x:Type Span}">
         <Setter Property="Background" Value="{DynamicResource Md.Spoiler.RevealedBackground}" />
         <Style.Triggers>
-            <DataTrigger Binding="{Binding Path=(mdx:MdWidget.State).IsRevealed, RelativeSource={RelativeSource Self}}" Value="False">
+            <DataTrigger Binding="{Binding Path=(mdx:MdWidget.State).IsRevealed, RelativeSource={RelativeSource Self}}"
+                         Value="False">
                 <Setter Property="Background" Value="{DynamicResource Md.Spoiler.Cover}" />
                 <Setter Property="Foreground" Value="{DynamicResource Md.Spoiler.Cover}" />
                 <Setter Property="Cursor" Value="Hand" />
@@ -1283,16 +1310,20 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <DataTrigger Binding="{Binding Task.Status, RelativeSource={RelativeSource Self}}" Value="-">
-                            <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.TaskStatus.Cancelled.Icon}" />
+                            <Setter TargetName="Icon" Property="Data"
+                                    Value="{DynamicResource Md.TaskStatus.Cancelled.Icon}" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Task.Status, RelativeSource={RelativeSource Self}}" Value="&gt;">
-                            <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.TaskStatus.Forwarded.Icon}" />
+                            <Setter TargetName="Icon" Property="Data"
+                                    Value="{DynamicResource Md.TaskStatus.Forwarded.Icon}" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Task.Status, RelativeSource={RelativeSource Self}}" Value="?">
-                            <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.TaskStatus.Question.Icon}" />
+                            <Setter TargetName="Icon" Property="Data"
+                                    Value="{DynamicResource Md.TaskStatus.Question.Icon}" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Task.Status, RelativeSource={RelativeSource Self}}" Value="!">
-                            <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.TaskStatus.Important.Icon}" />
+                            <Setter TargetName="Icon" Property="Data"
+                                    Value="{DynamicResource Md.TaskStatus.Important.Icon}" />
                         </DataTrigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Cursor" Value="{x:Null}" />
@@ -1339,8 +1370,9 @@
                 <ControlTemplate TargetType="{x:Type p:MdImage}">
                     <Border>
                         <Border.Background>
-                            <ImageBrush ImageSource="{Binding ImageSource, RelativeSource={RelativeSource TemplatedParent}}"
-                                        Stretch="UniformToFill" />
+                            <ImageBrush
+                                ImageSource="{Binding ImageSource, RelativeSource={RelativeSource TemplatedParent}}"
+                                Stretch="UniformToFill" />
                         </Border.Background>
                     </Border>
                 </ControlTemplate>
@@ -1445,7 +1477,8 @@
         </Button>
     </DataTemplate>
 
-    <Style x:Key="Md.Properties.KeyStyle" TargetType="{x:Type p:MdTextBlock}" BasedOn="{StaticResource Md.Paragraph.Style}">
+    <Style x:Key="Md.Properties.KeyStyle" TargetType="{x:Type p:MdTextBlock}"
+           BasedOn="{StaticResource Md.Paragraph.Style}">
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <DataTemplate x:Key="Md.Properties.Template" DataType="{x:Type kit:PropertiesVm}">

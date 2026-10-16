@@ -1,4 +1,4 @@
-﻿# Markdig.Wpf.Viewer v0.4.0
+﻿# Markdig.Wpf.Viewer v0.6.0
 
 **English** | [Русский](https://github.com/porohkun/Markdig.Wpf.Viewer/blob/main/README.ru.md)
 

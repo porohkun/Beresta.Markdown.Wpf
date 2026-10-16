@@ -119,11 +119,11 @@
                 <RadioButton IsChecked="{Binding Options.IsDark}"
                              hc:IconElement.Geometry="{StaticResource DarkIcon}"
                              hc:IconElement.Height="20"
-                             hc:IconElement.Width="20"/>
+                             hc:IconElement.Width="20" />
                 <RadioButton IsChecked="True"
                              hc:IconElement.Geometry="{StaticResource LightIcon}"
                              hc:IconElement.Height="20"
-                             hc:IconElement.Width="20"/>
+                             hc:IconElement.Width="20" />
             </hc:ButtonGroup>
 
             <hc:ButtonGroup HorizontalAlignment="Left"

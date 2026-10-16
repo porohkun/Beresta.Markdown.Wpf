@@ -124,7 +124,7 @@ public sealed class MarkdownViewer : ItemsControl
             "Copy as Markdown",
             nameof(CopyMarkdownCommand),
             typeof(MarkdownViewer),
-            new InputGestureCollection { new KeyGesture(Key.C, ModifierKeys.Control | ModifierKeys.Shift) });
+            new() { new KeyGesture(Key.C, ModifierKeys.Control | ModifierKeys.Shift) });
 
     /// <summary>Флажок задачи нажали; текст правит приложение. Всплывающее.</summary>
     public static readonly RoutedEvent TaskToggledEvent =
@@ -189,6 +189,7 @@ public sealed class MarkdownViewer : ItemsControl
 
     /// <summary>Текст front matter документа без разбора; нет его — <c>null</c>.</summary>
     public static readonly DependencyProperty FrontMatterProperty = FrontMatterPropertyKey.DependencyProperty;
+
 
     private const string GutterPart = "PART_Gutter";
 
@@ -441,22 +442,6 @@ public sealed class MarkdownViewer : ItemsControl
     /// </summary>
     public int? GetPositionFromPoint(Point point, bool snapToText) => Selection.FindOffset(point, snapToText);
 
-    /// <summary>Ближайший вьюер, внутри которого стоит элемент.</summary>
-    internal static MarkdownViewer? Owning(DependencyObject element)
-    {
-        for (DependencyObject? node = element; node is not null; node = node is Visual or Visual3D
-                 ? VisualTreeHelper.GetParent(node) ?? LogicalTreeHelper.GetParent(node)
-                 : LogicalTreeHelper.GetParent(node))
-        {
-            if (node is MarkdownViewer viewer)
-            {
-                return viewer;
-            }
-        }
-
-        return null;
-    }
-
     /// <summary>Прямоугольники куска текстовой карты в координатах вьюера; есть только у созданных блоков.</summary>
     public IReadOnlyList<Rect> GetRangeRects(MdTextRange range)
     {
@@ -516,6 +501,24 @@ public sealed class MarkdownViewer : ItemsControl
     {
         base.OnApplyTemplate();
         Gutter = GetTemplateChild(GutterPart) as MdLineGutter;
+    }
+
+    /// <summary>Ближайший вьюер, внутри которого стоит элемент.</summary>
+    internal static MarkdownViewer? Owning(DependencyObject element)
+    {
+        for (DependencyObject? node = element;
+             node is not null;
+             node = node is Visual or Visual3D
+                 ? VisualTreeHelper.GetParent(node) ?? LogicalTreeHelper.GetParent(node)
+                 : LogicalTreeHelper.GetParent(node))
+        {
+            if (node is MarkdownViewer viewer)
+            {
+                return viewer;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Созданные блоки встали на другие места или сменились.</summary>

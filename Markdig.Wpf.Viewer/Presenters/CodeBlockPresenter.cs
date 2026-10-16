@@ -68,6 +68,7 @@ public class CodeBlockPresenter : Control
             typeof(CodeBlockPresenter),
             new(false));
 
+
     private const string HeaderPart = "PART_Header";
     private const string CodePart = "PART_Code";
     private const string CopyPart = "PART_Copy";
@@ -161,14 +162,6 @@ public class CodeBlockPresenter : Control
         return MdClipboard.Approve(this, data) ? data : null;
     }
 
-    private void OnCopyClick(object sender, RoutedEventArgs e) => Copy();
-
-    private void EndCopied()
-    {
-        _copied?.Stop();
-        SetValue(IsCopiedPropertyKey, false);
-    }
-
     /// <summary>Строки исходника блока — шапка и строки кода — и их полосы в своих координатах.</summary>
     internal IEnumerable<(int Line, Rect Row)> SourceRows()
     {
@@ -199,5 +192,13 @@ public class CodeBlockPresenter : Control
     {
         var lines = ((string?)e.NewValue ?? string.Empty).Split('\n').Length;
         d.SetValue(LineNumbersPropertyKey, string.Join("\n", Enumerable.Range(1, lines)));
+    }
+
+    private void OnCopyClick(object sender, RoutedEventArgs e) => Copy();
+
+    private void EndCopied()
+    {
+        _copied?.Stop();
+        SetValue(IsCopiedPropertyKey, false);
     }
 }

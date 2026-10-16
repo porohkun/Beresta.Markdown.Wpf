@@ -1,5 +1,6 @@
 ﻿namespace MarkdigWpfViewer.Tests;
 
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -145,7 +146,7 @@ public sealed partial class BehaviorTests
             var data = code.CreateCopyData()!;
 
             data.GetText().Should().Be("var x = 1;");
-            var markdown = data.GetData(MdDataFormats.Markdown).Should().BeOfType<System.IO.MemoryStream>().Subject;
+            var markdown = data.GetData(MdDataFormats.Markdown).Should().BeOfType<MemoryStream>().Subject;
             Encoding.UTF8.GetString(markdown.ToArray()).Should().Be("```cs\nvar x = 1;\n```");
             data.GetData(DataFormats.Html).Should().BeOfType<string>()
                 .Which.Should().Contain("<pre><code class=\"language-cs\">var x = 1;</code></pre>");

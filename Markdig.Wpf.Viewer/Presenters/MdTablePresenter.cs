@@ -95,12 +95,13 @@ public sealed class MdTablePresenter : Control
 
                 if (Table.AlignmentOf(c) is not TableAlignment.Default and var alignment)
                 {
-                    presenter.SetValue(TextBlock.TextAlignmentProperty, alignment switch
-                    {
-                        TableAlignment.Center => TextAlignment.Center,
-                        TableAlignment.Right => TextAlignment.Right,
-                        _ => TextAlignment.Left
-                    });
+                    presenter.SetValue(TextBlock.TextAlignmentProperty,
+                        alignment switch
+                        {
+                            TableAlignment.Center => TextAlignment.Center,
+                            TableAlignment.Right => TextAlignment.Right,
+                            _ => TextAlignment.Left
+                        });
                 }
 
                 Grid.SetRow(presenter, r);

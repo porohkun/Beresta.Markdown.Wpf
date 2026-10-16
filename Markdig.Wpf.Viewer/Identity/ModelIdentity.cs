@@ -167,24 +167,6 @@ internal sealed class ModelIdentity
         return pairs;
     }
 
-    /// <summary>Идентификатор, который держится за элемент <paramref name="owner"/> и номер; прошлый разбор его уже выдал — тот же.</summary>
-    private long Derived(
-        Dictionary<(long, int), long> known,
-        Dictionary<(long, int), long> next,
-        long owner,
-        int index)
-    {
-        var key = (owner, index);
-        if (owner == 0 || next.ContainsKey(key))
-        {
-            return ++_lastId;
-        }
-
-        var id = known.TryGetValue(key, out var previous) ? previous : ++_lastId;
-        next[key] = id;
-        return id;
-    }
-
     private static void PairInPlace(Entry[] old, Key[] keys, long[] matched, int oldStart, int oldEnd, int newStart, int newEnd)
     {
         for (int o = oldStart, n = newStart; o < oldEnd && n < newEnd && old[o].Key.Kind == keys[n].Kind; o++, n++)
@@ -221,6 +203,24 @@ internal sealed class ModelIdentity
         return span.IsEmpty || span.Start < 0 || span.End >= source.Length
             ? new(node.GetType(), 0, 0)
             : new Key(node.GetType(), span.Length, string.GetHashCode(source.AsSpan(span.Start, span.Length)));
+    }
+
+    /// <summary>Идентификатор, который держится за элемент <paramref name="owner"/> и номер; прошлый разбор его уже выдал — тот же.</summary>
+    private long Derived(
+        Dictionary<(long, int), long> known,
+        Dictionary<(long, int), long> next,
+        long owner,
+        int index)
+    {
+        var key = (owner, index);
+        if (owner == 0 || next.ContainsKey(key))
+        {
+            return ++_lastId;
+        }
+
+        var id = known.TryGetValue(key, out var previous) ? previous : ++_lastId;
+        next[key] = id;
+        return id;
     }
 
     private Entry[] MatchSequence(IReadOnlyList<MarkdownObject> nodes, Entry[] old, string source)

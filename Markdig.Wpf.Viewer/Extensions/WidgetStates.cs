@@ -44,14 +44,6 @@ internal sealed class WidgetStates
         return null;
     }
 
-    /// <summary>Свёрнутость встроенного сворачиваемого блока; у других блоков — <c>null</c>.</summary>
-    private static MdFoldState? FoldStateOf(NodeVm node) => node switch
-    {
-        CalloutVm { IsFoldable: true } callout => new(!callout.IsFolded),
-        DetailsVm details => new(details.IsOpen),
-        _ => null
-    };
-
     /// <summary>Забывает состояния элементов, которых в документе больше нет.</summary>
     public void Retain(Func<long, bool> exists)
     {
@@ -62,4 +54,12 @@ internal sealed class WidgetStates
     }
 
     public void Clear() => _states.Clear();
+
+    /// <summary>Свёрнутость встроенного сворачиваемого блока; у других блоков — <c>null</c>.</summary>
+    private static MdFoldState? FoldStateOf(NodeVm node) => node switch
+    {
+        CalloutVm { IsFoldable: true } callout => new(!callout.IsFolded),
+        DetailsVm details => new(details.IsOpen),
+        _ => null
+    };
 }

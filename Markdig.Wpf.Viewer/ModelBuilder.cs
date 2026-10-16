@@ -1,11 +1,11 @@
 ﻿namespace MarkdigWpfViewer;
 
-using Extensions;
-using Identity;
 using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using Extensions;
+using Identity;
 using Markdig;
 using Markdig.Extensions.Abbreviations;
 using Markdig.Extensions.Alerts;
@@ -183,24 +183,6 @@ internal sealed partial class ModelBuilder
         return state;
     }
 
-    private IReadOnlyList<InlineVm> GetRawLines(LeafBlock leaf)
-    {
-        var inlines = new List<InlineVm>();
-
-        for (var i = 0; i < leaf.Lines.Count; i++)
-        {
-            if (i > 0)
-            {
-                inlines.Add(new LineBreakVm());
-            }
-
-            var line = leaf.Lines.Lines[i];
-            inlines.Add(new RunVm(line.Slice.ToString().TrimEnd('\r')) { Source = GetLineSpan(line.Line) });
-        }
-
-        return inlines;
-    }
-
     private static List<int> FindLineStarts(string text)
     {
         var starts = new List<int> { 0 };
@@ -246,6 +228,233 @@ internal sealed partial class ModelBuilder
         }
 
         return Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out var uri) ? uri : null;
+    }
+
+    /// <summary>Пробелы HTML: подряд идущие — одним пробелом, в начале строки и в конце — никаких.</summary>
+    private static List<InlineVm> CollapseHtmlSpaces(List<InlineVm> inlines)
+    {
+        var result = new List<InlineVm>();
+        var lineStart = true;
+
+        foreach (var inline in inlines)
+        {
+            if (inline is not RunVm run)
+            {
+                if (inline is LineBreakVm)
+                {
+                    TrimEnd();
+                }
+
+                result.Add(inline);
+                lineStart = inline is LineBreakVm;
+                continue;
+            }
+
+            var text = HtmlSpaces().Replace(run.Text, " ");
+            if (lineStart || result is [.., RunVm { Text: [.., ' '] }])
+            {
+                text = text.TrimStart(' ');
+            }
+
+            if (text.Length > 0)
+            {
+                result.Add(run with { Text = text });
+                lineStart = false;
+            }
+        }
+
+        TrimEnd();
+        return result;
+
+        void TrimEnd()
+        {
+            if (result is [.., RunVm { Text: [.., ' '] } last])
+            {
+                var trimmed = last.Text.TrimEnd(' ');
+                result[^1] = last with { Text = trimmed };
+                if (trimmed.Length == 0)
+                {
+                    result.RemoveAt(result.Count - 1);
+                }
+            }
+        }
+    }
+
+    /// <summary>Выравнивание по атрибуту <c>align</c>, у <c>&lt;center&gt;</c> — по центру; без выравнивания — <c>null</c>.</summary>
+    private static BlockAlignment? AlignmentOf(HtmlTag tag)
+        => tag.Name == "center"
+            ? BlockAlignment.Center
+            : tag.Attributes.GetValueOrDefault("align")?.Trim().ToLowerInvariant() switch
+            {
+                "left" => BlockAlignment.Left,
+                "center" or "middle" => BlockAlignment.Center,
+                "right" => BlockAlignment.Right,
+                "justify" => BlockAlignment.Justify,
+                _ => null
+            };
+
+    private static MdSourceSpan SpanOf(Piece piece) => new(piece.Start, piece.End - piece.Start, piece.StartLine, piece.EndLine);
+
+    /// <summary>Начертание, которое даёт открывающий тег; тег не про начертание — <c>null</c>.</summary>
+    private static InlineState? Formatting(HtmlTag tag, InlineState state)
+        => tag.Name switch
+        {
+            "b" or "strong" => state with { Bold = true },
+            "i" or "em" => state with { Italic = true },
+            "s" or "del" or "strike" => state with { Strike = true },
+            "code" => state with { Code = true },
+            "kbd" => state with { Kbd = true },
+            "sub" => state with { Subscript = true },
+            "sup" => state with { Superscript = true },
+            "mark" => state with { Marked = true },
+            "ins" or "u" => state with { Inserted = true },
+            "cite" => state with { Cite = true },
+            "a" when tag.Attributes.TryGetValue("href", out var href) => state with
+            {
+                Hyperlink = TryCreateUri(href),
+                Href = href,
+                LinkTitle = tag.Attributes.GetValueOrDefault("title")
+            },
+            "a" => state,
+            _ => null
+        };
+
+    /// <summary>Картинка тега <c>&lt;img&gt;</c>; внутри ссылки — картинка-ссылка.</summary>
+    private static ImageVm ImageOf(HtmlTag image, InlineState state)
+        => new(image.Attributes.GetValueOrDefault("src") ?? string.Empty, image.Attributes.GetValueOrDefault("alt") ?? string.Empty)
+        {
+            Title = image.Attributes.GetValueOrDefault("title"),
+            Width = Pixels(image.Attributes.GetValueOrDefault("width")),
+            Height = Pixels(image.Attributes.GetValueOrDefault("height")),
+            Href = state.Href,
+            Hyperlink = state.Hyperlink
+        };
+
+    /// <summary>Размер из атрибута: число пикселей, можно с <c>px</c>.</summary>
+    private static double? Pixels(string? value)
+    {
+        var number = value?.Trim().TrimEnd('x', 'X').TrimEnd('p', 'P');
+        return double.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out var pixels) && pixels > 0
+            ? pixels
+            : null;
+    }
+
+    /// <summary>Текст инлайнов без разметки — alt картинки.</summary>
+    private static string PlainText(Inline? first)
+    {
+        var text = new StringBuilder();
+        for (var node = first; node is not null; node = node.NextSibling)
+        {
+            switch (node)
+            {
+                case LiteralInline literal:
+                    text.Append(literal.Content.ToString());
+                    break;
+                case CodeInline code:
+                    text.Append(code.Content);
+                    break;
+                case ContainerInline container:
+                    text.Append(PlainText(container.FirstChild));
+                    break;
+            }
+        }
+
+        return text.ToString();
+    }
+
+    private static RunVm Run(string text, InlineState state)
+        => new(
+            text,
+            state.Bold,
+            state.Italic,
+            state.Strike,
+            state.Code,
+            state.Hyperlink,
+            state.Href,
+            state.LinkTitle,
+            state.Kbd,
+            state.Subscript,
+            state.Superscript,
+            state.Marked,
+            state.Inserted,
+            state.Cite,
+            state.Abbreviation);
+
+    /// <summary>Маркер пункта нумерованного списка: число, буква или римская цифра по виду списка.</summary>
+    private static string OrderedMarker(int number, char bulletType)
+        => bulletType switch
+        {
+            'a' => Letters(number),
+            'A' => Letters(number).ToUpperInvariant(),
+            'i' => Roman(number),
+            'I' => Roman(number).ToUpperInvariant(),
+            _ => number.ToString(CultureInfo.InvariantCulture)
+        };
+
+    /// <summary>Номер буквами: a…z, затем aa, ab…</summary>
+    private static string Letters(int number)
+    {
+        if (number <= 0)
+        {
+            return number.ToString(CultureInfo.InvariantCulture);
+        }
+
+        var letters = new StringBuilder();
+        for (var rest = number; rest > 0; rest = (rest - 1) / 26)
+        {
+            letters.Insert(0, (char)('a' + (rest - 1) % 26));
+        }
+
+        return letters.ToString();
+    }
+
+    /// <summary>Номер строчными римскими цифрами; ноль и отрицательные — арабскими.</summary>
+    private static string Roman(int number)
+    {
+        if (number <= 0)
+        {
+            return number.ToString(CultureInfo.InvariantCulture);
+        }
+
+        (int Value, string Digits)[] numerals =
+        [
+            (1000, "m"), (900, "cm"), (500, "d"), (400, "cd"), (100, "c"), (90, "xc"),
+            (50, "l"), (40, "xl"), (10, "x"), (9, "ix"), (5, "v"), (4, "iv"), (1, "i")
+        ];
+
+        var roman = new StringBuilder();
+        var rest = number;
+        foreach (var (value, digits) in numerals)
+        {
+            while (rest >= value)
+            {
+                roman.Append(digits);
+                rest -= value;
+            }
+        }
+
+        return roman.ToString();
+    }
+
+    [GeneratedRegex("[ \t\r\n\f]+")]
+    private static partial Regex HtmlSpaces();
+
+    private IReadOnlyList<InlineVm> GetRawLines(LeafBlock leaf)
+    {
+        var inlines = new List<InlineVm>();
+
+        for (var i = 0; i < leaf.Lines.Count; i++)
+        {
+            if (i > 0)
+            {
+                inlines.Add(new LineBreakVm());
+            }
+
+            var line = leaf.Lines.Lines[i];
+            inlines.Add(new RunVm(line.Slice.ToString().TrimEnd('\r')) { Source = GetLineSpan(line.Line) });
+        }
+
+        return inlines;
     }
 
     private IReadOnlyList<BlockVm> ConvertBlock(
@@ -429,7 +638,7 @@ internal sealed partial class ModelBuilder
         }
 
         var tokens = HtmlToken.Split(text.ToString());
-        if (tokens.Any(token => token.IsTag && (token.Tag is not { } tag || !HtmlBlockTags.Contains(tag.Name) && !HtmlInlineTags.Contains(tag.Name))))
+        if (tokens.Any(token => token.IsTag && (token.Tag is not { } tag || (!HtmlBlockTags.Contains(tag.Name) && !HtmlInlineTags.Contains(tag.Name)))))
         {
             return null;
         }
@@ -623,7 +832,7 @@ internal sealed partial class ModelBuilder
         for (; index < pieces.Count; index++)
         {
             var piece = pieces[index];
-            if (piece.Block is not null || piece.Tag is { } blockTag && HtmlBlockTags.Contains(blockTag.Name))
+            if (piece.Block is not null || (piece.Tag is { } blockTag && HtmlBlockTags.Contains(blockTag.Name)))
             {
                 break;
             }
@@ -662,71 +871,6 @@ internal sealed partial class ModelBuilder
 
         return CollapseHtmlSpaces(output);
     }
-
-    /// <summary>Пробелы HTML: подряд идущие — одним пробелом, в начале строки и в конце — никаких.</summary>
-    private static List<InlineVm> CollapseHtmlSpaces(List<InlineVm> inlines)
-    {
-        var result = new List<InlineVm>();
-        var lineStart = true;
-
-        foreach (var inline in inlines)
-        {
-            if (inline is not RunVm run)
-            {
-                if (inline is LineBreakVm)
-                {
-                    TrimEnd();
-                }
-
-                result.Add(inline);
-                lineStart = inline is LineBreakVm;
-                continue;
-            }
-
-            var text = HtmlSpaces().Replace(run.Text, " ");
-            if (lineStart || result is [.., RunVm { Text: [.., ' '] }])
-            {
-                text = text.TrimStart(' ');
-            }
-
-            if (text.Length > 0)
-            {
-                result.Add(run with { Text = text });
-                lineStart = false;
-            }
-        }
-
-        TrimEnd();
-        return result;
-
-        void TrimEnd()
-        {
-            if (result is [.., RunVm { Text: [.., ' '] } last])
-            {
-                var trimmed = last.Text.TrimEnd(' ');
-                result[^1] = last with { Text = trimmed };
-                if (trimmed.Length == 0)
-                {
-                    result.RemoveAt(result.Count - 1);
-                }
-            }
-        }
-    }
-
-    /// <summary>Выравнивание по атрибуту <c>align</c>, у <c>&lt;center&gt;</c> — по центру; без выравнивания — <c>null</c>.</summary>
-    private static BlockAlignment? AlignmentOf(HtmlTag tag)
-        => tag.Name == "center"
-            ? BlockAlignment.Center
-            : tag.Attributes.GetValueOrDefault("align")?.Trim().ToLowerInvariant() switch
-            {
-                "left" => BlockAlignment.Left,
-                "center" or "middle" => BlockAlignment.Center,
-                "right" => BlockAlignment.Right,
-                "justify" => BlockAlignment.Justify,
-                _ => null
-            };
-
-    private static MdSourceSpan SpanOf(Piece piece) => new(piece.Start, piece.End - piece.Start, piece.StartLine, piece.EndLine);
 
     private ListVm ConvertList(ListBlock list, int listDepth)
     {
@@ -950,30 +1094,6 @@ internal sealed partial class ModelBuilder
         }
     }
 
-    /// <summary>Начертание, которое даёт открывающий тег; тег не про начертание — <c>null</c>.</summary>
-    private static InlineState? Formatting(HtmlTag tag, InlineState state)
-        => tag.Name switch
-        {
-            "b" or "strong" => state with { Bold = true },
-            "i" or "em" => state with { Italic = true },
-            "s" or "del" or "strike" => state with { Strike = true },
-            "code" => state with { Code = true },
-            "kbd" => state with { Kbd = true },
-            "sub" => state with { Subscript = true },
-            "sup" => state with { Superscript = true },
-            "mark" => state with { Marked = true },
-            "ins" or "u" => state with { Inserted = true },
-            "cite" => state with { Cite = true },
-            "a" when tag.Attributes.TryGetValue("href", out var href) => state with
-            {
-                Hyperlink = TryCreateUri(href),
-                Href = href,
-                LinkTitle = tag.Attributes.GetValueOrDefault("title")
-            },
-            "a" => state,
-            _ => null
-        };
-
     /// <summary>Строчный HTML-тег; возвращает начертание для следующих соседей.</summary>
     private InlineState ApplyHtml(
         HtmlInline html,
@@ -1015,17 +1135,6 @@ internal sealed partial class ModelBuilder
         }
     }
 
-    /// <summary>Картинка тега <c>&lt;img&gt;</c>; внутри ссылки — картинка-ссылка.</summary>
-    private static ImageVm ImageOf(HtmlTag image, InlineState state)
-        => new(image.Attributes.GetValueOrDefault("src") ?? string.Empty, image.Attributes.GetValueOrDefault("alt") ?? string.Empty)
-        {
-            Title = image.Attributes.GetValueOrDefault("title"),
-            Width = Pixels(image.Attributes.GetValueOrDefault("width")),
-            Height = Pixels(image.Attributes.GetValueOrDefault("height")),
-            Href = state.Href,
-            Hyperlink = state.Hyperlink
-        };
-
     private void AddImage(LinkInline image, InlineState state, List<InlineVm> output)
     {
         var attributes = image.TryGetAttributes()?.Properties;
@@ -1041,38 +1150,6 @@ internal sealed partial class ModelBuilder
                 Hyperlink = state.Hyperlink
             },
             image));
-    }
-
-    /// <summary>Размер из атрибута: число пикселей, можно с <c>px</c>.</summary>
-    private static double? Pixels(string? value)
-    {
-        var number = value?.Trim().TrimEnd('x', 'X').TrimEnd('p', 'P');
-        return double.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out var pixels) && pixels > 0
-            ? pixels
-            : null;
-    }
-
-    /// <summary>Текст инлайнов без разметки — alt картинки.</summary>
-    private static string PlainText(Inline? first)
-    {
-        var text = new StringBuilder();
-        for (var node = first; node is not null; node = node.NextSibling)
-        {
-            switch (node)
-            {
-                case LiteralInline literal:
-                    text.Append(literal.Content.ToString());
-                    break;
-                case CodeInline code:
-                    text.Append(code.Content);
-                    break;
-                case ContainerInline container:
-                    text.Append(PlainText(container.FirstChild));
-                    break;
-            }
-        }
-
-        return text.ToString();
     }
 
     /// <summary>Инлайны расширения из узла; первый берёт идентификатор узла, следующие — производные от него.</summary>
@@ -1134,85 +1211,11 @@ internal sealed partial class ModelBuilder
         output.Add(Stamp(Run(text, state), node));
     }
 
-    private static RunVm Run(string text, InlineState state)
-        => new(
-            text,
-            state.Bold,
-            state.Italic,
-            state.Strike,
-            state.Code,
-            state.Hyperlink,
-            state.Href,
-            state.LinkTitle,
-            state.Kbd,
-            state.Subscript,
-            state.Superscript,
-            state.Marked,
-            state.Inserted,
-            state.Cite,
-            state.Abbreviation);
-
     /// <summary>Замена SmartyPants по таблице из настройки разбора; таблица там — HTML-сущностями.</summary>
     private string SmartyPantText(SmartyPant smartyPant)
         => _smartyPants is not null && _smartyPants.TryGetValue(smartyPant.Type, out var replacement)
             ? WebUtility.HtmlDecode(replacement)
             : GetSourceText(smartyPant.Span);
-
-    /// <summary>Маркер пункта нумерованного списка: число, буква или римская цифра по виду списка.</summary>
-    private static string OrderedMarker(int number, char bulletType)
-        => bulletType switch
-        {
-            'a' => Letters(number),
-            'A' => Letters(number).ToUpperInvariant(),
-            'i' => Roman(number),
-            'I' => Roman(number).ToUpperInvariant(),
-            _ => number.ToString(CultureInfo.InvariantCulture)
-        };
-
-    /// <summary>Номер буквами: a…z, затем aa, ab…</summary>
-    private static string Letters(int number)
-    {
-        if (number <= 0)
-        {
-            return number.ToString(CultureInfo.InvariantCulture);
-        }
-
-        var letters = new StringBuilder();
-        for (var rest = number; rest > 0; rest = (rest - 1) / 26)
-        {
-            letters.Insert(0, (char)('a' + (rest - 1) % 26));
-        }
-
-        return letters.ToString();
-    }
-
-    /// <summary>Номер строчными римскими цифрами; ноль и отрицательные — арабскими.</summary>
-    private static string Roman(int number)
-    {
-        if (number <= 0)
-        {
-            return number.ToString(CultureInfo.InvariantCulture);
-        }
-
-        (int Value, string Digits)[] numerals =
-        [
-            (1000, "m"), (900, "cm"), (500, "d"), (400, "cd"), (100, "c"), (90, "xc"),
-            (50, "l"), (40, "xl"), (10, "x"), (9, "ix"), (5, "v"), (4, "iv"), (1, "i")
-        ];
-
-        var roman = new StringBuilder();
-        var rest = number;
-        foreach (var (value, digits) in numerals)
-        {
-            while (rest >= value)
-            {
-                roman.Append(digits);
-                rest -= value;
-            }
-        }
-
-        return roman.ToString();
-    }
 
     /// <summary>Отступы на месте пустых строк; идентификатор отступа держится за блок перед ним.</summary>
     private void AddBlankLines(List<BlockVm> blocks, int afterLine, int beforeLine, long previousId, bool gapsAreBlank = false)
@@ -1276,9 +1279,6 @@ internal sealed partial class ModelBuilder
             ? _source.Substring(span.Start, span.Length)
             : string.Empty;
     }
-
-    [GeneratedRegex("[ \t\r\n\f]+")]
-    private static partial Regex HtmlSpaces();
 
     /// <summary>
     /// Кусок соседних блоков: блок Markdig — или тег либо текст HTML-блока <see cref="Owner"/>.

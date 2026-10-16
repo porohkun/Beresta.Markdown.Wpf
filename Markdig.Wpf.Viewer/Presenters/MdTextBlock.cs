@@ -220,25 +220,6 @@ public class MdTextBlock : TextBlock
     /// <summary>Строки исходника, которые начинаются в этом тексте, и экранные строки, где они начинаются.</summary>
     internal IReadOnlyList<(int Line, Rect Row)> SourceRows => _sourceRows ??= FindSourceRows();
 
-    /// <summary>Над текстом, пока выделение включено, — текстовый курсор; ссылки и виджеты ставят свой.</summary>
-    protected override void OnQueryCursor(QueryCursorEventArgs e)
-    {
-        base.OnQueryCursor(e);
-        if (!e.Handled
-            && e.OriginalSource is TextElement or MdTextBlock
-            && GetValue(LayerProperty) is MdDecorationLayer { IsSelectionEnabled: true })
-        {
-            e.Cursor = Cursors.IBeam;
-            e.Handled = true;
-        }
-    }
-
-    protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
-    {
-        base.OnRenderSizeChanged(sizeInfo);
-        _sourceRows = null;
-    }
-
     /// <summary>Кусок текстовой карты, который рисует этот блок.</summary>
     internal bool TryGetMapRange(out MdTextRange range)
     {
@@ -293,6 +274,25 @@ public class MdTextBlock : TextBlock
                 yield return rect;
             }
         }
+    }
+
+    /// <summary>Над текстом, пока выделение включено, — текстовый курсор; ссылки и виджеты ставят свой.</summary>
+    protected override void OnQueryCursor(QueryCursorEventArgs e)
+    {
+        base.OnQueryCursor(e);
+        if (!e.Handled
+            && e.OriginalSource is TextElement or MdTextBlock
+            && GetValue(LayerProperty) is MdDecorationLayer { IsSelectionEnabled: true })
+        {
+            e.Cursor = Cursors.IBeam;
+            e.Handled = true;
+        }
+    }
+
+    protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+    {
+        base.OnRenderSizeChanged(sizeInfo);
+        _sourceRows = null;
     }
 
     private static void OnAnyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -511,7 +511,7 @@ public class MdTextBlock : TextBlock
         foreach (var segment in _segments)
         {
             var source = segment.Inline.Source;
-            if (segment.Inline is LineBreakVm || source.IsEmpty || rows is [.., var last] && source.StartLine <= last.Line)
+            if (segment.Inline is LineBreakVm || source.IsEmpty || (rows is [.., var last] && source.StartLine <= last.Line))
             {
                 continue;
             }

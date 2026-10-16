@@ -27,7 +27,7 @@ public sealed class MdTextMap
         Headings = builder.Headings;
     }
 
-    public static MdTextMap Empty { get; } = new(new Builder());
+    public static MdTextMap Empty { get; } = new(new());
 
     /// <summary>Сквозной текст; неделимые элементы — знаком <see cref="ObjectMark"/>.</summary>
     public string Text { get; }
@@ -46,9 +46,6 @@ public sealed class MdTextMap
         builder.AppendBlocks(blocks);
         return new(builder);
     }
-
-    /// <summary>Кусок карты якоря — заголовка или сноски — по его идентификатору без <c>#</c>.</summary>
-    public bool TryGetAnchor(string id, out MdTextRange range) => _anchors.TryGetValue(id, out range);
 
     /// <summary>
     /// Якорь заголовка с этим текстом, как у GitHub: строчные буквы, цифры, дефис и подчёркивание,
@@ -89,6 +86,9 @@ public sealed class MdTextMap
                 return ObjectMark.ToString();
         }
     }
+
+    /// <summary>Кусок карты якоря — заголовка или сноски — по его идентификатору без <c>#</c>.</summary>
+    public bool TryGetAnchor(string id, out MdTextRange range) => _anchors.TryGetValue(id, out range);
 
     /// <summary>Кусок карты списка инлайнов или неделимого элемента.</summary>
     public bool TryGetRange(object owner, out MdTextRange range) => _owners.TryGetValue(owner, out range);
@@ -273,26 +273,6 @@ public sealed class MdTextMap
         return block.Source.IsEmpty ? null : block.Source.StartLine;
     }
 
-    /// <summary>Место позиции относительно самого глубокого блока с идентификатором — чтобы найти его в карте нового текста.</summary>
-    internal (long NodeId, int Offset)? Locate(int position)
-        => Innermost(position, block => block.NodeId != 0) is { } found
-            ? (found.Block.NodeId, position - found.Range.Start)
-            : null;
-
-    /// <summary>Позиция в этой карте для места из карты прошлого текста; блока больше нет — <c>null</c>.</summary>
-    internal int? Find((long NodeId, int Offset) place)
-    {
-        foreach (var (block, range) in _blocks)
-        {
-            if (block.NodeId == place.NodeId)
-            {
-                return range.Start + Math.Clamp(place.Offset, 0, range.Length);
-            }
-        }
-
-        return null;
-    }
-
     /// <summary>Текст куска для копирования: неделимые — своим текстом для копирования или ничем.</summary>
     public string GetText(MdTextRange range)
     {
@@ -319,6 +299,26 @@ public sealed class MdTextMap
         }
 
         return text.ToString();
+    }
+
+    /// <summary>Место позиции относительно самого глубокого блока с идентификатором — чтобы найти его в карте нового текста.</summary>
+    internal (long NodeId, int Offset)? Locate(int position)
+        => Innermost(position, block => block.NodeId != 0) is { } found
+            ? (found.Block.NodeId, position - found.Range.Start)
+            : null;
+
+    /// <summary>Позиция в этой карте для места из карты прошлого текста; блока больше нет — <c>null</c>.</summary>
+    internal int? Find((long NodeId, int Offset) place)
+    {
+        foreach (var (block, range) in _blocks)
+        {
+            if (block.NodeId == place.NodeId)
+            {
+                return range.Start + Math.Clamp(place.Offset, 0, range.Length);
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

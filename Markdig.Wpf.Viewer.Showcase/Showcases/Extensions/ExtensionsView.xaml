@@ -72,10 +72,6 @@
         </DataTemplate>
 
         <!-- Оформление «Chip» для чипов ::текст:: -->
-        <Style x:Key="Md.Chip.Style" TargetType="{x:Type Span}">
-            <Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
-        </Style>
     </UserControl.Resources>
 
     <ScrollViewer>
