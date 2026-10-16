@@ -30,7 +30,7 @@ its source text. Nothing disappears silently.
 | `^^ text` | a footer in small text |
 | `:::name` … `:::` | a custom container: shows its content; an [extension](Extensions) can draw it its own way |
 | `---` … `---` at the very start of the document | front matter: nothing — see below |
-| an HTML block | its source text |
+| an HTML block | by meaning when the viewer knows all its tags — see [HTML from READMEs](#html-from-readmes); otherwise its source text |
 | `<!-- comment -->` | nothing |
 
 ## Inline
@@ -61,6 +61,43 @@ Inline HTML: `<b>`, `<strong>`, `<i>`, `<em>`, `<s>`, `<del>`, `<strike>`, `<cod
 
 ```markdown
 Press <kbd>Ctrl</kbd>+<kbd>C</kbd> to copy. Water is H<sub>2</sub>O, the area is 5 m<sup>2</sup>.
+```
+
+## HTML from READMEs
+
+READMEs use a little HTML for what Markdown cannot do: a centered logo, a row of badges, a
+collapsible section. The viewer draws such HTML blocks by meaning, the way GitHub does.
+
+| HTML | On the screen |
+|---|---|
+| `<details>`, `<summary>` | a collapsible block with the summary as its title; `<details open>` starts expanded |
+| `<p align="…">`, `<div align="…">`, `<center>` | the content aligned: `left`, `center`, `right`, `justify` |
+| `<h1>` … `<h6>`, also with `align` | headings |
+| `<img src alt width height title>` | an image |
+| `<a href><img></a>` | an image that is a link |
+| `<picture>` with `<source>` | the image of its `<img>` |
+| `<br>` | a line break |
+| `<b>`, `<strong>`, `<i>`, `<em>`, `<s>`, `<del>`, `<strike>`, `<code>`, `<kbd>`, `<sub>`, `<sup>`, `<mark>`, `<ins>`, `<u>`, `<cite>`, `<a href>` | the same as inline HTML |
+
+As on GitHub, Markdown between the tags is parsed only when blank lines separate it from them; text
+right next to the tags is plain text, and its spaces and line breaks collapse into single spaces. An
+HTML block with any other tag — `<table>`, `<span>` — is shown as its source text.
+
+**Any `.md` file**:
+
+```markdown
+<p align="center">
+  <img src="logo.png" width="200" alt="Logo">
+  <br>
+  <b>My Project</b>
+</p>
+
+<details>
+<summary>Build from source</summary>
+
+Run `dotnet build` in the repository root.
+
+</details>
 ```
 
 ## Line breaks and blank lines

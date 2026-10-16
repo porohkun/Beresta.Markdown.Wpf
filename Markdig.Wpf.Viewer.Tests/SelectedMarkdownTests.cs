@@ -44,6 +44,9 @@ public sealed class SelectedMarkdownTests
     [InlineData("> [!NOTE]\n> Useful.")]
     [InlineData("> [!CAUTION]\n> a\n>\n> b")]
     [InlineData("Term\n:   Definition one\n:   Definition two\n\nTerm 2\nTerm 2b\n:   Def")]
+    [InlineData("<div align=\"center\">\n\ntext\n\n</div>")]
+    [InlineData("<details>\n<summary>S</summary>\n\nx\n\n</details>")]
+    [InlineData("[![Y](y.svg)](https://x.example) and [text ![i](i.png)](https://t.example)")]
     public void Выделенный_целиком_документ_пишется_как_был(string markdown)
     {
         CopyAll(markdown).Should().Be(markdown);
@@ -63,6 +66,12 @@ public sealed class SelectedMarkdownTests
     [InlineData("+---+---+\n| a | b |\n+===+===+\n| 1 | 2 |\n|   |   |\n| x | y |\n+---+---+", "| a | b |\n| --- | --- |\n| 1<br>x | 2<br>y |")]
     [InlineData("> [!tip]\n> x", "> [!TIP]\n> x")]
     [InlineData("---\ntitle: x\n---\n\ntext", "text")]
+    [InlineData("<p align=\"center\">text</p>", "<div align=\"center\">\n\ntext\n\n</div>")]
+    [InlineData("<h1 align=\"center\">Title</h1>", "<div align=\"center\">\n\n# Title\n\n</div>")]
+    [InlineData("<details open><summary>S</summary>x</details>", "<details open>\n<summary>S</summary>\n\nx\n\n</details>")]
+    [InlineData("<a href=\"https://x.example\"><img src=\"y.svg\" alt=\"Y\"></a>", "[![Y](y.svg)](https://x.example)")]
+    [InlineData("<img src=\"x.png\" width=\"100\" title=\"T\">", "![](x.png \"T\"){width=100}")]
+    [InlineData("<p align=\"center\"><a href=\"x\"><img src=\"a.svg\"></a> <a href=\"y\"><img src=\"b.svg\"></a></p>", "<div align=\"center\">\n\n[![](a.svg)](x) [![](b.svg)](y)\n\n</div>")]
     public void Разметка_записывается_заново_а_не_копируется_из_исходника(string markdown, string expected)
     {
         CopyAll(markdown).Should().Be(expected);

@@ -145,6 +145,7 @@
 | `CalloutTemplate` | `vm:CalloutVm` | `Kind`, `Title`, `Blocks`, `IsFoldable`, `IsFolded` |
 | `DetailsTemplate` | `vm:DetailsVm` | `Summary`, `Blocks`, `IsOpen` |
 | `DefinitionListTemplate` | `vm:DefinitionListVm` | `Items` из `vm:DefinitionItemVm` (`Terms`, `HasTerms`, `Blocks`); пункт без терминов — ещё одно определение пункта перед ним |
+| `AlignedTemplate` | `vm:AlignedVm` | `Alignment` (`Left`, `Center`, `Right`, `Justify`), `Blocks` — HTML `align` и `<center>` |
 | `ImageTemplate` | `vm:ImageVm`, строчный | `Url`, `Alt`, `Title`, `Width`, `Height`, `Href` |
 | `TaskTemplate` | `vm:TaskVm`, строчный | `IsChecked` |
 | `FootnoteLinkTemplate` | `vm:FootnoteLinkVm`, строчный | `Order`, `Index`, `IsBack`, `Target` |

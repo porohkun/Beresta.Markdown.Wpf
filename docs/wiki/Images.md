@@ -22,8 +22,9 @@ text if it is wider. A size in attributes, `{width=120 height=40}`, or in HTML i
 allowed; with only one side given, the other keeps the proportions. The title is a tooltip, and a
 linked image opens its link like a text link does.
 
-An `<img>` tag alone on its line is an HTML block for CommonMark and is shown as text; put it inside a
-line of text.
+An `<img>` tag on its own line, `<a href><img></a>` and `<picture>` are images too, and
+`<p align="center">` centers them — see
+[Supported Markdown → HTML from READMEs](Supported-Markdown#html-from-readmes).
 
 ## Where images come from
 

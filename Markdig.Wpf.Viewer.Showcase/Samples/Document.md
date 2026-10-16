@@ -94,6 +94,37 @@ Callout
 > [!CAUTION]
 > Осторожно — у действия есть последствия.
 
+## HTML из README
+
+<p align="center">
+  <img src="banner.png" width="240" alt="Баннер витрины">
+  <br>
+  <b>Markdig.Wpf.Viewer</b> — markdown для WPF
+</p>
+
+<details>
+<summary>Сворачиваемый блок — щёлкни, чтобы развернуть</summary>
+
+Внутри — обычный **markdown**:
+
+- пункт
+- ещё пункт
+
+</details>
+
+<details open>
+<summary>Развёрнутый сразу: атрибут <code>open</code></summary>
+
+Свёрнутость переживает прокрутку и новый текст.
+
+</details>
+
+<div align="right">
+
+Текст, выровненный вправо.
+
+</div>
+
 ## Таблица
 
 | Слева | По центру | Справа |

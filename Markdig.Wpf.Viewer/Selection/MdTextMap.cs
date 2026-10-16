@@ -181,7 +181,7 @@ public sealed class MdTextMap
 
                     break;
 
-                case QuoteVm or ListVm or BlankLineVm or FigureVm or FooterVm:
+                case QuoteVm or ListVm or BlankLineVm or FigureVm or FooterVm or AlignedVm:
                     break;
 
                 default:
@@ -451,6 +451,10 @@ public sealed class MdTextMap
 
                 case FooterVm footer:
                     AppendBlocks(footer.Blocks);
+                    break;
+
+                case AlignedVm aligned:
+                    AppendBlocks(aligned.Blocks);
                     break;
 
                 case CalloutVm callout:

@@ -27,6 +27,7 @@ public sealed class MdStyleProvider : IMdStyleProvider
     private DataTemplate? _callout;
     private DataTemplate? _details;
     private DataTemplate? _definitionList;
+    private DataTemplate? _aligned;
 
     /// <summary>Провайдер, у которого берутся незаданные шаблоны.</summary>
     public IMdStyleProvider? BasedOn { get; set; }
@@ -137,5 +138,11 @@ public sealed class MdStyleProvider : IMdStyleProvider
     {
         get => _definitionList ?? BasedOn?.DefinitionListTemplate;
         set => _definitionList = value;
+    }
+
+    public DataTemplate? AlignedTemplate
+    {
+        get => _aligned ?? BasedOn?.AlignedTemplate;
+        set => _aligned = value;
     }
 }

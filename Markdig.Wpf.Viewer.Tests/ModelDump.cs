@@ -10,7 +10,8 @@ using ViewModels;
 /// <c>![alt]</c>, определение сноски — <c>F1[...]</c>, фигура — <c>Fig[...]</c> с подписью
 /// <c>Cap(...)</c>, подвал — <c>Foot[...]</c>, плашка — <c>Callout:вид(заголовок)[...]</c>,
 /// сворачиваемый блок — <c>Det(заголовок)[...]</c>, список определений —
-/// <c>DL[термины: блоки; ...]</c>. Виджет без своего вида выводится именем типа в фигурных скобках.
+/// <c>DL[термины: блоки; ...]</c>, выровненные блоки — <c>Center[...]</c>. Виджет без своего вида
+/// выводится именем типа в фигурных скобках.
 /// </summary>
 internal static class ModelDump
 {
@@ -63,6 +64,7 @@ internal static class ModelDump
         CalloutVm callout => $"Callout:{callout.Kind}{(callout.Title.Count > 0 ? $"({Text(callout.Title)})" : "")}[{Of(callout.Blocks)}]",
         DetailsVm details => $"Det({Text(details.Summary)})[{Of(details.Blocks)}]",
         DefinitionListVm definitions => $"DL[{string.Join("; ", definitions.Items.Select(item => $"{Text(item.Terms)}: {Of(item.Blocks)}"))}]",
+        AlignedVm aligned => $"{aligned.Alignment}[{Of(aligned.Blocks)}]",
         _ => $"{{{block.GetType().Name}}}"
     };
 }

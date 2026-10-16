@@ -50,4 +50,7 @@ public interface IMdStyleProvider
 
     /// <summary>Список определений.</summary>
     DataTemplate? DefinitionListTemplate => null;
+
+    /// <summary>Блоки с общим выравниванием из HTML.</summary>
+    DataTemplate? AlignedTemplate => null;
 }

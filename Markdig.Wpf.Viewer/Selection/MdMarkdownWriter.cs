@@ -1,5 +1,6 @@
 ﻿namespace MarkdigWpfViewer.Selection;
 
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using ViewModels;
@@ -238,6 +239,9 @@ internal sealed partial class MdMarkdownWriter
 
             case DefinitionListVm definitions:
                 return Definitions(definitions);
+
+            case AlignedVm aligned:
+                return [$"<div align=\"{aligned.Alignment.ToString().ToLowerInvariant()}\">", string.Empty, .. Blocks(aligned.Blocks), string.Empty, "</div>"];
 
             case ThematicBreakVm:
                 _other = true;
@@ -563,6 +567,16 @@ internal sealed partial class MdMarkdownWriter
                     _lineStart = true;
                     break;
 
+                case ImageVm image:
+                    var wanted = _open.Where(marker => marker.Open != "[").ToList();
+                    if ((image.Href ?? image.Hyperlink?.OriginalString) is { } link)
+                    {
+                        wanted.Add(new("[", $"]({Destination(link)})", Emphasis: false));
+                    }
+
+                    Append(Open(wanted, ImageMarkdown(image)));
+                    break;
+
                 default:
                     Append(writer.SourceOf(inline) ?? (inline as IMdCopyText)?.CopyText ?? string.Empty);
                     break;
@@ -653,6 +667,24 @@ internal sealed partial class MdMarkdownWriter
         {
             _text.Append(text);
             _lineStart &= text.Length == 0;
+        }
+
+        /// <summary>Картинка своим исходником, если он markdown; картинка из HTML — <c>![alt](адрес "подсказка"){width=… height=…}</c>.</summary>
+        private string ImageMarkdown(ImageVm image)
+        {
+            if (writer.SourceOf(image) is { } source && source.StartsWith("![", StringComparison.Ordinal))
+            {
+                return source;
+            }
+
+            var title = image.Title is { } text ? $" \"{text.Replace("\"", "\\\"")}\"" : string.Empty;
+            var size = new[] { ("width", image.Width), ("height", image.Height) }
+                .Where(pair => pair.Item2 is not null)
+                .Select(pair => $"{pair.Item1}={pair.Item2!.Value.ToString(CultureInfo.InvariantCulture)}")
+                .ToList();
+
+            var attributes = size.Count > 0 ? "{" + string.Join(" ", size) + "}" : string.Empty;
+            return $"![{Escape(image.Alt)}]({Destination(image.Url)}{title}){attributes}";
         }
 
         /// <summary>

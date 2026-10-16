@@ -55,6 +55,7 @@ public sealed class MarkdownTemplateSelector : DataTemplateSelector
             CalloutVm => provider.CalloutTemplate,
             DetailsVm => provider.DetailsTemplate,
             DefinitionListVm => provider.DefinitionListTemplate,
+            AlignedVm => provider.AlignedTemplate,
             _ => null
         };
     }

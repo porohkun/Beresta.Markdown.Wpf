@@ -30,7 +30,7 @@
 | `^^ текст` | подвал мелким текстом |
 | `:::name` … `:::` | свой контейнер: показывает содержимое; [расширение](Extensions-ru) может нарисовать его по-своему |
 | `---` … `---` в самом начале документа | front matter: ничего — см. ниже |
-| HTML-блок | его исходный текст |
+| HTML-блок | по смыслу, если вьюер знает все его теги, — см. [HTML из README](#html-из-readme); иначе его исходный текст |
 | `<!-- comment -->` | ничего |
 
 ## Внутри строки
@@ -61,6 +61,43 @@
 
 ```markdown
 Press <kbd>Ctrl</kbd>+<kbd>C</kbd> to copy. Water is H<sub>2</sub>O, the area is 5 m<sup>2</sup>.
+```
+
+## HTML из README
+
+В README немного HTML берут для того, чего не умеет Markdown: логотип по центру, ряд значков,
+сворачиваемый раздел. Такие HTML-блоки вьюер рисует по смыслу, как GitHub.
+
+| HTML | На экране |
+|---|---|
+| `<details>`, `<summary>` | сворачиваемый блок с заголовком из summary; `<details open>` сначала развёрнут |
+| `<p align="…">`, `<div align="…">`, `<center>` | содержимое выровнено: `left`, `center`, `right`, `justify` |
+| `<h1>` … `<h6>`, в том числе с `align` | заголовки |
+| `<img src alt width height title>` | картинка |
+| `<a href><img></a>` | картинка-ссылка |
+| `<picture>` с `<source>` | картинка из его `<img>` |
+| `<br>` | перенос строки |
+| `<b>`, `<strong>`, `<i>`, `<em>`, `<s>`, `<del>`, `<strike>`, `<code>`, `<kbd>`, `<sub>`, `<sup>`, `<mark>`, `<ins>`, `<u>`, `<cite>`, `<a href>` | так же, как строчный HTML |
+
+Как на GitHub, Markdown между тегами разбирается, только когда он отделён от них пустыми строками;
+текст вплотную к тегам — простой текст, а его пробелы и переносы сливаются в один пробел. HTML-блок с
+любым другим тегом — `<table>`, `<span>` — показывается исходным текстом.
+
+**Любой `.md`-файл**:
+
+```markdown
+<p align="center">
+  <img src="logo.png" width="200" alt="Logo">
+  <br>
+  <b>My Project</b>
+</p>
+
+<details>
+<summary>Build from source</summary>
+
+Run `dotnet build` in the repository root.
+
+</details>
 ```
 
 ## Переносы и пустые строки

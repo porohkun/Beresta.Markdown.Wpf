@@ -503,6 +503,7 @@
                                                    Foreground="{DynamicResource Md.CodeBlock.Foreground}"
                                                    FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
                                                    FontSize="{DynamicResource Md.CodeBlock.FontSize}"
+                                                   TextAlignment="Left"
                                                    TextWrapping="WrapWithOverflow" />
                                 </ScrollViewer>
                             </Grid>
@@ -1000,6 +1001,26 @@
                 <p:MdDefinitionListPresenter ItemsSource="{Binding Items}" Style="{DynamicResource Md.DefinitionList.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.DefinitionListTemplate>
+
+        <s:MdStyleProvider.AlignedTemplate>
+            <DataTemplate DataType="{x:Type vm:AlignedVm}">
+                <p:MdBlocksPresenter x:Name="Blocks" Blocks="{Binding Blocks}" />
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding Alignment}" Value="Left">
+                        <Setter TargetName="Blocks" Property="TextBlock.TextAlignment" Value="Left" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Alignment}" Value="Center">
+                        <Setter TargetName="Blocks" Property="TextBlock.TextAlignment" Value="Center" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Alignment}" Value="Right">
+                        <Setter TargetName="Blocks" Property="TextBlock.TextAlignment" Value="Right" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Alignment}" Value="Justify">
+                        <Setter TargetName="Blocks" Property="TextBlock.TextAlignment" Value="Justify" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+        </s:MdStyleProvider.AlignedTemplate>
 
     </s:MdStyleProvider>
 

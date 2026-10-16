@@ -146,6 +146,7 @@ The data context of a template is the model of its block — an immutable record
 | `CalloutTemplate` | `vm:CalloutVm` | `Kind`, `Title`, `Blocks`, `IsFoldable`, `IsFolded` |
 | `DetailsTemplate` | `vm:DetailsVm` | `Summary`, `Blocks`, `IsOpen` |
 | `DefinitionListTemplate` | `vm:DefinitionListVm` | `Items` of `vm:DefinitionItemVm` (`Terms`, `HasTerms`, `Blocks`); an item without terms is one more definition of the item before it |
+| `AlignedTemplate` | `vm:AlignedVm` | `Alignment` (`Left`, `Center`, `Right`, `Justify`), `Blocks` — HTML `align` and `<center>` |
 | `ImageTemplate` | `vm:ImageVm`, inline | `Url`, `Alt`, `Title`, `Width`, `Height`, `Href` |
 | `TaskTemplate` | `vm:TaskVm`, inline | `IsChecked` |
 | `FootnoteLinkTemplate` | `vm:FootnoteLinkVm`, inline | `Order`, `Index`, `IsBack`, `Target` |

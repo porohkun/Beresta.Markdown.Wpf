@@ -22,11 +22,13 @@ internal sealed class ModelIdentity
     private Entry[] _roots = NoEntries;
     private Dictionary<long, Entry[]> _children = [];
     private Dictionary<(long Previous, int Index), long> _blankLines = [];
+    private Dictionary<(long Owner, int Index), long> _parts = [];
     private Dictionary<long, NodeVm> _models = [];
 
     private Entry[] _nextRoots = NoEntries;
     private Dictionary<long, Entry[]> _nextChildren = [];
     private Dictionary<(long Previous, int Index), long> _nextBlankLines = [];
+    private Dictionary<(long Owner, int Index), long> _nextParts = [];
     private Dictionary<long, NodeVm> _nextModels = [];
 
     /// <summary>Сопоставляет узлы нового разбора с прошлым; вызывается до превращения в модель.</summary>
@@ -35,6 +37,7 @@ internal sealed class ModelIdentity
         _ids.Clear();
         _nextChildren = [];
         _nextBlankLines = [];
+        _nextParts = [];
         _nextModels = [];
         _nextRoots = MatchSequence(ChildrenOf(document), _roots, source);
     }
@@ -45,6 +48,7 @@ internal sealed class ModelIdentity
         _roots = _nextRoots;
         _children = _nextChildren;
         _blankLines = _nextBlankLines;
+        _parts = _nextParts;
         _models = _nextModels;
         _ids.Clear();
     }
@@ -56,18 +60,13 @@ internal sealed class ModelIdentity
     public bool Contains(long id) => _models.ContainsKey(id);
 
     /// <summary>Идентификатор отступа — <paramref name="index"/>-го подряд после элемента <paramref name="previous"/>.</summary>
-    public long BlankLineId(long previous, int index)
-    {
-        var key = (previous, index);
-        if (previous == 0 || _nextBlankLines.ContainsKey(key))
-        {
-            return ++_lastId;
-        }
+    public long BlankLineId(long previous, int index) => Derived(_blankLines, _nextBlankLines, previous, index);
 
-        var id = _blankLines.TryGetValue(key, out var known) ? known : ++_lastId;
-        _nextBlankLines[key] = id;
-        return id;
-    }
+    /// <summary>
+    /// Идентификатор <paramref name="index"/>-го элемента модели из одного узла <paramref name="owner"/>,
+    /// когда разбор делает из узла несколько элементов; первый берёт идентификатор самого узла.
+    /// </summary>
+    public long PartId(long owner, int index) => Derived(_parts, _nextParts, owner, index);
 
     /// <summary>Прошлая вьюмодель с тем же идентификатором, если новая равна ей по содержимому; иначе новая.</summary>
     public T Reuse<T>(T model)
@@ -166,6 +165,24 @@ internal sealed class ModelIdentity
         }
 
         return pairs;
+    }
+
+    /// <summary>Идентификатор, который держится за элемент <paramref name="owner"/> и номер; прошлый разбор его уже выдал — тот же.</summary>
+    private long Derived(
+        Dictionary<(long, int), long> known,
+        Dictionary<(long, int), long> next,
+        long owner,
+        int index)
+    {
+        var key = (owner, index);
+        if (owner == 0 || next.ContainsKey(key))
+        {
+            return ++_lastId;
+        }
+
+        var id = known.TryGetValue(key, out var previous) ? previous : ++_lastId;
+        next[key] = id;
+        return id;
     }
 
     private static void PairInPlace(Entry[] old, Key[] keys, long[] matched, int oldStart, int oldEnd, int newStart, int newEnd)

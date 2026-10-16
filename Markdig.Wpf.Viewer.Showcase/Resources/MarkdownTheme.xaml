@@ -57,6 +57,6 @@
     <SolidColorBrush x:Key="Md.Callout.Important.Brush" Color="{DynamicResource VioletColor}" />
     <SolidColorBrush x:Key="Md.Callout.Warning.Brush" Color="{DynamicResource WarningColor}" />
     <SolidColorBrush x:Key="Md.Callout.Caution.Brush" Color="{DynamicResource DangerColor}" />
-    <SolidColorBrush x:Key="Md.Details.MarkerForeground" Color="{DynamicResource ThirdlyTextColor}" />
+    <SolidColorBrush x:Key="Md.Details.MarkerForeground" Color="{DynamicResource SecondaryTextColor}" />
 
 </ResourceDictionary>

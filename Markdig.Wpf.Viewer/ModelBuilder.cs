@@ -5,6 +5,7 @@ using Identity;
 using System.Globalization;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using Markdig;
 using Markdig.Extensions.Abbreviations;
 using Markdig.Extensions.Alerts;
@@ -21,7 +22,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using ViewModels;
 
-internal sealed class ModelBuilder
+internal sealed partial class ModelBuilder
 {
     public static readonly MarkdownPipeline DefaultPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
@@ -30,11 +31,21 @@ internal sealed class ModelBuilder
 
     private static readonly string[] Bullets = ["•", "◦", "▪"];
 
+    /// <summary>Блочные теги HTML из README; HTML-блок, где все теги знакомы, рисуется по смыслу.</summary>
+    private static readonly HashSet<string> HtmlBlockTags = ["details", "summary", "div", "p", "center", "h1", "h2", "h3", "h4", "h5", "h6"];
+
+    /// <summary>Строчные теги HTML из README; <c>picture</c> и <c>source</c> пропускаются, остаётся их <c>img</c>.</summary>
+    private static readonly HashSet<string> HtmlInlineTags =
+    [
+        "a", "img", "br", "picture", "source", "b", "strong", "i", "em", "s", "del", "strike", "code", "kbd", "sub", "sup", "mark", "ins", "u", "cite"
+    ];
+
     private readonly string _source;
     private readonly List<int> _lineStarts;
     private readonly IReadOnlyList<MdExtension> _extensions;
     private readonly ModelIdentity _identity;
     private readonly IReadOnlyDictionary<SmartyPantType, string>? _smartyPants;
+    private readonly Dictionary<HtmlBlock, int> _htmlParts = new(ReferenceEqualityComparer.Instance);
 
     private ModelBuilder(
         string source,
@@ -87,7 +98,8 @@ internal sealed class ModelBuilder
 
     /// <summary>
     /// Блоки контейнера с отступами на месте пустых строк. Определения сносок, которые Markdig
-    /// собирает в конец документа, встают туда, где они написаны. В ячейке сетки-таблицы
+    /// собирает в конец документа, встают туда, где они написаны. HTML из README, который Markdig
+    /// режет на соседние блоки, собирается обратно. В ячейке сетки-таблицы
     /// <paramref name="gapsAreBlank"/>: строка между её блоками пуста внутри столбца, даже если в
     /// соседних столбцах на ней текст.
     /// </summary>
@@ -96,32 +108,14 @@ internal sealed class ModelBuilder
         int listDepth,
         bool gapsAreBlank = false)
     {
-        var blocks = new List<BlockVm>();
-        int? previousEnd = null;
-
-        var children = container
+        var pieces = container
             .SelectMany(child => child is FootnoteGroup group ? group.AsEnumerable() : new[] { child })
-            .OrderBy(child => child.Line);
+            .OrderBy(child => child.Line)
+            .SelectMany(child => PiecesOf(child, listDepth))
+            .ToList();
 
-        foreach (var child in children)
-        {
-            var converted = ConvertBlock(child, listDepth);
-            if (converted.Count == 0)
-            {
-                continue;
-            }
-
-            var (start, end) = GetLines(child);
-            if (previousEnd is { } previous)
-            {
-                AddBlankLines(blocks, previous, start, blocks[^1].NodeId, gapsAreBlank);
-            }
-
-            blocks.AddRange(converted);
-            previousEnd = end;
-        }
-
-        return blocks;
+        var index = 0;
+        return ConvertPieces(pieces, ref index, [], listDepth, gapsAreBlank);
     }
 
     internal IReadOnlyList<InlineVm> ConvertInlines(ContainerInline? container)
@@ -257,6 +251,11 @@ internal sealed class ModelBuilder
     private IReadOnlyList<BlockVm> ConvertBlock(
         Block block,
         int listDepth)
+        => ConvertByExtension(block, listDepth) ?? ConvertBuiltInBlock(block, listDepth);
+
+    private IReadOnlyList<BlockVm>? ConvertByExtension(
+        Block block,
+        int listDepth)
     {
         foreach (var extension in _extensions)
         {
@@ -266,6 +265,13 @@ internal sealed class ModelBuilder
             }
         }
 
+        return null;
+    }
+
+    private IReadOnlyList<BlockVm> ConvertBuiltInBlock(
+        Block block,
+        int listDepth)
+    {
         switch (block)
         {
             case LinkReferenceDefinitionGroup or LinkReferenceDefinition:
@@ -349,6 +355,363 @@ internal sealed class ModelBuilder
 
         return (T)_identity.Reuse(stamped);
     }
+
+    /// <summary>
+    /// Вьюмодель из HTML от куска <paramref name="first"/> до куска <paramref name="last"/>. Первая
+    /// вьюмодель HTML-блока берёт его идентификатор, следующие — производные от него.
+    /// </summary>
+    private T StampHtml<T>(T node, Piece first, Piece last)
+        where T : NodeVm
+    {
+        var owner = first.Owner!;
+        var part = _htmlParts.GetValueOrDefault(owner);
+        _htmlParts[owner] = part + 1;
+
+        var id = _identity.IdOf(owner);
+        NodeVm stamped = node;
+        stamped = stamped with
+        {
+            Source = new(first.Start, last.End - first.Start, first.StartLine, last.EndLine),
+            NodeId = part == 0 ? id : _identity.PartId(id, part)
+        };
+
+        return (T)_identity.Reuse(stamped);
+    }
+
+    /// <summary>Блок — одним куском; HTML-блок, все теги которого знакомы, — своими тегами и текстом.</summary>
+    private IEnumerable<Piece> PiecesOf(Block block, int listDepth)
+    {
+        var (startLine, endLine) = GetLines(block);
+        var whole = new Piece(block.Span.Start, block.Span.End + 1, startLine, endLine) { Block = block };
+        if (block is not HtmlBlock html || html.Type == HtmlBlockType.Comment)
+        {
+            return [whole];
+        }
+
+        if (ConvertByExtension(html, listDepth) is { } custom)
+        {
+            return [whole with { Converted = custom }];
+        }
+
+        return HtmlPieces(html) ?? [whole with { Converted = ConvertBuiltInBlock(html, listDepth) }];
+    }
+
+    /// <summary>Теги и текст HTML-блока кусками с позициями в исходнике; блок с незнакомым тегом — <c>null</c>.</summary>
+    private List<Piece>? HtmlPieces(HtmlBlock html)
+    {
+        var text = new StringBuilder();
+        var lines = new List<(int Offset, int Position)>();
+        for (var i = 0; i < html.Lines.Count; i++)
+        {
+            if (i > 0)
+            {
+                text.Append('\n');
+            }
+
+            var slice = html.Lines.Lines[i].Slice;
+            lines.Add((text.Length, slice.Start));
+            text.Append(slice.ToString());
+        }
+
+        var tokens = HtmlToken.Split(text.ToString());
+        if (tokens.Any(token => token.IsTag && (token.Tag is not { } tag || !HtmlBlockTags.Contains(tag.Name) && !HtmlInlineTags.Contains(tag.Name))))
+        {
+            return null;
+        }
+
+        return tokens
+            .Where(token => !token.IsComment)
+            .Select(token =>
+            {
+                var start = PositionOf(token.Start);
+                var end = PositionOf(token.End - 1) + 1;
+                return new Piece(start, end, GetLineAt(start), GetLineAt(end - 1))
+                {
+                    Tag = token.Tag,
+                    Text = token.IsTag ? null : token.Text,
+                    Owner = html
+                };
+            })
+            .ToList();
+
+        int PositionOf(int offset)
+        {
+            var line = lines.FindLast(line => line.Offset <= offset);
+            return line.Position + offset - line.Offset;
+        }
+    }
+
+    /// <summary>
+    /// Блоки из кусков подряд, пустые строки между ними — отступами. Останавливается на закрывающем
+    /// теге элемента из <paramref name="open"/> и оставляет его этому элементу.
+    /// </summary>
+    private List<BlockVm> ConvertPieces(
+        List<Piece> pieces,
+        ref int index,
+        List<string> open,
+        int listDepth,
+        bool gapsAreBlank)
+    {
+        var blocks = new List<BlockVm>();
+        int? previousEnd = null;
+
+        while (index < pieces.Count)
+        {
+            var piece = pieces[index];
+            if (piece.Tag is { IsClosing: true } closing)
+            {
+                if (open.Contains(closing.Name))
+                {
+                    break;
+                }
+
+                index++;
+                continue;
+            }
+
+            IReadOnlyList<BlockVm> converted;
+            if (piece.Block is { } block)
+            {
+                index++;
+                converted = piece.Converted ?? ConvertBlock(block, listDepth);
+            }
+            else
+            {
+                converted = ConvertHtml(pieces, ref index, open, listDepth);
+            }
+
+            if (converted.Count == 0)
+            {
+                continue;
+            }
+
+            if (previousEnd is { } previous)
+            {
+                AddBlankLines(blocks, previous, piece.StartLine, blocks[^1].NodeId, gapsAreBlank);
+            }
+
+            blocks.AddRange(converted);
+            previousEnd = pieces[index - 1].EndLine;
+        }
+
+        return blocks;
+    }
+
+    /// <summary>Элемент HTML из README, который начинается с куска <paramref name="index"/>, — блоками.</summary>
+    private IReadOnlyList<BlockVm> ConvertHtml(
+        List<Piece> pieces,
+        ref int index,
+        List<string> open,
+        int listDepth)
+    {
+        var first = pieces[index];
+        switch (first.Tag)
+        {
+            case { Name: "details" } details:
+                index++;
+                var summary = ConvertSummary(pieces, ref index);
+                var content = ConvertElement(pieces, ref index, open, details.Name, listDepth);
+                return [StampHtml(new DetailsVm(summary, content) { IsOpen = details.Attributes.ContainsKey("open") }, first, pieces[index - 1])];
+
+            case { Name: "div" or "p" or "center" or "summary" } container:
+                index++;
+                var blocks = ConvertElement(pieces, ref index, open, container.Name, listDepth);
+                return AlignmentOf(container) is { } alignment && blocks.Count > 0
+                    ? [StampHtml(new AlignedVm(alignment, blocks), first, pieces[index - 1])]
+                    : blocks;
+
+            case { Name: ['h', >= '1' and <= '6'] } heading:
+                index++;
+                var title = ConvertHtmlInlines(pieces, ref index);
+                if (index < pieces.Count && pieces[index].Tag is { IsClosing: true } end && end.Name == heading.Name)
+                {
+                    index++;
+                }
+
+                var headingVm = StampHtml(new HeadingVm(heading.Name[1] - '0', title, heading.Attributes.GetValueOrDefault("id")), first, pieces[index - 1]);
+                return AlignmentOf(heading) is { } headingAlignment
+                    ? [StampHtml(new AlignedVm(headingAlignment, [headingVm]), first, pieces[index - 1])]
+                    : [headingVm];
+
+            default:
+                var start = index;
+                var inlines = ConvertHtmlInlines(pieces, ref index);
+                if (index == start)
+                {
+                    index++;
+                    return [];
+                }
+
+                return inlines switch
+                {
+                    [] => [],
+                    _ when inlines.All(inline => inline is LineBreakVm) => [StampHtml(new BlankLineVm(), first, pieces[index - 1])],
+                    _ => [StampHtml(new ParagraphVm(inlines), first, pieces[index - 1])]
+                };
+        }
+    }
+
+    /// <summary>Блоки элемента HTML до его закрывающего тега; сам тег съедается.</summary>
+    private List<BlockVm> ConvertElement(
+        List<Piece> pieces,
+        ref int index,
+        List<string> open,
+        string name,
+        int listDepth)
+    {
+        open.Add(name);
+        var blocks = ConvertPieces(pieces, ref index, open, listDepth, gapsAreBlank: false);
+        open.RemoveAt(open.Count - 1);
+
+        if (index < pieces.Count && pieces[index].Tag is { IsClosing: true } closing && closing.Name == name)
+        {
+            index++;
+        }
+
+        return blocks;
+    }
+
+    /// <summary>Заголовок <c>&lt;summary&gt;</c> в начале <c>&lt;details&gt;</c>; нет его — пусто.</summary>
+    private IReadOnlyList<InlineVm> ConvertSummary(List<Piece> pieces, ref int index)
+    {
+        var next = index;
+        while (next < pieces.Count && pieces[next].Text is { } text && string.IsNullOrWhiteSpace(text))
+        {
+            next++;
+        }
+
+        if (next >= pieces.Count || pieces[next].Tag is not { Name: "summary", IsClosing: false })
+        {
+            return [];
+        }
+
+        index = next + 1;
+        var summary = ConvertHtmlInlines(pieces, ref index);
+        if (index < pieces.Count && pieces[index].Tag is { Name: "summary", IsClosing: true })
+        {
+            index++;
+        }
+
+        return summary;
+    }
+
+    /// <summary>
+    /// Строчное содержимое HTML подряд: текст, картинки, ссылки, начертания, переносы — до блока
+    /// Markdig или блочного тега.
+    /// </summary>
+    private List<InlineVm> ConvertHtmlInlines(List<Piece> pieces, ref int index)
+    {
+        var output = new List<InlineVm>();
+        var state = new InlineState();
+        var openTags = new List<(string Name, InlineState Before)>();
+
+        for (; index < pieces.Count; index++)
+        {
+            var piece = pieces[index];
+            if (piece.Block is not null || piece.Tag is { } blockTag && HtmlBlockTags.Contains(blockTag.Name))
+            {
+                break;
+            }
+
+            if (piece.Text is { } text)
+            {
+                output.Add(Run(WebUtility.HtmlDecode(text), state) with { Source = SpanOf(piece) });
+                continue;
+            }
+
+            switch (piece.Tag)
+            {
+                case { Name: "br" }:
+                    output.Add(new LineBreakVm(IsHard: true) { Source = SpanOf(piece) });
+                    break;
+
+                case { Name: "img", IsClosing: false } image:
+                    output.Add(ImageOf(image, state) with { Source = SpanOf(piece) });
+                    break;
+
+                case { IsClosing: true } closing when openTags.FindLastIndex(tag => tag.Name == closing.Name) is var opened and >= 0:
+                    state = openTags[opened].Before;
+                    openTags.RemoveRange(opened, openTags.Count - opened);
+                    break;
+
+                case { IsClosing: false } opening when Formatting(opening, state) is { } formatted:
+                    if (!opening.IsSelfClosing)
+                    {
+                        openTags.Add((opening.Name, state));
+                    }
+
+                    state = formatted;
+                    break;
+            }
+        }
+
+        return CollapseHtmlSpaces(output);
+    }
+
+    /// <summary>Пробелы HTML: подряд идущие — одним пробелом, в начале строки и в конце — никаких.</summary>
+    private static List<InlineVm> CollapseHtmlSpaces(List<InlineVm> inlines)
+    {
+        var result = new List<InlineVm>();
+        var lineStart = true;
+
+        foreach (var inline in inlines)
+        {
+            if (inline is not RunVm run)
+            {
+                if (inline is LineBreakVm)
+                {
+                    TrimEnd();
+                }
+
+                result.Add(inline);
+                lineStart = inline is LineBreakVm;
+                continue;
+            }
+
+            var text = HtmlSpaces().Replace(run.Text, " ");
+            if (lineStart || result is [.., RunVm { Text: [.., ' '] }])
+            {
+                text = text.TrimStart(' ');
+            }
+
+            if (text.Length > 0)
+            {
+                result.Add(run with { Text = text });
+                lineStart = false;
+            }
+        }
+
+        TrimEnd();
+        return result;
+
+        void TrimEnd()
+        {
+            if (result is [.., RunVm { Text: [.., ' '] } last])
+            {
+                var trimmed = last.Text.TrimEnd(' ');
+                result[^1] = last with { Text = trimmed };
+                if (trimmed.Length == 0)
+                {
+                    result.RemoveAt(result.Count - 1);
+                }
+            }
+        }
+    }
+
+    /// <summary>Выравнивание по атрибуту <c>align</c>, у <c>&lt;center&gt;</c> — по центру; без выравнивания — <c>null</c>.</summary>
+    private static BlockAlignment? AlignmentOf(HtmlTag tag)
+        => tag.Name == "center"
+            ? BlockAlignment.Center
+            : tag.Attributes.GetValueOrDefault("align")?.Trim().ToLowerInvariant() switch
+            {
+                "left" => BlockAlignment.Left,
+                "center" or "middle" => BlockAlignment.Center,
+                "right" => BlockAlignment.Right,
+                "justify" => BlockAlignment.Justify,
+                _ => null
+            };
+
+    private static MdSourceSpan SpanOf(Piece piece) => new(piece.Start, piece.End - piece.Start, piece.StartLine, piece.EndLine);
 
     private ListVm ConvertList(ListBlock list, int listDepth)
     {
@@ -615,18 +978,7 @@ internal sealed class ModelBuilder
                 return state;
 
             case { Name: "img", IsClosing: false } image:
-                output.Add(Stamp(
-                    new ImageVm(
-                        image.Attributes.GetValueOrDefault("src") ?? string.Empty,
-                        image.Attributes.GetValueOrDefault("alt") ?? string.Empty)
-                    {
-                        Title = image.Attributes.GetValueOrDefault("title"),
-                        Width = Pixels(image.Attributes.GetValueOrDefault("width")),
-                        Height = Pixels(image.Attributes.GetValueOrDefault("height")),
-                        Href = state.Href,
-                        Hyperlink = state.Hyperlink
-                    },
-                    html));
+                output.Add(Stamp(ImageOf(image, state), html));
                 return state;
 
             case { IsClosing: true } closing when openTags.FindLastIndex(open => open.Name == closing.Name) is var index and >= 0:
@@ -647,6 +999,17 @@ internal sealed class ModelBuilder
                 return state;
         }
     }
+
+    /// <summary>Картинка тега <c>&lt;img&gt;</c>; внутри ссылки — картинка-ссылка.</summary>
+    private static ImageVm ImageOf(HtmlTag image, InlineState state)
+        => new(image.Attributes.GetValueOrDefault("src") ?? string.Empty, image.Attributes.GetValueOrDefault("alt") ?? string.Empty)
+        {
+            Title = image.Attributes.GetValueOrDefault("title"),
+            Width = Pixels(image.Attributes.GetValueOrDefault("width")),
+            Height = Pixels(image.Attributes.GetValueOrDefault("height")),
+            Href = state.Href,
+            Hyperlink = state.Hyperlink
+        };
 
     private void AddImage(LinkInline image, InlineState state, List<InlineVm> output)
     {
@@ -745,25 +1108,26 @@ internal sealed class ModelBuilder
             return;
         }
 
-        output.Add(Stamp(
-            new RunVm(
-                text,
-                state.Bold,
-                state.Italic,
-                state.Strike,
-                state.Code,
-                state.Hyperlink,
-                state.Href,
-                state.LinkTitle,
-                state.Kbd,
-                state.Subscript,
-                state.Superscript,
-                state.Marked,
-                state.Inserted,
-                state.Cite,
-                state.Abbreviation),
-            node));
+        output.Add(Stamp(Run(text, state), node));
     }
+
+    private static RunVm Run(string text, InlineState state)
+        => new(
+            text,
+            state.Bold,
+            state.Italic,
+            state.Strike,
+            state.Code,
+            state.Hyperlink,
+            state.Href,
+            state.LinkTitle,
+            state.Kbd,
+            state.Subscript,
+            state.Superscript,
+            state.Marked,
+            state.Inserted,
+            state.Cite,
+            state.Abbreviation);
 
     /// <summary>Замена SmartyPants по таблице из настройки разбора; таблица там — HTML-сущностями.</summary>
     private string SmartyPantText(SmartyPant smartyPant)
@@ -888,6 +1252,27 @@ internal sealed class ModelBuilder
         return span.Start >= 0 && span.Length > 0 && span.End < _source.Length
             ? _source.Substring(span.Start, span.Length)
             : string.Empty;
+    }
+
+    [GeneratedRegex("[ \t\r\n\f]+")]
+    private static partial Regex HtmlSpaces();
+
+    /// <summary>
+    /// Кусок соседних блоков: блок Markdig — или тег либо текст HTML-блока <see cref="Owner"/>.
+    /// Позиции — в исходнике, конец не включается.
+    /// </summary>
+    private sealed record Piece(int Start, int End, int StartLine, int EndLine)
+    {
+        public Block? Block { get; init; }
+
+        /// <summary>Блок уже превращён: расширением или как HTML-блок с незнакомыми тегами.</summary>
+        public IReadOnlyList<BlockVm>? Converted { get; init; }
+
+        public HtmlTag? Tag { get; init; }
+
+        public string? Text { get; init; }
+
+        public HtmlBlock? Owner { get; init; }
     }
 
     private readonly record struct InlineState(
