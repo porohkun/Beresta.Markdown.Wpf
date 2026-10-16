@@ -1,273 +1,99 @@
 ﻿# Markdig.Wpf.Viewer v0.4.0
 
-Markdown viewer for WPF based on Markdig.
+**English** | [Русский](https://github.com/porohkun/Markdig.Wpf.Viewer/blob/main/README.ru.md)
 
-## Прокрутка
+A WPF control that shows Markdown as native WPF elements: [Markdig](https://github.com/xoofx/markdig)
+parses the text, WPF templates draw it.
 
-Своей прокрутки у вьюера нет: его ставят в `ScrollViewer`, в общую прокрутку страницы рядом с
-другим содержимым или в список, в том числе виртуализированный. Вьюер создаёт только блоки,
-попавшие в видимую область прокруток вокруг него; без прокрутки создаются все блоки.
+![The viewer in the showcase theme](https://raw.githubusercontent.com/porohkun/Markdig.Wpf.Viewer/main/docs/wiki/images/overview.png)
 
-## Строки как в исходнике
+- **Virtualized.** The viewer lives in your own scrolling and creates only the blocks you see: a long
+  document, a page with other content or a chat list stay fast.
+- **Selectable.** Selection runs across blocks; copying puts plain text, Markdown and HTML on the
+  clipboard at once.
+- **Navigable.** Links, anchors, footnotes, a table of contents, scrolling to a source line; your
+  application can take over any link.
+- **Themable.** Every color, font and margin is a resource key; any block can get your own template.
+- **Extensible.** Your own Markdown syntax becomes your own widgets.
+- **Live.** A new text is applied as edits: fit for a live preview and streamed answers.
 
-Каждая строка исходника начинается на экране с новой строки: перенос внутри абзаца рисуется
-переносом, а не пробелом. Открывающее ограждение блока кода тоже получает свою строку — шапку с
-языком.
+## Install
 
-## Свой вид
+```bash
+dotnet add package Markdig.Wpf.Viewer
+```
 
-Вид меняется снаружи на трёх уровнях: ключами темы, стилями начертаний и шаблонами блоков.
+Or add the repository as a Git submodule and reference `Markdig.Wpf.Viewer/Markdig.Wpf.Viewer.csproj`.
 
-**Ключи темы** перекрываются ресурсами приложения, окна или самого вьюера. Шрифт и цвет текста
-по умолчанию не заданы и берутся у приложения — задай ключ, только если текст во вьюере должен
-отличаться.
+Requires .NET 10 (`net10.0-windows`) with WPF.
 
-| Что | Ключи |
-|---|---|
-| Абзац | `Md.Paragraph.FontFamily`, `Md.Paragraph.Foreground` (не заданы), `Md.Paragraph.FontSize`, `Md.Paragraph.LinkForeground` |
-| Заголовки | `Md.Heading.FontFamily`, `Md.Heading.Foreground` (не заданы), `Md.Heading.LinkForeground`, `Md.Heading1…6.FontSize`, `.FontWeight`, `.Margin` |
-| Код посреди строки | `Md.InlineCode.FontFamily`, `.FontSize`, `.Foreground`, `.Background`, `.BorderBrush`, `.BorderThickness`, `.Padding`, `.CornerRadius` |
-| Блок кода | `Md.CodeBlock.FontFamily`, `.FontSize`, `.Foreground`, `.Background`, `.BorderBrush`, `.BorderThickness`, `.Padding`, `.CornerRadius`, `.LineNumberForeground`, `.LineNumberMargin` |
-| Шапка блока кода | `Md.CodeBlock.HeaderFontFamily` (не задан), `Md.CodeBlock.HeaderForeground`, `.HeaderFontSize`, `.HeaderMargin` |
-| Поля с номерами строк | `Md.Gutter.FontFamily` (не задан), `Md.Gutter.Foreground`, `.FontSize`, `.Padding` |
-| Цитата | `Md.Quote.BorderBrush`, `.BorderThickness`, `.Padding`, `.Margin` |
-| Список | `Md.List.Margin`, `Md.List.MarkerWidth`, `Md.List.ItemSpacing` |
-| Таблица | `Md.Table.BorderBrush`, `.BorderThickness`, `.CellPadding`, `.HeaderBackground` |
-| Разделитель и пустая строка | `Md.HorizontalRule.Margin`, `Md.BlankLine.Height` |
-| Начертания | `Md.Strong.Style`, `Md.Emphasis.Style`, `Md.Strike.Style` (стили `Span`), `Md.Link.Style` (стиль `Hyperlink`) |
-| Стили блоков целиком | `Md.Paragraph.Style`, `Md.Heading.Style`, `Md.CodeBlock.Style`, `Md.CodeBlock.HeaderStyle`, `Md.Quote.Style`, `Md.List.Style`, `Md.List.MarkerStyle`, `Md.Table.Style` |
+## Connect the theme
 
-**Шаблон блока** заменяется своим провайдером: незаданные шаблоны он берёт у стандартного.
+Merge the theme of the viewer into the application resources once — without it the viewer stays
+empty.
+
+`App.xaml`:
 
 ```xml
-<s:MdStyleProvider x:Key="MyProvider" BasedOn="{StaticResource Md.DefaultStyleProvider}">
-    <s:MdStyleProvider.HeadingTemplate>
-        <DataTemplate DataType="{x:Type vm:HeadingVm}">
-            <Border BorderThickness="4,0,0,0" BorderBrush="Orange" Padding="8,0,0,0">
-                <p:MdHeadingBlock Level="{Binding Level}" Runs="{Binding Inlines}"
-                                  Style="{DynamicResource Md.Heading.Style}" />
-            </Border>
-        </DataTemplate>
-    </s:MdStyleProvider.HeadingTemplate>
-</s:MdStyleProvider>
-
-<mdv:MarkdownViewer StyleProvider="{StaticResource MyProvider}" Markdown="{Binding Text}" />
+<Application.Resources>
+    <ResourceDictionary>
+        <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/Markdig.Wpf.Viewer;component/Themes/Generic.xaml" />
+        </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+</Application.Resources>
 ```
 
-Блоки внутри своего шаблона — цитаты, заметки — рисует `p:MdBlocksPresenter Blocks="{Binding Blocks}"`:
-той же цепочкой шаблонов и с той же виртуализацией.
+## Show a document
 
-## Свой синтаксис
+The viewer has no scroll bars of its own: put it into a `ScrollViewer`.
 
-Расширение — наследник `MdExtension`: настраивает разбор Markdig, превращает свои узлы в виджеты
-(записи от `BlockVm` или `InlineVm`) и даёт им шаблоны. Вложенную разметку своего узла
-разбирает `MdConvertContext`.
-
-```csharp
-public sealed record NoteVm(string Title, IReadOnlyList<BlockVm> Blocks) : BlockVm;
-
-public sealed class NoteExtension : MdExtension
-{
-    public DataTemplate? Template { get; set; }
-
-    public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
-        => block is CustomContainer { Info: "note" } container
-            ? new NoteVm(container.Arguments ?? "", context.ConvertChildren(container))
-            : null;
-
-    public override DataTemplate? SelectTemplate(object item, DependencyObject container)
-        => item is NoteVm ? Template : null;
-}
-```
+`MainWindow.xaml`:
 
 ```xml
-<mdv:MarkdownViewer Markdown="{Binding Text}">
-    <mdv:MarkdownViewer.Extensions>
-        <my:NoteExtension Template="{StaticResource NoteTemplate}" />
-    </mdv:MarkdownViewer.Extensions>
-</mdv:MarkdownViewer>
+<Window x:Class="YourApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
+        Title="Markdown" Width="800" Height="600">
+    <ScrollViewer>
+        <mdv:MarkdownViewer Markdown="{Binding Text}" Margin="24,16" />
+    </ScrollViewer>
+</Window>
 ```
 
-Расширения опрашиваются по порядку раньше встроенного разбора, поэтому могут заменить и
-стандартный блок — например, блок кода с языком `mermaid`. Что не узнало ни одно расширение,
-рисуется как обычно; незнакомый контейнер показывает своё содержимое. Общий набор расширений на
-несколько вьюеров задаётся свойством `Extensions` в стиле.
+The font and the text color come from your application.
 
-**Состояние виджета** — свёрнут ли, что выбрано — живёт дольше его контрола: контрол исчезает,
-когда блок уходит из видимого, и пересоздаётся новым текстом. Объект состояния создаёт
-расширение, вьюер хранит его по `NodeId`, а шаблон получает через `MdWidget.State`:
+## Documentation
 
-```csharp
-public override object? CreateState(NodeVm node) => node is NoteVm ? new NoteState() : null;
+The [wiki](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki) describes every feature with a working
+example:
+
+- **Basics:** [Getting Started](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Getting-Started),
+  [Supported Markdown](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Supported-Markdown),
+  [Scrolling and Virtualization](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Scrolling-and-Virtualization).
+- **Working with text:** [Selection](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Selection),
+  [Copying](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Copying),
+  [Links and Anchors](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Links-and-Anchors),
+  [Accessibility](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Accessibility).
+- **Appearance:** [Theming](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Theming),
+  [Styles and Templates](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Styles-and-Templates),
+  [Code Blocks](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Code-Blocks),
+  [Line Numbers](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Line-Numbers).
+- **Extensibility and integration:** [Extensions](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Extensions),
+  [Images](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Images),
+  [Task Lists](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Task-Lists),
+  [Application Links](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Application-Links),
+  [Source Lines and Two Panes](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Source-Lines-and-Two-Panes),
+  [Live Preview](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Live-Preview),
+  [Search Highlighting](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Search-Highlighting).
+
+The repository also has a showcase application with these scenarios:
+
+```bash
+dotnet run --project Markdig.Wpf.Viewer.Showcase
 ```
 
-```xml
-<ToggleButton IsChecked="{Binding (mdx:MdWidget.State).IsExpanded, RelativeSource={RelativeSource Self}}" />
-```
+## License
 
-Виджет может менять высоту и после загрузки — картинка, диаграмма: видимое при этом не сдвигается.
-
-## Выделение и подсветка
-
-Текст выделяется мышью сквозь блоки, в том числе кусками блоков; `Ctrl+A` выделяет всё,
-`Ctrl+C` копирует — и блоки, которых сейчас нет на экране. Снаружи выделением управляют
-`Select(start, length)`, `SelectAll()`, `ClearSelection()`, а читают его `SelectionStart`,
-`SelectionLength`, `SelectedText` и событие `SelectionChanged`. Позиции — в текстовой карте
-`TextMap`: в её сквозном тексте `TextMap.Text` и ищут.
-
-`IsSelectionEnabled="False"` выключает выделение: выделенное снимается, а мышь, `Ctrl+A` и
-`Select` больше ничего не выделяют.
-
-Где кусок карты на экране, говорят `GetRangeRects(range)` — прямоугольники по строкам — и
-`GetRangeBounds(range)` — их общая рамка, обе в координатах вьюера. Так ставят панельку рядом с
-выделением:
-
-```csharp
-var bounds = viewer.GetRangeBounds(new(viewer.SelectionStart, viewer.SelectionLength));
-```
-
-Прямоугольники есть только у блоков, которые сейчас созданы: кусок вне них даёт пустой список и
-`Rect.Empty`.
-
-`Decorations` подсвечивает свои куски карты под выделением — так рисуются найденное или правки:
-
-```csharp
-viewer.Decorations = matches
-    .Select(match => new MdDecoration(new MdTextRange(match.Index, match.Length), FoundBrush))
-    .ToList();
-```
-
-Цвет выделения — ключ темы `Md.Selection.Brush`. Виджет, который реализует `IMdTextSource`, отдаёт
-в карту свой текст и вложенные блоки; без него он неделимый и выделяется целиком, а копируется
-текстом из `IMdCopyText`, если реализует его. Внутри элемента с `MdSelection.IsInteractive="True"`
-выделение не начинается — кнопки и поля ввода узнаются и так.
-
-## Копирование
-
-`Ctrl+C` и `Copy()` кладут в буфер обмена выделенное сразу в двух видах, а программа, куда
-вставляют, берёт понятный ей:
-
-| Формат | Что в нём |
-|---|---|
-| обычный текст | голый текст, как он виден на экране |
-| `MdDataFormats.Markdown` (`text/markdown`) | разметка выделенного байтами UTF-8: кусок одной строки — с начертаниями и ссылками, несколько блоков — ещё и с заголовками, списками, цитатами, блоками кода и таблицами; виджет расширения, выделенный целиком, — своим исходником |
-
-```csharp
-if (Clipboard.GetData(MdDataFormats.Markdown) is MemoryStream stream)
-{
-    var markdown = Encoding.UTF8.GetString(stream.ToArray());
-}
-```
-
-Разметка выделенного записывается заново, поэтому ссылки по метке становятся обычными, а
-`_курсив_` — `*курсивом*`. Без копирования её отдаёт `SelectedMarkdown`.
-
-Перед записью вьюер поднимает стандартное `DataObject.Copying`. Обработчик на вьюере или любом
-его предке может дописать свой формат или отменить копирование через `e.CancelCommand()`:
-
-```csharp
-DataObject.AddCopyingHandler(viewer, (_, e) => e.DataObject.SetData(DataFormats.Html, html));
-```
-
-`IsCopyEnabled="False"` отдаёт `Ctrl+C` приложению: вьюер команду `Copy` не берёт, и она уходит к
-привязке выше, где приложение само решает, что класть в буфер. `Copy()` при этом работает.
-
-```xml
-<Window.CommandBindings>
-    <CommandBinding Command="Copy" Executed="OnCopy" />
-</Window.CommandBindings>
-```
-
-## Строки исходника и две панели
-
-Вьюер переводит строки исходника в позиции на экране и обратно — этого хватает, чтобы
-синхронизировать его с редактором или со вторым вьюером. Строки считаются с нуля, дробная часть
-— доля строки.
-
-| Что | Как |
-|---|---|
-| Где строка | `GetSourceLineOffset(line)` — позиция в координатах вьюера |
-| Какая строка в позиции | `GetSourceLineAt(offset)` |
-| Что сейчас видно | `GetVisibleSourceLine(fraction)` — строка в доле высоты прокрутки; событие `ViewportChanged` |
-| Прокрутить к строке | `ScrollToSourceLine(line, fraction)` — строка встаёт в долю высоты прокрутки |
-| Подсветить строки | `TextMap.RangeOfSourceLines(start, end)` → кусок для `Decorations` |
-
-Две панели с разными текстами, как в диффе, синхронизирует `MdScrollSync`. Соответствие строк
-задаёт `MdLineMap` по опорным парам — например, по неизменённым строкам; между опорами строки
-пересчитываются линейно. Ведущая панель — та, с которой работает пользователь.
-
-```csharp
-var anchors = unchanged.SelectMany(pair => new[]
-{
-    ((double)pair.Left, (double)pair.Right),
-    (pair.Left + 1.0, pair.Right + 1.0)
-});
-var sync = new MdScrollSync(leftViewer, rightViewer, new MdLineMap(anchors));
-```
-
-Прокрутка вокруг вьюера должна быть попиксельной: логическая прокрутка списков сдвигает
-элементами, и строку в нужную точку так не поставить.
-
-## Номера строк
-
-`ShowSourceLineNumbers` показывает слева поля с номерами строк исходника — у каждой строки, у
-которой есть своё место на экране: строки текста, пустые строки, шапка блока кода и его строки.
-Закрывающее ограждение блока кода, разделитель таблицы и подчёркивание заголовка своего места не
-имеют и номера не получают. Ширина полей общая на документ. `ShowCodeLineNumbers` нумерует строки
-внутри блоков кода; свойство наследуется, поэтому его задают и один раз на окно или список
-вьюеров. Номера показываются с единицы, как в редакторе.
-
-```xml
-<mdv:MarkdownViewer Markdown="{Binding Text}" ShowSourceLineNumbers="True" />
-
-<ItemsControl mdv:MarkdownViewer.ShowCodeLineNumbers="True" ItemsSource="{Binding Messages}" />
-```
-
-Свой шаблон вьюера сохраняет поля, если в нём есть `p:MdLineGutter x:Name="PART_Gutter"`.
-
-## Новый текст
-
-Новый `Markdown` ложится на показанный документ правками, так что вьюер годится для живого
-предпросмотра и потоковых ответов. Блоки, которые не изменились или изменились на своём месте,
-остаются в своих контейнерах вместе с состоянием виджетов, известные высоты не сбрасываются, а
-видимое не уезжает, когда текст меняется выше него.
-
-У каждого элемента модели есть `NodeId` — он переживает новый текст, пока элемент не изменился
-или изменился на своём месте. Вид виджета переживает правку, если расширение отдаёт для него один
-и тот же `DataTemplate`, а не создаёт новый на каждый вызов.
-
-## Ссылки
-
-По умолчанию нажатая ссылка на веб или почту (`http`, `https`, `mailto`, а также `www.…` без
-схемы) открывается системным обработчиком; ссылки с другими схемами и пути к файлам наружу не
-уходят. Но сначала вьюер спрашивает приложение: поднимает всплывающее `MarkdownLink.Navigate`, и
-обработанное событие внешнее открытие отменяет.
-
-Это и есть точка для своих ссылок вида `[подпись](своя_схема:идентификатор)`. Подключается она
-двумя способами, оба — на вьюер или любого его предка:
-
-```xml
-<!-- обработчиком -->
-<mdv:MarkdownViewer Markdown="{Binding Text}"
-                    mdv:MarkdownLink.Navigate="OnMarkdownLink" />
-
-<!-- командой; параметр — Href -->
-<mdv:MarkdownViewer Markdown="{Binding Text}"
-                    mdv:MarkdownLink.Command="{Binding OpenLinkCommand}" />
-```
-
-```csharp
-private void OnMarkdownLink(object sender, MarkdownLinkEventArgs e)
-{
-    if (!MyId.TryParse(e.Href, out var id))
-        return;         // не наша ссылка — пусть открывается наружу
-
-    Open(id);
-    e.Handled = true;   // наша — наружу не отдаём
-}
-```
-
-Цель ссылки приходит дважды: `Href` — строка ровно из markdown, `Uri` — её разбор. Для своих
-схем нужен `Href`: схема с подчёркиванием (`codex_page:...`) по RFC 3986 незаконна, и такой
-адрес разбирается в относительный `Uri`. Команда, у которой `CanExecute(href)` вернул `false`,
-событие не гасит — ссылка уходит наружу, как если бы команды не было вовсе.
+[MIT](https://github.com/porohkun/Markdig.Wpf.Viewer/blob/main/LICENSE).
