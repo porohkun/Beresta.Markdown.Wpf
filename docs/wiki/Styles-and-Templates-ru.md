@@ -7,7 +7,9 @@
 ## Начертания
 
 Жирный, курсив, зачёркнутый и ссылки оформляются стилями `Span` и `Hyperlink` с ключами
-`Md.Strong.Style`, `Md.Emphasis.Style`, `Md.Strike.Style` и `Md.Link.Style`.
+`Md.Strong.Style`, `Md.Emphasis.Style`, `Md.Strike.Style` и `Md.Link.Style`. У маркера, вставки,
+названия произведения и сокращения — тоже стили `Span`: `Md.Marked.Style`, `Md.Inserted.Style`,
+`Md.Cite.Style`, `Md.Abbreviation.Style`.
 
 **`App.xaml`**, ресурсы приложения:
 
@@ -43,6 +45,7 @@
 | `Md.Image.Style` | `p:MdImage` | картинки |
 | `Md.FootnoteLink.Style` | `p:MdFootnoteLink` | ссылки на сноски и `↩` |
 | `Md.Footnote.MarkerStyle` | `TextBlock` | номер в определении сноски |
+| `Md.Figure.CaptionStyle` | `p:MdTextBlock` | подписи фигур |
 
 Цитата на подкрашенном фоне вместо черты слева:
 
@@ -114,10 +117,13 @@
 | `CodeBlockTemplate` | `vm:CodeBlockVm` | `InfoString`, `Syntax`, `Code`, `Runs`, `IsFenced` |
 | `QuoteTemplate` | `vm:QuoteVm` | `Blocks` |
 | `ListTemplate` | `vm:ListVm` | `Ordered`, `Start`, `Depth`, `Items` из `vm:ListItemVm` (`MarkerText`, `Blocks`) |
-| `TableTemplate` | `vm:TableVm` | `ColumnCount`, `Rows`, `Alignments` |
+| `TableTemplate` | `vm:TableVm` | `ColumnCount`, `Rows`, `Alignments`; у ячейки `Inlines` или, в сетке-таблице, `Blocks` |
 | `HorizontalRuleTemplate` | `vm:ThematicBreakVm` | — |
 | `BlankLineTemplate` | `vm:BlankLineVm` | — |
 | `FootnoteTemplate` | `vm:FootnoteVm` | `Order`, `Label`, `Blocks` |
+| `FigureTemplate` | `vm:FigureVm` | `Blocks`, подписи — среди них |
+| `FigureCaptionTemplate` | `vm:FigureCaptionVm` | `Inlines` |
+| `FooterTemplate` | `vm:FooterVm` | `Blocks` |
 | `ImageTemplate` | `vm:ImageVm`, строчный | `Url`, `Alt`, `Title`, `Width`, `Height`, `Href` |
 | `TaskTemplate` | `vm:TaskVm`, строчный | `IsChecked` |
 | `FootnoteLinkTemplate` | `vm:FootnoteLinkVm`, строчный | `Order`, `Index`, `IsBack`, `Target` |

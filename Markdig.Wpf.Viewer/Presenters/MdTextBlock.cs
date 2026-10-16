@@ -75,6 +75,38 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
+    /// <summary>Стиль выделения маркером (<c>Span</c>).</summary>
+    public static readonly DependencyProperty MarkedStyleProperty =
+        DependencyProperty.Register(
+            nameof(MarkedStyle),
+            typeof(Style),
+            typeof(MdTextBlock),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
+
+    /// <summary>Стиль вставки (<c>Span</c>).</summary>
+    public static readonly DependencyProperty InsertedStyleProperty =
+        DependencyProperty.Register(
+            nameof(InsertedStyle),
+            typeof(Style),
+            typeof(MdTextBlock),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
+
+    /// <summary>Стиль названия произведения (<c>Span</c>).</summary>
+    public static readonly DependencyProperty CiteStyleProperty =
+        DependencyProperty.Register(
+            nameof(CiteStyle),
+            typeof(Style),
+            typeof(MdTextBlock),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
+
+    /// <summary>Стиль сокращения с расшифровкой в подсказке (<c>Span</c>).</summary>
+    public static readonly DependencyProperty AbbreviationStyleProperty =
+        DependencyProperty.Register(
+            nameof(AbbreviationStyle),
+            typeof(Style),
+            typeof(MdTextBlock),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
+
     private static readonly DependencyProperty LayerProperty =
         MdSelection.LayerProperty.AddOwner(
             typeof(MdTextBlock),
@@ -154,6 +186,30 @@ public class MdTextBlock : TextBlock
     {
         get => (Style?)GetValue(LinkStyleProperty);
         set => SetValue(LinkStyleProperty, value);
+    }
+
+    public Style? MarkedStyle
+    {
+        get => (Style?)GetValue(MarkedStyleProperty);
+        set => SetValue(MarkedStyleProperty, value);
+    }
+
+    public Style? InsertedStyle
+    {
+        get => (Style?)GetValue(InsertedStyleProperty);
+        set => SetValue(InsertedStyleProperty, value);
+    }
+
+    public Style? CiteStyle
+    {
+        get => (Style?)GetValue(CiteStyleProperty);
+        set => SetValue(CiteStyleProperty, value);
+    }
+
+    public Style? AbbreviationStyle
+    {
+        get => (Style?)GetValue(AbbreviationStyleProperty);
+        set => SetValue(AbbreviationStyleProperty, value);
     }
 
     /// <summary>Подсвеченные куски своего текста в порядке рисования.</summary>
@@ -498,6 +554,28 @@ public class MdTextBlock : TextBlock
         if (run.Bold)
         {
             current = Wrap(current, StrongStyle, span => span.FontWeight = FontWeights.SemiBold);
+        }
+
+        if (run.Cite)
+        {
+            current = Wrap(current, CiteStyle, span => span.FontStyle = FontStyles.Italic);
+        }
+
+        if (run.Inserted)
+        {
+            current = Wrap(current, InsertedStyle, span => span.TextDecorations = System.Windows.TextDecorations.Underline);
+        }
+
+        if (run.Marked)
+        {
+            current = Wrap(current, MarkedStyle, span => span.Background = Brushes.Yellow);
+        }
+
+        if (run.Abbreviation is { } expansion)
+        {
+            var abbreviation = Wrap(current, AbbreviationStyle, _ => { });
+            abbreviation.ToolTip = expansion;
+            current = abbreviation;
         }
 
         if (run.Subscript || run.Superscript)

@@ -35,6 +35,11 @@ public sealed class SelectedMarkdownTests
     [InlineData("- [ ] task\n- [x] done")]
     [InlineData("snake_case and 2 * 3")]
     [InlineData("see <https://example.com>")]
+    [InlineData("==mark== and ++ins++ and \"\"Cite\"\"")]
+    [InlineData("c. three\nd. four")]
+    [InlineData("iv. four\nv. five")]
+    [InlineData("^^^\n![img](a.png)\n^^^ Caption")]
+    [InlineData("^^ Footer text")]
     public void Выделенный_целиком_документ_пишется_как_был(string markdown)
     {
         CopyAll(markdown).Should().Be(markdown);
@@ -48,6 +53,10 @@ public sealed class SelectedMarkdownTests
     [InlineData("    indented code", "```\nindented code\n```")]
     [InlineData("a &amp; b", "a & b")]
     [InlineData("```cs\r\nx\r\ny\r\n```\r\n\r\ntext\r\nmore", "```cs\nx\ny\n```\n\ntext\nmore")]
+    [InlineData("x^2^ and H~2~O", "x<sup>2</sup> and H<sub>2</sub>O")]
+    [InlineData("<mark>m</mark> <u>u</u> <cite>c</cite>", "==m== ++u++ \"\"c\"\"")]
+    [InlineData("*[HTML]: Hyper Text\n\nHTML here", "HTML here")]
+    [InlineData("+---+---+\n| a | b |\n+===+===+\n| 1 | 2 |\n|   |   |\n| x | y |\n+---+---+", "| a | b |\n| --- | --- |\n| 1<br>x | 2<br>y |")]
     public void Разметка_записывается_заново_а_не_копируется_из_исходника(string markdown, string expected)
     {
         CopyAll(markdown).Should().Be(expected);

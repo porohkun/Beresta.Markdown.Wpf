@@ -134,6 +134,10 @@ public sealed class MdTextMap
                     TakeInlines(heading.Inlines);
                     break;
 
+                case FigureCaptionVm caption:
+                    TakeInlines(caption.Inlines);
+                    break;
+
                 case CodeBlockVm code when TryGetRange(code.Runs, out var codeRange):
                     var lineStart = 0;
                     var lines = code.Code.Split('\n');
@@ -161,7 +165,7 @@ public sealed class MdTextMap
 
                     break;
 
-                case QuoteVm or ListVm or BlankLineVm:
+                case QuoteVm or ListVm or BlankLineVm or FigureVm or FooterVm:
                     break;
 
                 default:
@@ -194,6 +198,9 @@ public sealed class MdTextMap
                 return line;
 
             case HeadingVm heading when LineIn(heading.Inlines, position) is { } line:
+                return line;
+
+            case FigureCaptionVm caption when LineIn(caption.Inlines, position) is { } line:
                 return line;
 
             case CodeBlockVm code when TryGetRange(code.Runs, out var codeRange):
@@ -408,6 +415,18 @@ public sealed class MdTextMap
                     AppendBlocks(quote.Blocks);
                     break;
 
+                case FigureVm figure:
+                    AppendBlocks(figure.Blocks);
+                    break;
+
+                case FigureCaptionVm caption:
+                    AppendInlines(caption.Inlines);
+                    break;
+
+                case FooterVm footer:
+                    AppendBlocks(footer.Blocks);
+                    break;
+
                 case FootnoteVm footnote:
                     AppendBlocks(footnote.Blocks);
                     Anchors.TryAdd($"fn:{footnote.Order}", new(start, Text.Length - start));
@@ -441,7 +460,15 @@ public sealed class MdTextMap
                                 Text.Append('\t');
                             }
 
-                            AppendInlines(table.Rows[r].Cells[c].Inlines);
+                            var cell = table.Rows[r].Cells[c];
+                            if (cell.HasBlocks)
+                            {
+                                AppendBlocks(cell.Blocks);
+                            }
+                            else
+                            {
+                                AppendInlines(cell.Inlines);
+                            }
                         }
                     }
 

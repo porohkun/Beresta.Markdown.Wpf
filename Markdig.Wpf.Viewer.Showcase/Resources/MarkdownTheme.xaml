@@ -32,6 +32,11 @@
     <SolidColorBrush x:Key="Md.Image.AltForeground" Color="{DynamicResource ThirdlyTextColor}" />
     <SolidColorBrush x:Key="Md.Footnote.MarkerForeground" Color="{DynamicResource ThirdlyTextColor}" />
 
+    <!-- Маркер, подпись фигуры, подвал -->
+    <SolidColorBrush x:Key="Md.Marked.Background" Color="{DynamicResource WarningColor}" Opacity="0.35" />
+    <SolidColorBrush x:Key="Md.Figure.CaptionForeground" Color="{DynamicResource ThirdlyTextColor}" />
+    <SolidColorBrush x:Key="Md.Footer.Foreground" Color="{DynamicResource ThirdlyTextColor}" />
+
     <!-- Поля с номерами строк -->
     <SolidColorBrush x:Key="Md.Gutter.Foreground" Color="{DynamicResource ThirdlyTextColor}" />
 

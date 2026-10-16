@@ -14,6 +14,9 @@ internal sealed partial class MdMarkdownWriter
     private static readonly Marker Bold = new("**", "**", Emphasis: true);
     private static readonly Marker Italic = new("*", "*", Emphasis: true);
     private static readonly Marker Strike = new("~~", "~~", Emphasis: true);
+    private static readonly Marker Marked = new("==", "==", Emphasis: true);
+    private static readonly Marker Inserted = new("++", "++", Emphasis: true);
+    private static readonly Marker Cite = new("\"\"", "\"\"", Emphasis: true);
 
     private readonly MdTextMap _map;
     private readonly string _source;
@@ -142,6 +145,21 @@ internal sealed partial class MdMarkdownWriter
             markers.Add(Italic);
         }
 
+        if (run.Marked)
+        {
+            markers.Add(Marked);
+        }
+
+        if (run.Inserted)
+        {
+            markers.Add(Inserted);
+        }
+
+        if (run.Cite)
+        {
+            markers.Add(Cite);
+        }
+
         if (run.Kbd)
         {
             markers.Add(new("<kbd>", "</kbd>", Emphasis: false));
@@ -202,6 +220,15 @@ internal sealed partial class MdMarkdownWriter
 
             case TableVm table:
                 return Table(table);
+
+            case FigureVm figure:
+                return Figure(figure);
+
+            case FigureCaptionVm caption:
+                return [Inlines(caption.Inlines)];
+
+            case FooterVm footer:
+                return Blocks(footer.Blocks).Select(line => line.Length == 0 ? "^^" : "^^ " + line);
 
             case ThematicBreakVm:
                 _other = true;
@@ -265,7 +292,10 @@ internal sealed partial class MdMarkdownWriter
         return lines;
     }
 
-    /// <summary>Таблица из задетых строк и, всегда, строки заголовка.</summary>
+    /// <summary>
+    /// Таблица из задетых строк и, всегда, строки заголовка. Выделение внутри одной ячейки из
+    /// блоков пишется её блоками.
+    /// </summary>
     private List<string> Table(TableVm table)
     {
         foreach (var cell in table.Rows.SelectMany(row => row.Cells))
@@ -273,8 +303,16 @@ internal sealed partial class MdMarkdownWriter
             _cells.Add(cell.Inlines);
         }
 
+        var inner = table.Rows
+            .SelectMany(row => row.Cells)
+            .FirstOrDefault(cell => cell.HasBlocks && CellRange(cell) is { } range && range.Start <= _selection.Start && _selection.End <= range.End);
+        if (inner is not null)
+        {
+            return Blocks(inner.Blocks);
+        }
+
         var touched = table.Rows
-            .Where(row => row.Cells.Any(cell => _map.TryGetRange(cell.Inlines, out var range) && Touches(range)))
+            .Where(row => row.Cells.Any(cell => CellRange(cell) is { } range && Touches(range)))
             .ToList();
         if (touched.Count == 0)
         {
@@ -294,9 +332,47 @@ internal sealed partial class MdMarkdownWriter
     private string Row(TableRowVm row, bool whole)
     {
         var cells = row.Cells
-            .Select(cell => Inlines(cell.Inlines, whole).Replace("|", "\\|").Replace('\n', ' '))
+            .Select(cell => (cell.HasBlocks ? CellText(cell, whole) : Inlines(cell.Inlines, whole)).Replace("|", "\\|").Replace('\n', ' '))
             .Select(cell => cell.Length == 0 ? " " : $" {cell} ");
         return "|" + string.Join("|", cells) + "|";
+    }
+
+    /// <summary>Кусок карты ячейки: её строки текста или её блоков.</summary>
+    private MdTextRange? CellRange(TableCellVm cell)
+    {
+        if (!cell.HasBlocks)
+        {
+            return _map.TryGetRange(cell.Inlines, out var range) ? range : null;
+        }
+
+        return _ranges.TryGetValue(cell.Blocks[0], out var first) && _ranges.TryGetValue(cell.Blocks[^1], out var last)
+            ? MdTextRange.Between(first.Start, last.End)
+            : null;
+    }
+
+    /// <summary>Ячейка из блоков строкой таблицы: её текст, блоки — через <c>&lt;br&gt;</c>.</summary>
+    private string CellText(TableCellVm cell, bool whole)
+    {
+        if (CellRange(cell) is not { } range)
+        {
+            return string.Empty;
+        }
+
+        var text = _map.GetText(whole ? range : range.Intersect(_selection));
+        return string.Join("<br>", text.Split('\n').Where(line => line.Length > 0).Select(Escape));
+    }
+
+    /// <summary>Фигура в ограждении <c>^^^</c>; подпись — на открывающей или закрывающей строке, где была.</summary>
+    private List<string> Figure(FigureVm figure)
+    {
+        var opening = figure.Blocks is [FigureCaptionVm first, ..] ? first : null;
+        var closing = figure.Blocks is [.., FigureCaptionVm last] && !ReferenceEquals(last, opening) ? last : null;
+        var content = Blocks(figure.Blocks.Where(block => block is not FigureCaptionVm).ToList());
+
+        return [Fence(opening), .. content, Fence(closing)];
+
+        string Fence(FigureCaptionVm? caption)
+            => caption is not null && Inlines(caption.Inlines) is { Length: > 0 } text ? "^^^ " + text : "^^^";
     }
 
     /// <summary>Виджет целиком — его исходником; кусок виджета — тем, что он отдаёт в карту.</summary>

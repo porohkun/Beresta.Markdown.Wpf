@@ -7,7 +7,9 @@ the smallest level that does the job.
 ## Inline formatting
 
 Bold, italic, strikethrough and links are styled by `Span` and `Hyperlink` styles with the keys
-`Md.Strong.Style`, `Md.Emphasis.Style`, `Md.Strike.Style` and `Md.Link.Style`.
+`Md.Strong.Style`, `Md.Emphasis.Style`, `Md.Strike.Style` and `Md.Link.Style`. Marked and inserted
+text, titles of works and abbreviations have `Span` styles too: `Md.Marked.Style`,
+`Md.Inserted.Style`, `Md.Cite.Style`, `Md.Abbreviation.Style`.
 
 **`App.xaml`**, the application resources:
 
@@ -43,6 +45,7 @@ rest of the theme.
 | `Md.Image.Style` | `p:MdImage` | images |
 | `Md.FootnoteLink.Style` | `p:MdFootnoteLink` | footnote references and `↩` |
 | `Md.Footnote.MarkerStyle` | `TextBlock` | the number of a footnote definition |
+| `Md.Figure.CaptionStyle` | `p:MdTextBlock` | figure captions |
 
 A quote on a tinted background instead of a bar on the left:
 
@@ -115,10 +118,13 @@ The data context of a template is the model of its block — an immutable record
 | `CodeBlockTemplate` | `vm:CodeBlockVm` | `InfoString`, `Syntax`, `Code`, `Runs`, `IsFenced` |
 | `QuoteTemplate` | `vm:QuoteVm` | `Blocks` |
 | `ListTemplate` | `vm:ListVm` | `Ordered`, `Start`, `Depth`, `Items` of `vm:ListItemVm` (`MarkerText`, `Blocks`) |
-| `TableTemplate` | `vm:TableVm` | `ColumnCount`, `Rows`, `Alignments` |
+| `TableTemplate` | `vm:TableVm` | `ColumnCount`, `Rows`, `Alignments`; a cell has `Inlines` or, in a grid table, `Blocks` |
 | `HorizontalRuleTemplate` | `vm:ThematicBreakVm` | — |
 | `BlankLineTemplate` | `vm:BlankLineVm` | — |
 | `FootnoteTemplate` | `vm:FootnoteVm` | `Order`, `Label`, `Blocks` |
+| `FigureTemplate` | `vm:FigureVm` | `Blocks`, the captions among them |
+| `FigureCaptionTemplate` | `vm:FigureCaptionVm` | `Inlines` |
+| `FooterTemplate` | `vm:FooterVm` | `Blocks` |
 | `ImageTemplate` | `vm:ImageVm`, inline | `Url`, `Alt`, `Title`, `Width`, `Height`, `Href` |
 | `TaskTemplate` | `vm:TaskVm`, inline | `IsChecked` |
 | `FootnoteLinkTemplate` | `vm:FootnoteLinkVm`, inline | `Order`, `Index`, `IsBack`, `Target` |

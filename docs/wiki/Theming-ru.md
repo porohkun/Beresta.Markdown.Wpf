@@ -125,6 +125,9 @@ public void SetDarkMarkdown(bool dark)
 | Цитата | `Md.Quote.BorderBrush`, `.BorderThickness`, `.Padding`, `.Margin` |
 | Список | `Md.List.Margin`, `Md.List.MarkerWidth`, `Md.List.ItemSpacing` |
 | Таблица | `Md.Table.BorderBrush`, `.BorderThickness`, `.CellPadding`, `.HeaderBackground` |
+| Маркер, сокращение | `Md.Marked.Background`, `Md.Abbreviation.UnderlineBrush` |
+| Фигура | `Md.Figure.Margin`, `.CaptionForeground`, `.CaptionFontSize` |
+| Подвал | `Md.Footer.Margin`, `.Foreground`, `.FontSize` |
 | Картинка | `Md.Image.AltForeground` |
 | Задача | `Md.Task.Margin` |
 | Сноска | `Md.Footnote.MarkerWidth`, `Md.Footnote.MarkerForeground`, `Md.Footnote.LinkFontSize` |

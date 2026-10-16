@@ -26,6 +26,33 @@
     </Style>
     <Style x:Key="Md.Link.Style" TargetType="{x:Type Hyperlink}" />
 
+    <!-- ======== Маркер, вставка, название произведения, сокращение ======== -->
+    <SolidColorBrush x:Key="Md.Marked.Background" Color="#FFE066" Opacity="0.6" />
+    <Brush x:Key="Md.Abbreviation.UnderlineBrush">Gray</Brush>
+    <Style x:Key="Md.Marked.Style" TargetType="{x:Type Span}">
+        <Setter Property="Background" Value="{DynamicResource Md.Marked.Background}" />
+    </Style>
+    <Style x:Key="Md.Inserted.Style" TargetType="{x:Type Span}">
+        <Setter Property="TextDecorations" Value="Underline" />
+    </Style>
+    <Style x:Key="Md.Cite.Style" TargetType="{x:Type Span}">
+        <Setter Property="FontStyle" Value="Italic" />
+    </Style>
+    <Style x:Key="Md.Abbreviation.Style" TargetType="{x:Type Span}">
+        <Setter Property="Cursor" Value="Help" />
+        <Setter Property="TextDecorations">
+            <Setter.Value>
+                <TextDecorationCollection>
+                    <TextDecoration Location="Underline" PenOffset="1">
+                        <TextDecoration.Pen>
+                            <Pen Thickness="1" DashStyle="{x:Static DashStyles.Dot}" Brush="{StaticResource Md.Abbreviation.UnderlineBrush}" />
+                        </TextDecoration.Pen>
+                    </TextDecoration>
+                </TextDecorationCollection>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ======== Md.InlineCode ======== -->
     <FontFamily x:Key="Md.InlineCode.FontFamily">Consolas</FontFamily>
     <sys:Double x:Key="Md.InlineCode.FontSize">14</sys:Double>
@@ -51,6 +78,14 @@
     <GridLength x:Key="Md.Footnote.MarkerWidth">24</GridLength>
     <Brush x:Key="Md.Footnote.MarkerForeground">Gray</Brush>
     <sys:Double x:Key="Md.Footnote.LinkFontSize">11</sys:Double>
+
+    <!-- ======== Md.Figure, Md.Footer ======== -->
+    <Thickness x:Key="Md.Figure.Margin">0,4,0,8</Thickness>
+    <Brush x:Key="Md.Figure.CaptionForeground">Gray</Brush>
+    <sys:Double x:Key="Md.Figure.CaptionFontSize">12</sys:Double>
+    <Thickness x:Key="Md.Footer.Margin">0,4,0,0</Thickness>
+    <Brush x:Key="Md.Footer.Foreground">Gray</Brush>
+    <sys:Double x:Key="Md.Footer.FontSize">12</sys:Double>
 
     <!-- ======== Md.Heading ======== -->
     <!-- Md.Heading.FontFamily и Md.Heading.Foreground не заданы: заголовок берёт их у приложения -->
@@ -273,6 +308,16 @@
         <Setter Property="EmphasisStyle" Value="{DynamicResource Md.Emphasis.Style}" />
         <Setter Property="StrikeStyle" Value="{DynamicResource Md.Strike.Style}" />
         <Setter Property="LinkStyle" Value="{DynamicResource Md.Link.Style}" />
+        <Setter Property="MarkedStyle" Value="{DynamicResource Md.Marked.Style}" />
+        <Setter Property="InsertedStyle" Value="{DynamicResource Md.Inserted.Style}" />
+        <Setter Property="CiteStyle" Value="{DynamicResource Md.Cite.Style}" />
+        <Setter Property="AbbreviationStyle" Value="{DynamicResource Md.Abbreviation.Style}" />
+    </Style>
+
+    <Style x:Key="Md.Figure.CaptionStyle" TargetType="{x:Type p:MdTextBlock}" BasedOn="{StaticResource Md.Paragraph.Style}">
+        <Setter Property="FontSize" Value="{DynamicResource Md.Figure.CaptionFontSize}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Figure.CaptionForeground}" />
+        <Setter Property="FontStyle" Value="Italic" />
     </Style>
 
     <Style x:Key="Md.Heading.Style" TargetType="{x:Type p:MdHeadingBlock}">
@@ -285,6 +330,10 @@
         <Setter Property="EmphasisStyle" Value="{DynamicResource Md.Emphasis.Style}" />
         <Setter Property="StrikeStyle" Value="{DynamicResource Md.Strike.Style}" />
         <Setter Property="LinkStyle" Value="{DynamicResource Md.Link.Style}" />
+        <Setter Property="MarkedStyle" Value="{DynamicResource Md.Marked.Style}" />
+        <Setter Property="InsertedStyle" Value="{DynamicResource Md.Inserted.Style}" />
+        <Setter Property="CiteStyle" Value="{DynamicResource Md.Cite.Style}" />
+        <Setter Property="AbbreviationStyle" Value="{DynamicResource Md.Abbreviation.Style}" />
         <Setter Property="Margin" Value="{DynamicResource Md.Heading6.Margin}" />
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading6.FontSize}" />
         <Setter Property="FontWeight" Value="{DynamicResource Md.Heading6.FontWeight}" />
@@ -540,8 +589,17 @@
                             BorderThickness="{DynamicResource Md.Table.BorderThickness}"
                             Padding="{DynamicResource Md.Table.CellPadding}"
                             Background="{DynamicResource Md.Table.HeaderBackground}">
-                        <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
+                        <Grid>
+                            <p:MdTextBlock x:Name="Text" Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
+                            <p:MdBlocksPresenter x:Name="Blocks" Blocks="{Binding Blocks}" Visibility="Collapsed" />
+                        </Grid>
                     </Border>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding HasBlocks}" Value="True">
+                            <Setter TargetName="Text" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="Blocks" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
                 </DataTemplate>
             </Setter.Value>
         </Setter>
@@ -551,8 +609,17 @@
                     <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
                             BorderThickness="{DynamicResource Md.Table.BorderThickness}"
                             Padding="{DynamicResource Md.Table.CellPadding}">
-                        <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
+                        <Grid>
+                            <p:MdTextBlock x:Name="Text" Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
+                            <p:MdBlocksPresenter x:Name="Blocks" Blocks="{Binding Blocks}" Visibility="Collapsed" />
+                        </Grid>
                     </Border>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding HasBlocks}" Value="True">
+                            <Setter TargetName="Text" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="Blocks" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
                 </DataTemplate>
             </Setter.Value>
         </Setter>
@@ -644,6 +711,34 @@
                 <p:MdFootnoteLink Link="{Binding}" Style="{DynamicResource Md.FootnoteLink.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.FootnoteLinkTemplate>
+
+        <s:MdStyleProvider.FigureTemplate>
+            <DataTemplate DataType="{x:Type vm:FigureVm}">
+                <p:MdBlocksPresenter Blocks="{Binding Blocks}"
+                                     Margin="{DynamicResource Md.Figure.Margin}"
+                                     TextBlock.TextAlignment="Center" />
+            </DataTemplate>
+        </s:MdStyleProvider.FigureTemplate>
+
+        <s:MdStyleProvider.FigureCaptionTemplate>
+            <DataTemplate DataType="{x:Type vm:FigureCaptionVm}">
+                <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Figure.CaptionStyle}" />
+            </DataTemplate>
+        </s:MdStyleProvider.FigureCaptionTemplate>
+
+        <s:MdStyleProvider.FooterTemplate>
+            <DataTemplate DataType="{x:Type vm:FooterVm}">
+                <p:MdBlocksPresenter Blocks="{Binding Blocks}" Margin="{DynamicResource Md.Footer.Margin}">
+                    <p:MdBlocksPresenter.Resources>
+                        <!-- Абзацы подвала — мелким текстом: свой стиль абзаца на основе общего -->
+                        <Style x:Key="Md.Paragraph.Style" TargetType="{x:Type p:MdTextBlock}" BasedOn="{StaticResource Md.Paragraph.Style}">
+                            <Setter Property="FontSize" Value="{DynamicResource Md.Footer.FontSize}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Md.Footer.Foreground}" />
+                        </Style>
+                    </p:MdBlocksPresenter.Resources>
+                </p:MdBlocksPresenter>
+            </DataTemplate>
+        </s:MdStyleProvider.FooterTemplate>
 
     </s:MdStyleProvider>
 

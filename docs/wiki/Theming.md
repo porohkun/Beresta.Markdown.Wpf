@@ -126,6 +126,9 @@ default. Translate them in the application resources.
 | Quote | `Md.Quote.BorderBrush`, `.BorderThickness`, `.Padding`, `.Margin` |
 | List | `Md.List.Margin`, `Md.List.MarkerWidth`, `Md.List.ItemSpacing` |
 | Table | `Md.Table.BorderBrush`, `.BorderThickness`, `.CellPadding`, `.HeaderBackground` |
+| Marked text, abbreviation | `Md.Marked.Background`, `Md.Abbreviation.UnderlineBrush` |
+| Figure | `Md.Figure.Margin`, `.CaptionForeground`, `.CaptionFontSize` |
+| Footer | `Md.Footer.Margin`, `.Foreground`, `.FontSize` |
 | Image | `Md.Image.AltForeground` |
 | Task | `Md.Task.Margin` |
 | Footnote | `Md.Footnote.MarkerWidth`, `Md.Footnote.MarkerForeground`, `Md.Footnote.LinkFontSize` |

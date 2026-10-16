@@ -3,9 +3,14 @@
 using Extensions;
 using Identity;
 using System.Globalization;
+using System.Net;
 using System.Text;
 using Markdig;
+using Markdig.Extensions.Abbreviations;
+using Markdig.Extensions.Figures;
+using Markdig.Extensions.Footers;
 using Markdig.Extensions.Footnotes;
+using Markdig.Extensions.SmartyPants;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.TaskLists;
 using Markdig.Renderers.Html;
@@ -25,13 +30,19 @@ internal sealed class ModelBuilder
     private readonly List<int> _lineStarts;
     private readonly IReadOnlyList<MdExtension> _extensions;
     private readonly ModelIdentity _identity;
+    private readonly IReadOnlyDictionary<SmartyPantType, string>? _smartyPants;
 
-    private ModelBuilder(string source, IReadOnlyList<MdExtension> extensions, ModelIdentity identity)
+    private ModelBuilder(
+        string source,
+        IReadOnlyList<MdExtension> extensions,
+        ModelIdentity identity,
+        IReadOnlyDictionary<SmartyPantType, string>? smartyPants)
     {
         _source = source;
         _lineStarts = FindLineStarts(source);
         _extensions = extensions;
         _identity = identity;
+        _smartyPants = smartyPants;
     }
 
     /// <summary>
@@ -46,22 +57,27 @@ internal sealed class ModelBuilder
     {
         markdown ??= string.Empty;
         identity ??= new();
+        pipeline ??= DefaultPipeline;
 
-        var document = Markdown.Parse(markdown, pipeline ?? DefaultPipeline);
+        var document = Markdown.Parse(markdown, pipeline);
         identity.Match(document, markdown);
 
-        var blocks = new ModelBuilder(markdown, extensions ?? [], identity).ConvertBlocks(document, listDepth: 0);
+        var smartyPants = pipeline.Extensions.Find<SmartyPantsExtension>()?.Options.Mapping;
+        var blocks = new ModelBuilder(markdown, extensions ?? [], identity, smartyPants).ConvertBlocks(document, listDepth: 0);
         identity.Commit();
         return blocks;
     }
 
     /// <summary>
     /// Блоки контейнера с отступами на месте пустых строк. Определения сносок, которые Markdig
-    /// собирает в конец документа, встают туда, где они написаны.
+    /// собирает в конец документа, встают туда, где они написаны. В ячейке сетки-таблицы
+    /// <paramref name="gapsAreBlank"/>: строка между её блоками пуста внутри столбца, даже если в
+    /// соседних столбцах на ней текст.
     /// </summary>
     internal List<BlockVm> ConvertBlocks(
         ContainerBlock container,
-        int listDepth)
+        int listDepth,
+        bool gapsAreBlank = false)
     {
         var blocks = new List<BlockVm>();
         int? previousEnd = null;
@@ -81,7 +97,7 @@ internal sealed class ModelBuilder
             var (start, end) = GetLines(child);
             if (previousEnd is { } previous)
             {
-                AddBlankLines(blocks, previous, start, blocks[^1].NodeId);
+                AddBlankLines(blocks, previous, start, blocks[^1].NodeId, gapsAreBlank);
             }
 
             blocks.AddRange(converted);
@@ -139,9 +155,18 @@ internal sealed class ModelBuilder
                 state = state with { Italic = true };
             }
         }
-        else if (emphasis.DelimiterChar == '~' && emphasis.DelimiterCount == 2)
+        else
         {
-            state = state with { Strike = true };
+            state = (emphasis.DelimiterChar, emphasis.DelimiterCount) switch
+            {
+                ('~', 2) => state with { Strike = true },
+                ('~', 1) => state with { Subscript = true },
+                ('^', 1) => state with { Superscript = true },
+                ('=', 2) => state with { Marked = true },
+                ('+', 2) => state with { Inserted = true },
+                ('"', 2) => state with { Cite = true },
+                _ => state
+            };
         }
 
         return state;
@@ -253,6 +278,15 @@ internal sealed class ModelBuilder
             case Footnote footnote:
                 return [Stamp(new FootnoteVm(footnote.Order, footnote.Label ?? string.Empty, ConvertBlocks(footnote, listDepth)), block)];
 
+            case Figure figure:
+                return [Stamp(new FigureVm(ConvertBlocks(figure, listDepth)), block)];
+
+            case FigureCaption caption:
+                return [Stamp(new FigureCaptionVm(ConvertInlines(caption.Inline)), block)];
+
+            case FooterBlock footer:
+                return [Stamp(new FooterVm(ConvertBlocks(footer, listDepth)), block)];
+
             case HtmlBlock { Type: HtmlBlockType.Comment }:
                 return [];
 
@@ -311,7 +345,7 @@ internal sealed class ModelBuilder
             }
 
             var bullet = Bullets[listDepth % Bullets.Length];
-            var marker = ordered ? $"{start + items.Count}{list.OrderedDelimiter}" : bullet;
+            var marker = ordered ? OrderedMarker(start + items.Count, list.BulletType) + list.OrderedDelimiter : bullet;
             items.Add((marker, ConvertBlocks(item, listDepth + 1), item));
             previousEnd = itemEnd;
         }
@@ -340,7 +374,7 @@ internal sealed class ModelBuilder
             {
                 if (row[c] is TableCell cell)
                 {
-                    cells.Add(Stamp(new TableCellVm(GetCellInlines(cell)), cell));
+                    cells.Add(Stamp(ConvertCell(cell), cell));
                 }
             }
 
@@ -371,6 +405,12 @@ internal sealed class ModelBuilder
             Alignments = alignments
         };
     }
+
+    /// <summary>Ячейка из одного абзаца — строкой текста, ячейка сетки-таблицы с другими блоками — блоками.</summary>
+    private TableCellVm ConvertCell(TableCell cell)
+        => cell is [] or [ParagraphBlock]
+            ? new(GetCellInlines(cell))
+            : new([]) { Blocks = ConvertBlocks(cell, listDepth: 0, gapsAreBlank: true) };
 
     private IReadOnlyList<InlineVm> GetCellInlines(TableCell cell)
     {
@@ -429,6 +469,18 @@ internal sealed class ModelBuilder
                     output.Add(Stamp(new FootnoteLinkVm(footnoteLink.Footnote.Order, footnoteLink.Index, footnoteLink.IsBackLink), node));
                     break;
 
+                case AbbreviationInline abbreviation:
+                    AddText(
+                        abbreviation.Abbreviation.Label ?? GetSourceText(node.Span),
+                        state with { Abbreviation = abbreviation.Abbreviation.Text.ToString() },
+                        output,
+                        node);
+                    break;
+
+                case SmartyPant smartyPant:
+                    AddText(SmartyPantText(smartyPant), state, output, node);
+                    break;
+
                 case LinkInline { IsImage: true } image:
                     AddImage(image, state, output);
                     break;
@@ -468,6 +520,9 @@ internal sealed class ModelBuilder
             "kbd" => state with { Kbd = true },
             "sub" => state with { Subscript = true },
             "sup" => state with { Superscript = true },
+            "mark" => state with { Marked = true },
+            "ins" or "u" => state with { Inserted = true },
+            "cite" => state with { Cite = true },
             "a" when tag.Attributes.TryGetValue("href", out var href) => state with
             {
                 Hyperlink = TryCreateUri(href),
@@ -639,17 +694,83 @@ internal sealed class ModelBuilder
                 state.LinkTitle,
                 state.Kbd,
                 state.Subscript,
-                state.Superscript),
+                state.Superscript,
+                state.Marked,
+                state.Inserted,
+                state.Cite,
+                state.Abbreviation),
             node));
     }
 
+    /// <summary>Замена SmartyPants по таблице из настройки разбора; таблица там — HTML-сущностями.</summary>
+    private string SmartyPantText(SmartyPant smartyPant)
+        => _smartyPants is not null && _smartyPants.TryGetValue(smartyPant.Type, out var replacement)
+            ? WebUtility.HtmlDecode(replacement)
+            : GetSourceText(smartyPant.Span);
+
+    /// <summary>Маркер пункта нумерованного списка: число, буква или римская цифра по виду списка.</summary>
+    private static string OrderedMarker(int number, char bulletType)
+        => bulletType switch
+        {
+            'a' => Letters(number),
+            'A' => Letters(number).ToUpperInvariant(),
+            'i' => Roman(number),
+            'I' => Roman(number).ToUpperInvariant(),
+            _ => number.ToString(CultureInfo.InvariantCulture)
+        };
+
+    /// <summary>Номер буквами: a…z, затем aa, ab…</summary>
+    private static string Letters(int number)
+    {
+        if (number <= 0)
+        {
+            return number.ToString(CultureInfo.InvariantCulture);
+        }
+
+        var letters = new StringBuilder();
+        for (var rest = number; rest > 0; rest = (rest - 1) / 26)
+        {
+            letters.Insert(0, (char)('a' + (rest - 1) % 26));
+        }
+
+        return letters.ToString();
+    }
+
+    /// <summary>Номер строчными римскими цифрами; ноль и отрицательные — арабскими.</summary>
+    private static string Roman(int number)
+    {
+        if (number <= 0)
+        {
+            return number.ToString(CultureInfo.InvariantCulture);
+        }
+
+        (int Value, string Digits)[] numerals =
+        [
+            (1000, "m"), (900, "cm"), (500, "d"), (400, "cd"), (100, "c"), (90, "xc"),
+            (50, "l"), (40, "xl"), (10, "x"), (9, "ix"), (5, "v"), (4, "iv"), (1, "i")
+        ];
+
+        var roman = new StringBuilder();
+        var rest = number;
+        foreach (var (value, digits) in numerals)
+        {
+            while (rest >= value)
+            {
+                roman.Append(digits);
+                rest -= value;
+            }
+        }
+
+        return roman.ToString();
+    }
+
     /// <summary>Отступы на месте пустых строк; идентификатор отступа держится за блок перед ним.</summary>
-    private void AddBlankLines(List<BlockVm> blocks, int afterLine, int beforeLine, long previousId)
+    private void AddBlankLines(List<BlockVm> blocks, int afterLine, int beforeLine, long previousId, bool gapsAreBlank = false)
     {
         var index = 0;
         for (var line = afterLine + 1; line < beforeLine && line < _lineStarts.Count; line++)
         {
-            if (IsBlankLine(line))
+            if (gapsAreBlank || IsBlankLine(line))
             {
                 var blank = new BlankLineVm { Source = GetLineSpan(line), NodeId = _identity.BlankLineId(previousId, index++) };
                 blocks.Add(_identity.Reuse(blank));
@@ -716,5 +837,9 @@ internal sealed class ModelBuilder
         string? LinkTitle = null,
         bool Kbd = false,
         bool Subscript = false,
-        bool Superscript = false);
+        bool Superscript = false,
+        bool Marked = false,
+        bool Inserted = false,
+        bool Cite = false,
+        string? Abbreviation = null);
 }

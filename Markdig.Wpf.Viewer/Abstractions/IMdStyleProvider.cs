@@ -32,4 +32,13 @@ public interface IMdStyleProvider
 
     /// <summary>Ссылка сноски, строчная: номер или ↩.</summary>
     DataTemplate? FootnoteLinkTemplate => null;
+
+    /// <summary>Фигура <c>^^^</c>.</summary>
+    DataTemplate? FigureTemplate => null;
+
+    /// <summary>Подпись фигуры.</summary>
+    DataTemplate? FigureCaptionTemplate => null;
+
+    /// <summary>Подвал <c>^^</c>.</summary>
+    DataTemplate? FooterTemplate => null;
 }
