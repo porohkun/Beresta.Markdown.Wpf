@@ -1,4 +1,4 @@
-﻿# Markdig.Wpf.Viewer v0.4.0
+﻿# Markdig.Wpf.Viewer v0.6.0
 
 [English](https://github.com/porohkun/Markdig.Wpf.Viewer/blob/main/README.md) | **Русский**
 
@@ -15,6 +15,9 @@
   взять на себя приложение.
 - **Тема.** Каждый цвет, шрифт и отступ — ключ ресурса; любому блоку можно дать свой шаблон.
 - **Расширения.** Свой синтаксис Markdown превращается в свои виджеты.
+- **Чужие диалекты.** Вики-ссылки, плашки, упоминания, шорткоды и таблицы из CSV в синтаксисе GitHub,
+  GitLab, Obsidian, MkDocs, Docusaurus, HackMD и чатов идут в пакете: по умолчанию выключены, набор
+  подключает синтаксис одной программы одной строкой.
 - **Живой текст.** Новый текст ложится правками: годится для живого предпросмотра и ответов, которые
   приходят по кускам.
 
@@ -64,6 +67,22 @@ dotnet add package Markdig.Wpf.Viewer
 
 Шрифт и цвет текста вьюер берёт у приложения.
 
+## Синтаксис других программ
+
+Готовые расширения рисуют синтаксис GitHub, GitLab, Obsidian, MkDocs, Docusaurus, HackMD и чатов. По
+умолчанию они выключены; набор подключает синтаксис одной программы.
+
+`MainWindow.xaml` (`xmlns:kit="clr-namespace:MarkdigWpfViewer.Kit;assembly=Markdig.Wpf.Viewer"` на
+корневом элементе):
+
+```xml
+<mdv:MarkdownViewer Markdown="{Binding Text}">
+    <mdv:MarkdownViewer.Extensions>
+        <kit:ObsidianSet />
+    </mdv:MarkdownViewer.Extensions>
+</mdv:MarkdownViewer>
+```
+
 ## Документация
 
 В [вики](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Home-ru) каждая возможность описана с
@@ -87,6 +106,11 @@ dotnet add package Markdig.Wpf.Viewer
   [Строки исходника и две панели](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Source-Lines-and-Two-Panes-ru),
   [Живой предпросмотр](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Live-Preview-ru),
   [Подсветка найденного](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Search-Highlighting-ru).
+- **Готовые расширения:** [Наборы](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Sets-ru),
+  [Плашки и сворачиваемое](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Callouts-ru),
+  [Связи](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Links-ru),
+  [Чипы и работа над текстом](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Text-ru),
+  [Медиа и данные](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Media-ru).
 
 В репозитории есть и витрина с этими сценариями:
 

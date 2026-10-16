@@ -1,6 +1,7 @@
 ﻿namespace MarkdigWpfViewer.Tests;
 
 using Selection;
+using ViewModels;
 
 /// <summary>Разметка выделенного: выделенный кусок, записанный markdown со своим оформлением.</summary>
 public sealed class SelectedMarkdownTests
@@ -35,6 +36,17 @@ public sealed class SelectedMarkdownTests
     [InlineData("- [ ] task\n- [x] done")]
     [InlineData("snake_case and 2 * 3")]
     [InlineData("see <https://example.com>")]
+    [InlineData("==mark== and ++ins++ and \"\"Cite\"\"")]
+    [InlineData("c. three\nd. four")]
+    [InlineData("iv. four\nv. five")]
+    [InlineData("^^^\n![img](a.png)\n^^^ Caption")]
+    [InlineData("^^ Footer text")]
+    [InlineData("> [!NOTE]\n> Useful.")]
+    [InlineData("> [!CAUTION]\n> a\n>\n> b")]
+    [InlineData("Term\n:   Definition one\n:   Definition two\n\nTerm 2\nTerm 2b\n:   Def")]
+    [InlineData("<div align=\"center\">\n\ntext\n\n</div>")]
+    [InlineData("<details>\n<summary>S</summary>\n\nx\n\n</details>")]
+    [InlineData("[![Y](y.svg)](https://x.example) and [text ![i](i.png)](https://t.example)")]
     public void Выделенный_целиком_документ_пишется_как_был(string markdown)
     {
         CopyAll(markdown).Should().Be(markdown);
@@ -48,6 +60,19 @@ public sealed class SelectedMarkdownTests
     [InlineData("    indented code", "```\nindented code\n```")]
     [InlineData("a &amp; b", "a & b")]
     [InlineData("```cs\r\nx\r\ny\r\n```\r\n\r\ntext\r\nmore", "```cs\nx\ny\n```\n\ntext\nmore")]
+    [InlineData("x^2^ and H~2~O", "x<sup>2</sup> and H<sub>2</sub>O")]
+    [InlineData("<mark>m</mark> <u>u</u> <cite>c</cite>", "==m== ++u++ \"\"c\"\"")]
+    [InlineData("*[HTML]: Hyper Text\n\nHTML here", "HTML here")]
+    [InlineData("+---+---+\n| a | b |\n+===+===+\n| 1 | 2 |\n|   |   |\n| x | y |\n+---+---+", "| a | b |\n| --- | --- |\n| 1<br>x | 2<br>y |")]
+    [InlineData("> [!tip]\n> x", "> [!TIP]\n> x")]
+    [InlineData("---\ntitle: x\n---\n\ntext", "text")]
+    [InlineData("<p align=\"center\">text</p>", "<div align=\"center\">\n\ntext\n\n</div>")]
+    [InlineData("<h1 align=\"center\">Title</h1>", "<div align=\"center\">\n\n# Title\n\n</div>")]
+    [InlineData("<details open><summary>S</summary>x</details>", "<details open>\n<summary>S</summary>\n\nx\n\n</details>")]
+    [InlineData("<a href=\"https://x.example\"><img src=\"y.svg\" alt=\"Y\"></a>", "[![Y](y.svg)](https://x.example)")]
+    [InlineData("<img src=\"x.png\" width=\"100\" title=\"T\">", "![](x.png \"T\"){width=100}")]
+    [InlineData("<p align=\"center\"><a href=\"x\"><img src=\"a.svg\"></a> <a href=\"y\"><img src=\"b.svg\"></a></p>",
+        "<div align=\"center\">\n\n[![](a.svg)](x) [![](b.svg)](y)\n\n</div>")]
     public void Разметка_записывается_заново_а_не_копируется_из_исходника(string markdown, string expected)
     {
         CopyAll(markdown).Should().Be(expected);
@@ -72,6 +97,21 @@ public sealed class SelectedMarkdownTests
         var map = MdTextMap.Build(blocks);
 
         MdMarkdownWriter.Write(blocks, map, "hi @ivan!", new(0, map.Length)).Should().Be("hi @ivan!");
+    }
+
+    [Fact]
+    public void Сворачиваемые_блоки_пишутся_видом_GitHub_и_тегами_details()
+    {
+        var blocks = new BlockVm[]
+        {
+            new CalloutVm("tip", [new RunVm("Title")], [new ParagraphVm([new RunVm("hidden")])]) { IsFoldable = true, IsFolded = true },
+            new BlankLineVm(),
+            new DetailsVm([new RunVm("More")], [new ParagraphVm([new RunVm("inside")])])
+        };
+        var map = MdTextMap.Build(blocks);
+
+        MdMarkdownWriter.Write(blocks, map, string.Empty, new(0, map.Length))
+            .Should().Be("> [!TIP]- Title\n> hidden\n\n<details>\n<summary>More</summary>\n\ninside\n\n</details>");
     }
 
     [Fact]

@@ -49,6 +49,13 @@ public sealed class MarkdownTemplateSelector : DataTemplateSelector
             ImageVm => provider.ImageTemplate,
             TaskVm => provider.TaskTemplate,
             FootnoteLinkVm => provider.FootnoteLinkTemplate,
+            FigureVm => provider.FigureTemplate,
+            FigureCaptionVm => provider.FigureCaptionTemplate,
+            FooterVm => provider.FooterTemplate,
+            CalloutVm => provider.CalloutTemplate,
+            DetailsVm => provider.DetailsTemplate,
+            DefinitionListVm => provider.DefinitionListTemplate,
+            AlignedVm => provider.AlignedTemplate,
             _ => null
         };
     }

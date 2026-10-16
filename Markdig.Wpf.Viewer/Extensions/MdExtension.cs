@@ -20,8 +20,22 @@ public abstract class MdExtension
     /// <summary>Превращает узел в блочный виджет; <c>null</c> — узел не свой.</summary>
     public virtual BlockVm? ConvertBlock(Block block, MdConvertContext context) => null;
 
+    /// <summary>
+    /// Превращает узел в несколько блоков модели; пустой список — узел не рисуется, <c>null</c> — узел
+    /// не свой. По умолчанию — <see cref="ConvertBlock"/>.
+    /// </summary>
+    public virtual IReadOnlyList<BlockVm>? ConvertBlocks(Block block, MdConvertContext context)
+        => ConvertBlock(block, context) is { } single ? [single] : null;
+
     /// <summary>Превращает инлайн в строчный виджет; <c>null</c> — инлайн не свой.</summary>
     public virtual InlineVm? ConvertInline(Inline inline, MdConvertContext context) => null;
+
+    /// <summary>
+    /// Превращает инлайн в несколько инлайнов модели: текст, оформленные куски, виджеты; пустой
+    /// список — инлайн не рисуется, <c>null</c> — инлайн не свой. По умолчанию — <see cref="ConvertInline"/>.
+    /// </summary>
+    public virtual IReadOnlyList<InlineVm>? ConvertInlines(Inline inline, MdConvertContext context)
+        => ConvertInline(inline, context) is { } single ? [single] : null;
 
     /// <summary>Шаблон своего виджета; <c>null</c> — элемент не свой.</summary>
     public virtual DataTemplate? SelectTemplate(object item, DependencyObject container) => null;

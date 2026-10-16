@@ -2,7 +2,7 @@
 
 using System.Windows.Controls;
 
-/// <summary>Документ со своими расширениями: заметками и упоминаниями.</summary>
+/// <summary>Документ со своими расширениями: заметками, упоминаниями и чипами.</summary>
 public partial class ExtensionsView : UserControl
 {
     public ExtensionsView()

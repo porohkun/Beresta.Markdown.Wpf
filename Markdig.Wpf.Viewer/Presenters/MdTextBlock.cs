@@ -75,6 +75,38 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
+    /// <summary>Стиль выделения маркером (<c>Span</c>).</summary>
+    public static readonly DependencyProperty MarkedStyleProperty =
+        DependencyProperty.Register(
+            nameof(MarkedStyle),
+            typeof(Style),
+            typeof(MdTextBlock),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
+
+    /// <summary>Стиль вставки (<c>Span</c>).</summary>
+    public static readonly DependencyProperty InsertedStyleProperty =
+        DependencyProperty.Register(
+            nameof(InsertedStyle),
+            typeof(Style),
+            typeof(MdTextBlock),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
+
+    /// <summary>Стиль названия произведения (<c>Span</c>).</summary>
+    public static readonly DependencyProperty CiteStyleProperty =
+        DependencyProperty.Register(
+            nameof(CiteStyle),
+            typeof(Style),
+            typeof(MdTextBlock),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
+
+    /// <summary>Стиль сокращения с расшифровкой в подсказке (<c>Span</c>).</summary>
+    public static readonly DependencyProperty AbbreviationStyleProperty =
+        DependencyProperty.Register(
+            nameof(AbbreviationStyle),
+            typeof(Style),
+            typeof(MdTextBlock),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
+
     private static readonly DependencyProperty LayerProperty =
         MdSelection.LayerProperty.AddOwner(
             typeof(MdTextBlock),
@@ -91,6 +123,7 @@ public class MdTextBlock : TextBlock
     private static readonly IValueConverter IndexFontSize = new MdScaleConverter(0.75);
 
     private readonly List<Segment> _segments = [];
+    private readonly List<(RunVm Run, Span Span)> _styled = [];
     private List<Highlight> _highlights = [];
     private List<(int Line, Rect Row)>? _sourceRows;
     private AdornerLayer? _adornerLayer;
@@ -156,31 +189,36 @@ public class MdTextBlock : TextBlock
         set => SetValue(LinkStyleProperty, value);
     }
 
+    public Style? MarkedStyle
+    {
+        get => (Style?)GetValue(MarkedStyleProperty);
+        set => SetValue(MarkedStyleProperty, value);
+    }
+
+    public Style? InsertedStyle
+    {
+        get => (Style?)GetValue(InsertedStyleProperty);
+        set => SetValue(InsertedStyleProperty, value);
+    }
+
+    public Style? CiteStyle
+    {
+        get => (Style?)GetValue(CiteStyleProperty);
+        set => SetValue(CiteStyleProperty, value);
+    }
+
+    public Style? AbbreviationStyle
+    {
+        get => (Style?)GetValue(AbbreviationStyleProperty);
+        set => SetValue(AbbreviationStyleProperty, value);
+    }
+
     /// <summary>Подсвеченные куски своего текста в порядке рисования.</summary>
     internal IEnumerable<(int Start, int End, Brush Brush)> Highlights
         => _highlights.Select(highlight => (highlight.Start, highlight.End, highlight.Brush));
 
     /// <summary>Строки исходника, которые начинаются в этом тексте, и экранные строки, где они начинаются.</summary>
     internal IReadOnlyList<(int Line, Rect Row)> SourceRows => _sourceRows ??= FindSourceRows();
-
-    /// <summary>Над текстом, пока выделение включено, — текстовый курсор; ссылки и виджеты ставят свой.</summary>
-    protected override void OnQueryCursor(QueryCursorEventArgs e)
-    {
-        base.OnQueryCursor(e);
-        if (!e.Handled
-            && e.OriginalSource is TextElement or MdTextBlock
-            && GetValue(LayerProperty) is MdDecorationLayer { IsSelectionEnabled: true })
-        {
-            e.Cursor = Cursors.IBeam;
-            e.Handled = true;
-        }
-    }
-
-    protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
-    {
-        base.OnRenderSizeChanged(sizeInfo);
-        _sourceRows = null;
-    }
 
     /// <summary>Кусок текстовой карты, который рисует этот блок.</summary>
     internal bool TryGetMapRange(out MdTextRange range)
@@ -236,6 +274,25 @@ public class MdTextBlock : TextBlock
                 yield return rect;
             }
         }
+    }
+
+    /// <summary>Над текстом, пока выделение включено, — текстовый курсор; ссылки и виджеты ставят свой.</summary>
+    protected override void OnQueryCursor(QueryCursorEventArgs e)
+    {
+        base.OnQueryCursor(e);
+        if (!e.Handled
+            && e.OriginalSource is TextElement or MdTextBlock
+            && GetValue(LayerProperty) is MdDecorationLayer { IsSelectionEnabled: true })
+        {
+            e.Cursor = Cursors.IBeam;
+            e.Handled = true;
+        }
+    }
+
+    protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+    {
+        base.OnRenderSizeChanged(sizeInfo);
+        _sourceRows = null;
     }
 
     private static void OnAnyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -398,6 +455,7 @@ public class MdTextBlock : TextBlock
     {
         Inlines.Clear();
         _segments.Clear();
+        _styled.Clear();
         _sourceRows = null;
 
         foreach (var inline in Runs ?? [])
@@ -453,7 +511,7 @@ public class MdTextBlock : TextBlock
         foreach (var segment in _segments)
         {
             var source = segment.Inline.Source;
-            if (segment.Inline is LineBreakVm || source.IsEmpty || rows is [.., var last] && source.StartLine <= last.Line)
+            if (segment.Inline is LineBreakVm || source.IsEmpty || (rows is [.., var last] && source.StartLine <= last.Line))
             {
                 continue;
             }
@@ -478,6 +536,21 @@ public class MdTextBlock : TextBlock
                 MdWidget.SetState(widget, states?.StateOf(widget.Content));
             }
         }
+
+        foreach (var (run, span) in _styled)
+        {
+            MdWidget.SetState(span, states?.StateOf(run));
+        }
+    }
+
+    /// <summary>Щелчок по оформленному куску без выделения текста отдаётся его состоянию.</summary>
+    private void OnStyledClick(object sender, MouseButtonEventArgs e)
+    {
+        if (MdWidget.GetState((Span)sender) is IMdClickableState state && MarkdownViewer.Owning(this) is not { SelectionLength: > 0 })
+        {
+            state.OnClick();
+            e.Handled = true;
+        }
     }
 
     private Run AddRun(RunVm run)
@@ -500,6 +573,28 @@ public class MdTextBlock : TextBlock
             current = Wrap(current, StrongStyle, span => span.FontWeight = FontWeights.SemiBold);
         }
 
+        if (run.Cite)
+        {
+            current = Wrap(current, CiteStyle, span => span.FontStyle = FontStyles.Italic);
+        }
+
+        if (run.Inserted)
+        {
+            current = Wrap(current, InsertedStyle, span => span.TextDecorations = System.Windows.TextDecorations.Underline);
+        }
+
+        if (run.Marked)
+        {
+            current = Wrap(current, MarkedStyle, span => span.Background = Brushes.Yellow);
+        }
+
+        if (run.Abbreviation is { } expansion)
+        {
+            var abbreviation = Wrap(current, AbbreviationStyle, _ => { });
+            abbreviation.ToolTip = expansion;
+            current = abbreviation;
+        }
+
         if (run.Subscript || run.Superscript)
         {
             var shifted = new Span(current)
@@ -508,6 +603,15 @@ public class MdTextBlock : TextBlock
             };
             shifted.SetBinding(TextElement.FontSizeProperty, new Binding(nameof(FontSize)) { Source = this, Converter = IndexFontSize });
             current = shifted;
+        }
+
+        if (run.StyleName is { } name)
+        {
+            var styled = new Span(current);
+            styled.SetResourceReference(FrameworkContentElement.StyleProperty, $"Md.{name}.Style");
+            styled.MouseLeftButtonUp += OnStyledClick;
+            _styled.Add((run, styled));
+            current = styled;
         }
 
         if (run.Hyperlink is not null)

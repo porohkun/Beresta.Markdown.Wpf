@@ -32,6 +32,7 @@ public sealed class MdImage : Control
     /// <summary>Загруженная картинка; пока её нет — <c>null</c>.</summary>
     public static readonly DependencyProperty ImageSourceProperty = ImageSourcePropertyKey.DependencyProperty;
 
+
     private MdTextBlock? _text;
     private bool _pressed;
 

@@ -25,12 +25,6 @@ public sealed class MdFootnoteLink : Control
         set => SetValue(LinkProperty, value);
     }
 
-    protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
-    {
-        base.OnMouseLeftButtonDown(e);
-        _pressed = true;
-    }
-
     /// <summary>Переходит по ссылке тем же путём, что и ссылки текста.</summary>
     public void Activate()
     {
@@ -38,6 +32,12 @@ public sealed class MdFootnoteLink : Control
         {
             MarkdownLink.Activate(this, "#" + link.Target, null);
         }
+    }
+
+    protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+    {
+        base.OnMouseLeftButtonDown(e);
+        _pressed = true;
     }
 
     protected override AutomationPeer OnCreateAutomationPeer() => new MdFootnoteLinkAutomationPeer(this);

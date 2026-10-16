@@ -1,5 +1,6 @@
 ﻿namespace MarkdigWpfViewer.Selection;
 
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using ViewModels;
@@ -14,6 +15,9 @@ internal sealed partial class MdMarkdownWriter
     private static readonly Marker Bold = new("**", "**", Emphasis: true);
     private static readonly Marker Italic = new("*", "*", Emphasis: true);
     private static readonly Marker Strike = new("~~", "~~", Emphasis: true);
+    private static readonly Marker Marked = new("==", "==", Emphasis: true);
+    private static readonly Marker Inserted = new("++", "++", Emphasis: true);
+    private static readonly Marker Cite = new("\"\"", "\"\"", Emphasis: true);
 
     private readonly MdTextMap _map;
     private readonly string _source;
@@ -60,13 +64,6 @@ internal sealed partial class MdMarkdownWriter
                 .Reverse());
     }
 
-    private static string CodeSpan(string text)
-    {
-        var fence = new string('`', LongestRun(text, '`') + 1);
-        var pad = text.StartsWith('`') || text.EndsWith('`') ? " " : string.Empty;
-        return fence + pad + text + pad + fence;
-    }
-
     /// <summary>Самый длинный ряд знака подряд — длина ограждения кода берётся на единицу больше.</summary>
     internal static int LongestRun(string text, char symbol)
     {
@@ -79,6 +76,13 @@ internal sealed partial class MdMarkdownWriter
         }
 
         return longest;
+    }
+
+    private static string CodeSpan(string text)
+    {
+        var fence = new string('`', LongestRun(text, '`') + 1);
+        var pad = text.StartsWith('`') || text.EndsWith('`') ? " " : string.Empty;
+        return fence + pad + text + pad + fence;
     }
 
     private static string Destination(string href)
@@ -104,7 +108,7 @@ internal sealed partial class MdMarkdownWriter
 
     /// <summary>Текст в начале строки не должен начинать блок: заголовок, цитату, пункт списка.</summary>
     private static string EscapeLineStart(string text)
-        => text is [('#' or '>' or '+' or '-' or '=' or '|'), ..]
+        => text is ['#' or '>' or '+' or '-' or '=' or '|', ..]
             ? "\\" + text
             : OrderedMarker().Replace(text, "$1\\$2");
 
@@ -122,9 +126,14 @@ internal sealed partial class MdMarkdownWriter
     private static List<Marker> Markers(RunVm run)
     {
         var markers = new List<Marker>();
-        if ((run.Href ?? run.Hyperlink?.OriginalString) is { } href)
+        if ((run.Href ?? run.Hyperlink?.OriginalString) is { } href && run.Markup is not { ReplacesLink: true })
         {
             markers.Add(new("[", $"]({Destination(href)})", Emphasis: false));
+        }
+
+        if (run.Markup is { } frame)
+        {
+            markers.Add(new(frame.Open, frame.Close, Emphasis: false, IsFrame: true));
         }
 
         if (run.Strike)
@@ -140,6 +149,21 @@ internal sealed partial class MdMarkdownWriter
         if (run.Italic)
         {
             markers.Add(Italic);
+        }
+
+        if (run.Marked)
+        {
+            markers.Add(Marked);
+        }
+
+        if (run.Inserted)
+        {
+            markers.Add(Inserted);
+        }
+
+        if (run.Cite)
+        {
+            markers.Add(Cite);
         }
 
         if (run.Kbd)
@@ -203,6 +227,27 @@ internal sealed partial class MdMarkdownWriter
             case TableVm table:
                 return Table(table);
 
+            case FigureVm figure:
+                return Figure(figure);
+
+            case FigureCaptionVm caption:
+                return [Inlines(caption.Inlines)];
+
+            case FooterVm footer:
+                return Blocks(footer.Blocks).Select(line => line.Length == 0 ? "^^" : "^^ " + line);
+
+            case CalloutVm callout:
+                return Callout(callout);
+
+            case DetailsVm details:
+                return Details(details);
+
+            case DefinitionListVm definitions:
+                return Definitions(definitions);
+
+            case AlignedVm aligned:
+                return [$"<div align=\"{aligned.Alignment.ToString().ToLowerInvariant()}\">", string.Empty, .. Blocks(aligned.Blocks), string.Empty, "</div>"];
+
             case ThematicBreakVm:
                 _other = true;
                 return ["---"];
@@ -265,7 +310,10 @@ internal sealed partial class MdMarkdownWriter
         return lines;
     }
 
-    /// <summary>Таблица из задетых строк и, всегда, строки заголовка.</summary>
+    /// <summary>
+    /// Таблица из задетых строк и, всегда, строки заголовка. Выделение внутри одной ячейки из
+    /// блоков пишется её блоками.
+    /// </summary>
     private List<string> Table(TableVm table)
     {
         foreach (var cell in table.Rows.SelectMany(row => row.Cells))
@@ -273,8 +321,16 @@ internal sealed partial class MdMarkdownWriter
             _cells.Add(cell.Inlines);
         }
 
+        var inner = table.Rows
+            .SelectMany(row => row.Cells)
+            .FirstOrDefault(cell => cell.HasBlocks && CellRange(cell) is { } range && range.Start <= _selection.Start && _selection.End <= range.End);
+        if (inner is not null)
+        {
+            return Blocks(inner.Blocks);
+        }
+
         var touched = table.Rows
-            .Where(row => row.Cells.Any(cell => _map.TryGetRange(cell.Inlines, out var range) && Touches(range)))
+            .Where(row => row.Cells.Any(cell => CellRange(cell) is { } range && Touches(range)))
             .ToList();
         if (touched.Count == 0)
         {
@@ -294,9 +350,100 @@ internal sealed partial class MdMarkdownWriter
     private string Row(TableRowVm row, bool whole)
     {
         var cells = row.Cells
-            .Select(cell => Inlines(cell.Inlines, whole).Replace("|", "\\|").Replace('\n', ' '))
+            .Select(cell => (cell.HasBlocks ? CellText(cell, whole) : Inlines(cell.Inlines, whole)).Replace("|", "\\|").Replace('\n', ' '))
             .Select(cell => cell.Length == 0 ? " " : $" {cell} ");
         return "|" + string.Join("|", cells) + "|";
+    }
+
+    /// <summary>Кусок карты ячейки: её строки текста или её блоков.</summary>
+    private MdTextRange? CellRange(TableCellVm cell)
+    {
+        if (!cell.HasBlocks)
+        {
+            return _map.TryGetRange(cell.Inlines, out var range) ? range : null;
+        }
+
+        return _ranges.TryGetValue(cell.Blocks[0], out var first) && _ranges.TryGetValue(cell.Blocks[^1], out var last)
+            ? MdTextRange.Between(first.Start, last.End)
+            : null;
+    }
+
+    /// <summary>Ячейка из блоков строкой таблицы: её текст, блоки — через <c>&lt;br&gt;</c>.</summary>
+    private string CellText(TableCellVm cell, bool whole)
+    {
+        if (CellRange(cell) is not { } range)
+        {
+            return string.Empty;
+        }
+
+        var text = _map.GetText(whole ? range : range.Intersect(_selection));
+        return string.Join("<br>", text.Split('\n').Where(line => line.Length > 0).Select(Escape));
+    }
+
+    /// <summary>
+    /// Плашка цитатой с видом в первой строке, как у GitHub; свой заголовок и сворачиваемость —
+    /// после вида, как в Obsidian.
+    /// </summary>
+    private List<string> Callout(CalloutVm callout)
+    {
+        var fold = callout.IsFoldable ? callout.IsFolded ? "-" : "+" : string.Empty;
+        var title = Inlines(callout.Title) is { Length: > 0 } text ? " " + text : string.Empty;
+        var lines = new List<string> { $"> [!{callout.Kind.ToUpperInvariant()}]{fold}{title}" };
+        lines.AddRange(Blocks(callout.Blocks).Select(line => line.Length == 0 ? ">" : "> " + line));
+        return lines;
+    }
+
+    /// <summary>Сворачиваемый блок тегами <c>&lt;details&gt;</c> и <c>&lt;summary&gt;</c>, содержимое — markdown между ними.</summary>
+    private List<string> Details(DetailsVm details)
+    {
+        var lines = new List<string> { details.IsOpen ? "<details open>" : "<details>" };
+        if (Inlines(details.Summary) is { Length: > 0 } summary)
+        {
+            lines.Add($"<summary>{summary}</summary>");
+        }
+
+        lines.Add(string.Empty);
+        lines.AddRange(Blocks(details.Blocks));
+        lines.Add(string.Empty);
+        lines.Add("</details>");
+        return lines;
+    }
+
+    /// <summary>Термины — каждый своей строкой, определение — после <c>:</c> с отступом в четыре пробела.</summary>
+    private List<string> Definitions(DefinitionListVm definitions)
+    {
+        var lines = new List<string>();
+        foreach (var item in definitions.Items)
+        {
+            if (item.HasTerms && Inlines(item.Terms) is { Length: > 0 } terms)
+            {
+                lines.AddRange(terms.Split('\n'));
+            }
+
+            var content = Blocks(item.Blocks);
+            if (content.Count == 0)
+            {
+                continue;
+            }
+
+            lines.Add(":   " + content[0]);
+            lines.AddRange(content.Skip(1).Select(line => line.Length == 0 ? line : "    " + line));
+        }
+
+        return lines;
+    }
+
+    /// <summary>Фигура в ограждении <c>^^^</c>; подпись — на открывающей или закрывающей строке, где была.</summary>
+    private List<string> Figure(FigureVm figure)
+    {
+        var opening = figure.Blocks is [FigureCaptionVm first, ..] ? first : null;
+        var closing = figure.Blocks is [.., FigureCaptionVm last] && !ReferenceEquals(last, opening) ? last : null;
+        var content = Blocks(figure.Blocks.Where(block => block is not FigureCaptionVm).ToList());
+
+        return [Fence(opening), .. content, Fence(closing)];
+
+        string Fence(FigureCaptionVm? caption)
+            => caption is not null && Inlines(caption.Inlines) is { Length: > 0 } text ? "^^^ " + text : "^^^";
     }
 
     /// <summary>Виджет целиком — его исходником; кусок виджета — тем, что он отдаёт в карту.</summary>
@@ -393,7 +540,7 @@ internal sealed partial class MdMarkdownWriter
             : null;
 
     /// <summary>Начертание или ссылка: что ставится до куска текста и что после.</summary>
-    private readonly record struct Marker(string Open, string Close, bool Emphasis);
+    private readonly record struct Marker(string Open, string Close, bool Emphasis, bool IsFrame = false);
 
     /// <summary>Строчная разметка: начертания и ссылки открываются и закрываются, когда меняются у кусков текста.</summary>
     private sealed class InlineMarkdown(MdMarkdownWriter writer)
@@ -425,8 +572,19 @@ internal sealed partial class MdMarkdownWriter
                     _lineStart = true;
                     break;
 
+                case ImageVm image:
+                    var wanted = _open.Where(marker => !marker.IsFrame && !marker.Close.StartsWith("](", StringComparison.Ordinal)).ToList();
+                    if ((image.Href ?? image.Hyperlink?.OriginalString) is { } link)
+                    {
+                        wanted.Add(new("[", $"]({Destination(link)})", Emphasis: false));
+                    }
+
+                    Append(Open(wanted, ImageMarkdown(image)));
+                    break;
+
                 default:
-                    Append(writer.SourceOf(inline) ?? (inline as IMdCopyText)?.CopyText ?? string.Empty);
+                    Open(_open.Where(marker => !marker.IsFrame).ToList(), string.Empty);
+                    Append((inline as IMdMarkdownText)?.MarkdownText ?? writer.SourceOf(inline) ?? (inline as IMdCopyText)?.CopyText ?? string.Empty);
                     break;
             }
         }
@@ -515,6 +673,24 @@ internal sealed partial class MdMarkdownWriter
         {
             _text.Append(text);
             _lineStart &= text.Length == 0;
+        }
+
+        /// <summary>Картинка своим исходником, если он markdown; картинка из HTML — <c>![alt](адрес "подсказка"){width=… height=…}</c>.</summary>
+        private string ImageMarkdown(ImageVm image)
+        {
+            if (writer.SourceOf(image) is { } source && source.StartsWith("![", StringComparison.Ordinal))
+            {
+                return source;
+            }
+
+            var title = image.Title is { } text ? $" \"{text.Replace("\"", "\\\"")}\"" : string.Empty;
+            var size = new[] { ("width", image.Width), ("height", image.Height) }
+                .Where(pair => pair.Item2 is not null)
+                .Select(pair => $"{pair.Item1}={pair.Item2!.Value.ToString(CultureInfo.InvariantCulture)}")
+                .ToList();
+
+            var attributes = size.Count > 0 ? "{" + string.Join(" ", size) + "}" : string.Empty;
+            return $"![{Escape(image.Alt)}]({Destination(image.Url)}{title}){attributes}";
         }
 
         /// <summary>

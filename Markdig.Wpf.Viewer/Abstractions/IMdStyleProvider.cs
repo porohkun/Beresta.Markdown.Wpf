@@ -32,4 +32,25 @@ public interface IMdStyleProvider
 
     /// <summary>Ссылка сноски, строчная: номер или ↩.</summary>
     DataTemplate? FootnoteLinkTemplate => null;
+
+    /// <summary>Фигура <c>^^^</c>.</summary>
+    DataTemplate? FigureTemplate => null;
+
+    /// <summary>Подпись фигуры.</summary>
+    DataTemplate? FigureCaptionTemplate => null;
+
+    /// <summary>Подвал <c>^^</c>.</summary>
+    DataTemplate? FooterTemplate => null;
+
+    /// <summary>Плашка.</summary>
+    DataTemplate? CalloutTemplate => null;
+
+    /// <summary>Сворачиваемый блок.</summary>
+    DataTemplate? DetailsTemplate => null;
+
+    /// <summary>Список определений.</summary>
+    DataTemplate? DefinitionListTemplate => null;
+
+    /// <summary>Блоки с общим выравниванием из HTML.</summary>
+    DataTemplate? AlignedTemplate => null;
 }

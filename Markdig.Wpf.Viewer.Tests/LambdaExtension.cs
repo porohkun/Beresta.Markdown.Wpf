@@ -16,6 +16,8 @@ internal sealed class LambdaExtension : MdExtension
 
     public Func<Inline, MdConvertContext, InlineVm?>? Inline { get; init; }
 
+    public Func<Inline, MdConvertContext, IReadOnlyList<InlineVm>?>? Inlines { get; init; }
+
     public Func<object, DataTemplate?>? Template { get; init; }
 
     public Func<NodeVm, object?>? State { get; init; }
@@ -25,6 +27,9 @@ internal sealed class LambdaExtension : MdExtension
     public override BlockVm? ConvertBlock(Block block, MdConvertContext context) => Block?.Invoke(block, context);
 
     public override InlineVm? ConvertInline(Inline inline, MdConvertContext context) => Inline?.Invoke(inline, context);
+
+    public override IReadOnlyList<InlineVm>? ConvertInlines(Inline inline, MdConvertContext context)
+        => Inlines is not null ? Inlines(inline, context) : base.ConvertInlines(inline, context);
 
     public override DataTemplate? SelectTemplate(object item, DependencyObject container) => Template?.Invoke(item);
 

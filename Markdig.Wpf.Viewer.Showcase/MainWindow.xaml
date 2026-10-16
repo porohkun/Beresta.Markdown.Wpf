@@ -8,6 +8,8 @@
            xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase"
            xmlns:document="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Document"
            xmlns:extensions="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Extensions"
+           xmlns:kit="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Kit"
+           xmlns:sets="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Sets"
            xmlns:look="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.CustomLook"
            xmlns:panes="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.TwoPanes"
            xmlns:large="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.LargeDocument"
@@ -78,6 +80,12 @@
         <DataTemplate DataType="{x:Type extensions:ExtensionsViewModel}">
             <extensions:ExtensionsView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type kit:KitViewModel}">
+            <kit:KitView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type sets:SetsViewModel}">
+            <sets:SetsView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type look:CustomLookViewModel}">
             <look:CustomLookView />
         </DataTemplate>
@@ -111,11 +119,11 @@
                 <RadioButton IsChecked="{Binding Options.IsDark}"
                              hc:IconElement.Geometry="{StaticResource DarkIcon}"
                              hc:IconElement.Height="20"
-                             hc:IconElement.Width="20"/>
+                             hc:IconElement.Width="20" />
                 <RadioButton IsChecked="True"
                              hc:IconElement.Geometry="{StaticResource LightIcon}"
                              hc:IconElement.Height="20"
-                             hc:IconElement.Width="20"/>
+                             hc:IconElement.Width="20" />
             </hc:ButtonGroup>
 
             <hc:ButtonGroup HorizontalAlignment="Left"

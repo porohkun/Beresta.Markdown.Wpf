@@ -12,6 +12,7 @@ using Markdig.Extensions.Footnotes;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Presenters;
+using Selection;
 using ViewModels;
 
 /// <summary>Картинки, задачи, выравнивание таблиц, сноски и строчный HTML.</summary>
@@ -86,7 +87,7 @@ public sealed class MarkupTests
     public void Сноска_стоит_на_своём_месте_и_даёт_якоря()
     {
         var blocks = ModelBuilder.Parse("text[^n]\n\n[^n]: note\n\nafter");
-        var map = Selection.MdTextMap.Build(blocks);
+        var map = MdTextMap.Build(blocks);
 
         ModelDump.Of(blocks).Should().Be("P(text^1) _ F1[P(note↩)] _ P(after)");
         map.TryGetAnchor("fn:1", out var definition).Should().BeTrue();
@@ -110,7 +111,7 @@ public sealed class MarkupTests
             var viewer = new MarkdownViewer { ImageLoader = loader, BaseUri = new("file:///C:/docs/"), Markdown = "![a](img/p.png)" };
             var window = WpfHost.Show(viewer);
 
-            loader.Calls.Should().ContainSingle().Which.Should().Be(("img/p.png", new Uri("file:///C:/docs/img/p.png")));
+            loader.Calls.Should().ContainSingle().Which.Should().Be(("img/p.png", new("file:///C:/docs/img/p.png")));
             var image = Visuals.Descendants<MdImage>(viewer).Single();
             image.ImageSource.Should().NotBeNull();
             image.ActualWidth.Should().Be(10);
@@ -201,8 +202,12 @@ public sealed class MarkupTests
             Visuals.Descendants<MdTextBlock>(viewer)
                 .Select(text => text.TextAlignment)
                 .Should().Equal(
-                    TextAlignment.Left, TextAlignment.Center, TextAlignment.Right,
-                    TextAlignment.Left, TextAlignment.Center, TextAlignment.Right);
+                    TextAlignment.Left,
+                    TextAlignment.Center,
+                    TextAlignment.Right,
+                    TextAlignment.Left,
+                    TextAlignment.Center,
+                    TextAlignment.Right);
             window.Close();
         });
     }
@@ -249,7 +254,7 @@ public sealed class MarkupTests
     private static IReadOnlyList<InlineVm> Inlines(string markdown)
         => ModelBuilder.Parse(markdown).OfType<ParagraphVm>().Single().Inlines;
 
-    private static double TopOf(MarkdownViewer viewer, ScrollViewer scroll, Selection.MdTextRange range)
+    private static double TopOf(MarkdownViewer viewer, ScrollViewer scroll, MdTextRange range)
         => viewer.TranslatePoint(viewer.GetRangeRects(range)[0].TopLeft, scroll).Y;
 
     private static void Click(UIElement element)

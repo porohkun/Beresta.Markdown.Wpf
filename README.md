@@ -1,4 +1,4 @@
-﻿# Markdig.Wpf.Viewer v0.4.0
+﻿# Markdig.Wpf.Viewer v0.6.0
 
 **English** | [Русский](https://github.com/porohkun/Markdig.Wpf.Viewer/blob/main/README.ru.md)
 
@@ -15,6 +15,9 @@ parses the text, WPF templates draw it.
   application can take over any link.
 - **Themable.** Every color, font and margin is a resource key; any block can get your own template.
 - **Extensible.** Your own Markdown syntax becomes your own widgets.
+- **Speaks other dialects.** Wiki links, callouts, mentions, shortcodes and tables from CSV of GitHub,
+  GitLab, Obsidian, MkDocs, Docusaurus, HackMD and chats come with the package: off by default, a set
+  connects the syntax of one program in one line.
 - **Live.** A new text is applied as edits: fit for a live preview and streamed answers.
 
 ## Install
@@ -64,6 +67,22 @@ The viewer has no scroll bars of its own: put it into a `ScrollViewer`.
 
 The font and the text color come from your application.
 
+## Syntax of other programs
+
+Ready-made extensions draw the syntax of GitHub, GitLab, Obsidian, MkDocs, Docusaurus, HackMD and
+chats. They are off by default; a set connects the syntax of one program.
+
+`MainWindow.xaml` (`xmlns:kit="clr-namespace:MarkdigWpfViewer.Kit;assembly=Markdig.Wpf.Viewer"` on the
+root element):
+
+```xml
+<mdv:MarkdownViewer Markdown="{Binding Text}">
+    <mdv:MarkdownViewer.Extensions>
+        <kit:ObsidianSet />
+    </mdv:MarkdownViewer.Extensions>
+</mdv:MarkdownViewer>
+```
+
 ## Documentation
 
 The [wiki](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki) describes every feature with a working
@@ -87,6 +106,11 @@ example:
   [Source Lines and Two Panes](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Source-Lines-and-Two-Panes),
   [Live Preview](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Live-Preview),
   [Search Highlighting](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Search-Highlighting).
+- **Ready-made extensions:** [Sets](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Sets),
+  [Callouts and Collapsibles](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Callouts),
+  [Links and References](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Links),
+  [Chips and Text Review](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Text),
+  [Media and Data](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Media).
 
 The repository also has a showcase application with these scenarios:
 

@@ -46,7 +46,7 @@ public sealed class LineNumberTests
 
     [Theory]
     [InlineData("a\n\n---\n\nb", new[] { 0, 1, 2, 3, 4 })]
-    [InlineData("<div>\nhello\n</div>", new[] { 0, 1, 2 })]
+    [InlineData("<section>\nhello\n</section>", new[] { 0, 1, 2 })]
     public void Строка_со_своим_местом_на_экране_получает_номер(string markdown, int[] expected)
     {
         WpfHost.Invoke(() =>

@@ -35,6 +35,12 @@ internal sealed class WidgetStates
             }
         }
 
+        if (FoldStateOf(node) is { } fold)
+        {
+            _states[node.NodeId] = (node.GetType(), fold);
+            return fold;
+        }
+
         return null;
     }
 
@@ -48,4 +54,12 @@ internal sealed class WidgetStates
     }
 
     public void Clear() => _states.Clear();
+
+    /// <summary>Свёрнутость встроенного сворачиваемого блока; у других блоков — <c>null</c>.</summary>
+    private static MdFoldState? FoldStateOf(NodeVm node) => node switch
+    {
+        CalloutVm { IsFoldable: true } callout => new(!callout.IsFolded),
+        DetailsVm details => new(details.IsOpen),
+        _ => null
+    };
 }

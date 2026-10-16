@@ -1,0 +1,56 @@
+﻿<UserControl x:Class="MarkdigWpfViewer.Showcase.Showcases.Kit.KitView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
+             xmlns:kit="clr-namespace:MarkdigWpfViewer.Kit;assembly=Markdig.Wpf.Viewer"
+             xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Kit"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance local:KitViewModel}">
+    <DockPanel>
+        <!-- Свои схемы ссылок и адреса-примеры витрина не открывает, а показывает цель -->
+        <TextBlock DockPanel.Dock="Top"
+                   Margin="24,8,24,0"
+                   Foreground="{DynamicResource SecondaryTextBrush}"
+                   Text="{Binding LastLink}" />
+
+        <ScrollViewer>
+            <mdv:MarkdownViewer Markdown="{Binding Text}"
+                                Margin="24,16"
+                                CanToggleTasks="True"
+                                TaskToggled="OnTaskToggled"
+                                kit:CriticMarkup.Decided="OnDecided"
+                                mdv:MarkdownLink.Navigate="OnLink">
+                <mdv:MarkdownViewer.Extensions>
+                    <kit:ObsidianCallouts />
+                    <kit:MkDocsAdmonitions />
+                    <kit:CalloutContainers />
+                    <kit:TableOfContents />
+                    <kit:WikiLinks Resolver="{x:Static local:KitResolver.Instance}" />
+                    <kit:WikiEmbeds />
+                    <kit:Tags />
+                    <kit:Mentions Resolver="{x:Static local:KitResolver.Instance}" />
+                    <kit:IssueLinks>
+                        <kit:IssueLinks.Templates>
+                            <sys:String x:Key="#">https://github.com/porohkun/Markdig.Wpf.Viewer/issues/{0}</sys:String>
+                        </kit:IssueLinks.Templates>
+                    </kit:IssueLinks>
+                    <kit:Chips />
+                    <kit:ColorChips />
+                    <kit:CriticMarkup AllowDecisions="True" />
+                    <kit:Comments />
+                    <kit:Spoilers />
+                    <kit:TaskStatuses />
+                    <kit:FootnoteTips />
+                    <kit:VideoCards />
+                    <kit:EmojiShortcodes />
+                    <kit:Shortcodes x:Name="ShortcodeHandlers" />
+                    <kit:CsvTables />
+                    <kit:PropertiesCard />
+                </mdv:MarkdownViewer.Extensions>
+            </mdv:MarkdownViewer>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

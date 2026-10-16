@@ -18,6 +18,8 @@ internal static class TestWidgets
 {
     private const string Namespaces =
         "xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' "
+        + "xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' "
+        + "xmlns:mdv='clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer' "
         + "xmlns:p='clr-namespace:MarkdigWpfViewer.Presenters;assembly=Markdig.Wpf.Viewer' "
         + "xmlns:e='clr-namespace:MarkdigWpfViewer.Extensions;assembly=Markdig.Wpf.Viewer'";
 

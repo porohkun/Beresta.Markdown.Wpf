@@ -12,11 +12,13 @@ public sealed class MdConvertContext
 {
     private readonly ModelBuilder _builder;
     private readonly int _listDepth;
+    private readonly Func<string, RunVm>? _createRun;
 
-    internal MdConvertContext(ModelBuilder builder, int listDepth)
+    internal MdConvertContext(ModelBuilder builder, int listDepth, Func<string, RunVm>? createRun = null)
     {
         _builder = builder;
         _listDepth = listDepth;
+        _createRun = createRun;
     }
 
     /// <summary>Блоки внутри своего контейнера, с отступами на месте пустых строк.</summary>
@@ -26,6 +28,10 @@ public sealed class MdConvertContext
     /// <summary>Инлайны своего узла.</summary>
     public IReadOnlyList<InlineVm> ConvertInlines(ContainerInline? inlines)
         => _builder.ConvertInlines(inlines);
+
+    /// <summary>Кусок текста с начертанием места узла: жирный, курсив, ссылка вокруг.</summary>
+    public RunVm CreateRun(string text)
+        => _createRun?.Invoke(text) ?? new RunVm(text);
 
     /// <summary>Позиция узла в исходнике.</summary>
     public MdSourceSpan GetSpan(MarkdownObject node)

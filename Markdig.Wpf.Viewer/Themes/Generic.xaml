@@ -5,6 +5,9 @@
                     xmlns:vm="clr-namespace:MarkdigWpfViewer.ViewModels"
                     xmlns:p="clr-namespace:MarkdigWpfViewer.Presenters"
                     xmlns:local="clr-namespace:MarkdigWpfViewer"
+                    xmlns:mdx="clr-namespace:MarkdigWpfViewer.Extensions"
+                    xmlns:kit="clr-namespace:MarkdigWpfViewer.Kit"
+                    xmlns:sel="clr-namespace:MarkdigWpfViewer.Selection"
                     xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
     <s:MarkdownTemplateSelector x:Key="Md.TemplateSelector" />
@@ -25,6 +28,34 @@
         <Setter Property="TextDecorations" Value="Strikethrough" />
     </Style>
     <Style x:Key="Md.Link.Style" TargetType="{x:Type Hyperlink}" />
+
+    <!-- ======== Маркер, вставка, название произведения, сокращение ======== -->
+    <SolidColorBrush x:Key="Md.Marked.Background" Color="#FFE066" Opacity="0.6" />
+    <Brush x:Key="Md.Abbreviation.UnderlineBrush">Gray</Brush>
+    <Style x:Key="Md.Marked.Style" TargetType="{x:Type Span}">
+        <Setter Property="Background" Value="{DynamicResource Md.Marked.Background}" />
+    </Style>
+    <Style x:Key="Md.Inserted.Style" TargetType="{x:Type Span}">
+        <Setter Property="TextDecorations" Value="Underline" />
+    </Style>
+    <Style x:Key="Md.Cite.Style" TargetType="{x:Type Span}">
+        <Setter Property="FontStyle" Value="Italic" />
+    </Style>
+    <Style x:Key="Md.Abbreviation.Style" TargetType="{x:Type Span}">
+        <Setter Property="Cursor" Value="Help" />
+        <Setter Property="TextDecorations">
+            <Setter.Value>
+                <TextDecorationCollection>
+                    <TextDecoration Location="Underline" PenOffset="1">
+                        <TextDecoration.Pen>
+                            <Pen Thickness="1" DashStyle="{x:Static DashStyles.Dot}"
+                                 Brush="{StaticResource Md.Abbreviation.UnderlineBrush}" />
+                        </TextDecoration.Pen>
+                    </TextDecoration>
+                </TextDecorationCollection>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
     <!-- ======== Md.InlineCode ======== -->
     <FontFamily x:Key="Md.InlineCode.FontFamily">Consolas</FontFamily>
@@ -51,6 +82,94 @@
     <GridLength x:Key="Md.Footnote.MarkerWidth">24</GridLength>
     <Brush x:Key="Md.Footnote.MarkerForeground">Gray</Brush>
     <sys:Double x:Key="Md.Footnote.LinkFontSize">11</sys:Double>
+
+    <!-- ======== Md.Figure, Md.Footer ======== -->
+    <Thickness x:Key="Md.Figure.Margin">0,4,0,8</Thickness>
+    <Brush x:Key="Md.Figure.CaptionForeground">Gray</Brush>
+    <sys:Double x:Key="Md.Figure.CaptionFontSize">12</sys:Double>
+    <Thickness x:Key="Md.Footer.Margin">0,4,0,0</Thickness>
+    <Brush x:Key="Md.Footer.Foreground">Gray</Brush>
+    <sys:Double x:Key="Md.Footer.FontSize">12</sys:Double>
+
+    <!-- ======== Md.Callout: плашки; вид — Md.Callout.<Вид>.Brush, .Icon, .Title ======== -->
+    <Thickness x:Key="Md.Callout.BorderThickness">4,0,0,0</Thickness>
+    <Thickness x:Key="Md.Callout.Padding">12,6</Thickness>
+    <Thickness x:Key="Md.Callout.Margin">0,0,0,4</Thickness>
+    <CornerRadius x:Key="Md.Callout.CornerRadius">0</CornerRadius>
+    <Brush x:Key="Md.Callout.Background">Transparent</Brush>
+    <Geometry x:Key="Md.Callout.ChevronIcon">M2,5 L8,11 L14,5 L12.6,3.6 L8,8.2 L3.4,3.6 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Note.Brush" Color="#0969DA" />
+    <sys:String x:Key="Md.Callout.Note.Title">Note</sys:String>
+    <Geometry x:Key="Md.Callout.Note.Icon">F0 M0.5,8 A7.5,7.5 0 1 1 15.5,8 A7.5,7.5 0 1 1 0.5,8 Z M2,8 A6,6 0 1 0 14,8 A6,6 0 1 0 2,8 Z M7.25,7 L8.75,7 L8.75,12 L7.25,12 Z M7,4.75 A1,1 0 1 1 9,4.75 A1,1 0 1 1 7,4.75 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Tip.Brush" Color="#1A7F37" />
+    <sys:String x:Key="Md.Callout.Tip.Title">Tip</sys:String>
+    <Geometry x:Key="Md.Callout.Tip.Icon">F0 M2.5,6.5 A5.5,5.5 0 1 1 13.5,6.5 A5.5,5.5 0 1 1 2.5,6.5 Z M4,6.5 A4,4 0 1 0 12,6.5 A4,4 0 1 0 4,6.5 Z M6,12.25 L10,12.25 L10,13.5 L6,13.5 Z M6.5,14 L9.5,14 L9.5,15.25 L6.5,15.25 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Important.Brush" Color="#8250DF" />
+    <sys:String x:Key="Md.Callout.Important.Title">Important</sys:String>
+    <Geometry x:Key="Md.Callout.Important.Icon">F0 M0.5,1 L15.5,1 L15.5,12 L0.5,12 Z M2,2.5 L2,10.5 L14,10.5 L14,2.5 Z M4,12 L4,15.5 L7.5,12 Z M7.25,3.75 L8.75,3.75 L8.75,7.5 L7.25,7.5 Z M7.25,8.25 L8.75,8.25 L8.75,9.75 L7.25,9.75 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Warning.Brush" Color="#9A6700" />
+    <sys:String x:Key="Md.Callout.Warning.Title">Warning</sys:String>
+    <Geometry x:Key="Md.Callout.Warning.Icon">F0 M8,0.75 L15.5,14.75 L0.5,14.75 Z M8,3.6 L2.9,13.25 L13.1,13.25 Z M7.25,6 L8.75,6 L8.75,10 L7.25,10 Z M7.25,10.9 L8.75,10.9 L8.75,12.4 L7.25,12.4 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Caution.Brush" Color="#CF222E" />
+    <sys:String x:Key="Md.Callout.Caution.Title">Caution</sys:String>
+    <Geometry x:Key="Md.Callout.Caution.Icon">F0 M5,0.5 L11,0.5 L15.5,5 L15.5,11 L11,15.5 L5,15.5 L0.5,11 L0.5,5 Z M5.6,2 L2,5.6 L2,10.4 L5.6,14 L10.4,14 L14,10.4 L14,5.6 L10.4,2 Z M7.25,4.5 L8.75,4.5 L8.75,9.5 L7.25,9.5 Z M7.25,10.5 L8.75,10.5 L8.75,12 L7.25,12 Z</Geometry>
+
+    <!-- Виды плашек Obsidian и MkDocs -->
+    <SolidColorBrush x:Key="Md.Callout.Abstract.Brush" Color="#0E7490" />
+    <sys:String x:Key="Md.Callout.Abstract.Title">Abstract</sys:String>
+    <Geometry x:Key="Md.Callout.Abstract.Icon">F0 M3,1 L10,1 L13,4 L13,15 L3,15 Z M4.5,2.5 L4.5,13.5 L11.5,13.5 L11.5,4.6 L9.4,2.5 Z M6,6.5 L10,6.5 L10,7.75 L6,7.75 Z M6,9.25 L10,9.25 L10,10.5 L6,10.5 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Info.Brush" Color="#0969DA" />
+    <sys:String x:Key="Md.Callout.Info.Title">Info</sys:String>
+    <Geometry x:Key="Md.Callout.Info.Icon">F0 M0.5,8 A7.5,7.5 0 1 1 15.5,8 A7.5,7.5 0 1 1 0.5,8 Z M2,8 A6,6 0 1 0 14,8 A6,6 0 1 0 2,8 Z M7.25,7 L8.75,7 L8.75,12 L7.25,12 Z M7,4.75 A1,1 0 1 1 9,4.75 A1,1 0 1 1 7,4.75 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Todo.Brush" Color="#0969DA" />
+    <sys:String x:Key="Md.Callout.Todo.Title">Todo</sys:String>
+    <Geometry x:Key="Md.Callout.Todo.Icon">F0 M0.5,8 A7.5,7.5 0 1 1 15.5,8 A7.5,7.5 0 1 1 0.5,8 Z M2,8 A6,6 0 1 0 14,8 A6,6 0 1 0 2,8 Z M4.5,8.5 L5.5,7.5 L7,9 L10.5,5.5 L11.5,6.5 L7,11 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Success.Brush" Color="#1A7F37" />
+    <sys:String x:Key="Md.Callout.Success.Title">Success</sys:String>
+    <Geometry x:Key="Md.Callout.Success.Icon">M1.5,8.5 L3,7 L6,10 L13,3 L14.5,4.5 L6,13 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Question.Brush" Color="#BF8700" />
+    <sys:String x:Key="Md.Callout.Question.Title">Question</sys:String>
+    <Geometry x:Key="Md.Callout.Question.Icon">F0 M0.5,8 A7.5,7.5 0 1 1 15.5,8 A7.5,7.5 0 1 1 0.5,8 Z M2,8 A6,6 0 1 0 14,8 A6,6 0 1 0 2,8 Z M5,6 A3,3 0 0 1 11,6 C11,7.5 9,8 8.75,9.5 L8.75,10.25 L7.25,10.25 L7.25,9.5 C7.5,7.5 9.5,7.3 9.5,6 A1.5,1.5 0 0 0 6.5,6 Z M7.25,11.25 L8.75,11.25 L8.75,12.75 L7.25,12.75 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Failure.Brush" Color="#CF222E" />
+    <sys:String x:Key="Md.Callout.Failure.Title">Failure</sys:String>
+    <Geometry x:Key="Md.Callout.Failure.Icon">M3.5,2.5 L8,7 L12.5,2.5 L13.5,3.5 L9,8 L13.5,12.5 L12.5,13.5 L8,9 L3.5,13.5 L2.5,12.5 L7,8 L2.5,3.5 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Danger.Brush" Color="#CF222E" />
+    <sys:String x:Key="Md.Callout.Danger.Title">Danger</sys:String>
+    <Geometry x:Key="Md.Callout.Danger.Icon">M9.5,0.5 L2.5,9 L7.25,9 L6,15.5 L13.5,6.5 L8.75,6.5 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Bug.Brush" Color="#CF222E" />
+    <sys:String x:Key="Md.Callout.Bug.Title">Bug</sys:String>
+    <Geometry x:Key="Md.Callout.Bug.Icon">M6,3.5 A2,2 0 0 1 10,3.5 L10,4.5 L6,4.5 Z M4.5,5.5 L11.5,5.5 L11.5,10 A3.5,3.5 0 0 1 4.5,10 Z M1.5,7 L4,7 L4,8.25 L1.5,8.25 Z M12,7 L14.5,7 L14.5,8.25 L12,8.25 Z M1.5,11 L4.25,10.25 L4.6,11.45 L1.85,12.2 Z M14.5,11 L11.75,10.25 L11.4,11.45 L14.15,12.2 Z M2,3 L4.5,5 L3.75,5.95 L1.25,3.95 Z M14,3 L11.5,5 L12.25,5.95 L14.75,3.95 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Example.Brush" Color="#8250DF" />
+    <sys:String x:Key="Md.Callout.Example.Title">Example</sys:String>
+    <Geometry x:Key="Md.Callout.Example.Icon">M2,3 L4,3 L4,5 L2,5 Z M6,3.25 L14,3.25 L14,4.75 L6,4.75 Z M2,7 L4,7 L4,9 L2,9 Z M6,7.25 L14,7.25 L14,8.75 L6,8.75 Z M2,11 L4,11 L4,13 L2,13 Z M6,11.25 L14,11.25 L14,12.75 L6,12.75 Z</Geometry>
+
+    <SolidColorBrush x:Key="Md.Callout.Quote.Brush" Color="#6E7781" />
+    <sys:String x:Key="Md.Callout.Quote.Title">Quote</sys:String>
+    <Geometry x:Key="Md.Callout.Quote.Icon">M2,3.5 L7,3.5 L7,8.5 C7,11 5.5,12.5 3,12.5 L3,11 C4.5,11 5.5,10 5.5,8.5 L2,8.5 Z M9,3.5 L14,3.5 L14,8.5 C14,11 12.5,12.5 10,12.5 L10,11 C11.5,11 12.5,10 12.5,8.5 L9,8.5 Z</Geometry>
+
+    <!-- ======== Md.Details: сворачиваемый блок ======== -->
+    <sys:String x:Key="Md.Details.Title">Details</sys:String>
+    <Thickness x:Key="Md.Details.Margin">0,0,0,4</Thickness>
+    <Thickness x:Key="Md.Details.ContentMargin">16,4,0,0</Thickness>
+    <Brush x:Key="Md.Details.MarkerForeground">Gray</Brush>
+    <Geometry x:Key="Md.Details.MarkerIcon">M2,5 L8,11 L14,5 L12.6,3.6 L8,8.2 L3.4,3.6 Z</Geometry>
+
+    <!-- ======== Md.DefinitionList ======== -->
+    <Thickness x:Key="Md.DefinitionList.Margin">0,0,0,0</Thickness>
+    <Thickness x:Key="Md.DefinitionList.DefinitionMargin">24,2,0,0</Thickness>
 
     <!-- ======== Md.Heading ======== -->
     <!-- Md.Heading.FontFamily и Md.Heading.Foreground не заданы: заголовок берёт их у приложения -->
@@ -273,6 +392,17 @@
         <Setter Property="EmphasisStyle" Value="{DynamicResource Md.Emphasis.Style}" />
         <Setter Property="StrikeStyle" Value="{DynamicResource Md.Strike.Style}" />
         <Setter Property="LinkStyle" Value="{DynamicResource Md.Link.Style}" />
+        <Setter Property="MarkedStyle" Value="{DynamicResource Md.Marked.Style}" />
+        <Setter Property="InsertedStyle" Value="{DynamicResource Md.Inserted.Style}" />
+        <Setter Property="CiteStyle" Value="{DynamicResource Md.Cite.Style}" />
+        <Setter Property="AbbreviationStyle" Value="{DynamicResource Md.Abbreviation.Style}" />
+    </Style>
+
+    <Style x:Key="Md.Figure.CaptionStyle" TargetType="{x:Type p:MdTextBlock}"
+           BasedOn="{StaticResource Md.Paragraph.Style}">
+        <Setter Property="FontSize" Value="{DynamicResource Md.Figure.CaptionFontSize}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Figure.CaptionForeground}" />
+        <Setter Property="FontStyle" Value="Italic" />
     </Style>
 
     <Style x:Key="Md.Heading.Style" TargetType="{x:Type p:MdHeadingBlock}">
@@ -285,6 +415,10 @@
         <Setter Property="EmphasisStyle" Value="{DynamicResource Md.Emphasis.Style}" />
         <Setter Property="StrikeStyle" Value="{DynamicResource Md.Strike.Style}" />
         <Setter Property="LinkStyle" Value="{DynamicResource Md.Link.Style}" />
+        <Setter Property="MarkedStyle" Value="{DynamicResource Md.Marked.Style}" />
+        <Setter Property="InsertedStyle" Value="{DynamicResource Md.Inserted.Style}" />
+        <Setter Property="CiteStyle" Value="{DynamicResource Md.Cite.Style}" />
+        <Setter Property="AbbreviationStyle" Value="{DynamicResource Md.Abbreviation.Style}" />
         <Setter Property="Margin" Value="{DynamicResource Md.Heading6.Margin}" />
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading6.FontSize}" />
         <Setter Property="FontWeight" Value="{DynamicResource Md.Heading6.FontWeight}" />
@@ -357,9 +491,12 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource Md.CodeBlock.HeaderForeground}" />
+                            <Setter TargetName="Frame" Property="BorderBrush"
+                                    Value="{DynamicResource Md.CodeBlock.HeaderForeground}" />
                         </Trigger>
-                        <DataTrigger Binding="{Binding IsCopied, RelativeSource={RelativeSource AncestorType={x:Type p:CodeBlockPresenter}}}" Value="True">
+                        <DataTrigger
+                            Binding="{Binding IsCopied, RelativeSource={RelativeSource AncestorType={x:Type p:CodeBlockPresenter}}}"
+                            Value="True">
                             <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.CodeBlock.CopiedIcon}" />
                         </DataTrigger>
                     </ControlTemplate.Triggers>
@@ -414,6 +551,7 @@
                                                    Foreground="{DynamicResource Md.CodeBlock.Foreground}"
                                                    FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
                                                    FontSize="{DynamicResource Md.CodeBlock.FontSize}"
+                                                   TextAlignment="Left"
                                                    TextWrapping="WrapWithOverflow" />
                                 </ScrollViewer>
                             </Grid>
@@ -460,6 +598,211 @@
                         <p:MdBlocksPresenter Blocks="{TemplateBinding Blocks}" />
                     </Border>
                 </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Md.Callout.TitleStyle" TargetType="{x:Type p:MdTextBlock}"
+           BasedOn="{StaticResource Md.Paragraph.Style}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground"
+                Value="{Binding Accent, RelativeSource={RelativeSource AncestorType={x:Type p:MdCalloutPresenter}}}" />
+    </Style>
+
+    <Style x:Key="Md.Callout.DefaultTitleStyle" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontFamily" Value="{DynamicResource Md.Paragraph.FontFamily}" />
+        <Setter Property="FontSize" Value="{DynamicResource Md.Paragraph.FontSize}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground"
+                Value="{Binding Accent, RelativeSource={RelativeSource AncestorType={x:Type p:MdCalloutPresenter}}}" />
+    </Style>
+
+    <!-- Заголовок-переключатель плашки и сворачиваемого блока: без своей рамки и фона -->
+    <Style x:Key="Md.Callout.HeaderStyle" TargetType="{x:Type ToggleButton}">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                    <ContentPresenter Margin="{TemplateBinding Padding}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Md.Callout.Style" TargetType="{x:Type p:MdCalloutPresenter}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type p:MdCalloutPresenter}">
+                    <Border BorderBrush="{TemplateBinding Accent}"
+                            BorderThickness="{DynamicResource Md.Callout.BorderThickness}"
+                            Background="{DynamicResource Md.Callout.Background}"
+                            CornerRadius="{DynamicResource Md.Callout.CornerRadius}"
+                            Padding="{DynamicResource Md.Callout.Padding}"
+                            Margin="{DynamicResource Md.Callout.Margin}">
+                        <StackPanel>
+                            <ToggleButton x:Name="Header"
+                                          IsHitTestVisible="False"
+                                          IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                          Style="{DynamicResource Md.Callout.HeaderStyle}">
+                                <DockPanel>
+                                    <Path DockPanel.Dock="Left"
+                                          Data="{TemplateBinding Icon}"
+                                          Fill="{TemplateBinding Accent}"
+                                          Width="16"
+                                          Height="16"
+                                          Stretch="Uniform"
+                                          Margin="0,0,8,0"
+                                          VerticalAlignment="Center" />
+                                    <Path x:Name="Chevron"
+                                          DockPanel.Dock="Right"
+                                          Visibility="Collapsed"
+                                          Data="{DynamicResource Md.Callout.ChevronIcon}"
+                                          Fill="{TemplateBinding Accent}"
+                                          Width="10"
+                                          Height="10"
+                                          Stretch="Uniform"
+                                          Margin="8,0,0,0"
+                                          VerticalAlignment="Center"
+                                          RenderTransformOrigin="0.5,0.5" />
+                                    <Grid VerticalAlignment="Center">
+                                        <p:MdTextBlock x:Name="CustomTitle"
+                                                       Visibility="Collapsed"
+                                                       Runs="{TemplateBinding Title}"
+                                                       Style="{DynamicResource Md.Callout.TitleStyle}" />
+                                        <TextBlock x:Name="DefaultTitle"
+                                                   Text="{TemplateBinding DefaultTitle}"
+                                                   Style="{DynamicResource Md.Callout.DefaultTitleStyle}" />
+                                    </Grid>
+                                </DockPanel>
+                            </ToggleButton>
+                            <p:MdBlocksPresenter x:Name="Body" Blocks="{TemplateBinding Blocks}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="HasTitle" Value="True">
+                            <Setter TargetName="CustomTitle" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="DefaultTitle" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                        <Trigger Property="IsFoldable" Value="True">
+                            <Setter TargetName="Header" Property="IsHitTestVisible" Value="True" />
+                            <Setter TargetName="Chevron" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsExpanded" Value="False">
+                            <Setter TargetName="Body" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="Chevron" Property="RenderTransform">
+                                <Setter.Value>
+                                    <RotateTransform Angle="-90" />
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Md.Details.SummaryStyle" TargetType="{x:Type p:MdTextBlock}"
+           BasedOn="{StaticResource Md.Paragraph.Style}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style x:Key="Md.Details.DefaultSummaryStyle" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontFamily" Value="{DynamicResource Md.Paragraph.FontFamily}" />
+        <Setter Property="FontSize" Value="{DynamicResource Md.Paragraph.FontSize}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style x:Key="Md.Details.HeaderStyle" TargetType="{x:Type ToggleButton}"
+           BasedOn="{StaticResource Md.Callout.HeaderStyle}" />
+
+    <Style x:Key="Md.Details.Style" TargetType="{x:Type p:MdDetailsPresenter}">
+        <Setter Property="DefaultTitle" Value="{DynamicResource Md.Details.Title}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type p:MdDetailsPresenter}">
+                    <StackPanel Margin="{DynamicResource Md.Details.Margin}">
+                        <ToggleButton
+                            IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                            HorizontalAlignment="Left"
+                            Style="{DynamicResource Md.Details.HeaderStyle}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path x:Name="Marker"
+                                      Data="{DynamicResource Md.Details.MarkerIcon}"
+                                      Fill="{DynamicResource Md.Details.MarkerForeground}"
+                                      Width="10"
+                                      Height="10"
+                                      Stretch="Uniform"
+                                      Margin="0,0,6,0"
+                                      VerticalAlignment="Center"
+                                      RenderTransformOrigin="0.5,0.5">
+                                    <Path.RenderTransform>
+                                        <RotateTransform Angle="-90" />
+                                    </Path.RenderTransform>
+                                </Path>
+                                <Grid VerticalAlignment="Center">
+                                    <p:MdTextBlock x:Name="CustomTitle"
+                                                   Visibility="Collapsed"
+                                                   Runs="{TemplateBinding Summary}"
+                                                   Style="{DynamicResource Md.Details.SummaryStyle}" />
+                                    <TextBlock x:Name="DefaultTitle"
+                                               Text="{TemplateBinding DefaultTitle}"
+                                               Style="{DynamicResource Md.Details.DefaultSummaryStyle}" />
+                                </Grid>
+                            </StackPanel>
+                        </ToggleButton>
+                        <p:MdBlocksPresenter x:Name="Body"
+                                             Visibility="Collapsed"
+                                             Blocks="{TemplateBinding Blocks}"
+                                             Margin="{DynamicResource Md.Details.ContentMargin}" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="HasSummary" Value="True">
+                            <Setter TargetName="CustomTitle" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="DefaultTitle" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="Body" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="Marker" Property="RenderTransform"
+                                    Value="{x:Static Transform.Identity}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Md.DefinitionList.TermStyle" TargetType="{x:Type p:MdTextBlock}"
+           BasedOn="{StaticResource Md.Paragraph.Style}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style x:Key="Md.DefinitionList.Style" TargetType="{x:Type ItemsControl}">
+        <Setter Property="Margin" Value="{DynamicResource Md.DefinitionList.Margin}" />
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <p:MdBlockPanel />
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ItemTemplate">
+            <Setter.Value>
+                <DataTemplate DataType="{x:Type vm:DefinitionItemVm}">
+                    <StackPanel>
+                        <p:MdTextBlock x:Name="Terms" Runs="{Binding Terms}"
+                                       Style="{DynamicResource Md.DefinitionList.TermStyle}" />
+                        <p:MdBlocksPresenter Blocks="{Binding Blocks}"
+                                             Margin="{DynamicResource Md.DefinitionList.DefinitionMargin}" />
+                    </StackPanel>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding HasTerms}" Value="False">
+                            <Setter TargetName="Terms" Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
             </Setter.Value>
         </Setter>
     </Style>
@@ -540,8 +883,18 @@
                             BorderThickness="{DynamicResource Md.Table.BorderThickness}"
                             Padding="{DynamicResource Md.Table.CellPadding}"
                             Background="{DynamicResource Md.Table.HeaderBackground}">
-                        <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
+                        <Grid>
+                            <p:MdTextBlock x:Name="Text" Runs="{Binding Inlines}"
+                                           Style="{DynamicResource Md.Paragraph.Style}" />
+                            <p:MdBlocksPresenter x:Name="Blocks" Blocks="{Binding Blocks}" Visibility="Collapsed" />
+                        </Grid>
                     </Border>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding HasBlocks}" Value="True">
+                            <Setter TargetName="Text" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="Blocks" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
                 </DataTemplate>
             </Setter.Value>
         </Setter>
@@ -551,8 +904,18 @@
                     <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
                             BorderThickness="{DynamicResource Md.Table.BorderThickness}"
                             Padding="{DynamicResource Md.Table.CellPadding}">
-                        <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Paragraph.Style}" />
+                        <Grid>
+                            <p:MdTextBlock x:Name="Text" Runs="{Binding Inlines}"
+                                           Style="{DynamicResource Md.Paragraph.Style}" />
+                            <p:MdBlocksPresenter x:Name="Blocks" Blocks="{Binding Blocks}" Visibility="Collapsed" />
+                        </Grid>
                     </Border>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding HasBlocks}" Value="True">
+                            <Setter TargetName="Text" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="Blocks" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
                 </DataTemplate>
             </Setter.Value>
         </Setter>
@@ -577,7 +940,8 @@
         <s:MdStyleProvider.CodeBlockTemplate>
             <DataTemplate DataType="{x:Type vm:CodeBlockVm}">
                 <p:CodeBlockPresenter InfoString="{Binding InfoString}" Syntax="{Binding Syntax}" Code="{Binding Code}"
-                                      IsFenced="{Binding IsFenced}" Runs="{Binding Runs}" Style="{DynamicResource Md.CodeBlock.Style}" />
+                                      IsFenced="{Binding IsFenced}" Runs="{Binding Runs}"
+                                      Style="{DynamicResource Md.CodeBlock.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.CodeBlockTemplate>
 
@@ -618,7 +982,8 @@
                         <ColumnDefinition Width="{DynamicResource Md.Footnote.MarkerWidth}" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="{Binding Order, StringFormat={}{0}.}" Style="{DynamicResource Md.Footnote.MarkerStyle}" />
+                    <TextBlock Text="{Binding Order, StringFormat={}{0}.}"
+                               Style="{DynamicResource Md.Footnote.MarkerStyle}" />
                     <p:MdBlocksPresenter Grid.Column="1" Blocks="{Binding Blocks}" />
                 </Grid>
             </DataTemplate>
@@ -645,7 +1010,507 @@
             </DataTemplate>
         </s:MdStyleProvider.FootnoteLinkTemplate>
 
+        <s:MdStyleProvider.FigureTemplate>
+            <DataTemplate DataType="{x:Type vm:FigureVm}">
+                <p:MdBlocksPresenter Blocks="{Binding Blocks}"
+                                     Margin="{DynamicResource Md.Figure.Margin}"
+                                     TextBlock.TextAlignment="Center" />
+            </DataTemplate>
+        </s:MdStyleProvider.FigureTemplate>
+
+        <s:MdStyleProvider.FigureCaptionTemplate>
+            <DataTemplate DataType="{x:Type vm:FigureCaptionVm}">
+                <p:MdTextBlock Runs="{Binding Inlines}" Style="{DynamicResource Md.Figure.CaptionStyle}" />
+            </DataTemplate>
+        </s:MdStyleProvider.FigureCaptionTemplate>
+
+        <s:MdStyleProvider.FooterTemplate>
+            <DataTemplate DataType="{x:Type vm:FooterVm}">
+                <p:MdBlocksPresenter Blocks="{Binding Blocks}" Margin="{DynamicResource Md.Footer.Margin}">
+                    <p:MdBlocksPresenter.Resources>
+                        <!-- Абзацы подвала — мелким текстом: свой стиль абзаца на основе общего -->
+                        <Style x:Key="Md.Paragraph.Style" TargetType="{x:Type p:MdTextBlock}"
+                               BasedOn="{StaticResource Md.Paragraph.Style}">
+                            <Setter Property="FontSize" Value="{DynamicResource Md.Footer.FontSize}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Md.Footer.Foreground}" />
+                        </Style>
+                    </p:MdBlocksPresenter.Resources>
+                </p:MdBlocksPresenter>
+            </DataTemplate>
+        </s:MdStyleProvider.FooterTemplate>
+
+        <s:MdStyleProvider.CalloutTemplate>
+            <DataTemplate DataType="{x:Type vm:CalloutVm}">
+                <p:MdCalloutPresenter Kind="{Binding Kind}"
+                                      Title="{Binding Title}"
+                                      Blocks="{Binding Blocks}"
+                                      IsFoldable="{Binding IsFoldable}"
+                                      IsExpanded="{Binding Path=(mdx:MdWidget.State).IsExpanded, RelativeSource={RelativeSource Self}, FallbackValue=True}"
+                                      Style="{DynamicResource Md.Callout.Style}" />
+            </DataTemplate>
+        </s:MdStyleProvider.CalloutTemplate>
+
+        <s:MdStyleProvider.DetailsTemplate>
+            <DataTemplate DataType="{x:Type vm:DetailsVm}">
+                <p:MdDetailsPresenter Summary="{Binding Summary}"
+                                      Blocks="{Binding Blocks}"
+                                      IsExpanded="{Binding Path=(mdx:MdWidget.State).IsExpanded, RelativeSource={RelativeSource Self}, FallbackValue=True}"
+                                      Style="{DynamicResource Md.Details.Style}" />
+            </DataTemplate>
+        </s:MdStyleProvider.DetailsTemplate>
+
+        <s:MdStyleProvider.DefinitionListTemplate>
+            <DataTemplate DataType="{x:Type vm:DefinitionListVm}">
+                <p:MdDefinitionListPresenter ItemsSource="{Binding Items}"
+                                             Style="{DynamicResource Md.DefinitionList.Style}" />
+            </DataTemplate>
+        </s:MdStyleProvider.DefinitionListTemplate>
+
+        <s:MdStyleProvider.AlignedTemplate>
+            <DataTemplate DataType="{x:Type vm:AlignedVm}">
+                <p:MdBlocksPresenter x:Name="Blocks" Blocks="{Binding Blocks}" />
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding Alignment}" Value="Left">
+                        <Setter TargetName="Blocks" Property="TextBlock.TextAlignment" Value="Left" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Alignment}" Value="Center">
+                        <Setter TargetName="Blocks" Property="TextBlock.TextAlignment" Value="Center" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Alignment}" Value="Right">
+                        <Setter TargetName="Blocks" Property="TextBlock.TextAlignment" Value="Right" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Alignment}" Value="Justify">
+                        <Setter TargetName="Blocks" Property="TextBlock.TextAlignment" Value="Justify" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+        </s:MdStyleProvider.AlignedTemplate>
+
     </s:MdStyleProvider>
+
+    <!-- ======== Готовые расширения: связи ======== -->
+    <Style x:Key="Md.WikiLink.Style" TargetType="{x:Type Span}" />
+    <Style x:Key="Md.WikiLink.Missing.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="#CF222E" />
+    </Style>
+
+    <Style x:Key="Md.Tag.Style" TargetType="{x:Type Span}">
+        <Setter Property="Background" Value="#DDF4FF" />
+        <Setter Property="Foreground" Value="#0969DA" />
+    </Style>
+
+    <Brush x:Key="Md.Mention.Background">#DDF4FF</Brush>
+    <Brush x:Key="Md.Mention.Foreground">#0969DA</Brush>
+    <Thickness x:Key="Md.Mention.Padding">4,0</Thickness>
+    <CornerRadius x:Key="Md.Mention.CornerRadius">8</CornerRadius>
+    <DataTemplate x:Key="Md.Mention.Template" DataType="{x:Type kit:MentionVm}">
+        <Button Style="{x:Null}"
+                OverridesDefaultStyle="True"
+                Focusable="False"
+                Cursor="Hand"
+                ToolTip="{Binding Href}"
+                Command="{x:Static local:MarkdownLink.ActivateCommand}"
+                CommandParameter="{Binding Href}">
+            <Button.Template>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border Background="{DynamicResource Md.Mention.Background}"
+                            CornerRadius="{DynamicResource Md.Mention.CornerRadius}"
+                            Padding="{DynamicResource Md.Mention.Padding}">
+                        <TextBlock Text="{Binding DisplayName, StringFormat='@{0}'}"
+                                   Foreground="{DynamicResource Md.Mention.Foreground}" />
+                    </Border>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+    </DataTemplate>
+
+    <!-- Оглавление на месте: отступ пункта — по уровню заголовка -->
+    <Thickness x:Key="Md.Toc.Margin">0,0,0,4</Thickness>
+    <Thickness x:Key="Md.Toc.Level1.Margin">0,0,0,2</Thickness>
+    <Thickness x:Key="Md.Toc.Level2.Margin">16,0,0,2</Thickness>
+    <Thickness x:Key="Md.Toc.Level3.Margin">32,0,0,2</Thickness>
+    <Thickness x:Key="Md.Toc.Level4.Margin">48,0,0,2</Thickness>
+    <Thickness x:Key="Md.Toc.Level5.Margin">64,0,0,2</Thickness>
+    <Thickness x:Key="Md.Toc.Level6.Margin">80,0,0,2</Thickness>
+    <DataTemplate x:Key="Md.Toc.Template" DataType="{x:Type kit:TocVm}">
+        <p:MdListPresenter
+            ItemsSource="{Binding TextMap.Headings, RelativeSource={RelativeSource AncestorType={x:Type local:MarkdownViewer}}}"
+            Margin="{DynamicResource Md.Toc.Margin}">
+            <p:MdListPresenter.ItemTemplate>
+                <DataTemplate DataType="{x:Type sel:MdHeading}">
+                    <TextBlock x:Name="Item"
+                               Margin="{DynamicResource Md.Toc.Level1.Margin}"
+                               FontSize="{DynamicResource Md.Paragraph.FontSize}">
+                        <Hyperlink Command="{x:Static local:MarkdownLink.ActivateCommand}"
+                                   CommandParameter="{Binding Href}"
+                                   Foreground="{DynamicResource Md.Paragraph.LinkForeground}"
+                                   Style="{DynamicResource Md.Link.Style}">
+                            <Run Text="{Binding Text, Mode=OneWay}" />
+                        </Hyperlink>
+                    </TextBlock>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Level}" Value="2">
+                            <Setter TargetName="Item" Property="Margin" Value="{DynamicResource Md.Toc.Level2.Margin}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Level}" Value="3">
+                            <Setter TargetName="Item" Property="Margin" Value="{DynamicResource Md.Toc.Level3.Margin}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Level}" Value="4">
+                            <Setter TargetName="Item" Property="Margin" Value="{DynamicResource Md.Toc.Level4.Margin}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Level}" Value="5">
+                            <Setter TargetName="Item" Property="Margin" Value="{DynamicResource Md.Toc.Level5.Margin}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Level}" Value="6">
+                            <Setter TargetName="Item" Property="Margin" Value="{DynamicResource Md.Toc.Level6.Margin}" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </p:MdListPresenter.ItemTemplate>
+        </p:MdListPresenter>
+    </DataTemplate>
+
+    <!-- ======== Готовые расширения: чипы и работа над текстом ======== -->
+    <Style x:Key="Md.Chip.Style" TargetType="{x:Type Span}">
+        <Setter Property="Background" Value="#3357606A" />
+    </Style>
+    <Style x:Key="Md.Chip.Info.Style" TargetType="{x:Type Span}">
+        <Setter Property="Background" Value="#DDF4FF" />
+        <Setter Property="Foreground" Value="#0969DA" />
+    </Style>
+    <Style x:Key="Md.Chip.Success.Style" TargetType="{x:Type Span}">
+        <Setter Property="Background" Value="#DAFBE1" />
+        <Setter Property="Foreground" Value="#1A7F37" />
+    </Style>
+    <Style x:Key="Md.Chip.Warning.Style" TargetType="{x:Type Span}">
+        <Setter Property="Background" Value="#FFF8C5" />
+        <Setter Property="Foreground" Value="#9A6700" />
+    </Style>
+    <Style x:Key="Md.Chip.Danger.Style" TargetType="{x:Type Span}">
+        <Setter Property="Background" Value="#FFEBE9" />
+        <Setter Property="Foreground" Value="#CF222E" />
+    </Style>
+
+    <sys:Double x:Key="Md.ColorCode.SwatchSize">10</sys:Double>
+    <Thickness x:Key="Md.ColorCode.SwatchMargin">0,0,4,0</Thickness>
+    <Brush x:Key="Md.ColorCode.SwatchBorder">#33000000</Brush>
+    <DataTemplate x:Key="Md.ColorCode.Template" DataType="{x:Type kit:ColorCodeVm}">
+        <StackPanel Orientation="Horizontal">
+            <Ellipse Width="{DynamicResource Md.ColorCode.SwatchSize}"
+                     Height="{DynamicResource Md.ColorCode.SwatchSize}"
+                     Margin="{DynamicResource Md.ColorCode.SwatchMargin}"
+                     Fill="{Binding Color}"
+                     Stroke="{DynamicResource Md.ColorCode.SwatchBorder}"
+                     StrokeThickness="1"
+                     VerticalAlignment="Center" />
+            <p:InlineCodePresenter Text="{Binding Code}" Style="{DynamicResource Md.Paragraph.InlineCodeStyle}" />
+        </StackPanel>
+    </DataTemplate>
+
+    <Style x:Key="Md.Critic.Insertion.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="#1A7F37" />
+        <Setter Property="TextDecorations" Value="Underline" />
+    </Style>
+    <Style x:Key="Md.Critic.Deletion.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="#CF222E" />
+        <Setter Property="TextDecorations" Value="Strikethrough" />
+    </Style>
+    <Style x:Key="Md.Critic.Highlight.Style" TargetType="{x:Type Span}">
+        <Setter Property="Background" Value="#66F2CC00" />
+    </Style>
+
+    <Brush x:Key="Md.Critic.CommentForeground">#9A6700</Brush>
+    <Geometry x:Key="Md.Critic.CommentIcon">M1,2 L15,2 L15,11 L6.5,11 L3.5,14 L3.5,11 L1,11 Z</Geometry>
+    <DataTemplate x:Key="Md.Critic.Comment.Template" DataType="{x:Type kit:CriticCommentVm}">
+        <Border Background="Transparent" Padding="2,0" Cursor="Help" ToolTip="{Binding Text}">
+            <Path Data="{DynamicResource Md.Critic.CommentIcon}"
+                  Fill="{DynamicResource Md.Critic.CommentForeground}"
+                  Width="12"
+                  Height="12"
+                  Stretch="Uniform" />
+        </Border>
+    </DataTemplate>
+
+    <Brush x:Key="Md.Critic.AcceptForeground">#1A7F37</Brush>
+    <Brush x:Key="Md.Critic.RejectForeground">#CF222E</Brush>
+    <Geometry x:Key="Md.Critic.AcceptIcon">M1.5,8.5 L3,7 L6,10 L13,3 L14.5,4.5 L6,13 Z</Geometry>
+    <Geometry x:Key="Md.Critic.RejectIcon">M3.5,2.5 L8,7 L12.5,2.5 L13.5,3.5 L9,8 L13.5,12.5 L12.5,13.5 L8,9 L3.5,13.5 L2.5,12.5 L7,8 L2.5,3.5 Z</Geometry>
+    <sys:String x:Key="Md.Critic.AcceptToolTip">Accept</sys:String>
+    <sys:String x:Key="Md.Critic.RejectToolTip">Reject</sys:String>
+    <DataTemplate x:Key="Md.Critic.Decision.Template" DataType="{x:Type kit:CriticDecisionVm}">
+        <StackPanel Orientation="Horizontal" Margin="2,0">
+            <Button Style="{x:Null}"
+                    Focusable="False"
+                    Cursor="Hand"
+                    ToolTip="{DynamicResource Md.Critic.AcceptToolTip}"
+                    Command="{x:Static kit:CriticMarkup.AcceptCommand}"
+                    CommandParameter="{Binding}">
+                <Button.Template>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Background="Transparent" Padding="1">
+                            <Path Data="{DynamicResource Md.Critic.AcceptIcon}"
+                                  Fill="{DynamicResource Md.Critic.AcceptForeground}" Width="10" Height="10"
+                                  Stretch="Uniform" />
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <Button Style="{x:Null}"
+                    Focusable="False"
+                    Cursor="Hand"
+                    ToolTip="{DynamicResource Md.Critic.RejectToolTip}"
+                    Command="{x:Static kit:CriticMarkup.RejectCommand}"
+                    CommandParameter="{Binding}">
+                <Button.Template>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Background="Transparent" Padding="1">
+                            <Path Data="{DynamicResource Md.Critic.RejectIcon}"
+                                  Fill="{DynamicResource Md.Critic.RejectForeground}" Width="10" Height="10"
+                                  Stretch="Uniform" />
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- Спойлер закрашен, пока его состояние не раскрыто -->
+    <Brush x:Key="Md.Spoiler.Cover">#57606A</Brush>
+    <Brush x:Key="Md.Spoiler.RevealedBackground">#3357606A</Brush>
+    <Style x:Key="Md.Spoiler.Style" TargetType="{x:Type Span}">
+        <Setter Property="Background" Value="{DynamicResource Md.Spoiler.RevealedBackground}" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding Path=(mdx:MdWidget.State).IsRevealed, RelativeSource={RelativeSource Self}}"
+                         Value="False">
+                <Setter Property="Background" Value="{DynamicResource Md.Spoiler.Cover}" />
+                <Setter Property="Foreground" Value="{DynamicResource Md.Spoiler.Cover}" />
+                <Setter Property="Cursor" Value="Hand" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Brush x:Key="Md.TaskStatus.Foreground">#0969DA</Brush>
+    <Geometry x:Key="Md.TaskStatus.InProgress.Icon">F0 M1,8 A7,7 0 1 1 15,8 A7,7 0 1 1 1,8 Z M2.5,8 A5.5,5.5 0 1 0 13.5,8 A5.5,5.5 0 1 0 2.5,8 Z M8,4 A4,4 0 0 1 8,12 Z</Geometry>
+    <Geometry x:Key="Md.TaskStatus.Cancelled.Icon">F0 M1,8 A7,7 0 1 1 15,8 A7,7 0 1 1 1,8 Z M2.5,8 A5.5,5.5 0 1 0 13.5,8 A5.5,5.5 0 1 0 2.5,8 Z M4.5,7.25 L11.5,7.25 L11.5,8.75 L4.5,8.75 Z</Geometry>
+    <Geometry x:Key="Md.TaskStatus.Forwarded.Icon">F0 M1,8 A7,7 0 1 1 15,8 A7,7 0 1 1 1,8 Z M2.5,8 A5.5,5.5 0 1 0 13.5,8 A5.5,5.5 0 1 0 2.5,8 Z M6,4.5 L10.5,8 L6,11.5 L6,9.6 L8.2,8 L6,6.4 Z</Geometry>
+    <Geometry x:Key="Md.TaskStatus.Question.Icon">F0 M1,8 A7,7 0 1 1 15,8 A7,7 0 1 1 1,8 Z M2.5,8 A5.5,5.5 0 1 0 13.5,8 A5.5,5.5 0 1 0 2.5,8 Z M5.5,6.25 A2.5,2.5 0 0 1 10.5,6.25 C10.5,7.5 8.75,7.9 8.75,9.25 L7.25,9.25 C7.25,7.25 9,7.2 9,6.25 A1,1 0 0 0 7,6.25 Z M7.25,10.25 L8.75,10.25 L8.75,11.75 L7.25,11.75 Z</Geometry>
+    <Geometry x:Key="Md.TaskStatus.Important.Icon">F0 M1,8 A7,7 0 1 1 15,8 A7,7 0 1 1 1,8 Z M2.5,8 A5.5,5.5 0 1 0 13.5,8 A5.5,5.5 0 1 0 2.5,8 Z M7.25,4 L8.75,4 L8.75,9.5 L7.25,9.5 Z M7.25,10.75 L8.75,10.75 L8.75,12.25 L7.25,12.25 Z</Geometry>
+    <Style x:Key="Md.TaskStatus.Style" TargetType="{x:Type p:MdTaskCheckBox}">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type p:MdTaskCheckBox}">
+                    <Border Background="Transparent" VerticalAlignment="Center">
+                        <Path x:Name="Icon"
+                              Width="14"
+                              Height="14"
+                              Stretch="Uniform"
+                              Fill="{DynamicResource Md.TaskStatus.Foreground}"
+                              Data="{DynamicResource Md.TaskStatus.InProgress.Icon}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Task.Status, RelativeSource={RelativeSource Self}}" Value="-">
+                            <Setter TargetName="Icon" Property="Data"
+                                    Value="{DynamicResource Md.TaskStatus.Cancelled.Icon}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Task.Status, RelativeSource={RelativeSource Self}}" Value="&gt;">
+                            <Setter TargetName="Icon" Property="Data"
+                                    Value="{DynamicResource Md.TaskStatus.Forwarded.Icon}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Task.Status, RelativeSource={RelativeSource Self}}" Value="?">
+                            <Setter TargetName="Icon" Property="Data"
+                                    Value="{DynamicResource Md.TaskStatus.Question.Icon}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Task.Status, RelativeSource={RelativeSource Self}}" Value="!">
+                            <Setter TargetName="Icon" Property="Data"
+                                    Value="{DynamicResource Md.TaskStatus.Important.Icon}" />
+                        </DataTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Cursor" Value="{x:Null}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <DataTemplate x:Key="Md.TaskStatus.Template" DataType="{x:Type vm:TaskVm}">
+        <p:MdTaskCheckBox Task="{Binding}"
+                          Focusable="False"
+                          Margin="{DynamicResource Md.Task.Margin}"
+                          Style="{DynamicResource Md.TaskStatus.Style}" />
+    </DataTemplate>
+
+    <sys:Double x:Key="Md.FootnoteTip.MaxWidth">400</sys:Double>
+    <DataTemplate x:Key="Md.FootnoteTip.Template" DataType="{x:Type kit:FootnoteTipVm}">
+        <TextBlock Text="{Binding Order, StringFormat='[{0}]'}"
+                   Foreground="{DynamicResource Md.Paragraph.LinkForeground}"
+                   FontSize="{DynamicResource Md.Footnote.LinkFontSize}"
+                   Cursor="Help">
+            <TextBlock.ToolTip>
+                <ToolTip MaxWidth="{DynamicResource Md.FootnoteTip.MaxWidth}">
+                    <local:MarkdownViewer Markdown="{Binding Markdown}" />
+                </ToolTip>
+            </TextBlock.ToolTip>
+        </TextBlock>
+    </DataTemplate>
+
+    <!-- ======== Готовые расширения: медиа и данные ======== -->
+    <sys:Double x:Key="Md.VideoCard.Width">320</sys:Double>
+    <sys:Double x:Key="Md.VideoCard.PreviewHeight">180</sys:Double>
+    <CornerRadius x:Key="Md.VideoCard.CornerRadius">6</CornerRadius>
+    <Thickness x:Key="Md.VideoCard.TitlePadding">8,6</Thickness>
+    <Brush x:Key="Md.VideoCard.PreviewBackground">#24292F</Brush>
+    <Brush x:Key="Md.VideoCard.PlayBackground">#CC000000</Brush>
+    <Brush x:Key="Md.VideoCard.PlayForeground">White</Brush>
+    <Geometry x:Key="Md.VideoCard.PlayIcon">M0,0 L10,6 L0,12 Z</Geometry>
+    <!-- Превью заполняет место целиком и обрезается по центру -->
+    <Style x:Key="Md.VideoCard.PreviewStyle" TargetType="{x:Type p:MdImage}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type p:MdImage}">
+                    <Border>
+                        <Border.Background>
+                            <ImageBrush
+                                ImageSource="{Binding ImageSource, RelativeSource={RelativeSource TemplatedParent}}"
+                                Stretch="UniformToFill" />
+                        </Border.Background>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <DataTemplate x:Key="Md.VideoCard.Template" DataType="{x:Type kit:VideoCardVm}">
+        <Button Style="{x:Null}"
+                OverridesDefaultStyle="True"
+                Focusable="False"
+                Cursor="Hand"
+                ToolTip="{Binding Href}"
+                Command="{x:Static local:MarkdownLink.ActivateCommand}"
+                CommandParameter="{Binding Href}">
+            <Button.Template>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border Width="{DynamicResource Md.VideoCard.Width}"
+                            Background="Transparent"
+                            BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{DynamicResource Md.VideoCard.CornerRadius}">
+                        <StackPanel>
+                            <Grid Height="{DynamicResource Md.VideoCard.PreviewHeight}"
+                                  Background="{DynamicResource Md.VideoCard.PreviewBackground}"
+                                  ClipToBounds="True">
+                                <p:MdImage Image="{Binding Preview}"
+                                           Width="{DynamicResource Md.VideoCard.Width}"
+                                           Height="{DynamicResource Md.VideoCard.PreviewHeight}"
+                                           Style="{DynamicResource Md.VideoCard.PreviewStyle}" />
+                                <Border Width="48"
+                                        Height="48"
+                                        CornerRadius="24"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Background="{DynamicResource Md.VideoCard.PlayBackground}">
+                                    <Path Data="{DynamicResource Md.VideoCard.PlayIcon}"
+                                          Fill="{DynamicResource Md.VideoCard.PlayForeground}"
+                                          Width="16"
+                                          Height="18"
+                                          Margin="4,0,0,0"
+                                          Stretch="Fill"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                                </Border>
+                            </Grid>
+                            <TextBlock Text="{Binding Title}"
+                                       Padding="{DynamicResource Md.VideoCard.TitlePadding}"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+    </DataTemplate>
+
+    <Thickness x:Key="Md.LinkCard.Padding">10,6</Thickness>
+    <CornerRadius x:Key="Md.LinkCard.CornerRadius">6</CornerRadius>
+    <Brush x:Key="Md.LinkCard.AddressForeground">Gray</Brush>
+    <sys:Double x:Key="Md.LinkCard.AddressFontSize">12</sys:Double>
+    <Geometry x:Key="Md.LinkCard.Icon">M6,2 L2,2 L2,14 L14,14 L14,10 M9,2 L14,2 L14,7 M14,2 L7,9</Geometry>
+    <DataTemplate x:Key="Md.LinkCard.Template" DataType="{x:Type kit:LinkCardVm}">
+        <Button Style="{x:Null}"
+                OverridesDefaultStyle="True"
+                Focusable="False"
+                Cursor="Hand"
+                ToolTip="{Binding Href}"
+                Command="{x:Static local:MarkdownLink.ActivateCommand}"
+                CommandParameter="{Binding Href}">
+            <Button.Template>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border Background="Transparent"
+                            BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{DynamicResource Md.LinkCard.CornerRadius}"
+                            Padding="{DynamicResource Md.LinkCard.Padding}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Path Data="{DynamicResource Md.LinkCard.Icon}"
+                                  Stroke="{DynamicResource Md.Paragraph.LinkForeground}"
+                                  StrokeThickness="1.5"
+                                  Width="16"
+                                  Height="16"
+                                  Margin="0,0,8,0"
+                                  Stretch="Uniform"
+                                  VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{Binding Title}"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource Md.Paragraph.LinkForeground}" />
+                                <TextBlock Text="{Binding Href}"
+                                           TextTrimming="CharacterEllipsis"
+                                           FontSize="{DynamicResource Md.LinkCard.AddressFontSize}"
+                                           Foreground="{DynamicResource Md.LinkCard.AddressForeground}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+    </DataTemplate>
+
+    <Style x:Key="Md.Properties.KeyStyle" TargetType="{x:Type p:MdTextBlock}"
+           BasedOn="{StaticResource Md.Paragraph.Style}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <DataTemplate x:Key="Md.Properties.Template" DataType="{x:Type kit:PropertiesVm}">
+        <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                Grid.IsSharedSizeScope="True">
+            <ItemsControl ItemsSource="{Binding Items}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type kit:PropertyVm}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="MdPropertyKey" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                                    BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                                    Padding="{DynamicResource Md.Table.CellPadding}"
+                                    Background="{DynamicResource Md.Table.HeaderBackground}">
+                                <p:MdTextBlock Runs="{Binding Key}" Style="{DynamicResource Md.Properties.KeyStyle}" />
+                            </Border>
+                            <Border Grid.Column="1"
+                                    BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                                    BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                                    Padding="{DynamicResource Md.Table.CellPadding}">
+                                <p:MdTextBlock Runs="{Binding Value}" Style="{DynamicResource Md.Paragraph.Style}" />
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+    </DataTemplate>
 
     <Style TargetType="{x:Type p:MdBlockItem}">
         <Setter Property="Focusable" Value="False" />

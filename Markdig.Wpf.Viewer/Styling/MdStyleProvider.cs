@@ -21,6 +21,13 @@ public sealed class MdStyleProvider : IMdStyleProvider
     private DataTemplate? _image;
     private DataTemplate? _task;
     private DataTemplate? _footnoteLink;
+    private DataTemplate? _figure;
+    private DataTemplate? _figureCaption;
+    private DataTemplate? _footer;
+    private DataTemplate? _callout;
+    private DataTemplate? _details;
+    private DataTemplate? _definitionList;
+    private DataTemplate? _aligned;
 
     /// <summary>Провайдер, у которого берутся незаданные шаблоны.</summary>
     public IMdStyleProvider? BasedOn { get; set; }
@@ -95,5 +102,47 @@ public sealed class MdStyleProvider : IMdStyleProvider
     {
         get => _footnoteLink ?? BasedOn?.FootnoteLinkTemplate;
         set => _footnoteLink = value;
+    }
+
+    public DataTemplate? FigureTemplate
+    {
+        get => _figure ?? BasedOn?.FigureTemplate;
+        set => _figure = value;
+    }
+
+    public DataTemplate? FigureCaptionTemplate
+    {
+        get => _figureCaption ?? BasedOn?.FigureCaptionTemplate;
+        set => _figureCaption = value;
+    }
+
+    public DataTemplate? FooterTemplate
+    {
+        get => _footer ?? BasedOn?.FooterTemplate;
+        set => _footer = value;
+    }
+
+    public DataTemplate? CalloutTemplate
+    {
+        get => _callout ?? BasedOn?.CalloutTemplate;
+        set => _callout = value;
+    }
+
+    public DataTemplate? DetailsTemplate
+    {
+        get => _details ?? BasedOn?.DetailsTemplate;
+        set => _details = value;
+    }
+
+    public DataTemplate? DefinitionListTemplate
+    {
+        get => _definitionList ?? BasedOn?.DefinitionListTemplate;
+        set => _definitionList = value;
+    }
+
+    public DataTemplate? AlignedTemplate
+    {
+        get => _aligned ?? BasedOn?.AlignedTemplate;
+        set => _aligned = value;
     }
 }

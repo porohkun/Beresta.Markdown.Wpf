@@ -27,7 +27,7 @@ public sealed class MdTextMap
         Headings = builder.Headings;
     }
 
-    public static MdTextMap Empty { get; } = new(new Builder());
+    public static MdTextMap Empty { get; } = new(new());
 
     /// <summary>Сквозной текст; неделимые элементы — знаком <see cref="ObjectMark"/>.</summary>
     public string Text { get; }
@@ -47,8 +47,27 @@ public sealed class MdTextMap
         return new(builder);
     }
 
-    /// <summary>Кусок карты якоря — заголовка или сноски — по его идентификатору без <c>#</c>.</summary>
-    public bool TryGetAnchor(string id, out MdTextRange range) => _anchors.TryGetValue(id, out range);
+    /// <summary>
+    /// Якорь заголовка с этим текстом, как у GitHub: строчные буквы, цифры, дефис и подчёркивание,
+    /// пробел — дефисом. Повтор того же заголовка в документе получает номер через дефис.
+    /// </summary>
+    public static string AnchorOf(string text)
+    {
+        var slug = new StringBuilder(text.Length);
+        foreach (var symbol in text.Trim().ToLowerInvariant())
+        {
+            if (char.IsLetterOrDigit(symbol) || symbol is '-' or '_')
+            {
+                slug.Append(symbol);
+            }
+            else if (char.IsWhiteSpace(symbol))
+            {
+                slug.Append('-');
+            }
+        }
+
+        return slug.ToString();
+    }
 
     /// <summary>Текст инлайна в карте: кусок текста, перенос строки или знак неделимого.</summary>
     public static string TextOf(InlineVm inline)
@@ -67,6 +86,9 @@ public sealed class MdTextMap
                 return ObjectMark.ToString();
         }
     }
+
+    /// <summary>Кусок карты якоря — заголовка или сноски — по его идентификатору без <c>#</c>.</summary>
+    public bool TryGetAnchor(string id, out MdTextRange range) => _anchors.TryGetValue(id, out range);
 
     /// <summary>Кусок карты списка инлайнов или неделимого элемента.</summary>
     public bool TryGetRange(object owner, out MdTextRange range) => _owners.TryGetValue(owner, out range);
@@ -134,6 +156,26 @@ public sealed class MdTextMap
                     TakeInlines(heading.Inlines);
                     break;
 
+                case FigureCaptionVm caption:
+                    TakeInlines(caption.Inlines);
+                    break;
+
+                case CalloutVm callout:
+                    TakeInlines(callout.Title);
+                    break;
+
+                case DetailsVm details:
+                    TakeInlines(details.Summary);
+                    break;
+
+                case DefinitionListVm definitions:
+                    foreach (var item in definitions.Items)
+                    {
+                        TakeInlines(item.Terms);
+                    }
+
+                    break;
+
                 case CodeBlockVm code when TryGetRange(code.Runs, out var codeRange):
                     var lineStart = 0;
                     var lines = code.Code.Split('\n');
@@ -161,7 +203,7 @@ public sealed class MdTextMap
 
                     break;
 
-                case QuoteVm or ListVm or BlankLineVm:
+                case QuoteVm or ListVm or BlankLineVm or FigureVm or FooterVm or AlignedVm:
                     break;
 
                 default:
@@ -196,6 +238,19 @@ public sealed class MdTextMap
             case HeadingVm heading when LineIn(heading.Inlines, position) is { } line:
                 return line;
 
+            case FigureCaptionVm caption when LineIn(caption.Inlines, position) is { } line:
+                return line;
+
+            case CalloutVm callout when LineIn(callout.Title, position) is { } line:
+                return line;
+
+            case DetailsVm details when LineIn(details.Summary, position) is { } line:
+                return line;
+
+            case DefinitionListVm definitions
+                when definitions.Items.Select(item => LineIn(item.Terms, position)).FirstOrDefault(line => line is not null) is { } line:
+                return line;
+
             case CodeBlockVm code when TryGetRange(code.Runs, out var codeRange):
                 var before = Math.Clamp(position - codeRange.Start, 0, code.Code.Length);
                 return code.CodeFirstLine + code.Code.AsSpan(0, before).Count('\n');
@@ -216,26 +271,6 @@ public sealed class MdTextMap
         }
 
         return block.Source.IsEmpty ? null : block.Source.StartLine;
-    }
-
-    /// <summary>Место позиции относительно самого глубокого блока с идентификатором — чтобы найти его в карте нового текста.</summary>
-    internal (long NodeId, int Offset)? Locate(int position)
-        => Innermost(position, block => block.NodeId != 0) is { } found
-            ? (found.Block.NodeId, position - found.Range.Start)
-            : null;
-
-    /// <summary>Позиция в этой карте для места из карты прошлого текста; блока больше нет — <c>null</c>.</summary>
-    internal int? Find((long NodeId, int Offset) place)
-    {
-        foreach (var (block, range) in _blocks)
-        {
-            if (block.NodeId == place.NodeId)
-            {
-                return range.Start + Math.Clamp(place.Offset, 0, range.Length);
-            }
-        }
-
-        return null;
     }
 
     /// <summary>Текст куска для копирования: неделимые — своим текстом для копирования или ничем.</summary>
@@ -266,6 +301,26 @@ public sealed class MdTextMap
         return text.ToString();
     }
 
+    /// <summary>Место позиции относительно самого глубокого блока с идентификатором — чтобы найти его в карте нового текста.</summary>
+    internal (long NodeId, int Offset)? Locate(int position)
+        => Innermost(position, block => block.NodeId != 0) is { } found
+            ? (found.Block.NodeId, position - found.Range.Start)
+            : null;
+
+    /// <summary>Позиция в этой карте для места из карты прошлого текста; блока больше нет — <c>null</c>.</summary>
+    internal int? Find((long NodeId, int Offset) place)
+    {
+        foreach (var (block, range) in _blocks)
+        {
+            if (block.NodeId == place.NodeId)
+            {
+                return range.Start + Math.Clamp(place.Offset, 0, range.Length);
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// Самый глубокий подходящий блок, в куске которого стоит позиция, считая его конец; вложенные
     /// блоки идут в списке после своих контейнеров.
@@ -284,10 +339,10 @@ public sealed class MdTextMap
         return null;
     }
 
-    /// <summary>Строка исходника инлайна, на котором стоит позиция.</summary>
+    /// <summary>Строка исходника инлайна, на котором стоит позиция; позиция вне этих инлайнов — <c>null</c>.</summary>
     private int? LineIn(IReadOnlyList<InlineVm> inlines, int position)
     {
-        if (!TryGetRange(inlines, out var range))
+        if (!TryGetRange(inlines, out var range) || position < range.Start || position > range.End)
         {
             return null;
         }
@@ -325,28 +380,6 @@ public sealed class MdTextMap
         public List<MdHeading> Headings { get; } = [];
 
         public void Append(string text) => Text.Append(text);
-
-        /// <summary>
-        /// Якорь, как у GitHub: строчные буквы, цифры, дефис и подчёркивание, пробел — дефисом;
-        /// повтор получает номер через дефис.
-        /// </summary>
-        private static string Slug(string text)
-        {
-            var slug = new StringBuilder(text.Length);
-            foreach (var symbol in text.Trim().ToLowerInvariant())
-            {
-                if (char.IsLetterOrDigit(symbol) || symbol is '-' or '_')
-                {
-                    slug.Append(symbol);
-                }
-                else if (char.IsWhiteSpace(symbol))
-                {
-                    slug.Append('-');
-                }
-            }
-
-            return slug.ToString();
-        }
 
         public void AppendInlines(IReadOnlyList<InlineVm> inlines)
         {
@@ -408,6 +441,43 @@ public sealed class MdTextMap
                     AppendBlocks(quote.Blocks);
                     break;
 
+                case FigureVm figure:
+                    AppendBlocks(figure.Blocks);
+                    break;
+
+                case FigureCaptionVm caption:
+                    AppendInlines(caption.Inlines);
+                    break;
+
+                case FooterVm footer:
+                    AppendBlocks(footer.Blocks);
+                    break;
+
+                case AlignedVm aligned:
+                    AppendBlocks(aligned.Blocks);
+                    break;
+
+                case CalloutVm callout:
+                    AppendTitled(callout.Title, callout.Blocks);
+                    break;
+
+                case DetailsVm details:
+                    AppendTitled(details.Summary, details.Blocks);
+                    break;
+
+                case DefinitionListVm definitions:
+                    for (var i = 0; i < definitions.Items.Count; i++)
+                    {
+                        if (i > 0)
+                        {
+                            Text.Append('\n');
+                        }
+
+                        AppendTitled(definitions.Items[i].Terms, definitions.Items[i].Blocks);
+                    }
+
+                    break;
+
                 case FootnoteVm footnote:
                     AppendBlocks(footnote.Blocks);
                     Anchors.TryAdd($"fn:{footnote.Order}", new(start, Text.Length - start));
@@ -441,7 +511,15 @@ public sealed class MdTextMap
                                 Text.Append('\t');
                             }
 
-                            AppendInlines(table.Rows[r].Cells[c].Inlines);
+                            var cell = table.Rows[r].Cells[c];
+                            if (cell.HasBlocks)
+                            {
+                                AppendBlocks(cell.Blocks);
+                            }
+                            else
+                            {
+                                AppendInlines(cell.Inlines);
+                            }
                         }
                     }
 
@@ -468,13 +546,28 @@ public sealed class MdTextMap
             BlockRanges[index] = (block, new(start, Text.Length - start));
         }
 
+        /// <summary>Заголовок блока, если он есть, строкой перед вложенными блоками.</summary>
+        private void AppendTitled(IReadOnlyList<InlineVm> title, IReadOnlyList<BlockVm> blocks)
+        {
+            if (title.Count > 0)
+            {
+                AppendInlines(title);
+                if (blocks.Count > 0)
+                {
+                    Text.Append('\n');
+                }
+            }
+
+            AppendBlocks(blocks);
+        }
+
         /// <summary>Заголовок — в оглавление, его якоря — свой, как у GitHub, и идентификатор от Markdig.</summary>
         private void AddHeading(HeadingVm heading)
         {
             var range = Owners[heading.Inlines];
             var text = Text.ToString(range.Start, range.Length).Replace(ObjectMark.ToString(), string.Empty).Trim();
 
-            var slug = Slug(text);
+            var slug = AnchorOf(text);
             if (_slugs.TryGetValue(slug, out var seen))
             {
                 _slugs[slug] = seen + 1;
