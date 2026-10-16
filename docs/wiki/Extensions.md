@@ -518,6 +518,8 @@ public sealed class ReviewSet : MdExtensionSet
 Viewer.Extensions.Add(new ReviewSet());
 ```
 
+Ready-made sets for the syntax of GitHub, Obsidian and other programs are in [Sets](Kit-Sets).
+
 ## Shared extensions for many viewers
 
 `Extensions` can be set by a style: all viewers of a window or an application then share one

@@ -53,6 +53,7 @@ What you get:
 
 **Ready-made Extensions**
 
+- [Sets](Kit-Sets) — the syntax of GitHub, GitLab, Obsidian, MkDocs, Docusaurus, HackMD or a chat in one line
 - [Callouts and Collapsibles](Kit-Callouts) — Obsidian callouts, MkDocs admonitions, `:::kind` containers
 - [Links and References](Kit-Links) — wiki links, tags, mentions, issue links, a table of contents in place
 - [Chips and Text Review](Kit-Text) — chips, color codes, CriticMarkup, comments, spoilers, task statuses

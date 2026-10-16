@@ -514,6 +514,8 @@ public sealed class ReviewSet : MdExtensionSet
 Viewer.Extensions.Add(new ReviewSet());
 ```
 
+Готовые наборы под синтаксис GitHub, Obsidian и других программ — в [Наборах](Kit-Sets-ru).
+
 ## Общие расширения на много вьюеров
 
 `Extensions` можно задать стилем: тогда все вьюеры окна или приложения пользуются одной коллекцией.
