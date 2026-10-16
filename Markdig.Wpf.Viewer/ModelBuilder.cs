@@ -277,6 +277,9 @@ internal sealed partial class ModelBuilder
             case LinkReferenceDefinitionGroup or LinkReferenceDefinition:
                 return [];
 
+            case ParagraphBlock { Inline: null or { FirstChild: null } }:
+                return [];
+
             case ParagraphBlock paragraph:
                 return [Stamp(new ParagraphVm(ConvertInlines(paragraph.Inline)), block)];
 

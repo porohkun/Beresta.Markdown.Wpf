@@ -154,7 +154,7 @@ Now `> [!QUESTION]` is drawn in its own color, with its own icon and title.
 | Code block header | `Md.CodeBlock.HeaderFontFamily`\*, `.HeaderForeground`, `.HeaderFontSize`, `.HeaderMargin` |
 | Code copy button | `Md.CodeBlock.CopyToolTip`, `Md.CodeBlock.CopyIcon`, `Md.CodeBlock.CopiedIcon` (both `Geometry`) |
 | Quote | `Md.Quote.BorderBrush`, `.BorderThickness`, `.Padding`, `.Margin` |
-| Callout | `Md.Callout.BorderThickness`, `.Padding`, `.Margin`, `.CornerRadius`, `.Background`, `.ChevronIcon` (`Geometry`, the fold arrow); for the kinds `Note`, `Tip`, `Important`, `Warning`, `Caution` — `Md.Callout.<Kind>.Brush`, `.Icon` (`Geometry`), `.Title` |
+| Callout | `Md.Callout.BorderThickness`, `.Padding`, `.Margin`, `.CornerRadius`, `.Background`, `.ChevronIcon` (`Geometry`, the fold arrow); for the kinds `Note`, `Tip`, `Important`, `Warning`, `Caution` and, for the [ready-made extensions](Kit-Callouts#kinds), `Abstract`, `Info`, `Todo`, `Success`, `Question`, `Failure`, `Danger`, `Bug`, `Example`, `Quote` — `Md.Callout.<Kind>.Brush`, `.Icon` (`Geometry`), `.Title` |
 | Collapsible block | `Md.Details.Title`, `.Margin`, `.ContentMargin`, `.MarkerForeground`, `.MarkerIcon` (`Geometry`) |
 | List | `Md.List.Margin`, `Md.List.MarkerWidth`, `Md.List.ItemSpacing` |
 | Definition list | `Md.DefinitionList.Margin`, `.DefinitionMargin` |

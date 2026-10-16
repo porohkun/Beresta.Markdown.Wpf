@@ -1,0 +1,21 @@
+﻿<UserControl x:Class="MarkdigWpfViewer.Showcase.Showcases.Kit.KitView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
+             xmlns:kit="clr-namespace:MarkdigWpfViewer.Kit;assembly=Markdig.Wpf.Viewer"
+             xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Kit"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance local:KitViewModel}">
+    <ScrollViewer>
+        <mdv:MarkdownViewer Markdown="{Binding Text}"
+                            Margin="24,16">
+            <mdv:MarkdownViewer.Extensions>
+                <kit:ObsidianCallouts />
+                <kit:MkDocsAdmonitions />
+                <kit:CalloutContainers />
+            </mdv:MarkdownViewer.Extensions>
+        </mdv:MarkdownViewer>
+    </ScrollViewer>
+</UserControl>

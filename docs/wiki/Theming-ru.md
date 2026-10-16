@@ -152,7 +152,7 @@ public void SetDarkMarkdown(bool dark)
 | Шапка блока кода | `Md.CodeBlock.HeaderFontFamily`\*, `.HeaderForeground`, `.HeaderFontSize`, `.HeaderMargin` |
 | Кнопка копирования кода | `Md.CodeBlock.CopyToolTip`, `Md.CodeBlock.CopyIcon`, `Md.CodeBlock.CopiedIcon` (обе `Geometry`) |
 | Цитата | `Md.Quote.BorderBrush`, `.BorderThickness`, `.Padding`, `.Margin` |
-| Плашка | `Md.Callout.BorderThickness`, `.Padding`, `.Margin`, `.CornerRadius`, `.Background`, `.ChevronIcon` (`Geometry`, стрелка сворачивания); для видов `Note`, `Tip`, `Important`, `Warning`, `Caution` — `Md.Callout.<Вид>.Brush`, `.Icon` (`Geometry`), `.Title` |
+| Плашка | `Md.Callout.BorderThickness`, `.Padding`, `.Margin`, `.CornerRadius`, `.Background`, `.ChevronIcon` (`Geometry`, стрелка сворачивания); для видов `Note`, `Tip`, `Important`, `Warning`, `Caution` и, для [готовых расширений](Kit-Callouts-ru#виды), `Abstract`, `Info`, `Todo`, `Success`, `Question`, `Failure`, `Danger`, `Bug`, `Example`, `Quote` — `Md.Callout.<Вид>.Brush`, `.Icon` (`Geometry`), `.Title` |
 | Сворачиваемый блок | `Md.Details.Title`, `.Margin`, `.ContentMargin`, `.MarkerForeground`, `.MarkerIcon` (`Geometry`) |
 | Список | `Md.List.Margin`, `Md.List.MarkerWidth`, `Md.List.ItemSpacing` |
 | Список определений | `Md.DefinitionList.Margin`, `.DefinitionMargin` |

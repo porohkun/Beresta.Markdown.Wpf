@@ -51,6 +51,10 @@ What you get:
 - [Live Preview](Live-Preview) — text that changes while you look at it
 - [Search Highlighting](Search-Highlighting) — highlighting found text and other ranges
 
+**Ready-made Extensions**
+
+- [Callouts and Collapsibles](Kit-Callouts) — Obsidian callouts, MkDocs admonitions, `:::kind` containers
+
 ## Showcase
 
 The repository has a showcase application with the scenarios from this wiki: a full document with a

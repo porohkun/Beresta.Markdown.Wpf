@@ -30,6 +30,10 @@
 - [Live Preview](Live-Preview)
 - [Search Highlighting](Search-Highlighting)
 
+**Ready-made Extensions**
+
+- [Callouts and Collapsibles](Kit-Callouts)
+
 ---
 
 **[По-русски](Home-ru)**
@@ -63,3 +67,7 @@
 - [Строки исходника и две панели](Source-Lines-and-Two-Panes-ru)
 - [Живой предпросмотр](Live-Preview-ru)
 - [Подсветка найденного](Search-Highlighting-ru)
+
+**Готовые расширения**
+
+- [Плашки и сворачиваемое](Kit-Callouts-ru)

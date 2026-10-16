@@ -14,6 +14,16 @@
     <sys:String x:Key="Md.Callout.Warning.Title">Предупреждение</sys:String>
     <sys:String x:Key="Md.Callout.Caution.Title">Осторожно</sys:String>
     <sys:String x:Key="Md.Details.Title">Подробности</sys:String>
+    <sys:String x:Key="Md.Callout.Abstract.Title">Кратко</sys:String>
+    <sys:String x:Key="Md.Callout.Info.Title">Сведения</sys:String>
+    <sys:String x:Key="Md.Callout.Todo.Title">Сделать</sys:String>
+    <sys:String x:Key="Md.Callout.Success.Title">Успех</sys:String>
+    <sys:String x:Key="Md.Callout.Question.Title">Вопрос</sys:String>
+    <sys:String x:Key="Md.Callout.Failure.Title">Неудача</sys:String>
+    <sys:String x:Key="Md.Callout.Danger.Title">Опасность</sys:String>
+    <sys:String x:Key="Md.Callout.Bug.Title">Ошибка</sys:String>
+    <sys:String x:Key="Md.Callout.Example.Title">Пример</sys:String>
+    <sys:String x:Key="Md.Callout.Quote.Title">Цитата</sys:String>
 
     <!-- Текст и ссылки -->
     <SolidColorBrush x:Key="Md.Paragraph.Foreground" Color="{DynamicResource PrimaryTextColor}" />
@@ -57,6 +67,16 @@
     <SolidColorBrush x:Key="Md.Callout.Important.Brush" Color="{DynamicResource VioletColor}" />
     <SolidColorBrush x:Key="Md.Callout.Warning.Brush" Color="{DynamicResource WarningColor}" />
     <SolidColorBrush x:Key="Md.Callout.Caution.Brush" Color="{DynamicResource DangerColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Abstract.Brush" Color="{DynamicResource InfoColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Info.Brush" Color="{DynamicResource PrimaryColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Todo.Brush" Color="{DynamicResource PrimaryColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Success.Brush" Color="{DynamicResource SuccessColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Question.Brush" Color="{DynamicResource WarningColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Failure.Brush" Color="{DynamicResource DangerColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Danger.Brush" Color="{DynamicResource DangerColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Bug.Brush" Color="{DynamicResource DangerColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Example.Brush" Color="{DynamicResource VioletColor}" />
+    <SolidColorBrush x:Key="Md.Callout.Quote.Brush" Color="{DynamicResource SecondaryTextColor}" />
     <SolidColorBrush x:Key="Md.Details.MarkerForeground" Color="{DynamicResource SecondaryTextColor}" />
 
 </ResourceDictionary>

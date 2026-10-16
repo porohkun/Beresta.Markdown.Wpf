@@ -138,7 +138,9 @@ kind's name: `[!kitten]` gets the title "Kitten".
 ```
 
 Colors, icons and titles of the kinds are theme keys — see [Theming](Theming#all-keys); the titles are
-in English, translate them like other [interface strings](Theming#interface-strings).
+in English, translate them like other [interface strings](Theming#interface-strings). Titles, folding
+and more kinds, as in Obsidian and MkDocs, come with the
+[ready-made extensions](Kit-Callouts).
 
 ## Definition lists
 

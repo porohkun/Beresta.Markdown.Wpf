@@ -62,15 +62,15 @@ public sealed class BlockKindTests
         WpfHost.Invoke(() =>
         {
             var brush = new SolidColorBrush(Colors.Teal);
-            var viewer = new MarkdownViewer { Markdown = "> [!question]\n> why\n\n> [!idea]\n> what" };
-            viewer.Resources["Md.Callout.Question.Brush"] = brush;
+            var viewer = new MarkdownViewer { Markdown = "> [!rocket]\n> why\n\n> [!idea]\n> what" };
+            viewer.Resources["Md.Callout.Rocket.Brush"] = brush;
             viewer.Resources["Md.Callout.Idea.Title"] = "Идея";
             var window = WpfHost.Show(viewer);
             var callouts = Visuals.Descendants<MdCalloutPresenter>(viewer).ToList();
 
             callouts[0].Accent.Should().BeSameAs(brush);
             callouts[0].Icon.Should().BeNull();
-            callouts[0].DefaultTitle.Should().Be("Question");
+            callouts[0].DefaultTitle.Should().Be("Rocket");
             callouts[1].Accent.Should().BeSameAs(viewer.FindResource("Md.Callout.Note.Brush"));
             callouts[1].DefaultTitle.Should().Be("Идея");
             window.Close();
