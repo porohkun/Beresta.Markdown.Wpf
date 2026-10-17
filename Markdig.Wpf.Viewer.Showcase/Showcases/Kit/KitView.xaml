@@ -19,9 +19,6 @@
         <ScrollViewer>
             <mdv:MarkdownViewer Markdown="{Binding Text}"
                                 Margin="24,16"
-                                CanToggleTasks="True"
-                                TaskToggled="OnTaskToggled"
-                                kit:CriticMarkup.Decided="OnDecided"
                                 mdv:MarkdownLink.Navigate="OnLink">
                 <mdv:MarkdownViewer.Extensions>
                     <kit:ObsidianCallouts />
@@ -39,7 +36,7 @@
                     </kit:IssueLinks>
                     <kit:Chips />
                     <kit:ColorChips />
-                    <kit:CriticMarkup AllowDecisions="True" />
+                    <kit:CriticMarkup />
                     <kit:Comments />
                     <kit:Spoilers />
                     <kit:TaskStatuses />

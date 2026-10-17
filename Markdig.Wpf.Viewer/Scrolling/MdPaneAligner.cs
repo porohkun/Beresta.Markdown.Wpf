@@ -124,28 +124,15 @@ public sealed class MdPaneAligner : IDisposable
     private static int LineCount(MarkdownViewer viewer) => (viewer.Markdown ?? string.Empty).Split('\n').Length;
 
     /// <summary>
-    /// Верх строк в содержимом прокрутки вьюера без его пустых мест: ровно там строки стояли бы, не
-    /// будь мест.
+    /// Где в содержимом прокрутки вьюера стояли бы пустые места строк, не будь у вьюера мест: верх
+    /// того, перед чем место встаёт.
     /// </summary>
     private static double?[] NaturalOffsets(MarkdownViewer viewer, IReadOnlyList<int> lines)
     {
-        var offsets = viewer.GetSourceLineOffsets(lines.Select(line => (double)line).ToList());
         var origin = ContentTop(viewer);
-        var gaps = (viewer.Gaps ?? []).OrderBy(gap => gap.Line).ToList();
-        var above = 0.0;
-        var next = 0;
-
-        for (var i = 0; i < lines.Count; i++)
-        {
-            for (; next < gaps.Count && gaps[next].Line <= lines[i]; next++)
-            {
-                above += gaps[next].Height;
-            }
-
-            offsets[i] = offsets[i] + origin - above;
-        }
-
-        return offsets;
+        return viewer.GetGapOffsets(lines)
+            .Select(offset => offset + origin)
+            .ToArray();
     }
 
     /// <summary>Верх вьюера в содержимом его прокрутки; прокрутки нет — ноль.</summary>

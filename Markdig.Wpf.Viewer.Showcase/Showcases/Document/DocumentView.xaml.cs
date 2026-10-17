@@ -22,9 +22,6 @@ public partial class DocumentView : UserControl
         UpdateCounter();
     }
 
-    private void OnTaskToggled(object? sender, MdTaskToggledEventArgs e)
-        => ((DocumentViewModel)DataContext).Toggle(e.Task, e.IsChecked);
-
     private void OnContentsSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!_followingScroll && Contents.SelectedItem is MdHeading heading)

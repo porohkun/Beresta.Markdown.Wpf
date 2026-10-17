@@ -6,8 +6,8 @@ using ViewModels;
 
 /// <summary>
 /// Где во вьюере встают пустые места: перед самым внешним элементом, который начинается с их
-/// строки, — блоком, пунктом списка, строкой таблицы, строкой текста или кода. С такой строки
-/// ничего не начинается — место встаёт на ближайшую границу блока.
+/// строки, — блоком, пунктом списка, строкой таблицы, строкой текста или кода, закрывающей оградой
+/// кода. С такой строки ничего не начинается — место встаёт на ближайшую границу блока.
 /// </summary>
 internal sealed class GapLayout
 {
@@ -36,7 +36,11 @@ internal sealed class GapLayout
 
         foreach (var gap in Gaps)
         {
-            Place(blocks, gap.Line, gap.Height, []);
+            var path = new List<NodeVm>();
+            if (Locate(blocks, gap.Line, path) is { } point)
+            {
+                Add(point, gap.Height, path);
+            }
         }
     }
 
@@ -62,8 +66,15 @@ internal sealed class GapLayout
     public IReadOnlyList<(int Index, double Height)> InCode(CodeBlockVm code)
         => _code.TryGetValue(code, out var gaps) ? gaps : [];
 
-    /// <summary>Ставит место среди соседей: перед первым, кто начинается с его строки или ниже, а внутри соседа — глубже.</summary>
-    private bool Place(IEnumerable<NodeVm> siblings, int line, double height, List<NodeVm> path)
+    /// <summary>
+    /// Куда встанет пустое место строки среди блоков, начиная с блока <paramref name="from"/>;
+    /// <paramref name="path"/> получает предков места сверху вниз. Блоков со строками нет — <c>null</c>.
+    /// </summary>
+    public static GapPoint? Locate(IReadOnlyList<BlockVm> blocks, int line, List<NodeVm> path, int from = 0)
+        => LocateAmong(blocks.Skip(from), line, path);
+
+    /// <summary>Место среди соседей: перед первым, кто начинается с его строки или ниже, а внутри соседа — глубже.</summary>
+    private static GapPoint? LocateAmong(IEnumerable<NodeVm> siblings, int line, List<NodeVm> path)
     {
         NodeVm? last = null;
         foreach (var node in siblings)
@@ -77,8 +88,7 @@ internal sealed class GapLayout
             last = node;
             if (source.StartLine >= line)
             {
-                Add(_before, node, height, path);
-                return true;
+                return new(GapPlace.Before, node, 0);
             }
 
             if (line > source.EndLine)
@@ -87,100 +97,109 @@ internal sealed class GapLayout
             }
 
             path.Add(node);
-            var placed = PlaceInside(node, line, height, path);
-            path.RemoveAt(path.Count - 1);
-            if (!placed)
+            if (LocateInside(node, line, path) is { } inside)
             {
-                Add(line - source.StartLine <= source.EndLine + 1 - line ? _before : _after, node, height, path);
+                return inside;
             }
 
-            return true;
+            path.RemoveAt(path.Count - 1);
+            return new(line - source.StartLine <= source.EndLine + 1 - line ? GapPlace.Before : GapPlace.After, node, 0);
         }
 
-        if (last is null)
-        {
-            return false;
-        }
-
-        Add(_after, last, height, path);
-        return true;
+        return last is null ? null : new GapPoint(GapPlace.After, last, 0);
     }
 
-    private bool PlaceInside(NodeVm node, int line, double height, List<NodeVm> path)
+    private static GapPoint? LocateInside(NodeVm node, int line, List<NodeVm> path)
     {
         return node switch
         {
-            ParagraphVm paragraph => PlaceInText(paragraph.Inlines, line, height, path),
-            HeadingVm heading => PlaceInText(heading.Inlines, line, height, path),
-            CodeBlockVm code => PlaceInCode(code, line, height, path),
-            TableVm table => PlaceInTable(table, line, height, path),
-            ListVm list => Place(list.Items, line, height, path),
-            ListItemVm item => Place(item.Blocks, line, height, path),
-            QuoteVm quote => Place(quote.Blocks, line, height, path),
-            CalloutVm callout => Place(callout.Blocks, line, height, path),
-            DetailsVm details => Place(details.Blocks, line, height, path),
-            FigureVm figure => Place(figure.Blocks, line, height, path),
-            FooterVm footer => Place(footer.Blocks, line, height, path),
-            AlignedVm aligned => Place(aligned.Blocks, line, height, path),
-            FootnoteVm footnote => Place(footnote.Blocks, line, height, path),
-            _ => false
+            ParagraphVm paragraph => LocateInText(paragraph, paragraph.Inlines, line),
+            HeadingVm heading => LocateInText(heading, heading.Inlines, line),
+            CodeBlockVm code => LocateInCode(code, line),
+            TableVm table => LocateInTable(table, line),
+            ListVm list => LocateAmong(list.Items, line, path),
+            ListItemVm item => LocateAmong(item.Blocks, line, path),
+            QuoteVm quote => LocateAmong(quote.Blocks, line, path),
+            CalloutVm callout => LocateAmong(callout.Blocks, line, path),
+            DetailsVm details => LocateAmong(details.Blocks, line, path),
+            FigureVm figure => LocateAmong(figure.Blocks, line, path),
+            FooterVm footer => LocateAmong(footer.Blocks, line, path),
+            AlignedVm aligned => LocateAmong(aligned.Blocks, line, path),
+            FootnoteVm footnote => LocateAmong(footnote.Blocks, line, path),
+            _ => null
         };
     }
 
     /// <summary>Перед экранной строкой текста, которая начинается со строки исходника после переноса.</summary>
-    private bool PlaceInText(IReadOnlyList<InlineVm> inlines, int line, double height, List<NodeVm> path)
+    private static GapPoint? LocateInText(NodeVm node, IReadOnlyList<InlineVm> inlines, int line)
     {
         var offset = 0;
         for (var i = 0; i < inlines.Count; i++)
         {
             if (i > 0 && inlines[i - 1] is LineBreakVm && inlines[i].Source is { IsEmpty: false, StartLine: var start } && start == line)
             {
-                AddText(inlines, offset, height, path);
-                return true;
+                return new(GapPlace.Row, node, offset);
             }
 
             offset += MdTextMap.TextOf(inlines[i]).Length;
         }
 
-        return false;
+        return null;
     }
 
-    /// <summary>Перед строкой кода; перед первой — между шапкой и кодом.</summary>
-    private bool PlaceInCode(CodeBlockVm code, int line, double height, List<NodeVm> path)
+    /// <summary>Перед строкой кода; перед первой — между шапкой и кодом, перед закрывающей оградой — под последней.</summary>
+    private static GapPoint? LocateInCode(CodeBlockVm code, int line)
     {
         var lines = code.Code.Split('\n');
         var index = line - code.CodeFirstLine;
-        if (index < 0 || index >= lines.Length)
-        {
-            return false;
-        }
-
-        var offset = lines.Take(index).Sum(text => text.Length + 1);
-        AddText(code.Runs, offset, height, path);
-
-        if (!_code.TryGetValue(code, out var gaps))
-        {
-            _code[code] = gaps = [];
-        }
-
-        gaps.Add((index, height));
-        return true;
+        var fence = code.IsFenced && index == lines.Length && line == code.Source.EndLine;
+        return index < 0 || (index >= lines.Length && !fence)
+            ? null
+            : new GapPoint(GapPlace.Row, code, lines.Take(index).Sum(text => text.Length + 1));
     }
 
     /// <summary>Перед строкой таблицы, кроме первой: перед первой место встаёт перед таблицей.</summary>
-    private bool PlaceInTable(TableVm table, int line, double height, List<NodeVm> path)
+    private static GapPoint? LocateInTable(TableVm table, int line)
     {
         var row = table.Rows.Skip(1).FirstOrDefault(candidate => candidate.Source is { IsEmpty: false } source && source.StartLine == line);
-        if (row is null)
-        {
-            return false;
-        }
-
-        Add(_before, row, height, path);
-        return true;
+        return row is null ? null : new GapPoint(GapPlace.Before, row, 0);
     }
 
-    private void AddText(object inlines, int offset, double height, List<NodeVm> path)
+    private void Add(GapPoint point, double height, List<NodeVm> path)
+    {
+        switch (point)
+        {
+            case { Place: GapPlace.Before }:
+                _before[point.Node] = _before.GetValueOrDefault(point.Node) + height;
+                break;
+            case { Place: GapPlace.After }:
+                _after[point.Node] = _after.GetValueOrDefault(point.Node) + height;
+                break;
+            case { Node: CodeBlockVm code }:
+                AddText(code.Runs, point.Offset, height);
+                AddCode(code, CodeLineAt(code, point.Offset), height);
+                break;
+            case { Node: ParagraphVm paragraph }:
+                AddText(paragraph.Inlines, point.Offset, height);
+                break;
+            case { Node: HeadingVm heading }:
+                AddText(heading.Inlines, point.Offset, height);
+                break;
+        }
+
+        foreach (var ancestor in path)
+        {
+            _inside[ancestor] = _inside.GetValueOrDefault(ancestor) + height;
+        }
+    }
+
+    /// <summary>Номер строки кода с нуля, которая начинается со смещения; за концом кода — следующий за последней.</summary>
+    private static int CodeLineAt(CodeBlockVm code, int offset)
+        => offset > code.Code.Length
+            ? code.Code.Split('\n').Length
+            : code.Code.AsSpan(0, offset).Count('\n');
+
+    private void AddText(object inlines, int offset, double height)
     {
         if (!_text.TryGetValue(inlines, out var gaps))
         {
@@ -188,20 +207,15 @@ internal sealed class GapLayout
         }
 
         gaps.Add((offset, height));
-        AddInside(path, height);
     }
 
-    private void Add(Dictionary<object, double> places, object node, double height, List<NodeVm> path)
+    private void AddCode(CodeBlockVm code, int index, double height)
     {
-        places[node] = places.GetValueOrDefault(node) + height;
-        AddInside(path, height);
-    }
-
-    private void AddInside(List<NodeVm> path, double height)
-    {
-        foreach (var ancestor in path)
+        if (!_code.TryGetValue(code, out var gaps))
         {
-            _inside[ancestor] = _inside.GetValueOrDefault(ancestor) + height;
+            _code[code] = gaps = [];
         }
+
+        gaps.Add((index, height));
     }
 }

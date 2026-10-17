@@ -37,7 +37,7 @@ internal sealed class SourcePositions
         }
 
         var count = Math.Min(items.Count, panel.ItemCount);
-        var spans = new Dictionary<int, List<(Rect Bounds, double Start, double End, int Depth)>>();
+        var spans = new Dictionary<int, List<Span>>();
         var next = 0;
         var index = -1;
 
@@ -70,6 +70,76 @@ internal sealed class SourcePositions
         return offsets;
     }
 
+    /// <summary>
+    /// Где во вьюере стояли бы пустые места строк, не будь у вьюера мест: верх того, перед чем место
+    /// встаёт, без мест над ним. Строки — по возрастанию.
+    /// </summary>
+    public double?[] GapOffsetsOf(IReadOnlyList<int> lines)
+    {
+        var offsets = new double?[lines.Count];
+        if (_viewer.BlockPanel is not { ItemCount: > 0 } panel || _viewer.ItemsSource is not IReadOnlyList<BlockVm> items)
+        {
+            return offsets;
+        }
+
+        var layout = Layout();
+        var gaps = layout.Gaps;
+        var count = Math.Min(items.Count, panel.ItemCount);
+        var spans = new Dictionary<int, List<Span>>();
+        var points = new Dictionary<int, GapPoint?>();
+        var path = new List<NodeVm>();
+        var above = 0.0;
+        var next = 0;
+        var index = 0;
+
+        for (var k = 0; k < lines.Count; k++)
+        {
+            for (; next < gaps.Count && gaps[next].Line <= lines[k]; next++)
+            {
+                above += gaps[next].Height;
+            }
+
+            path.Clear();
+            if (GapLayout.Locate(items, lines[k], path, index) is not { } point)
+            {
+                continue;
+            }
+
+            var top = path.Count > 0 ? path[0] : point.Node;
+            var found = index;
+            while (found < count && !ReferenceEquals(items[found], top))
+            {
+                found++;
+            }
+
+            if (found == count)
+            {
+                continue;
+            }
+
+            index = found;
+            var shared = 0.0;
+            for (var g = next; g < gaps.Count && PointOf(gaps[g].Line) is { } other && other.Coincides(point); g++)
+            {
+                shared += gaps[g].Height;
+            }
+
+            offsets[k] = EdgeOf(panel, items, layout, index, point, path.Count == 0, lines[k], spans) - above - shared;
+        }
+
+        return offsets;
+
+        GapPoint? PointOf(int line)
+        {
+            if (!points.TryGetValue(line, out var point))
+            {
+                points[line] = point = GapLayout.Locate(items, line, []);
+            }
+
+            return point;
+        }
+    }
+
     /// <summary>Строка исходника в позиции вьюера.</summary>
     public double? LineAt(double offset)
     {
@@ -81,7 +151,7 @@ internal sealed class SourcePositions
         var panelOffset = _viewer.TranslatePoint(new(0, offset), panel).Y;
         var index = Math.Clamp(panel.IndexAtOffset(panelOffset), 0, Math.Min(items.Count, panel.ItemCount) - 1);
 
-        var gaps = Gaps();
+        var gaps = Layout().Gaps;
         if (Deepest(Spans(index).Where(span => span.Bounds.Top <= offset && offset < span.Bounds.Bottom)) is { } best)
         {
             return LineIn(best.Bounds.Top, best.Bounds.Height, best.Start, best.End, offset, gaps);
@@ -99,7 +169,7 @@ internal sealed class SourcePositions
         IReadOnlyList<BlockVm> items,
         int index,
         double line,
-        Dictionary<int, List<(Rect Bounds, double Start, double End, int Depth)>> spans)
+        Dictionary<int, List<Span>> spans)
     {
         if (index < 0)
         {
@@ -112,13 +182,8 @@ internal sealed class SourcePositions
             return ToViewer(panel, panel.GetItemBottom(index));
         }
 
-        if (!spans.TryGetValue(index, out var known))
-        {
-            spans[index] = known = Spans(index).ToList();
-        }
-
-        var gaps = Gaps();
-        if (Deepest(known.Where(span => span.Start <= line && line < span.End)) is { } best)
+        var gaps = Layout().Gaps;
+        if (Deepest(SpansOf(index, spans).Where(span => span.Start <= line && line < span.End)) is { } best)
         {
             return OffsetIn(best.Bounds.Top, best.Bounds.Height, best.Start, best.End, line, gaps);
         }
@@ -126,6 +191,47 @@ internal sealed class SourcePositions
         var top = panel.GetItemTop(index);
         var height = panel.GetItemBottom(index) - top;
         return ToViewer(panel, OffsetIn(top, height, item.StartLine, item.EndLine + 1, line, gaps));
+    }
+
+    /// <summary>
+    /// Позиция во вьюере сразу под пустым местом <paramref name="point"/> в блоке <paramref name="index"/>:
+    /// верх элемента, перед которым оно встаёт, низ места после элемента или верх экранной строки.
+    /// </summary>
+    private double? EdgeOf(
+        MdBlockPanel panel,
+        IReadOnlyList<BlockVm> items,
+        GapLayout layout,
+        int index,
+        GapPoint point,
+        bool topLevel,
+        int line,
+        Dictionary<int, List<Span>> spans)
+    {
+        var source = point.Node.Source;
+        switch (point.Place)
+        {
+            case GapPlace.Before when topLevel:
+                return ToViewer(panel, panel.GetItemTop(index));
+            case GapPlace.After when topLevel:
+                return ToViewer(panel, panel.GetItemBottom(index) + layout.After(point.Node));
+            case GapPlace.Row:
+                return Outermost(SpansOf(index, spans).Where(span => span.Start == line)) is { } row
+                    ? row.Bounds.Top
+                    : OffsetIn(panel, items, index, line, spans);
+        }
+
+        var known = SpansOf(index, spans);
+        if (Outermost(known.Where(span => ReferenceEquals(span.Model, point.Node))) is { } element)
+        {
+            return point.Place == GapPlace.Before ? element.Bounds.Top : element.Bounds.Bottom + layout.After(point.Node);
+        }
+
+        if (point.Place == GapPlace.Before && Outermost(known.Where(span => span.Start == source.StartLine)) is { } start)
+        {
+            return start.Bounds.Top;
+        }
+
+        return OffsetIn(panel, items, index, point.Place == GapPlace.Before ? source.StartLine : source.EndLine + 1, spans);
     }
 
     /// <summary>
@@ -178,14 +284,13 @@ internal sealed class SourcePositions
         return share > 0 ? Math.Min(end, line + (offset - position) / share) : line;
     }
 
-    /// <summary>Пустые места вьюера по строкам.</summary>
-    private IReadOnlyList<MdGap> Gaps()
-        => (_viewer.GetValue(GapLayout.LayoutProperty) as GapLayout)?.Gaps ?? [];
+    /// <summary>Раскладка пустых мест вьюера.</summary>
+    private GapLayout Layout()
+        => _viewer.GetValue(GapLayout.LayoutProperty) as GapLayout ?? GapLayout.Empty;
 
-    private static (Rect Bounds, double Start, double End, int Depth)? Deepest(
-        IEnumerable<(Rect Bounds, double Start, double End, int Depth)> spans)
+    private static Span? Deepest(IEnumerable<Span> spans)
     {
-        (Rect Bounds, double Start, double End, int Depth)? best = null;
+        Span? best = null;
         foreach (var span in spans)
         {
             if (best is null || span.Depth > best.Value.Depth)
@@ -197,14 +302,39 @@ internal sealed class SourcePositions
         return best;
     }
 
+    private static Span? Outermost(IEnumerable<Span> spans)
+    {
+        Span? best = null;
+        foreach (var span in spans)
+        {
+            if (best is null || span.Depth < best.Value.Depth)
+            {
+                best = span;
+            }
+        }
+
+        return best;
+    }
+
     private double ToViewer(MdBlockPanel panel, double panelOffset)
         => panel.TranslatePoint(new(0, panelOffset), _viewer).Y;
+
+    /// <summary>Созданные элементы блока <paramref name="index"/>, взятые один раз на проход.</summary>
+    private List<Span> SpansOf(int index, Dictionary<int, List<Span>> spans)
+    {
+        if (!spans.TryGetValue(index, out var known))
+        {
+            spans[index] = known = Spans(index).ToList();
+        }
+
+        return known;
+    }
 
     /// <summary>
     /// Созданные элементы блока с известными строками, с их рамками во вьюере. Текст отдаёт полосу
     /// каждой своей строки исходника — от её экранной строки до экранной строки следующей.
     /// </summary>
-    private IEnumerable<(Rect Bounds, double Start, double End, int Depth)> Spans(int index)
+    private IEnumerable<Span> Spans(int index)
     {
         if (_viewer.ItemContainerGenerator.ContainerFromIndex(index) is not FrameworkElement container)
         {
@@ -228,7 +358,7 @@ internal sealed class SourcePositions
                 && content is NodeVm { Source.IsEmpty: false } model and not InlineVm)
             {
                 var bounds = element.TransformToAncestor(_viewer).TransformBounds(new(element.RenderSize));
-                yield return (bounds, model.Source.StartLine, model.Source.EndLine + 1, depth);
+                yield return new(bounds, model.Source.StartLine, model.Source.EndLine + 1, depth, model);
             }
 
             if (node is MdTextBlock { ActualHeight: > 0 } textBlock && textBlock.SourceRows is { Count: > 0 } rows)
@@ -241,7 +371,7 @@ internal sealed class SourcePositions
                     if (bottom > top)
                     {
                         var end = i + 1 < rows.Count ? rows[i + 1].Line : rows[i].Line + 1;
-                        yield return (toViewer.TransformBounds(new(0, top, textBlock.ActualWidth, bottom - top)), rows[i].Line, end, depth + 1);
+                        yield return new(toViewer.TransformBounds(new(0, top, textBlock.ActualWidth, bottom - top)), rows[i].Line, end, depth + 1, null);
                     }
                 }
             }
@@ -255,15 +385,16 @@ internal sealed class SourcePositions
                     var bottom = i + 1 < codeRows.Count ? codeRows[i + 1].Row.Top : codeRows[i].Row.Bottom;
                     if (bottom > top)
                     {
-                        yield return (toViewer.TransformBounds(new(0, top, code.ActualWidth, bottom - top)), codeRows[i].Line, codeRows[i].Line + 1, depth + 1);
+                        yield return new(toViewer.TransformBounds(new(0, top, code.ActualWidth, bottom - top)), codeRows[i].Line, codeRows[i].Line + 1, depth + 1, null);
                     }
                 }
 
                 if (code.DataContext is CodeBlockVm { IsFenced: true } fenced && codeRows[^1].Line < fenced.Source.EndLine)
                 {
-                    var fenceTop = codeRows[^1].Row.Bottom;
+                    var lines = fenced.Code.Split('\n').Length;
+                    var fenceTop = codeRows[^1].Row.Bottom + Layout().InCode(fenced).Where(gap => gap.Index >= lines).Sum(gap => gap.Height);
                     var fence = new Rect(0, fenceTop, code.ActualWidth, Math.Max(0, code.ActualHeight - fenceTop));
-                    yield return (toViewer.TransformBounds(fence), fenced.Source.EndLine, fenced.Source.EndLine + 1, depth + 1);
+                    yield return new(toViewer.TransformBounds(fence), fenced.Source.EndLine, fenced.Source.EndLine + 1, depth + 1, null);
                 }
             }
 
@@ -273,4 +404,7 @@ internal sealed class SourcePositions
             }
         }
     }
+
+    /// <summary>Полоса строк созданного элемента во вьюере, его глубина и элемент модели; у строк текста и кода элемента нет.</summary>
+    private readonly record struct Span(Rect Bounds, double Start, double End, int Depth, NodeVm? Model);
 }

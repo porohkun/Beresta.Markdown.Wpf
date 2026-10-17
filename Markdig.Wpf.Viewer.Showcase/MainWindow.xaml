@@ -13,6 +13,8 @@
            xmlns:look="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.CustomLook"
            xmlns:panes="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.TwoPanes"
            xmlns:large="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.LargeDocument"
+           xmlns:chat="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Chat"
+           xmlns:streaming="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Streaming"
            xmlns:margin="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.MarginButtons"
            xmlns:preview="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Preview"
            xmlns:copying="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Copying"
@@ -99,6 +101,12 @@
         <DataTemplate DataType="{x:Type large:LargeDocumentViewModel}">
             <large:LargeDocumentView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type chat:ChatViewModel}">
+            <chat:ChatView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type streaming:StreamingViewModel}">
+            <streaming:StreamingView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type preview:PreviewViewModel}">
             <preview:PreviewView />
         </DataTemplate>
@@ -145,6 +153,7 @@
         <!-- Витрины; номера строк в коде наследуются всеми вьюерами выбранной -->
         <TabControl Style="{StaticResource ShowcaseTabs}"
                     DockPanel.Dock="Bottom"
+                    Margin="5,0"
                     ItemsSource="{Binding Showcases}"
                     SelectedItem="{Binding Selected}"
                     mdv:MarkdownViewer.ShowCodeLineNumbers="{Binding Options.ShowCodeLineNumbers}">

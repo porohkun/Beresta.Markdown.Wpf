@@ -32,6 +32,45 @@ public sealed class PaneAlignerTests
     }
 
     [Fact]
+    public void Удалённый_абзац_перед_заголовком_даёт_место_только_напротив()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var (left, right, window) = ShowInOneScroll("a\n\nremoved\n\n# Heading\n\nb", "a\n\n# Heading\n\nb");
+            using var aligner = new MdPaneAligner(left, right, new([(0, 0), (1, 1), (2, 2), (4, 2), (5, 3), (6, 4), (7, 5)]));
+
+            WpfHost.Settle(window);
+
+            left.Gaps.Should().BeNullOrEmpty();
+            right.Gaps.Should().ContainSingle().Which.Line.Should().Be(2);
+            left.GetSourceLineOffset(4).Should().BeApproximately(right.GetSourceLineOffset(2)!.Value, 0.5);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Удалённая_последняя_строка_кода_даёт_место_в_коде_напротив()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var (left, right, window) = ShowInOneScroll("```\none\ntwo\nthree\n```\n\nafter", "```\none\ntwo\n```\n\nafter");
+            using var aligner = new MdPaneAligner(left, right, new([(0, 0), (1, 1), (2, 2), (3, 3), (4, 3), (5, 4), (6, 5), (7, 6)]));
+            WpfHost.Settle(window);
+            var gaps = right.Gaps;
+
+            aligner.Align();
+            WpfHost.Settle(window);
+
+            left.Gaps.Should().BeNullOrEmpty();
+            right.Gaps.Should().ContainSingle().Which.Line.Should().Be(3);
+            right.Gaps.Should().BeEquivalentTo(gaps, "места не растут");
+            right.GetSourceLineOffset(3).Should().BeApproximately(left.GetSourceLineOffset(4)!.Value, 0.5, "место внутри кода");
+            left.GetSourceLineOffset(6).Should().BeApproximately(right.GetSourceLineOffset(5)!.Value, 0.5);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Выравниватель_сам_расставляет_места_после_раскладки()
     {
         WpfHost.Invoke(() =>

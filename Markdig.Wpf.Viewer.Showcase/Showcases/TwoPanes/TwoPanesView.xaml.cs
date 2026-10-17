@@ -64,12 +64,12 @@ public partial class TwoPanesView : UserControl
             (match.Left + 1.0, match.Right + 1.0)
         }));
 
-        _hunks = LineDiff.Hunks(matches, leftLines.Length, rightLines.Length).ToList();
+        _hunks = LineDiff.Hunks(matches, leftLines, rightLines).ToList();
         _sync = new(SyncLeft, SyncRight, map);
         _aligner = new(AlignedLeft, AlignedRight, map);
 
-        var removed = LineDiff.Unmatched(leftLines.Length, matches.Select(match => match.Left)).ToList();
-        var added = LineDiff.Unmatched(rightLines.Length, matches.Select(match => match.Right)).ToList();
+        var removed = LineDiff.Unmatched(leftLines, matches.Select(match => match.Left)).ToList();
+        var added = LineDiff.Unmatched(rightLines, matches.Select(match => match.Right)).ToList();
         MarkChanges(SyncLeft, removed, "Removed");
         MarkChanges(SyncRight, added, "Added");
         MarkChanges(AlignedLeft, removed, "Removed");

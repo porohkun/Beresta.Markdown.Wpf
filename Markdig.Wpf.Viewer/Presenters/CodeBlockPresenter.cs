@@ -222,14 +222,11 @@ public class CodeBlockPresenter : Control
         }
 
         var gaps = DataContext is CodeBlockVm code && GetValue(GapsProperty) is GapLayout layout ? layout.InCode(code) : [];
-        if (gaps.Count == 0)
-        {
-            numbers.Text = LineNumbers;
-            return;
-        }
-
         var count = (Code ?? string.Empty).Split('\n').Length;
         var column = new StringBuilder();
+
+        // BYDESIGN: номера — всегда строчные элементы, без Text: у измеренного TextBlock переход от Text к
+        // строчным элементам тут же запускает раскладку, а сюда приходят и посреди обхода дерева.
         numbers.Inlines.Clear();
 
         for (var i = 0; i < count; i++)
@@ -254,6 +251,11 @@ public class CodeBlockPresenter : Control
         }
 
         numbers.Inlines.Add(new Run(column.ToString()));
+        foreach (var (_, height) in gaps.Where(gap => gap.Index >= count))
+        {
+            numbers.Inlines.Add(new LineBreak());
+            numbers.Inlines.Add(new InlineUIContainer(new Border { Width = 1, Height = height }));
+        }
     }
 
     private void OnCopyClick(object sender, RoutedEventArgs e) => Copy();

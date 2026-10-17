@@ -79,6 +79,10 @@
     <!-- ======== Md.Image, Md.Task, Md.Footnote ======== -->
     <Brush x:Key="Md.Image.AltForeground">Gray</Brush>
     <Thickness x:Key="Md.Task.Margin">0,0,6,0</Thickness>
+    <sys:Double x:Key="Md.Task.Size">13</sys:Double>
+    <Brush x:Key="Md.Task.BoxBrush">#8C959F</Brush>
+    <Brush x:Key="Md.Task.CheckedBrush">#0969DA</Brush>
+    <Brush x:Key="Md.Task.MarkBrush">White</Brush>
     <GridLength x:Key="Md.Footnote.MarkerWidth">24</GridLength>
     <Brush x:Key="Md.Footnote.MarkerForeground">Gray</Brush>
     <sys:Double x:Key="Md.Footnote.LinkFontSize">11</sys:Double>
@@ -354,6 +358,15 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style x:Key="Md.Task.Style" TargetType="{x:Type p:MdTaskMark}">
+        <Setter Property="Width" Value="{DynamicResource Md.Task.Size}" />
+        <Setter Property="Height" Value="{DynamicResource Md.Task.Size}" />
+        <Setter Property="Margin" Value="{DynamicResource Md.Task.Margin}" />
+        <Setter Property="BoxBrush" Value="{DynamicResource Md.Task.BoxBrush}" />
+        <Setter Property="CheckedBrush" Value="{DynamicResource Md.Task.CheckedBrush}" />
+        <Setter Property="MarkBrush" Value="{DynamicResource Md.Task.MarkBrush}" />
     </Style>
 
     <Style x:Key="Md.FootnoteLink.Style" TargetType="{x:Type p:MdFootnoteLink}">
@@ -650,15 +663,18 @@
                 Value="{Binding Accent, RelativeSource={RelativeSource AncestorType={x:Type p:MdCalloutPresenter}}}" />
     </Style>
 
-    <!-- Заголовок-переключатель плашки и сворачиваемого блока: без своей рамки и фона -->
+    <!-- Заголовок-переключатель плашки и сворачиваемого блока: без своей рамки, щелчок ловит вся строка -->
     <Style x:Key="Md.Callout.HeaderStyle" TargetType="{x:Type ToggleButton}">
         <Setter Property="Focusable" Value="False" />
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Background" Value="Transparent" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ToggleButton}">
-                    <ContentPresenter Margin="{TemplateBinding Padding}" />
+                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter />
+                    </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -1030,10 +1046,7 @@
 
         <s:MdStyleProvider.TaskTemplate>
             <DataTemplate DataType="{x:Type vm:TaskVm}">
-                <p:MdTaskCheckBox Task="{Binding}"
-                                  Focusable="False"
-                                  Margin="{DynamicResource Md.Task.Margin}"
-                                  Style="{DynamicResource {x:Type CheckBox}}" />
+                <p:MdTaskMark IsChecked="{Binding IsChecked}" Style="{DynamicResource Md.Task.Style}" />
             </DataTemplate>
         </s:MdStyleProvider.TaskTemplate>
 
@@ -1264,49 +1277,6 @@
         </Border>
     </DataTemplate>
 
-    <Brush x:Key="Md.Critic.AcceptForeground">#1A7F37</Brush>
-    <Brush x:Key="Md.Critic.RejectForeground">#CF222E</Brush>
-    <Geometry x:Key="Md.Critic.AcceptIcon">M1.5,8.5 L3,7 L6,10 L13,3 L14.5,4.5 L6,13 Z</Geometry>
-    <Geometry x:Key="Md.Critic.RejectIcon">M3.5,2.5 L8,7 L12.5,2.5 L13.5,3.5 L9,8 L13.5,12.5 L12.5,13.5 L8,9 L3.5,13.5 L2.5,12.5 L7,8 L2.5,3.5 Z</Geometry>
-    <sys:String x:Key="Md.Critic.AcceptToolTip">Accept</sys:String>
-    <sys:String x:Key="Md.Critic.RejectToolTip">Reject</sys:String>
-    <DataTemplate x:Key="Md.Critic.Decision.Template" DataType="{x:Type kit:CriticDecisionVm}">
-        <StackPanel Orientation="Horizontal" Margin="2,0">
-            <Button Style="{x:Null}"
-                    Focusable="False"
-                    Cursor="Hand"
-                    ToolTip="{DynamicResource Md.Critic.AcceptToolTip}"
-                    Command="{x:Static kit:CriticMarkup.AcceptCommand}"
-                    CommandParameter="{Binding}">
-                <Button.Template>
-                    <ControlTemplate TargetType="{x:Type Button}">
-                        <Border Background="Transparent" Padding="1">
-                            <Path Data="{DynamicResource Md.Critic.AcceptIcon}"
-                                  Fill="{DynamicResource Md.Critic.AcceptForeground}" Width="10" Height="10"
-                                  Stretch="Uniform" />
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
-            <Button Style="{x:Null}"
-                    Focusable="False"
-                    Cursor="Hand"
-                    ToolTip="{DynamicResource Md.Critic.RejectToolTip}"
-                    Command="{x:Static kit:CriticMarkup.RejectCommand}"
-                    CommandParameter="{Binding}">
-                <Button.Template>
-                    <ControlTemplate TargetType="{x:Type Button}">
-                        <Border Background="Transparent" Padding="1">
-                            <Path Data="{DynamicResource Md.Critic.RejectIcon}"
-                                  Fill="{DynamicResource Md.Critic.RejectForeground}" Width="10" Height="10"
-                                  Stretch="Uniform" />
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
-        </StackPanel>
-    </DataTemplate>
-
     <!-- Спойлер закрашен, пока его состояние не раскрыто -->
     <Brush x:Key="Md.Spoiler.Cover">#57606A</Brush>
     <Brush x:Key="Md.Spoiler.RevealedBackground">#3357606A</Brush>
@@ -1328,49 +1298,28 @@
     <Geometry x:Key="Md.TaskStatus.Forwarded.Icon">F0 M1,8 A7,7 0 1 1 15,8 A7,7 0 1 1 1,8 Z M2.5,8 A5.5,5.5 0 1 0 13.5,8 A5.5,5.5 0 1 0 2.5,8 Z M6,4.5 L10.5,8 L6,11.5 L6,9.6 L8.2,8 L6,6.4 Z</Geometry>
     <Geometry x:Key="Md.TaskStatus.Question.Icon">F0 M1,8 A7,7 0 1 1 15,8 A7,7 0 1 1 1,8 Z M2.5,8 A5.5,5.5 0 1 0 13.5,8 A5.5,5.5 0 1 0 2.5,8 Z M5.5,6.25 A2.5,2.5 0 0 1 10.5,6.25 C10.5,7.5 8.75,7.9 8.75,9.25 L7.25,9.25 C7.25,7.25 9,7.2 9,6.25 A1,1 0 0 0 7,6.25 Z M7.25,10.25 L8.75,10.25 L8.75,11.75 L7.25,11.75 Z</Geometry>
     <Geometry x:Key="Md.TaskStatus.Important.Icon">F0 M1,8 A7,7 0 1 1 15,8 A7,7 0 1 1 1,8 Z M2.5,8 A5.5,5.5 0 1 0 13.5,8 A5.5,5.5 0 1 0 2.5,8 Z M7.25,4 L8.75,4 L8.75,9.5 L7.25,9.5 Z M7.25,10.75 L8.75,10.75 L8.75,12.25 L7.25,12.25 Z</Geometry>
-    <Style x:Key="Md.TaskStatus.Style" TargetType="{x:Type p:MdTaskCheckBox}">
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type p:MdTaskCheckBox}">
-                    <Border Background="Transparent" VerticalAlignment="Center">
-                        <Path x:Name="Icon"
-                              Width="14"
-                              Height="14"
-                              Stretch="Uniform"
-                              Fill="{DynamicResource Md.TaskStatus.Foreground}"
-                              Data="{DynamicResource Md.TaskStatus.InProgress.Icon}" />
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <DataTrigger Binding="{Binding Task.Status, RelativeSource={RelativeSource Self}}" Value="-">
-                            <Setter TargetName="Icon" Property="Data"
-                                    Value="{DynamicResource Md.TaskStatus.Cancelled.Icon}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding Task.Status, RelativeSource={RelativeSource Self}}" Value="&gt;">
-                            <Setter TargetName="Icon" Property="Data"
-                                    Value="{DynamicResource Md.TaskStatus.Forwarded.Icon}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding Task.Status, RelativeSource={RelativeSource Self}}" Value="?">
-                            <Setter TargetName="Icon" Property="Data"
-                                    Value="{DynamicResource Md.TaskStatus.Question.Icon}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding Task.Status, RelativeSource={RelativeSource Self}}" Value="!">
-                            <Setter TargetName="Icon" Property="Data"
-                                    Value="{DynamicResource Md.TaskStatus.Important.Icon}" />
-                        </DataTrigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Cursor" Value="{x:Null}" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
     <DataTemplate x:Key="Md.TaskStatus.Template" DataType="{x:Type vm:TaskVm}">
-        <p:MdTaskCheckBox Task="{Binding}"
-                          Focusable="False"
-                          Margin="{DynamicResource Md.Task.Margin}"
-                          Style="{DynamicResource Md.TaskStatus.Style}" />
+        <Path x:Name="Icon"
+              Width="14"
+              Height="14"
+              Stretch="Uniform"
+              Margin="{DynamicResource Md.Task.Margin}"
+              Fill="{DynamicResource Md.TaskStatus.Foreground}"
+              Data="{DynamicResource Md.TaskStatus.InProgress.Icon}" />
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding Status}" Value="-">
+                <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.TaskStatus.Cancelled.Icon}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Status}" Value="&gt;">
+                <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.TaskStatus.Forwarded.Icon}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Status}" Value="?">
+                <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.TaskStatus.Question.Icon}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Status}" Value="!">
+                <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.TaskStatus.Important.Icon}" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
     </DataTemplate>
 
     <sys:Double x:Key="Md.FootnoteTip.MaxWidth">400</sys:Double>

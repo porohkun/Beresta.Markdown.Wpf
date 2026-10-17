@@ -41,11 +41,15 @@
     <SolidColorBrush x:Key="Md.CodeBlock.LineNumberForeground" Color="{DynamicResource ThirdlyTextColor}" />
     <SolidColorBrush x:Key="Md.CodeBlock.HeaderForeground" Color="{DynamicResource ThirdlyTextColor}" />
 
-    <!-- Клавиши, картинки, сноски -->
+    <!-- Клавиши, картинки, задачи, сноски -->
     <SolidColorBrush x:Key="Md.Kbd.Foreground" Color="{DynamicResource PrimaryTextColor}" />
     <SolidColorBrush x:Key="Md.Kbd.Background" Color="{DynamicResource SecondaryRegionColor}" />
     <SolidColorBrush x:Key="Md.Kbd.BorderBrush" Color="{DynamicResource BorderColor}" />
     <SolidColorBrush x:Key="Md.Image.AltForeground" Color="{DynamicResource ThirdlyTextColor}" />
+    <SolidColorBrush x:Key="Md.Task.BoxBrush" Color="{DynamicResource SecondaryTextColor}" />
+    <SolidColorBrush x:Key="Md.Task.CheckedBrush" Color="{DynamicResource PrimaryColor}" />
+    <SolidColorBrush x:Key="Md.Task.MarkBrush" Color="{DynamicResource TextIconColor}" />
+    <SolidColorBrush x:Key="Md.TaskStatus.Foreground" Color="{DynamicResource PrimaryColor}" />
     <SolidColorBrush x:Key="Md.Footnote.MarkerForeground" Color="{DynamicResource ThirdlyTextColor}" />
 
     <!-- Маркер, подпись фигуры, подвал -->

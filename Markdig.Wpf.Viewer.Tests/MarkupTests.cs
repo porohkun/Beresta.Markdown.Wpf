@@ -153,40 +153,31 @@ public sealed class MarkupTests
     }
 
     [Fact]
-    public void Нажатый_флажок_задачи_спрашивает_приложение_и_сам_не_меняется()
+    public void Задача_рисуется_картинкой_флажка_а_не_контролом()
     {
         WpfHost.Invoke(() =>
         {
-            var viewer = new MarkdownViewer { Markdown = "- [ ] todo", CanToggleTasks = true };
-            var toggled = new List<MdTaskToggledEventArgs>();
-            viewer.TaskToggled += (_, e) => toggled.Add(e);
+            var viewer = new MarkdownViewer { Markdown = "- [ ] todo\n- [x] done" };
             var window = WpfHost.Show(viewer);
-            var box = Visuals.Descendants<MdTaskCheckBox>(viewer).Single();
 
-            ((IToggleProvider)UIElementAutomationPeer.CreatePeerForElement(box).GetPattern(PatternInterface.Toggle)).Toggle();
-
-            var args = toggled.Should().ContainSingle().Subject;
-            args.IsChecked.Should().BeTrue();
-            viewer.Markdown!.Substring(args.Task.Source.Start, args.Task.Source.Length).Should().Be("[ ]");
-            box.IsChecked.Should().BeFalse();
+            Visuals.Descendants<MdTaskMark>(viewer).Select(mark => mark.IsChecked).Should().Equal(false, true);
+            Visuals.Descendants<CheckBox>(viewer).Should().BeEmpty();
             window.Close();
         });
     }
 
     [Fact]
-    public void Без_CanToggleTasks_флажок_только_показывает()
+    public void Флажок_задачи_для_автоматизации_недоступный_флажок_с_её_состоянием()
     {
         WpfHost.Invoke(() =>
         {
             var viewer = new MarkdownViewer { Markdown = "- [x] done" };
             var window = WpfHost.Show(viewer);
+            var peer = UIElementAutomationPeer.CreatePeerForElement(Visuals.Descendants<MdTaskMark>(viewer).Single());
 
-            var box = Visuals.Descendants<MdTaskCheckBox>(viewer).Single();
-            box.IsChecked.Should().BeTrue();
-            box.IsEnabled.Should().BeFalse();
-
-            viewer.CanToggleTasks = true;
-            box.IsEnabled.Should().BeTrue();
+            peer.GetAutomationControlType().Should().Be(AutomationControlType.CheckBox);
+            ((IToggleProvider)peer.GetPattern(PatternInterface.Toggle)).ToggleState.Should().Be(System.Windows.Automation.ToggleState.On);
+            peer.IsEnabled().Should().BeFalse();
             window.Close();
         });
     }

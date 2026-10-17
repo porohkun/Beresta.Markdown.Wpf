@@ -60,6 +60,29 @@ public sealed class SelectionTests
     }
 
     [Fact]
+    public void Кусок_с_начала_перенесённой_строки_подсвечивается_только_на_ней()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var block = new MdTextBlock
+            {
+                Width = 80,
+                TextWrapping = TextWrapping.Wrap,
+                Runs = [new RunVm("one two three four five six seven")]
+            };
+            var window = WpfHost.Show(block);
+            var top = block.RowAt(0)!.Value.Top;
+            var wrap = Enumerable.Range(0, 33).First(offset => block.RowAt(offset)!.Value.Top > top);
+
+            var rect = block.GetRangeRects(wrap, wrap + 2).Should().ContainSingle().Subject;
+            rect.Top.Should().BeApproximately(block.RowAt(wrap)!.Value.Top, 0.5);
+            rect.Left.Should().BeApproximately(block.RowAt(wrap)!.Value.Left, 0.5);
+            rect.Right.Should().BeApproximately(block.RowAt(wrap + 2)!.Value.Left, 0.5);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Перетаскивание_выделяет_куски_нескольких_блоков()
     {
         WpfHost.Invoke(() =>

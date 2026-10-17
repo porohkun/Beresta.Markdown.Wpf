@@ -7,9 +7,8 @@ using Markdig.Syntax.Inlines;
 using ViewModels;
 
 /// <summary>
-/// Статусы задач <c>- [/]</c>, <c>- [-]</c>, <c>- [&gt;]</c>, <c>- [?]</c>, <c>- [!]</c> — значком вместо флажка.
-/// Щелчок поднимает <see cref="MarkdownViewer.TaskToggledEvent"/>, как у обычной задачи; статус — в
-/// <see cref="TaskVm.Status"/> задачи из аргументов. Вид — шаблон темы <c>Md.TaskStatus.Template</c>.
+/// Статусы задач <c>- [/]</c>, <c>- [-]</c>, <c>- [&gt;]</c>, <c>- [?]</c>, <c>- [!]</c> — значком вместо флажка;
+/// статус — в <see cref="TaskVm.Status"/>. Вид — шаблон темы <c>Md.TaskStatus.Template</c>.
 /// </summary>
 public sealed class TaskStatuses : MdExtension
 {

@@ -6,7 +6,8 @@ using System.Windows.Media;
 using Presenters;
 
 /// <summary>
-/// Вьюер создаёт видимые блоки и запас в полэкрана сверху и снизу, где бы ни стояла прокрутка.
+/// Вьюер создаёт видимые блоки и запас в полэкрана сверху и снизу, где бы ни стояла прокрутка, а
+/// созданные убирает, когда они уходят дальше двойного запаса.
 /// </summary>
 public sealed class VirtualizationTests
 {
@@ -205,6 +206,100 @@ public sealed class VirtualizationTests
     }
 
     [Fact]
+    public void Созданный_блок_остаётся_до_двойного_запаса()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = LongText };
+            var scroll = new ScrollViewer { Content = viewer };
+            var window = WpfHost.Show(scroll);
+            scroll.ScrollToVerticalOffset(scroll.ExtentHeight / 2);
+            WpfHost.Settle(window);
+            var last = Spans(viewer)[^1].Index;
+
+            scroll.ScrollToVerticalOffset(scroll.VerticalOffset - scroll.ViewportHeight * CacheShare / 2);
+            WpfHost.Settle(window);
+
+            viewer.ItemContainerGenerator.ContainerFromIndex(last).Should().NotBeNull("блок за запасом, но ближе двойного");
+
+            scroll.ScrollToVerticalOffset(scroll.VerticalOffset - scroll.ViewportHeight * 2);
+            WpfHost.Settle(window);
+
+            viewer.ItemContainerGenerator.ContainerFromIndex(last).Should().BeNull("блок дальше двойного запаса");
+            ShouldRealizeVisibleOnly(viewer);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Правки_несозданных_блоков_не_ломают_панель()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = LongText };
+            var scroll = new ScrollViewer { Content = viewer };
+            var window = WpfHost.Show(scroll);
+            scroll.ScrollToEnd();
+            WpfHost.Settle(window);
+
+            viewer.Markdown = LongText.Replace("Paragraph 5\n\n", string.Empty).Replace("Paragraph 7", "Paragraph seven");
+            WpfHost.Settle(window);
+
+            ShouldRealizeVisibleOnly(viewer);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Перенос_созданного_блока_туда_где_блоков_нет_не_ломает_панель()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var items = new System.Collections.ObjectModel.ObservableCollection<string>(Enumerable.Range(0, 300).Select(i => $"Item {i}"));
+            var list = new ItemsControl
+            {
+                ItemsSource = items,
+                ItemsPanel = new ItemsPanelTemplate(new FrameworkElementFactory(typeof(MdBlockPanel)))
+            };
+            VirtualizingPanel.SetIsVirtualizing(list, true);
+            var scroll = new ScrollViewer { Content = list };
+            var window = WpfHost.Show(scroll);
+            scroll.ScrollToEnd();
+            WpfHost.Settle(window);
+
+            items.Move(items.Count - 1, 0);
+            WpfHost.Settle(window);
+
+            Enumerable.Range(0, items.Count)
+                .Select(index => (Index: index, Container: list.ItemContainerGenerator.ContainerFromIndex(index) as ContentPresenter))
+                .Where(pair => pair.Container is not null)
+                .Should().OnlyContain(pair => ReferenceEquals(pair.Container!.Content, items[pair.Index]));
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Переставленные_блоки_встают_по_своим_местам()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "first\n\nsecond\n\nthird" };
+            var window = WpfHost.Show(viewer);
+
+            viewer.Markdown = "third\n\nfirst\n\nsecond";
+            WpfHost.Settle(window);
+
+            Enumerable.Range(0, viewer.Items.Count)
+                .Select(index => ((FrameworkElement)viewer.ItemContainerGenerator.ContainerFromIndex(index)).DataContext)
+                .Should().Equal(viewer.Items.Cast<object>());
+            Visuals.Descendants<MdTextBlock>(viewer)
+                .Select(text => string.Concat(text.Inlines.OfType<System.Windows.Documents.Run>().Select(run => run.Text)))
+                .Should().Equal("third", "first", "second");
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Новый_текст_пересобирает_блоки()
     {
         WpfHost.Invoke(() =>
@@ -226,17 +321,17 @@ public sealed class VirtualizationTests
 
     /// <summary>
     /// Созданные блоки идут подряд и покрывают видимую часть вьюера целиком, а за видимую
-    /// область выходят не дальше запаса.
+    /// область выходят не дальше двойного запаса.
     /// </summary>
     private static void ShouldRealizeVisibleOnly(MarkdownViewer viewer)
     {
         var panel = PanelOf(viewer);
         var viewport = ViewportOf(viewer);
-        var cache = (viewport.Bottom - viewport.Top) * CacheShare;
+        var cache = 2 * (viewport.Bottom - viewport.Top) * CacheShare;
         var spans = Spans(viewer);
 
         spans.Where(span => span.Bottom <= viewport.Top - cache - 1 || span.Top >= viewport.Bottom + cache + 1)
-            .Should().BeEmpty("созданное не выходит за видимую область дальше запаса");
+            .Should().BeEmpty("созданное не выходит за видимую область дальше двойного запаса");
 
         var visibleTop = Math.Max(viewport.Top, 0);
         var visibleBottom = Math.Min(viewport.Bottom, panel.ActualHeight);

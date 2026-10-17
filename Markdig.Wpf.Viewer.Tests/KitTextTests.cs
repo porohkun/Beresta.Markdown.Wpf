@@ -68,28 +68,20 @@ public sealed class KitTextTests
     [InlineData("{==mark==}{>>note<<} end")]
     public void Правки_пишутся_в_разметку_как_были(string markdown)
     {
-        Copy(markdown, new CriticMarkup { AllowDecisions = true }).Should().Be(markdown);
+        Copy(markdown, new CriticMarkup()).Should().Be(markdown);
     }
 
     [Fact]
-    public void Решение_по_правке_поднимает_событие_с_местом_и_текстом()
+    public void У_правок_нет_кнопок_решения()
     {
         WpfHost.Invoke(() =>
         {
-            const string markdown = "Keep {~~old~>new~~} text.";
-            var viewer = new MarkdownViewer { Markdown = markdown };
-            viewer.Extensions.Add(new CriticMarkup { AllowDecisions = true });
+            var viewer = new MarkdownViewer { Markdown = "Keep {~~old~>new~~} text." };
+            viewer.Extensions.Add(new CriticMarkup());
             var window = WpfHost.Show(viewer);
-            var decisions = new List<MdCriticDecidedEventArgs>();
-            CriticMarkup.AddDecidedHandler(window, (_, e) => decisions.Add(e));
-            var buttons = Visuals.Descendants<Button>(viewer).ToList();
 
-            CriticMarkup.AcceptCommand.Execute(buttons[0].CommandParameter, buttons[0]);
-            CriticMarkup.RejectCommand.Execute(buttons[1].CommandParameter, buttons[1]);
-
-            decisions.Select(decision => (decision.IsAccepted, decision.Replacement)).Should().Equal((true, "new"), (false, "old"));
-            markdown.Substring(decisions[0].Change.Start, decisions[0].Change.Length).Should().Be("{~~old~>new~~}");
-            viewer.TextMap.Text.Should().Be("Keep oldnew" + MdTextMap.ObjectMark + " text.");
+            Visuals.Descendants<Button>(viewer).Should().BeEmpty();
+            viewer.TextMap.Text.Should().Be("Keep oldnew text.");
             window.Close();
         });
     }
@@ -159,23 +151,17 @@ public sealed class KitTextTests
     }
 
     [Fact]
-    public void Щелчок_по_статусу_поднимает_переключение_задачи()
+    public void Статус_задачи_рисуется_своим_значком()
     {
         WpfHost.Invoke(() =>
         {
-            var viewer = new MarkdownViewer { Markdown = "- [>] later", CanToggleTasks = true };
+            var viewer = new MarkdownViewer { Markdown = "- [>] later" };
             viewer.Extensions.Add(new TaskStatuses());
             var window = WpfHost.Show(viewer);
-            var toggled = new List<MdTaskToggledEventArgs>();
-            viewer.TaskToggled += (_, e) => toggled.Add(e);
-            var box = Visuals.Descendants<MdTaskCheckBox>(viewer).Single();
 
-            box.Template.FindName("Icon", box).Should().BeOfType<Path>()
+            Visuals.Descendants<Path>(viewer).Should().ContainSingle()
                 .Which.Data.Should().BeSameAs(viewer.FindResource("Md.TaskStatus.Forwarded.Icon"));
-            ((System.Windows.Automation.Provider.IToggleProvider)new System.Windows.Automation.Peers.CheckBoxAutomationPeer(box)
-                .GetPattern(System.Windows.Automation.Peers.PatternInterface.Toggle)).Toggle();
-
-            toggled.Should().ContainSingle().Which.Task.Status.Should().Be('>');
+            Visuals.Descendants<MdTaskMark>(viewer).Should().BeEmpty();
             window.Close();
         });
     }

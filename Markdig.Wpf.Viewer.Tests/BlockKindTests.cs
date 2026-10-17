@@ -122,6 +122,46 @@ public sealed class BlockKindTests
     }
 
     [Fact]
+    public void Заголовок_сворачиваемой_плашки_ловит_щелчок_по_всей_строке_и_шеврону()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ":::fold\nhidden\n:::" };
+            viewer.Extensions.Add(Folding());
+            var window = WpfHost.Show(viewer);
+            var callout = Visuals.Descendants<MdCalloutPresenter>(viewer).Single();
+            var header = Header(callout);
+            var chevron = (FrameworkElement)callout.Template.FindName("Chevron", callout);
+            var row = (UIElement)VisualTreeHelper.GetParent(chevron);
+            var slot = VisualTreeHelper.GetOffset(chevron);
+
+            Hits(header, row.TranslatePoint(new(slot.X + 0.5, slot.Y + 0.5), header)).Should().BeTrue("угол шеврона");
+            Hits(header, row.TranslatePoint(new(slot.X - 4, slot.Y + chevron.ActualHeight / 2), header)).Should().BeTrue("перед шевроном");
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Заголовок_сворачиваемого_блока_ловит_щелчок_по_значку_и_рядом()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ":::details Summary text\ninside\n:::" };
+            viewer.Extensions.Add(DetailsFromContainer());
+            var window = WpfHost.Show(viewer);
+            var details = Visuals.Descendants<MdDetailsPresenter>(viewer).Single();
+            var header = Visuals.Descendants<ToggleButton>(details).Single();
+            var marker = (FrameworkElement)details.Template.FindName("Marker", details);
+            var row = (UIElement)VisualTreeHelper.GetParent(marker);
+            var slot = VisualTreeHelper.GetOffset(marker);
+
+            Hits(header, row.TranslatePoint(new(slot.X + 0.5, slot.Y + 0.5), header)).Should().BeTrue("угол значка");
+            Hits(header, row.TranslatePoint(new(slot.X + marker.ActualWidth + 3, slot.Y + marker.ActualHeight / 2), header)).Should().BeTrue("между значком и заголовком");
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Сворачиваемый_блок_свёрнут_пока_его_не_развернут()
     {
         WpfHost.Invoke(() =>
@@ -225,4 +265,8 @@ public sealed class BlockKindTests
     private static FrameworkElement Body(MdCalloutPresenter callout) => (FrameworkElement)callout.Template.FindName("Body", callout);
 
     private static ToggleButton Header(MdCalloutPresenter callout) => (ToggleButton)callout.Template.FindName("Header", callout);
+
+    /// <summary>Щелчок в точке заголовка достаётся самому заголовку.</summary>
+    private static bool Hits(ToggleButton header, Point point)
+        => header.InputHitTest(point) is Visual hit && (ReferenceEquals(hit, header) || hit.IsDescendantOf(header));
 }

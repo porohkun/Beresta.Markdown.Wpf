@@ -1,0 +1,49 @@
+﻿<UserControl x:Class="MarkdigWpfViewer.Showcase.Showcases.Streaming.StreamingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
+             xmlns:b="clr-namespace:MarkdigWpfViewer.Behaviors;assembly=Markdig.Wpf.Viewer"
+             xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Streaming"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance local:StreamingViewModel}">
+    <DockPanel>
+        <WrapPanel DockPanel.Dock="Top" Margin="24,8,24,4">
+            <Button Content="Начать" Click="OnStart" Margin="0,0,8,4" />
+            <Button Content="Остановить" Click="OnStop" Margin="0,0,16,4" />
+            <ComboBox SelectedIndex="{Binding Speed}" Width="130" Margin="0,0,8,4">
+                <ComboBoxItem Content="Как модель" />
+                <ComboBoxItem Content="Быстро" />
+                <ComboBoxItem Content="Всё разом" />
+            </ComboBox>
+            <ComboBox SelectedIndex="{Binding IntervalChoice}" Width="150" Margin="0,0,8,4">
+                <ComboBoxItem Content="Раз в 50 мс" />
+                <ComboBoxItem Content="Раз в 100 мс" />
+                <ComboBoxItem Content="Раз в 200 мс" />
+                <ComboBoxItem Content="Без задержки" />
+            </ComboBox>
+            <ComboBox SelectedValue="{Binding Edge}" SelectedValuePath="Tag" Width="170" Margin="0,0,8,4">
+                <ComboBoxItem Content="Прилипать к низу" Tag="{x:Static b:StickyEdge.Bottom}" />
+                <ComboBoxItem Content="Прилипать к верху" Tag="{x:Static b:StickyEdge.Top}" />
+                <ComboBoxItem Content="Не прилипать" Tag="{x:Static b:StickyEdge.None}" />
+            </ComboBox>
+            <CheckBox Content="Отлипать при прокрутке"
+                      IsChecked="{Binding CanUnstick}"
+                      VerticalAlignment="Center"
+                      Margin="0,0,0,4" />
+        </WrapPanel>
+
+        <!-- Сколько кусков пришло и сколько раз вьюер получил текст -->
+        <TextBlock x:Name="Status"
+                   DockPanel.Dock="Top"
+                   Margin="24,0,24,4"
+                   Foreground="{DynamicResource SecondaryTextBrush}" />
+
+        <ScrollViewer x:Name="Scroll"
+                      b:StickyScroll.Edge="{Binding Edge}"
+                      b:StickyScroll.CanUnstick="{Binding CanUnstick}">
+            <mdv:MarkdownViewer x:Name="Viewer" Margin="24,16" />
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

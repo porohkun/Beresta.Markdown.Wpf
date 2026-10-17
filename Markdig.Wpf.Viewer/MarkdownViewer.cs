@@ -114,14 +114,6 @@ public sealed class MarkdownViewer : ItemsControl
             typeof(MarkdownViewer),
             new(null, OnContainersSourceChanged));
 
-    /// <summary>Можно ли нажимать флажки задач; наследуется. Нажатие поднимает <see cref="TaskToggledEvent"/>.</summary>
-    public static readonly DependencyProperty CanToggleTasksProperty =
-        DependencyProperty.RegisterAttached(
-            nameof(CanToggleTasks),
-            typeof(bool),
-            typeof(MarkdownViewer),
-            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
-
     /// <summary>Кнопка копирования в блоках кода, видна при наведении; наследуется блоками кода.</summary>
     public static readonly DependencyProperty ShowCodeCopyButtonProperty =
         DependencyProperty.RegisterAttached(
@@ -137,14 +129,6 @@ public sealed class MarkdownViewer : ItemsControl
             nameof(CopyMarkdownCommand),
             typeof(MarkdownViewer),
             new() { new KeyGesture(Key.C, ModifierKeys.Control | ModifierKeys.Shift) });
-
-    /// <summary>Флажок задачи нажали; текст правит приложение. Всплывающее.</summary>
-    public static readonly RoutedEvent TaskToggledEvent =
-        EventManager.RegisterRoutedEvent(
-            nameof(TaskToggled),
-            RoutingStrategy.Bubble,
-            typeof(EventHandler<MdTaskToggledEventArgs>),
-            typeof(MarkdownViewer));
 
     /// <summary>Номера строк исходника на полях слева.</summary>
     public static readonly DependencyProperty ShowSourceLineNumbersProperty =
@@ -300,12 +284,6 @@ public sealed class MarkdownViewer : ItemsControl
     /// <summary>Новый текст лёг в документ: прежняя карта и новая.</summary>
     internal event Action<MdTextMap, MdTextMap>? TextMapChanged;
 
-    public event EventHandler<MdTaskToggledEventArgs> TaskToggled
-    {
-        add => AddHandler(TaskToggledEvent, value);
-        remove => RemoveHandler(TaskToggledEvent, value);
-    }
-
     public string? Markdown
     {
         get => (string)GetValue(MarkdownProperty);
@@ -376,12 +354,6 @@ public sealed class MarkdownViewer : ItemsControl
         set => SetValue(BaseUriProperty, value);
     }
 
-    public bool CanToggleTasks
-    {
-        get => (bool)GetValue(CanToggleTasksProperty);
-        set => SetValue(CanToggleTasksProperty, value);
-    }
-
     public bool ShowSourceLineNumbers
     {
         get => (bool)GetValue(ShowSourceLineNumbersProperty);
@@ -432,12 +404,6 @@ public sealed class MarkdownViewer : ItemsControl
     // BYDESIGN: кисти пометок — логические потомки вьюера: иначе смена темы до них не доходит.
     protected override IEnumerator LogicalChildren => WithThemeBrushes(base.LogicalChildren, _themeBrushes.All);
 
-    public static bool GetCanToggleTasks(DependencyObject element)
-        => (bool)element.GetValue(CanToggleTasksProperty);
-
-    public static void SetCanToggleTasks(DependencyObject element, bool value)
-        => element.SetValue(CanToggleTasksProperty, value);
-
     public static bool GetShowCodeCopyButton(DependencyObject element)
         => (bool)element.GetValue(ShowCodeCopyButtonProperty);
 
@@ -456,8 +422,8 @@ public sealed class MarkdownViewer : ItemsControl
     /// <summary>Строка исходника в позиции вьюера; дробная часть — доля строки.</summary>
     public double? GetSourceLineAt(double offset) => _positions.LineAt(offset);
 
-    /// <summary>Позиции строк исходника в координатах вьюера за один проход; строки — по возрастанию.</summary>
-    internal double?[] GetSourceLineOffsets(IReadOnlyList<double> lines) => _positions.OffsetsOf(lines);
+    /// <summary>Где в координатах вьюера стояли бы пустые места строк, не будь у вьюера мест; строки — по возрастанию.</summary>
+    internal double?[] GetGapOffsets(IReadOnlyList<int> lines) => _positions.GapOffsetsOf(lines);
 
     /// <summary>
     /// Строка исходника, которая видна в доле <paramref name="viewportFraction"/> высоты прокрутки,

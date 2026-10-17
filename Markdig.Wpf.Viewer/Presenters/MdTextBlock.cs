@@ -364,8 +364,10 @@ public class MdTextBlock : TextBlock
             yield break;
         }
 
-        var from = run.ContentStart.GetPositionAtOffset(Math.Max(start, segment.Start) - segment.Start);
-        var to = run.ContentStart.GetPositionAtOffset(Math.Min(end, segment.End) - segment.Start);
+        // BYDESIGN: начало куска смотрит вперёд, а конец назад: на месте переноса начало иначе считается
+        // концом прежней экранной строки, и подсветка ложится на две строки сразу.
+        var from = run.ContentStart.GetPositionAtOffset(Math.Max(start, segment.Start) - segment.Start, LogicalDirection.Forward);
+        var to = run.ContentStart.GetPositionAtOffset(Math.Min(end, segment.End) - segment.Start, LogicalDirection.Backward);
         if (from is null || to is null)
         {
             yield break;
@@ -553,16 +555,26 @@ public class MdTextBlock : TextBlock
             ? layout.InText(runs).OrderBy(gap => gap.Offset).ToList()
             : [];
 
-    /// <summary>Пустые места, которые встают до позиции <paramref name="position"/> своего текста.</summary>
+    /// <summary>Пустые места, которые встают до позиции <paramref name="position"/> своего текста; за концом текста — под ним.</summary>
     private void AddGapRows(int position, ref int nextGap)
     {
+        var afterText = position == int.MaxValue && _segments.Count > 0;
         for (; nextGap < _gaps.Count && _gaps[nextGap].Offset <= position; nextGap++)
         {
             // BYDESIGN: место — строка из одного вставного элемента: такая строка ровно его высоты,
             // и соседние экранные строки текста не меняются.
             var space = new Border { Width = 1, Height = _gaps[nextGap].Height, IsHitTestVisible = false };
-            Inlines.Add(new InlineUIContainer(space));
-            Inlines.Add(new LineBreak());
+            if (afterText)
+            {
+                Inlines.Add(new LineBreak());
+                Inlines.Add(new InlineUIContainer(space));
+            }
+            else
+            {
+                Inlines.Add(new InlineUIContainer(space));
+                Inlines.Add(new LineBreak());
+            }
+
             _gapRows.Add((space, _gaps[nextGap].Height));
         }
     }

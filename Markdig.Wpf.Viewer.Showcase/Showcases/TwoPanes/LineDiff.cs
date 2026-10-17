@@ -38,34 +38,36 @@ public static class LineDiff
     }
 
     /// <summary>
-    /// Правки между совпавшими строками: куски слева и справа, конец меньше начала — кусок пуст и
-    /// стоит перед своей начальной строкой.
+    /// Правки между совпавшими строками без пустых строк по краям: куски слева и справа, конец меньше
+    /// начала — кусок пуст и стоит перед своей начальной строкой. Правка из одних пустых строк не в счёт.
     /// </summary>
     public static IEnumerable<(int LeftStart, int LeftEnd, int RightStart, int RightEnd)> Hunks(
         IReadOnlyList<(int Left, int Right)> matches,
-        int leftCount,
-        int rightCount)
+        IReadOnlyList<string> leftLines,
+        IReadOnlyList<string> rightLines)
     {
         var (left, right) = (0, 0);
-        foreach (var (matchLeft, matchRight) in matches.Append((leftCount, rightCount)))
+        foreach (var (matchLeft, matchRight) in matches.Append((leftLines.Count, rightLines.Count)))
         {
-            if (matchLeft > left || matchRight > right)
+            var (leftStart, leftEnd) = TrimBlank(leftLines, left, matchLeft - 1);
+            var (rightStart, rightEnd) = TrimBlank(rightLines, right, matchRight - 1);
+            if (leftEnd >= leftStart || rightEnd >= rightStart)
             {
-                yield return (left, matchLeft - 1, right, matchRight - 1);
+                yield return (leftStart, leftEnd, rightStart, rightEnd);
             }
 
             (left, right) = (matchLeft + 1, matchRight + 1);
         }
     }
 
-    /// <summary>Сплошные куски строк, которых нет среди совпавших.</summary>
-    public static IEnumerable<(int Start, int End)> Unmatched(int count, IEnumerable<int> matched)
+    /// <summary>Сплошные куски несовпавших строк с текстом; пустые строки правкой не считаются.</summary>
+    public static IEnumerable<(int Start, int End)> Unmatched(IReadOnlyList<string> lines, IEnumerable<int> matched)
     {
         var set = matched.ToHashSet();
         var start = -1;
-        for (var line = 0; line <= count; line++)
+        for (var line = 0; line <= lines.Count; line++)
         {
-            var changed = line < count && !set.Contains(line);
+            var changed = line < lines.Count && !set.Contains(line) && !string.IsNullOrWhiteSpace(lines[line]);
             if (changed && start < 0)
             {
                 start = line;
@@ -76,5 +78,22 @@ public static class LineDiff
                 start = -1;
             }
         }
+    }
+
+    /// <summary>Кусок строк без пустых строк по краям; из одних пустых — пустой кусок перед своей первой строкой.</summary>
+    private static (int Start, int End) TrimBlank(IReadOnlyList<string> lines, int start, int end)
+    {
+        var (first, last) = (start, end);
+        while (first <= last && string.IsNullOrWhiteSpace(lines[first]))
+        {
+            first++;
+        }
+
+        while (last >= first && string.IsNullOrWhiteSpace(lines[last]))
+        {
+            last--;
+        }
+
+        return first <= last ? (first, last) : (start, start - 1);
     }
 }

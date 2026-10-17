@@ -234,15 +234,21 @@ public sealed class MdBlockPanel : VirtualizingPanel
         }
     }
 
+    /// <summary>Убирает контролы удалённых, заменённых и перенесённых элементов: у перенесённого — с прежнего места.</summary>
     protected override void OnItemsChanged(object sender, ItemsChangedEventArgs args)
     {
         base.OnItemsChanged(sender, args);
 
-        if (args.Action is NotifyCollectionChangedAction.Remove
-            or NotifyCollectionChangedAction.Replace
-            or NotifyCollectionChangedAction.Move)
+        var position = args.Action switch
         {
-            RemoveInternalChildRange(args.Position.Index, args.ItemUICount);
+            NotifyCollectionChangedAction.Remove or NotifyCollectionChangedAction.Replace => args.Position,
+            NotifyCollectionChangedAction.Move => args.OldPosition,
+            _ => (GeneratorPosition?)null
+        };
+
+        if (position is { } at && args.ItemUICount > 0)
+        {
+            RemoveInternalChildRange(at.Offset > 0 ? at.Index + 1 : at.Index, args.ItemUICount);
         }
     }
 
@@ -280,9 +286,13 @@ public sealed class MdBlockPanel : VirtualizingPanel
         var cache = (viewport.Bottom - viewport.Top) * CacheShare;
         var range = (First: 0, Last: -1);
 
+        // BYDESIGN: созданные блоки остаются, пока не уйдут дальше двойного запаса: иначе блок у края
+        // запаса, чья высота отличается от оценки, сдвигает прокрутку, выпадает и возвращается бесконечно.
+        var kept = Kept(RangeFor(viewport.Top - 2 * cache, viewport.Bottom + 2 * cache));
+
         for (var pass = 0; pass < MaxPasses; pass++)
         {
-            var next = RangeFor(viewport.Top + shift - cache, viewport.Bottom + shift + cache);
+            var next = Union(RangeFor(viewport.Top + shift - cache, viewport.Bottom + shift + cache), kept);
             if (pass > 0 && next.First >= range.First && next.Last <= range.Last)
             {
                 break;
@@ -299,6 +309,30 @@ public sealed class MdBlockPanel : VirtualizingPanel
         }
 
         return range;
+    }
+
+    /// <summary>Кусок номеров, который покрывает оба; пустой кусок не в счёт.</summary>
+    private static (int First, int Last) Union((int First, int Last) range, (int First, int Last) other)
+    {
+        if (other.Last < other.First)
+        {
+            return range;
+        }
+
+        return range.Last < range.First ? other : (Math.Min(range.First, other.First), Math.Max(range.Last, other.Last));
+    }
+
+    /// <summary>Созданные блоки внутри окна <paramref name="window"/>.</summary>
+    private (int First, int Last) Kept((int First, int Last) window)
+    {
+        if (RealizedRange is not { } realized)
+        {
+            return (0, -1);
+        }
+
+        var first = Math.Max(realized.First, window.First);
+        var last = Math.Min(realized.Last, window.Last);
+        return first <= last ? (first, last) : (0, -1);
     }
 
     private void Realize(int first, int last, Size constraint)

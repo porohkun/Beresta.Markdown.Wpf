@@ -2,6 +2,7 @@
 
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 using Presenters;
 
@@ -145,7 +146,7 @@ public sealed class LineNumberTests
 
             viewer.Gutter!.Visibility.Should().Be(Visibility.Collapsed);
             numbers.Visibility.Should().Be(Visibility.Visible);
-            numbers.Text.Should().Be("1\n2\n3");
+            string.Concat(numbers.Inlines.OfType<Run>().Select(run => run.Text)).Should().Be("1\n2\n3");
             numbers.TranslatePoint(default, code).Y.Should().BeApproximately(0, 0.5);
             numbers.ActualHeight.Should().BeApproximately(code.ActualHeight, 0.5);
             window.Close();

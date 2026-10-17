@@ -23,10 +23,4 @@ public partial class KitView : UserControl
             e.Handled = true;
         }
     }
-
-    private void OnDecided(object sender, MdCriticDecidedEventArgs e)
-        => (DataContext as KitViewModel)?.Replace(e.Change.Start, e.Change.Length, e.Replacement);
-
-    private void OnTaskToggled(object sender, MdTaskToggledEventArgs e)
-        => (DataContext as KitViewModel)?.Replace(e.Task.Source.Start, e.Task.Source.Length, e.IsChecked ? "[x]" : "[ ]");
 }

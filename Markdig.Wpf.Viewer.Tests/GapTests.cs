@@ -64,6 +64,18 @@ public sealed class GapTests
     }
 
     [Fact]
+    public void Место_у_закрывающей_ограды_встаёт_в_код_под_последней_строкой()
+    {
+        var blocks = ModelBuilder.Parse("```\na\nb\n```");
+        var code = blocks.OfType<CodeBlockVm>().Single();
+        var layout = new GapLayout(blocks, [new(3, 12)]);
+
+        layout.InText(code.Runs).Should().Equal((4, 12.0));
+        layout.InCode(code).Should().Equal((2, 12.0));
+        layout.After(code).Should().Be(0);
+    }
+
+    [Fact]
     public void Место_у_строки_таблицы_встаёт_перед_строкой_а_у_разделителя_перед_таблицей()
     {
         var blocks = ModelBuilder.Parse("| a |\n|---|\n| 1 |\n| 2 |");
@@ -97,6 +109,7 @@ public sealed class GapTests
     [InlineData("a\n\nb", 2)]
     [InlineData("first\nsecond", 1)]
     [InlineData("```\na\nb\nc\n```", 2)]
+    [InlineData("```\na\nb\n```\n\nafter", 3)]
     [InlineData("| a |\n|---|\n| 1 |\n| 2 |", 3)]
     [InlineData("- one\n- two", 1)]
     [InlineData("> a\n>\n> b", 2)]
@@ -118,21 +131,43 @@ public sealed class GapTests
         });
     }
 
-    [Fact]
-    public void Номера_строк_кода_отодвигаются_вместе_с_кодом()
+    [Theory]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void Номера_строк_кода_отодвигаются_вместе_с_кодом(int line)
     {
         WpfHost.Invoke(() =>
         {
             var viewer = new MarkdownViewer { Markdown = "```\na\nb\nc\n```", ShowCodeLineNumbers = true };
             var window = WpfHost.Show(viewer);
 
-            viewer.Gaps = [new(3, 25)];
+            viewer.Gaps = [new(line, 25)];
             WpfHost.Settle(window);
 
             var presenter = Visuals.Descendants<CodeBlockPresenter>(viewer).Single();
             var numbers = (TextBlock)presenter.Template.FindName("LineNumbers", presenter);
             var code = Visuals.Descendants<MdTextBlock>(presenter).Single();
             numbers.ActualHeight.Should().BeApproximately(code.ActualHeight, 0.5);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Место_в_коде_с_номерами_не_ломает_раскладку_длинного_документа()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var text = "```\na\nb\n```\n\n" + string.Join("\n\n", Enumerable.Range(0, 200).Select(i => $"Paragraph {i}"));
+            var viewer = new MarkdownViewer { Markdown = text, ShowCodeLineNumbers = true };
+            var window = WpfHost.Show(new ScrollViewer { Content = viewer });
+
+            var act = () =>
+            {
+                viewer.Gaps = [new(2, 300)];
+                WpfHost.Settle(window);
+            };
+
+            act.Should().NotThrow();
             window.Close();
         });
     }
@@ -145,12 +180,12 @@ public sealed class GapTests
             var viewer = new MarkdownViewer { Markdown = "first\nsecond\n\n```\na\nb\n```" };
             var window = WpfHost.Show(viewer);
 
-            viewer.Gaps = [new(1, 20), new(5, 20)];
+            viewer.Gaps = [new(1, 20), new(5, 20), new(6, 20)];
             WpfHost.Settle(window);
             viewer.SelectAll();
 
             viewer.SelectedText.Should().Be("first\nsecond\n\na\nb");
-            Visuals.Descendants<MdTextBlock>(viewer).SelectMany(text => text.GapRects).Should().HaveCount(2);
+            Visuals.Descendants<MdTextBlock>(viewer).SelectMany(text => text.GapRects).Should().HaveCount(3);
             window.Close();
         });
     }

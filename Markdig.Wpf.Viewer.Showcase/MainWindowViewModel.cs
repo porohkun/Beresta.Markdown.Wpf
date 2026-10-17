@@ -2,6 +2,7 @@
 
 using Showcases;
 using Showcases.About;
+using Showcases.Chat;
 using Showcases.Copying;
 using Showcases.CustomLook;
 using Showcases.Document;
@@ -11,6 +12,7 @@ using Showcases.LargeDocument;
 using Showcases.MarginButtons;
 using Showcases.Preview;
 using Showcases.Sets;
+using Showcases.Streaming;
 using Showcases.TwoPanes;
 
 /// <summary>Витрины, выбранная из них и общие настройки.</summary>
@@ -28,6 +30,8 @@ public sealed class MainWindowViewModel : BindableBase
             new TwoPanesViewModel(Options),
             new MarginButtonsViewModel(Options),
             new LargeDocumentViewModel(Options),
+            new ChatViewModel(Options),
+            new StreamingViewModel(Options),
             new PreviewViewModel(Options),
             new CopyingViewModel(Options),
             new AboutViewModel(Options)
