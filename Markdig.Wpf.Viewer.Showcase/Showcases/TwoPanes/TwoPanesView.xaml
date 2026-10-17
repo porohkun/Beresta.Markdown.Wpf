@@ -14,7 +14,7 @@
         <Border Style="{StaticResource ShowcaseHeader}">
             <StackPanel>
                 <TextBlock TextWrapping="Wrap"
-                           Text="Две версии статьи, как в диффе. Синхронную прокрутку ведёт MdScrollSync, а соединения правок между панелями витрина рисует по координатам вьюеров; вровень панели ставит MdPaneAligner — напротив правок пустые места." />
+                           Text="Две версии статьи, как в диффе. Синхронную прокрутку ведёт MdScrollSync, а каждую правку одной фигурой — подсветку строк в обеих панелях, соединение между ними и общий контур — витрина рисует по координатам вьюеров; вровень панели ставит MdPaneAligner — напротив правок пустые места." />
                 <hc:ButtonGroup HorizontalAlignment="Left"
                                 Margin="0,8,0,0">
                     <RadioButton Content="Синхронная прокрутка" IsChecked="True" />
@@ -37,7 +37,7 @@
             <TextBlock Text="Было" Margin="24,8,24,0" FontWeight="SemiBold" />
             <TextBlock Grid.Column="2" Text="Стало" Margin="24,8,24,0" FontWeight="SemiBold" />
 
-            <!-- Синхронная прокрутка: у панелей свои прокрутки, между ними — соединения правок -->
+            <!-- Синхронная прокрутка: у панелей свои прокрутки, поверх них — правки одной фигурой -->
             <Grid Grid.Row="1" Grid.ColumnSpan="3">
                 <Grid.Style>
                     <Style TargetType="{x:Type Grid}">
@@ -50,17 +50,21 @@
                 </Grid.Style>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />
-                    <ColumnDefinition Width="48" />
+                    <ColumnDefinition x:Name="Gap" Width="48" />
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
 
                 <ScrollViewer>
                     <mdv:MarkdownViewer x:Name="SyncLeft" Markdown="{Binding Left}" Margin="24,16" />
                 </ScrollViewer>
-                <Canvas x:Name="Connections" Grid.Column="1" ClipToBounds="True" SizeChanged="OnConnectionsSizeChanged" />
                 <ScrollViewer Grid.Column="2">
                     <mdv:MarkdownViewer x:Name="SyncRight" Markdown="{Binding Right}" Margin="24,16" />
                 </ScrollViewer>
+                <Canvas x:Name="Connections"
+                        Grid.ColumnSpan="3"
+                        ClipToBounds="True"
+                        IsHitTestVisible="False"
+                        SizeChanged="OnConnectionsSizeChanged" />
             </Grid>
 
             <!-- Вровень: общая прокрутка, напротив правок — пустые места -->

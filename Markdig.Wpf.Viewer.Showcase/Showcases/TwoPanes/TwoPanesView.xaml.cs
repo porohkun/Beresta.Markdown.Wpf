@@ -8,9 +8,10 @@ using Scrolling;
 using Selection;
 
 /// <summary>
-/// Две панели: дифф считает витрина. Синхронную прокрутку ведёт <c>MdScrollSync</c>, а соединения
-/// правок между панелями витрина рисует сама по координатам вьюеров; панели вровень ставит
-/// <c>MdPaneAligner</c>. Правки — пометками строк во всю ширину и полосами на полях.
+/// Две панели: дифф считает витрина. Синхронную прокрутку ведёт <c>MdScrollSync</c>, а правку одной
+/// фигурой — подсветка строк слева, соединение, подсветка справа и общий контур — витрина рисует сама
+/// по координатам вьюеров; панели вровень ставит <c>MdPaneAligner</c>. Строки правок — пометками во всю
+/// ширину и полосами на полях.
 /// </summary>
 public partial class TwoPanesView : UserControl
 {
@@ -37,7 +38,7 @@ public partial class TwoPanesView : UserControl
         });
     }
 
-    /// <summary>Полоса куска строк в координатах соединений; пустой кусок — точка перед его строкой.</summary>
+    /// <summary>Полоса куска строк в координатах соединений; пустой кусок — граница перед его строкой.</summary>
     private static (double Top, double Bottom)? Band(MdCoordinates coordinates, int start, int end)
     {
         if (end >= start)
@@ -93,13 +94,42 @@ public partial class TwoPanesView : UserControl
 
     private void OnConnectionsSizeChanged(object sender, SizeChangedEventArgs e) => DrawConnections();
 
-    /// <summary>Каждая правка — четырёхугольник от её строк слева к её строкам справа.</summary>
+    /// <summary>Левый и правый края вьюера в координатах соединений.</summary>
+    private (double Left, double Right) Edges(MarkdownViewer viewer)
+    {
+        var left = viewer.TranslatePoint(default, Connections).X;
+        return (left, left + viewer.ActualWidth);
+    }
+
+    /// <summary>Кисть от цвета удалённого у левого края соединения к цвету добавленного у правого.</summary>
+    private LinearGradientBrush Gradient(string part, double from, double to)
+        => new(ColorOf($"Md.Mark.Removed.{part}"), ColorOf($"Md.Mark.Added.{part}"), new Point(from, 0), new Point(to, 0))
+        {
+            MappingMode = BrushMappingMode.Absolute
+        };
+
+    /// <summary>Цвет кисти темы вместе с её прозрачностью.</summary>
+    private Color ColorOf(string key)
+        => FindResource(key) is SolidColorBrush { Color: var color } brush
+            ? Color.FromArgb((byte)Math.Round(color.A * brush.Opacity), color.R, color.G, color.B)
+            : Colors.Transparent;
+
+    /// <summary>
+    /// Каждая правка — одна фигура: соединение между панелями заливается от цвета удалённого к цвету
+    /// добавленного вплоть до подсветки строк, а контур идёт по границам строк правки в обеих панелях и
+    /// замыкается у дальних краёв подсветки.
+    /// </summary>
     private void DrawConnections()
     {
         Connections.Children.Clear();
         var left = SyncLeft.GetCoordinates(Connections);
         var right = SyncRight.GetCoordinates(Connections);
-        var width = Connections.ActualWidth;
+        var (leftStart, leftEnd) = Edges(SyncLeft);
+        var (rightStart, rightEnd) = Edges(SyncRight);
+        var gapStart = Gap.Offset;
+        var gapEnd = gapStart + Gap.ActualWidth;
+        var fill = Gradient("Brush", gapStart, gapEnd);
+        var stroke = Gradient("LineBrush", gapStart, gapEnd);
 
         foreach (var hunk in _hunks)
         {
@@ -111,12 +141,23 @@ public partial class TwoPanesView : UserControl
                 continue;
             }
 
-            var style = hunk.LeftEnd < hunk.LeftStart ? "Added" : hunk.RightEnd < hunk.RightStart ? "Removed" : "Changed";
             Connections.Children.Add(new Polygon
             {
-                Points = { new(0, from.Top), new(width, to.Top), new(width, to.Bottom), new(0, from.Bottom) },
-                Fill = (Brush)FindResource($"Md.Mark.{style}.Brush"),
-                Stroke = (Brush)FindResource($"Md.Mark.{style}.LineBrush"),
+                Points =
+                {
+                    new(leftEnd, from.Top), new(gapStart, from.Top), new(gapEnd, to.Top), new(rightStart, to.Top),
+                    new(rightStart, to.Bottom), new(gapEnd, to.Bottom), new(gapStart, from.Bottom), new(leftEnd, from.Bottom)
+                },
+                Fill = fill
+            });
+            Connections.Children.Add(new Polygon
+            {
+                Points =
+                {
+                    new(leftStart, from.Top), new(gapStart, from.Top), new(gapEnd, to.Top), new(rightEnd, to.Top),
+                    new(rightEnd, to.Bottom), new(gapEnd, to.Bottom), new(gapStart, from.Bottom), new(leftStart, from.Bottom)
+                },
+                Stroke = stroke,
                 StrokeThickness = 1
             });
         }
