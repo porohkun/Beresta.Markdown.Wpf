@@ -17,6 +17,7 @@ using Identity;
 using Markdig;
 using Presenters;
 using Scrolling;
+using Search;
 using Selection;
 using ViewModels;
 
@@ -197,6 +198,21 @@ public sealed class MarkdownViewer : ItemsControl
     private const string GutterPart = "PART_Gutter";
     private const string RowMarksPart = "PART_RowMarks";
 
+    private static readonly DependencyProperty FeedQueryProperty =
+        MdFeedSearch.QueryProperty.AddOwner(
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnFeedSearchChanged));
+
+    private static readonly DependencyProperty FeedMatchCaseProperty =
+        MdFeedSearch.MatchCaseProperty.AddOwner(
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits, OnFeedSearchChanged));
+
+    private static readonly DependencyProperty FeedWholeWordProperty =
+        MdFeedSearch.WholeWordProperty.AddOwner(
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits, OnFeedSearchChanged));
+
     private readonly SourcePositions _positions;
     private readonly WidgetStates _states;
     private readonly ModelIdentity _identity = new();
@@ -204,7 +220,8 @@ public sealed class MarkdownViewer : ItemsControl
     private readonly MdMarkLayer _decorationLayer = new("Decorations");
     private readonly ThemeBrushes _themeBrushes;
     private IReadOnlyList<MarkSet> _markSets = [];
-    private bool _movingMarks;
+    private readonly MdMarkLayer _feedLayer = new("Feed search");
+    private bool _updatingMarks;
     private MarkdownPipeline? _pipeline;
     private bool _templatesChanged;
     private bool _viewportNotificationQueued;
@@ -248,6 +265,7 @@ public sealed class MarkdownViewer : ItemsControl
         _themeBrushes = new(AddLogicalChild);
         _themeBrushes.Changed += RebuildMarks;
         _decorationLayer.Changed += OnMarkLayerChanged;
+        _feedLayer.Changed += OnMarkLayerChanged;
         MarkLayers.CollectionChanged += OnMarkLayersChanged;
 
         // BYDESIGN: своя коллекция через SetCurrentValue, а не локальным значением — так её
@@ -269,6 +287,9 @@ public sealed class MarkdownViewer : ItemsControl
 
     /// <summary>Видимая часть документа могла сместиться: прокрутка, уточнились высоты блоков.</summary>
     public event EventHandler? ViewportChanged;
+
+    /// <summary>Новый текст лёг в документ: прежняя карта и новая.</summary>
+    internal event Action<MdTextMap, MdTextMap>? TextMapChanged;
 
     public event EventHandler<MdTaskToggledEventArgs> TaskToggled
     {
@@ -739,6 +760,9 @@ public sealed class MarkdownViewer : ItemsControl
     private static void OnSelectionBrushChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownViewer)d).UpdateLayer();
 
+    private static void OnFeedSearchChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        => ((MarkdownViewer)d).UpdateFeedSearch();
+
     private static IEnumerator WithThemeBrushes(IEnumerator? children, IEnumerable<ThemeBrush> brushes)
     {
         while (children?.MoveNext() == true)
@@ -806,7 +830,7 @@ public sealed class MarkdownViewer : ItemsControl
 
     private void OnMarkLayerChanged(object? sender, EventArgs e)
     {
-        if (!_movingMarks)
+        if (!_updatingMarks)
         {
             RebuildMarks();
         }
@@ -818,10 +842,26 @@ public sealed class MarkdownViewer : ItemsControl
         _markSets =
         [
             new MarkSet(_decorationLayer, TextMap, _themeBrushes.BrushOf),
+            new MarkSet(_feedLayer, TextMap, _themeBrushes.BrushOf),
             .. MarkLayers.Select(layer => new MarkSet(layer, TextMap, _themeBrushes.BrushOf))
         ];
         UpdateLayer();
         Gutter?.InvalidateMeasure();
+    }
+
+    /// <summary>Совпадения запроса поиска в ленте, который вьюер унаследовал от списка.</summary>
+    private void UpdateFeedSearch()
+    {
+        var query = (string?)GetValue(FeedQueryProperty);
+        if (string.IsNullOrEmpty(query) && _feedLayer.Marks.Count == 0)
+        {
+            return;
+        }
+
+        _feedLayer.Marks = TextMatches
+            .Find(TextMap.Text, query, (bool)GetValue(FeedMatchCaseProperty), (bool)GetValue(FeedWholeWordProperty))
+            .Select(range => new MdMark(range) { Style = "Found" })
+            .ToList();
     }
 
     /// <summary>Пометки слоёв, которые следуют за текстом, отслеживаемыми местами старой карты.</summary>
@@ -989,6 +1029,7 @@ public sealed class MarkdownViewer : ItemsControl
     /// </summary>
     private void Rebuild()
     {
+        var old = TextMap;
         var selected = Selection is { Range.IsEmpty: false } selection
             ? (Range: TextMap.Track(selection.Range), Backward: selection.Ends.Active < selection.Ends.Anchor)
             : default;
@@ -1019,17 +1060,20 @@ public sealed class MarkdownViewer : ItemsControl
             Selection?.Reset();
         }
 
-        _movingMarks = true;
+        _updatingMarks = true;
         try
         {
             foreach (var (layer, marks) in following)
             {
                 layer.Marks = marks.Select(Moved).OfType<MdMark>().ToList();
             }
+
+            UpdateFeedSearch();
+            TextMapChanged?.Invoke(old, TextMap);
         }
         finally
         {
-            _movingMarks = false;
+            _updatingMarks = false;
         }
 
         RebuildMarks();
