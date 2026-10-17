@@ -30,10 +30,17 @@
         </s:MdStyleProvider>
     </UserControl.Resources>
 
-    <ScrollViewer>
-        <mdv:MarkdownViewer Markdown="{Binding Text}"
-                            Margin="24,16"
-                            FontFamily="Georgia"
-                            StyleProvider="{StaticResource AccentProvider}" />
-    </ScrollViewer>
+    <DockPanel>
+        <Border Style="{StaticResource ShowcaseHeader}">
+            <TextBlock TextWrapping="Wrap"
+                       Text="Общий образец в своём виде: свой шрифт у вьюера и свой шаблон заголовка через MdStyleProvider, остальные блоки — по умолчанию." />
+        </Border>
+
+        <ScrollViewer>
+            <mdv:MarkdownViewer Markdown="{Binding Text}"
+                                Margin="24,16"
+                                FontFamily="Georgia"
+                                StyleProvider="{StaticResource AccentProvider}" />
+        </ScrollViewer>
+    </DockPanel>
 </UserControl>

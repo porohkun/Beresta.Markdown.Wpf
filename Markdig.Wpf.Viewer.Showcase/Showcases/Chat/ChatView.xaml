@@ -14,11 +14,17 @@
     </UserControl.Resources>
 
     <DockPanel>
-        <!-- Сколько вьюеров создано и сколько стоит в ленте сейчас -->
-        <TextBlock x:Name="Counter"
-                   DockPanel.Dock="Top"
-                   Margin="24,8,24,4"
-                   Foreground="{DynamicResource SecondaryTextBrush}" />
+        <Border Style="{StaticResource ShowcaseHeader}">
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap"
+                           Text="Лента на десять тысяч сообщений в одной прокрутке: в каждом пузыре свой вьюер с набором ChatSet, а создаются вьюеры только для видимых. Лента держится у последнего сообщения — StickyScroll." />
+
+                <!-- Сколько вьюеров создано и сколько стоит в ленте сейчас -->
+                <TextBlock x:Name="Counter"
+                           Margin="0,6,0,0"
+                           Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+        </Border>
 
         <ItemsControl x:Name="Messages"
                       ItemsSource="{Binding Messages}"

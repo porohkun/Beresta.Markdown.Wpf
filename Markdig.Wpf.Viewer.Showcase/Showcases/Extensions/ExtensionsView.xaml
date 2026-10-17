@@ -74,16 +74,23 @@
         <!-- Оформление «Chip» для чипов ::текст:: -->
     </UserControl.Resources>
 
-    <ScrollViewer>
-        <mdv:MarkdownViewer Markdown="{Binding Text}"
-                            Margin="24,16">
-            <mdv:MarkdownViewer.Extensions>
-                <local:NoteExtension Template="{StaticResource NoteTemplate}" />
-                <mdx:MdExtensionSet>
-                    <local:MentionExtension Template="{StaticResource MentionTemplate}" />
-                    <local:ChipExtension />
-                </mdx:MdExtensionSet>
-            </mdv:MarkdownViewer.Extensions>
-        </mdv:MarkdownViewer>
-    </ScrollViewer>
+    <DockPanel>
+        <Border Style="{StaticResource ShowcaseHeader}">
+            <TextBlock TextWrapping="Wrap"
+                       Text="Свой синтаксис на MdExtension: заметка :::note со своим состоянием, упоминание @имя со своим разбором и чипы ::текст:: — оформленный текст, а не виджет. Упоминания и чипы подключены одним набором MdExtensionSet." />
+        </Border>
+
+        <ScrollViewer>
+            <mdv:MarkdownViewer Markdown="{Binding Text}"
+                                Margin="24,16">
+                <mdv:MarkdownViewer.Extensions>
+                    <local:NoteExtension Template="{StaticResource NoteTemplate}" />
+                    <mdx:MdExtensionSet>
+                        <local:MentionExtension Template="{StaticResource MentionTemplate}" />
+                        <local:ChipExtension />
+                    </mdx:MdExtensionSet>
+                </mdv:MarkdownViewer.Extensions>
+            </mdv:MarkdownViewer>
+        </ScrollViewer>
+    </DockPanel>
 </UserControl>

@@ -19,21 +19,23 @@
 
     <DockPanel>
         <!-- Пояснение и выбор того, что кладёт приложение -->
-        <DockPanel DockPanel.Dock="Top"
-                   Margin="24,8,12,0">
-            <ComboBox DockPanel.Dock="Right"
-                      Width="240"
-                      Margin="16,0,0,0"
-                      Style="{StaticResource ComboBoxExtend}"
-                      hc:InfoElement.TitlePlacement="Top"
-                      hc:InfoElement.Title="Ctrl+C кладёт в буфер"
-                      ItemsSource="{Binding Choices}"
-                      SelectedItem="{Binding Choice}"
-                      DisplayMemberPath="Title" />
-            <TextBlock TextWrapping="Wrap"
-                       VerticalAlignment="Center"
-                       Text="Здесь копирование отдано приложению: у вьюера выключен IsCopyEnabled, и Ctrl+C уходит к привязке команды Copy во вкладке — она кладёт в буфер то, что выбрано справа. Кнопка у выделения стоит по GetRangeBounds и вызывает ту же команду." />
-        </DockPanel>
+        <Border Style="{StaticResource ShowcaseHeader}"
+                Padding="24,10,12,10">
+            <DockPanel>
+                <ComboBox DockPanel.Dock="Right"
+                          Width="240"
+                          Margin="16,0,0,0"
+                          Style="{StaticResource ComboBoxExtend}"
+                          hc:InfoElement.TitlePlacement="Top"
+                          hc:InfoElement.Title="Ctrl+C кладёт в буфер"
+                          ItemsSource="{Binding Choices}"
+                          SelectedItem="{Binding Choice}"
+                          DisplayMemberPath="Title" />
+                <TextBlock TextWrapping="Wrap"
+                           VerticalAlignment="Center"
+                           Text="Здесь копирование отдано приложению: у вьюера выключен IsCopyEnabled, и Ctrl+C уходит к привязке команды Copy во вкладке — она кладёт в буфер то, что выбрано справа. Кнопка у выделения стоит по GetRangeBounds и вызывает ту же команду." />
+            </DockPanel>
+        </Border>
 
         <Grid>
             <Grid.ColumnDefinitions>

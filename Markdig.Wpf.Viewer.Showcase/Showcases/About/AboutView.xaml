@@ -7,8 +7,15 @@
              xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.About"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:AboutViewModel}">
-    <ScrollViewer>
-        <mdv:MarkdownViewer Markdown="{Binding Text}"
-                            Margin="24,16" />
-    </ScrollViewer>
+    <DockPanel>
+        <Border Style="{StaticResource ShowcaseHeader}">
+            <TextBlock TextWrapping="Wrap"
+                       Text="Что это за программа и уведомления о лицензиях сторонних библиотек, которые идут вместе с ней." />
+        </Border>
+
+        <ScrollViewer>
+            <mdv:MarkdownViewer Markdown="{Binding Text}"
+                                Margin="24,16" />
+        </ScrollViewer>
+    </DockPanel>
 </UserControl>

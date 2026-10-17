@@ -11,28 +11,34 @@
              Loaded="OnLoaded"
              Unloaded="OnUnloaded">
     <DockPanel>
-        <!-- Выбор диалекта и сравнение с документом без набора -->
-        <DockPanel DockPanel.Dock="Top"
-                   Margin="24,8,24,0">
-            <ComboBox DockPanel.Dock="Left"
-                      Width="240"
-                      Style="{StaticResource ComboBoxExtend}"
-                      hc:InfoElement.TitlePlacement="Top"
-                      hc:InfoElement.Title="Набор"
-                      ItemsSource="{Binding Dialects}"
-                      SelectedItem="{Binding Selected}"
-                      DisplayMemberPath="Title" />
-            <CheckBox DockPanel.Dock="Left"
-                      Margin="16,0,0,4"
-                      VerticalAlignment="Bottom"
-                      Content="Набор подключён"
-                      IsChecked="{Binding IsSetOn}" />
-            <TextBlock Margin="16,0,0,6"
-                       VerticalAlignment="Bottom"
-                       TextTrimming="CharacterEllipsis"
-                       Foreground="{DynamicResource SecondaryTextBrush}"
-                       Text="{Binding LastLink}" />
-        </DockPanel>
+        <Border Style="{StaticResource ShowcaseHeader}">
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap"
+                           Text="Набор — готовые расширения под синтаксис одной программы, подключённые одной строкой. Без флажка тот же документ показан без набора." />
+
+                <!-- Выбор диалекта и сравнение с документом без набора -->
+                <DockPanel Margin="0,8,0,0">
+                    <ComboBox DockPanel.Dock="Left"
+                              Width="240"
+                              Style="{StaticResource ComboBoxExtend}"
+                              hc:InfoElement.TitlePlacement="Top"
+                              hc:InfoElement.Title="Набор"
+                              ItemsSource="{Binding Dialects}"
+                              SelectedItem="{Binding Selected}"
+                              DisplayMemberPath="Title" />
+                    <CheckBox DockPanel.Dock="Left"
+                              Margin="16,0,0,4"
+                              VerticalAlignment="Bottom"
+                              Content="Набор подключён"
+                              IsChecked="{Binding IsSetOn}" />
+                    <TextBlock Margin="16,0,0,6"
+                               VerticalAlignment="Bottom"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               Text="{Binding LastLink}" />
+                </DockPanel>
+            </StackPanel>
+        </Border>
 
         <ScrollViewer>
             <mdv:MarkdownViewer x:Name="Viewer"

@@ -11,12 +11,17 @@
              Loaded="OnLoaded"
              Unloaded="OnUnloaded">
     <DockPanel>
-        <hc:ButtonGroup DockPanel.Dock="Top"
-                        HorizontalAlignment="Left"
-                        Margin="24,8,24,0">
-            <RadioButton Content="Синхронная прокрутка" IsChecked="True" />
-            <RadioButton Content="Вровень" IsChecked="{Binding IsAligned}" />
-        </hc:ButtonGroup>
+        <Border Style="{StaticResource ShowcaseHeader}">
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap"
+                           Text="Две версии статьи, как в диффе. Синхронную прокрутку ведёт MdScrollSync, а соединения правок между панелями витрина рисует по координатам вьюеров; вровень панели ставит MdPaneAligner — напротив правок пустые места." />
+                <hc:ButtonGroup HorizontalAlignment="Left"
+                                Margin="0,8,0,0">
+                    <RadioButton Content="Синхронная прокрутка" IsChecked="True" />
+                    <RadioButton Content="Вровень" IsChecked="{Binding IsAligned}" />
+                </hc:ButtonGroup>
+            </StackPanel>
+        </Border>
 
         <Grid>
             <Grid.ColumnDefinitions>

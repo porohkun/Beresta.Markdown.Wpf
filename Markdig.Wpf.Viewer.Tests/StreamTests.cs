@@ -1,6 +1,7 @@
 ﻿namespace MarkdigWpfViewer.Tests;
 
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using Behaviors;
@@ -20,7 +21,7 @@ public sealed class StreamTests
             var window = WpfHost.Show(viewer);
             var stream = new MdMarkdownStream(viewer) { Interval = TimeSpan.Zero };
 
-            Task.Run(() =>
+            InBackground(() =>
             {
                 foreach (var word in Words)
                 {
@@ -28,7 +29,7 @@ public sealed class StreamTests
                 }
 
                 stream.Complete();
-            }).Wait();
+            });
             WpfHost.Settle(window);
 
             viewer.Markdown.Should().Be(string.Concat(Words));
@@ -95,11 +96,11 @@ public sealed class StreamTests
             stream.Append("first ");
             Pump(TimeSpan.FromMilliseconds(100));
 
-            Task.Run(() =>
+            InBackground(() =>
             {
                 stream.Append("rest");
                 stream.Complete();
-            }).Wait();
+            });
             Pump(TimeSpan.FromMilliseconds(200));
 
             viewer.Markdown.Should().Be("first rest");
@@ -177,6 +178,30 @@ public sealed class StreamTests
             scroll.VerticalOffset.Should().BeApproximately(scroll.ScrollableHeight, 1);
             window.Close();
         });
+    }
+
+    /// <summary>Выполняет действие в фоновом потоке и ждёт его конца; исключение из потока бросается здесь.</summary>
+    private static void InBackground(Action action)
+    {
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception exception)
+            {
+                failure = exception;
+            }
+        });
+
+        thread.Start();
+        thread.Join();
+        if (failure is not null)
+        {
+            ExceptionDispatchInfo.Throw(failure);
+        }
     }
 
     /// <summary>Прогоняет очередь потока интерфейса в течение <paramref name="duration"/>.</summary>

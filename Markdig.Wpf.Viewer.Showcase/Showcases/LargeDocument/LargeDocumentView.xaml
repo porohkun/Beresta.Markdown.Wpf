@@ -7,8 +7,15 @@
              xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.LargeDocument"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:LargeDocumentViewModel}">
-    <ScrollViewer>
-        <mdv:MarkdownViewer Markdown="{Binding Text}"
-                            Margin="24,16" />
-    </ScrollViewer>
+    <DockPanel>
+        <Border Style="{StaticResource ShowcaseHeader}">
+            <TextBlock TextWrapping="Wrap"
+                       Text="Три тысячи блоков в одном вьюере: контролы создаются только для видимых, остальные — по мере прокрутки." />
+        </Border>
+
+        <ScrollViewer>
+            <mdv:MarkdownViewer Markdown="{Binding Text}"
+                                Margin="24,16" />
+        </ScrollViewer>
+    </DockPanel>
 </UserControl>

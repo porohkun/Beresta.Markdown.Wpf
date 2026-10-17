@@ -12,56 +12,67 @@
     </UserControl.Resources>
 
     <DockPanel>
-        <!-- Поиск на MdSearch: поле и кнопки — у приложения, совпадения и переход — у поиска -->
-        <StackPanel x:Name="SearchBar"
-                    DockPanel.Dock="Top"
-                    Orientation="Horizontal"
-                    Margin="24,8,24,0">
-            <TextBlock Text="Найти:"
-                       VerticalAlignment="Center"
-                       Margin="0,0,8,0" />
-            <TextBox x:Name="SearchBox"
-                     Width="200"
-                     Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
-                     KeyDown="OnSearchKeyDown" />
-            <Button Content="▲"
-                    Margin="4,0,0,0"
-                    ToolTip="Назад (Shift+Enter)"
-                    Click="OnPrevious" />
-            <Button Content="▼"
-                    Margin="4,0,0,0"
-                    ToolTip="Дальше (Enter)"
-                    Click="OnNext" />
-            <TextBlock x:Name="Counter"
-                       VerticalAlignment="Center"
-                       MinWidth="60"
-                       Margin="8,0,0,0" />
-            <CheckBox Content="Регистр"
-                      IsChecked="{Binding MatchCase}"
-                      Margin="8,0,0,0" />
-            <CheckBox Content="Слово целиком"
-                      IsChecked="{Binding WholeWord}"
-                      Margin="8,0,0,0" />
-            <TextBlock VerticalAlignment="Center"
-                       Margin="16,0,0,0"
-                       Text="{Binding SelectionLength, ElementName=Viewer, StringFormat='Выделено знаков: {0}'}" />
-        </StackPanel>
+        <Border Style="{StaticResource ShowcaseHeader}">
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap"
+                           Text="Общий образец: всё, что умеет вьюер. Поиск ведёт MdSearch, оглавление слева строится по TextMap.Headings: щелчок прокручивает к заголовку, а при прокрутке в оглавлении отмечается текущий." />
+
+                <!-- Поиск на MdSearch: поле и кнопки — у приложения, совпадения и переход — у поиска -->
+                <StackPanel x:Name="SearchBar"
+                            Orientation="Horizontal"
+                            Margin="0,8,0,0">
+                    <TextBlock Text="Найти:"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0" />
+                    <TextBox x:Name="SearchBox"
+                             Width="200"
+                             Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                             KeyDown="OnSearchKeyDown" />
+                    <Button Content="▲"
+                            Margin="4,0,0,0"
+                            ToolTip="Назад (Shift+Enter)"
+                            Click="OnPrevious" />
+                    <Button Content="▼"
+                            Margin="4,0,0,0"
+                            ToolTip="Дальше (Enter)"
+                            Click="OnNext" />
+                    <TextBlock x:Name="Counter"
+                               VerticalAlignment="Center"
+                               MinWidth="60"
+                               Margin="8,0,0,0" />
+                    <CheckBox Content="Регистр"
+                              IsChecked="{Binding MatchCase}"
+                              Margin="8,0,0,0" />
+                    <CheckBox Content="Слово целиком"
+                              IsChecked="{Binding WholeWord}"
+                              Margin="8,0,0,0" />
+                    <TextBlock VerticalAlignment="Center"
+                               Margin="16,0,0,0"
+                               Text="{Binding SelectionLength, ElementName=Viewer, StringFormat='Выделено знаков: {0}'}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
 
         <!-- Оглавление: прокрутка к заголовку и текущий заголовок при прокрутке -->
-        <ListBox x:Name="Contents"
-                 DockPanel.Dock="Left"
-                 Width="200"
-                 Margin="12,16,0,16"
-                 ItemsSource="{Binding TextMap.Headings, ElementName=Viewer}"
-                 SelectionChanged="OnContentsSelectionChanged">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding Text}"
-                               TextTrimming="CharacterEllipsis"
-                               Margin="{Binding Level, Converter={StaticResource LevelIndent}}" />
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+        <DockPanel DockPanel.Dock="Left"
+                   Width="200"
+                   Margin="12,16,0,16">
+            <TextBlock DockPanel.Dock="Top"
+                       Text="Заголовки"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,4" />
+            <ListBox x:Name="Contents"
+                     ItemsSource="{Binding TextMap.Headings, ElementName=Viewer}"
+                     SelectionChanged="OnContentsSelectionChanged">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Text}"
+                                   TextTrimming="CharacterEllipsis"
+                                   Margin="{Binding Level, Converter={StaticResource LevelIndent}}" />
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
 
         <ScrollViewer>
             <mdv:MarkdownViewer x:Name="Viewer"

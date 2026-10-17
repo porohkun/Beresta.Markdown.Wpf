@@ -7,25 +7,32 @@
              xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Preview"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:PreviewViewModel}">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition />
-            <ColumnDefinition />
-        </Grid.ColumnDefinitions>
+    <DockPanel>
+        <Border Style="{StaticResource ShowcaseHeader}">
+            <TextBlock TextWrapping="Wrap"
+                       Text="Редактор и предпросмотр рядом: каждая правка доходит до вьюера изменениями — неизменившиеся блоки остаются как были, а видимое не прыгает." />
+        </Border>
 
-        <TextBox x:Name="Editor"
-                 Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
-                 AcceptsReturn="True"
-                 AcceptsTab="True"
-                 TextWrapping="Wrap"
-                 VerticalContentAlignment="Top"
-                 VerticalScrollBarVisibility="Auto"
-                 FontFamily="Consolas"
-                 Margin="12" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
 
-        <ScrollViewer Grid.Column="1">
-            <mdv:MarkdownViewer Markdown="{Binding Text}"
-                                Margin="24,16" />
-        </ScrollViewer>
-    </Grid>
+            <TextBox x:Name="Editor"
+                     Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                     AcceptsReturn="True"
+                     AcceptsTab="True"
+                     TextWrapping="Wrap"
+                     VerticalContentAlignment="Top"
+                     VerticalScrollBarVisibility="Auto"
+                     FontFamily="Consolas"
+                     Margin="12" />
+
+            <ScrollViewer Grid.Column="1">
+                <mdv:MarkdownViewer Markdown="{Binding Text}"
+                                    Margin="24,16" />
+            </ScrollViewer>
+        </Grid>
+    </DockPanel>
 </UserControl>

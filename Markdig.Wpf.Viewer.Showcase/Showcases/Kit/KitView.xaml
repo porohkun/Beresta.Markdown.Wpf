@@ -10,11 +10,17 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:KitViewModel}">
     <DockPanel>
-        <!-- Свои схемы ссылок и адреса-примеры витрина не открывает, а показывает цель -->
-        <TextBlock DockPanel.Dock="Top"
-                   Margin="24,8,24,0"
-                   Foreground="{DynamicResource SecondaryTextBrush}"
-                   Text="{Binding LastLink}" />
+        <Border Style="{StaticResource ShowcaseHeader}">
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap"
+                           Text="Синтаксис других программ, который библиотека знает сама: каждое готовое расширение подключается одной строкой. Здесь подключены все." />
+
+                <!-- Свои схемы ссылок и адреса-примеры витрина не открывает, а показывает цель -->
+                <TextBlock Margin="0,6,0,0"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           Text="{Binding LastLink}" />
+            </StackPanel>
+        </Border>
 
         <ScrollViewer>
             <mdv:MarkdownViewer Markdown="{Binding Text}"

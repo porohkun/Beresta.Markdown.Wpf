@@ -34,18 +34,25 @@
         </Style>
     </UserControl.Resources>
 
-    <ScrollViewer>
-        <Grid Margin="0,16,24,16">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="28" />
-                <ColumnDefinition />
-            </Grid.ColumnDefinitions>
+    <DockPanel>
+        <Border Style="{StaticResource ShowcaseHeader}">
+            <TextBlock TextWrapping="Wrap"
+                       Text="Колонка приложения рядом с вьюером, в одной с ним прокрутке: кружки — обычные кнопки WPF у видимых строк, места для них даёт GetCoordinates. Щелчок по кружку делает строку закладкой — пометкой своего слоя." />
+        </Border>
 
-            <Canvas x:Name="Marks" />
-            <mdv:MarkdownViewer x:Name="Viewer"
-                                Grid.Column="1"
-                                Markdown="{Binding Markdown}"
-                                ViewportChanged="OnViewportChanged" />
-        </Grid>
-    </ScrollViewer>
+        <ScrollViewer>
+            <Grid Margin="0,16,24,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="28" />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+
+                <Canvas x:Name="Marks" />
+                <mdv:MarkdownViewer x:Name="Viewer"
+                                    Grid.Column="1"
+                                    Markdown="{Binding Markdown}"
+                                    ViewportChanged="OnViewportChanged" />
+            </Grid>
+        </ScrollViewer>
+    </DockPanel>
 </UserControl>

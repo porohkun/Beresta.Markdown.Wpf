@@ -14,6 +14,14 @@
                 <theming:ThemedResourceDictionary
                     Source="pack://application:,,,/Markdig.Wpf.Viewer.Showcase;component/Resources/MarkdownTheme.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Шапка витрины: что она показывает и её настройки; снизу — линия цвета рамки вкладок -->
+            <Style x:Key="ShowcaseHeader" TargetType="{x:Type Border}">
+                <Setter Property="DockPanel.Dock" Value="Top" />
+                <Setter Property="Padding" Value="24,10" />
+                <Setter Property="BorderThickness" Value="0,0,0,1" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
