@@ -332,7 +332,8 @@ internal sealed class SourcePositions
 
     /// <summary>
     /// Созданные элементы блока с известными строками, с их рамками во вьюере. Текст отдаёт полосу
-    /// каждой своей строки исходника — от её экранной строки до экранной строки следующей.
+    /// каждой своей строки исходника — от её экранной строки до экранной строки следующей, таблица —
+    /// полосы своих строк, и внутрь её ячеек обход не заходит.
     /// </summary>
     private IEnumerable<Span> Spans(int index)
     {
@@ -359,6 +360,17 @@ internal sealed class SourcePositions
             {
                 var bounds = element.TransformToAncestor(_viewer).TransformBounds(new(element.RenderSize));
                 yield return new(bounds, model.Source.StartLine, model.Source.EndLine + 1, depth, model);
+            }
+
+            if (node is MdTablePresenter { ActualHeight: > 0 } table)
+            {
+                var toViewer = table.TransformToAncestor(_viewer);
+                foreach (var (band, start, end, row) in table.SourceRows())
+                {
+                    yield return new(toViewer.TransformBounds(band), start, end, depth + 1, row);
+                }
+
+                continue;
             }
 
             if (node is MdTextBlock { ActualHeight: > 0 } textBlock && textBlock.SourceRows is { Count: > 0 } rows)

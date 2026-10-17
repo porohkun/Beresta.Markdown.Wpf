@@ -64,7 +64,9 @@ public sealed class MdLineGutter : Control
     private double IconColumn => GetValue(LayerProperty) is MdDecorationLayer layer && layer.Has(MdMarkKind.Icon) ? IconSize : 0;
 
     /// <summary>Полосы и значки пометок у созданных блоков в координатах полей, в порядке рисования.</summary>
-    internal IReadOnlyList<(MdMarkKind Kind, Rect Area, Brush Brush, Geometry? Icon)> CollectMarks()
+    /// <param name="numbers">Уже собранные номера строк; нет — соберутся, если есть значки.</param>
+    internal IReadOnlyList<(MdMarkKind Kind, Rect Area, Brush Brush, Geometry? Icon)> CollectMarks(
+        IReadOnlyList<(int Line, double Top, double Height)>? numbers = null)
     {
         var marks = new List<(MdMarkKind Kind, Rect Area, Brush Brush, Geometry? Icon)>();
         if (TemplatedParent is not MarkdownViewer viewer
@@ -82,13 +84,18 @@ public sealed class MdLineGutter : Control
             }
         }
 
+        if (!layer.Has(MdMarkKind.Icon))
+        {
+            return marks;
+        }
+
+        var places = (numbers ?? CollectNumbers()).ToDictionary(row => row.Line, row => (row.Top, row.Height));
         foreach (var mark in layer.LinesWithin(realized.First, realized.Last, MdMarkKind.Icon))
         {
-            if (mark.Mark.Icon is { } icon && mark.First >= realized.First && viewer.GetLineBand(mark.First, mark.First, this) is { } band)
+            if (mark.Mark.Icon is { } icon && mark.First >= realized.First && IconRow(viewer, mark.First, places) is { } row)
             {
-                var row = Math.Min(band.Height, Label(mark.First).Height);
-                var size = Math.Min(IconColumn, row);
-                marks.Add((MdMarkKind.Icon, new(0, band.Top + (row - size) / 2, size, size), mark.Brush!, icon));
+                var size = Math.Min(IconColumn, row.Height);
+                marks.Add((MdMarkKind.Icon, new(0, row.Top + (row.Height - size) / 2, size, size), mark.Brush!, icon));
             }
         }
 
@@ -117,7 +124,8 @@ public sealed class MdLineGutter : Control
     {
         Renders++;
 
-        foreach (var (kind, area, brush, icon) in CollectMarks())
+        var numbers = CollectNumbers();
+        foreach (var (kind, area, brush, icon) in CollectMarks(numbers))
         {
             if (kind == MdMarkKind.Icon && icon is { Bounds: { IsEmpty: false } bounds })
             {
@@ -137,7 +145,7 @@ public sealed class MdLineGutter : Control
         }
 
         var right = ActualWidth - Padding.Right - BarColumn;
-        foreach (var (line, top, height) in CollectNumbers())
+        foreach (var (line, top, height) in numbers)
         {
             var label = Label(line);
             drawingContext.DrawText(label, new(right - label.WidthIncludingTrailingWhitespace, top + (height - label.Height) / 2));
@@ -183,6 +191,19 @@ public sealed class MdLineGutter : Control
         var gutter = (MdLineGutter)d;
         gutter.InvalidateMeasure();
         gutter.InvalidateVisual();
+    }
+
+    /// <summary>Место значка строки: у её номера, а строке без номера — верх её полосы высотой с номер.</summary>
+    private (double Top, double Height)? IconRow(MarkdownViewer viewer, int line, Dictionary<int, (double Top, double Height)> places)
+    {
+        if (places.TryGetValue(line, out var number))
+        {
+            return number;
+        }
+
+        return viewer.GetLineBand(line, line, this) is { } band
+            ? (band.Top, Math.Min(band.Height, Label(line).Height))
+            : null;
     }
 
     private int LastLine()

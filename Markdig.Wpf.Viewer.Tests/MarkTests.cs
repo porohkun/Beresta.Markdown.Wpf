@@ -145,6 +145,83 @@ public sealed class MarkTests
     }
 
     [Fact]
+    public void Строки_во_всю_ширину_ложатся_на_строки_таблицы_от_рамки_до_рамки()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "intro\n\n| a | b |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |\n| 5 | 6 |\n\nafter" };
+            var window = WpfHost.Show(viewer);
+
+            viewer.MarkLayers.Add(new MdMarkLayer("diff")
+            {
+                Marks =
+                [
+                    new MdMark(2, 2) { Brush = Brushes.Green },
+                    new MdMark(5, 5) { Brush = Brushes.Blue },
+                    new MdMark(6, 6) { Brush = Brushes.Red }
+                ]
+            });
+            WpfHost.Settle(window);
+
+            var marks = viewer.RowMarks!;
+            var table = Visuals.Descendants<MdTablePresenter>(viewer).Single();
+            var frame = BoundsIn(Visuals.Descendants<Border>(table).Single(border => border.Child is Grid { Name: "PART_Grid" }), marks);
+            var cells = Visuals.Descendants<ContentPresenter>(table)
+                .Where(presenter => presenter.Content is TableCellVm)
+                .Select(presenter => BoundsIn(presenter, marks))
+                .ToList();
+            var rows = marks.CollectRows().Select(row => row.Row).ToList();
+
+            rows.Should().HaveCount(3);
+            rows[0].Top.Should().BeApproximately(frame.Top, 0.5);
+            rows[0].Bottom.Should().BeApproximately(cells[0].Bottom, 0.5);
+            rows[1].Top.Should().BeApproximately(cells[4].Top, 0.5);
+            rows[1].Bottom.Should().BeApproximately(cells[4].Bottom, 0.5);
+            rows[2].Top.Should().BeApproximately(cells[6].Top, 0.5);
+            rows[2].Bottom.Should().BeApproximately(frame.Bottom, 0.5);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void У_строки_под_шапкой_таблицы_нет_своего_места()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "| a | b |\n|---|---|\n| 1 | 2 |" };
+            var window = WpfHost.Show(viewer);
+
+            viewer.MarkLayers.Add(new MdMarkLayer("diff") { Marks = [new MdMark(1, 1) { Brush = Brushes.Green }] });
+            WpfHost.Settle(window);
+
+            viewer.RowMarks!.CollectRows().Should().BeEmpty();
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Значок_на_полях_встаёт_вровень_с_номером_строки_таблицы()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "| a | b |\n|---|---|\n| 1 | 2 |", ShowSourceLineNumbers = true };
+            var window = WpfHost.Show(viewer);
+
+            viewer.MarkLayers.Add(new MdMarkLayer("comments")
+            {
+                Marks = [new MdMark(2, 2, MdMarkKind.Icon) { Brush = Brushes.Red, Icon = Geometry.Parse("M0,0 L10,0 10,10 Z") }]
+            });
+            WpfHost.Settle(window);
+
+            var gutter = viewer.Gutter!;
+            var icon = gutter.CollectMarks().Single(mark => mark.Kind == MdMarkKind.Icon).Area;
+            var number = gutter.CollectNumbers().Single(row => row.Line == 2);
+            (icon.Top + icon.Height / 2).Should().BeApproximately(number.Top + number.Height / 2, 0.5);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Полосы_и_значки_встают_на_поля_и_расширяют_их()
     {
         WpfHost.Invoke(() =>
@@ -231,4 +308,8 @@ public sealed class MarkTests
             window.Close();
         });
     }
+
+    /// <summary>Рамка элемента в координатах другого.</summary>
+    private static Rect BoundsIn(FrameworkElement element, Visual target)
+        => element.TransformToVisual(target).TransformBounds(new Rect(element.RenderSize));
 }
