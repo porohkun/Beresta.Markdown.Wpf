@@ -2,32 +2,33 @@
 
 [English](https://github.com/porohkun/Markdig.Wpf.Viewer/blob/main/README.md) | **Русский**
 
-Контрол WPF, который показывает Markdown родными элементами WPF: текст разбирает
-[Markdig](https://github.com/xoofx/markdig), рисуют шаблоны WPF.
+Контрол WPF, который показывает Markdown. Текст разбирает [Markdig](https://github.com/xoofx/markdig), а
+рисует вьюер — контролами и шаблонами WPF.
 
-![Вьюер в теме витрины](https://raw.githubusercontent.com/porohkun/Markdig.Wpf.Viewer/main/docs/wiki/images/overview.png)
+![Вьюер в теме витрины](https://raw.githubusercontent.com/wiki/porohkun/Markdig.Wpf.Viewer/images/overview.png)
 
-- **Виртуализация.** Вьюер живёт в прокрутке приложения и создаёт только видимые блоки: длинный
-  документ, страница с другим содержимым или лента чата не тормозят.
-- **Выделение.** Выделение идёт сквозь блоки; копирование кладёт в буфер обмена разом обычный текст,
-  Markdown и HTML.
-- **Навигация.** Ссылки, якоря, сноски, оглавление, прокрутка к строке исходника; любую ссылку может
-  взять на себя приложение.
-- **Тема.** Каждый цвет, шрифт и отступ — ключ ресурса; любому блоку можно дать свой шаблон.
-- **Расширения.** Свой синтаксис Markdown превращается в свои виджеты.
-- **Чужие диалекты.** Вики-ссылки, плашки, упоминания, шорткоды и таблицы из CSV в синтаксисе GitHub,
-  GitLab, Obsidian, MkDocs, Docusaurus, HackMD и чатов идут в пакете: по умолчанию выключены, набор
-  подключает синтаксис одной программы одной строкой.
-- **Живой текст.** Новый текст ложится правками: годится для живого предпросмотра и ответов, которые
-  приходят по кускам.
+## Чем он хорош
+
+- **Свой быстрый рендер родными элементами WPF.** Markdown становится настоящими контролами WPF — без
+  браузера и HTML посередине, [Как рисует вьюер](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/How-It-Renders-ru).
+- **Полная виртуализация.** Создаются только видимые блоки: в `ScrollViewer`, на странице рядом с
+  другим содержимым, в списке сообщений — [Прокрутка и виртуализация](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Scrolling-and-Virtualization-ru).
+- **Выделение как в документе.** Одно выделение идёт сквозь абзацы, списки, таблицы и код, даже через
+  блоки за краем экрана; копирование кладёт в буфер обычный текст, Markdown и HTML —
+  [Выделение](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Selection-ru), [Копирование](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Copying-ru).
+- **Легко расширять.** Свой синтаксис становится своими виджетами, а встроенный можно перехватить —
+  [Расширения](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Extensions-ru).
+- **Легко перекрашивать.** Каждый цвет, шрифт и отступ — ключ ресурса, любому виду блока можно дать
+  свой шаблон — [Тема](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Theming-ru), [Стили и шаблоны](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Styles-and-Templates-ru).
+- **Много элементов разметки — подключаешь только нужные.** CommonMark, расширения Markdig и HTML из
+  README — из коробки; синтаксис GitHub, GitLab, Obsidian, MkDocs, Docusaurus, HackMD и чатов —
+  готовыми расширениями, по одному или наборами, [Что поддерживается](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Supported-Markdown-ru).
 
 ## Установка
 
 ```bash
 dotnet add package Markdig.Wpf.Viewer
 ```
-
-Или подключи репозиторий сабмодулем Git и сошлись на `Markdig.Wpf.Viewer/Markdig.Wpf.Viewer.csproj`.
 
 Нужны .NET 10 (`net10.0-windows`) и WPF.
 
@@ -85,27 +86,30 @@ dotnet add package Markdig.Wpf.Viewer
 
 ## Документация
 
-В [вики](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Home-ru) каждая возможность описана с
-рабочим примером:
+В [вики](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Home-ru) каждая возможность описана с рабочим примером; все настройки и места перехвата
+собраны на одной странице — [Настройки и перехват](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Settings-and-Hooks-ru).
 
 - **Основы:** [Начало работы](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Getting-Started-ru),
-  [Что рисуется](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Supported-Markdown-ru),
-  [Прокрутка и виртуализация](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Scrolling-and-Virtualization-ru).
+  [Как рисует вьюер](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/How-It-Renders-ru),
+  [Что поддерживается](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Supported-Markdown-ru),
+  [Настройки и перехват](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Settings-and-Hooks-ru),
+  [Прокрутка и виртуализация](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Scrolling-and-Virtualization-ru),
+  [Сравнение](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Comparison-ru).
 - **Работа с текстом:** [Выделение](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Selection-ru),
   [Копирование](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Copying-ru),
   [Ссылки и якоря](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Links-and-Anchors-ru),
+  [Подсветка найденного](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Search-Highlighting-ru),
   [Доступность](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Accessibility-ru).
 - **Оформление:** [Тема](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Theming-ru),
   [Стили и шаблоны](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Styles-and-Templates-ru),
   [Блоки кода](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Code-Blocks-ru),
   [Номера строк](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Line-Numbers-ru).
-- **Расширение и интеграция:** [Расширения](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Extensions-ru),
+- **Встраивание в приложение:** [Ссылки приложения](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Application-Links-ru),
   [Картинки](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Images-ru),
   [Списки задач](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Task-Lists-ru),
-  [Ссылки приложения](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Application-Links-ru),
   [Строки исходника и две панели](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Source-Lines-and-Two-Panes-ru),
-  [Живой предпросмотр](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Live-Preview-ru),
-  [Подсветка найденного](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Search-Highlighting-ru).
+  [Живой предпросмотр](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Live-Preview-ru).
+- **Свой синтаксис:** [Расширения](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Extensions-ru).
 - **Готовые расширения:** [Наборы](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Sets-ru),
   [Плашки и сворачиваемое](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Callouts-ru),
   [Связи](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Links-ru),
