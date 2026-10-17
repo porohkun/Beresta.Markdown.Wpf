@@ -1,19 +1,25 @@
 ﻿namespace MarkdigWpfViewer.Showcase.Showcases.Document;
 
+using System.ComponentModel;
+using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
+using System.Windows.Input;
+using Search;
 using Selection;
 
-/// <summary>Документ с оглавлением и подсветкой найденного.</summary>
+/// <summary>Документ с оглавлением и поиском.</summary>
 public partial class DocumentView : UserControl
 {
-    private static readonly Brush FoundBrush = new SolidColorBrush(Color.FromArgb(0x80, 0xFF, 0xC1, 0x07));
-
+    private readonly MdSearch _search;
     private bool _followingScroll;
 
     public DocumentView()
     {
         InitializeComponent();
+        _search = new(Viewer);
+        _search.PropertyChanged += OnSearchPropertyChanged;
+        SearchBar.DataContext = _search;
+        UpdateCounter();
     }
 
     private void OnTaskToggled(object? sender, MdTaskToggledEventArgs e)
@@ -40,20 +46,36 @@ public partial class DocumentView : UserControl
         _followingScroll = false;
     }
 
-    /// <summary>Найденное в текстовой карте подсвечивается декорациями вьюера.</summary>
-    private void OnSearchChanged(object sender, TextChangedEventArgs e)
+    /// <summary>Enter — следующее совпадение, Shift+Enter — предыдущее.</summary>
+    private void OnSearchKeyDown(object sender, KeyEventArgs e)
     {
-        var query = SearchBox.Text;
-        var text = Viewer.TextMap.Text;
-        var found = new List<MdDecoration>();
-
-        for (var index = string.IsNullOrEmpty(query) ? -1 : text.IndexOf(query, StringComparison.OrdinalIgnoreCase);
-             index >= 0;
-             index = text.IndexOf(query, index + query.Length, StringComparison.OrdinalIgnoreCase))
+        if (e.Key != Key.Enter)
         {
-            found.Add(new(new(index, query.Length), FoundBrush));
+            return;
         }
 
-        Viewer.Decorations = found;
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+        {
+            _search.Previous();
+        }
+        else
+        {
+            _search.Next();
+        }
+
+        e.Handled = true;
+    }
+
+    private void OnPrevious(object sender, RoutedEventArgs e) => _search.Previous();
+
+    private void OnNext(object sender, RoutedEventArgs e) => _search.Next();
+
+    private void OnSearchPropertyChanged(object? sender, PropertyChangedEventArgs e) => UpdateCounter();
+
+    private void UpdateCounter()
+    {
+        Counter.Text = _search.Query.Length == 0 ? string.Empty
+            : _search.Count == 0 ? "нет"
+            : $"{_search.CurrentIndex + 1} из {_search.Count}";
     }
 }

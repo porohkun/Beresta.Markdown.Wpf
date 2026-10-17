@@ -12,16 +12,36 @@
     </UserControl.Resources>
 
     <DockPanel>
-        <!-- Подсветка найденного и выделение -->
-        <StackPanel DockPanel.Dock="Top"
+        <!-- Поиск на MdSearch: поле и кнопки — у приложения, совпадения и переход — у поиска -->
+        <StackPanel x:Name="SearchBar"
+                    DockPanel.Dock="Top"
                     Orientation="Horizontal"
                     Margin="24,8,24,0">
-            <TextBlock Text="Подсветить:"
+            <TextBlock Text="Найти:"
                        VerticalAlignment="Center"
                        Margin="0,0,8,0" />
             <TextBox x:Name="SearchBox"
                      Width="200"
-                     TextChanged="OnSearchChanged" />
+                     Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                     KeyDown="OnSearchKeyDown" />
+            <Button Content="▲"
+                    Margin="4,0,0,0"
+                    ToolTip="Назад (Shift+Enter)"
+                    Click="OnPrevious" />
+            <Button Content="▼"
+                    Margin="4,0,0,0"
+                    ToolTip="Дальше (Enter)"
+                    Click="OnNext" />
+            <TextBlock x:Name="Counter"
+                       VerticalAlignment="Center"
+                       MinWidth="60"
+                       Margin="8,0,0,0" />
+            <CheckBox Content="Регистр"
+                      IsChecked="{Binding MatchCase}"
+                      Margin="8,0,0,0" />
+            <CheckBox Content="Слово целиком"
+                      IsChecked="{Binding WholeWord}"
+                      Margin="8,0,0,0" />
             <TextBlock VerticalAlignment="Center"
                        Margin="16,0,0,0"
                        Text="{Binding SelectionLength, ElementName=Viewer, StringFormat='Выделено знаков: {0}'}" />

@@ -3,34 +3,84 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
              xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.TwoPanes"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:TwoPanesViewModel}"
              Loaded="OnLoaded"
              Unloaded="OnUnloaded">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition />
-            <ColumnDefinition />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition />
-        </Grid.RowDefinitions>
+    <DockPanel>
+        <hc:ButtonGroup DockPanel.Dock="Top"
+                        HorizontalAlignment="Left"
+                        Margin="24,8,24,0">
+            <RadioButton Content="Синхронная прокрутка" IsChecked="True" />
+            <RadioButton Content="Вровень" IsChecked="{Binding IsAligned}" />
+        </hc:ButtonGroup>
 
-        <TextBlock Text="Было" Margin="24,8,24,0" FontWeight="SemiBold" />
-        <TextBlock Grid.Column="1" Text="Стало" Margin="24,8,24,0" FontWeight="SemiBold" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="48" />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
 
-        <ScrollViewer Grid.Row="1">
-            <mdv:MarkdownViewer x:Name="LeftViewer"
-                                Markdown="{Binding Left}"
-                                Margin="24,16" />
-        </ScrollViewer>
-        <ScrollViewer Grid.Row="1" Grid.Column="1">
-            <mdv:MarkdownViewer x:Name="RightViewer"
-                                Markdown="{Binding Right}"
-                                Margin="24,16" />
-        </ScrollViewer>
-    </Grid>
+            <TextBlock Text="Было" Margin="24,8,24,0" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="2" Text="Стало" Margin="24,8,24,0" FontWeight="SemiBold" />
+
+            <!-- Синхронная прокрутка: у панелей свои прокрутки, между ними — соединения правок -->
+            <Grid Grid.Row="1" Grid.ColumnSpan="3">
+                <Grid.Style>
+                    <Style TargetType="{x:Type Grid}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsAligned}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="48" />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+
+                <ScrollViewer>
+                    <mdv:MarkdownViewer x:Name="SyncLeft" Markdown="{Binding Left}" Margin="24,16" />
+                </ScrollViewer>
+                <Canvas x:Name="Connections" Grid.Column="1" ClipToBounds="True" SizeChanged="OnConnectionsSizeChanged" />
+                <ScrollViewer Grid.Column="2">
+                    <mdv:MarkdownViewer x:Name="SyncRight" Markdown="{Binding Right}" Margin="24,16" />
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Вровень: общая прокрутка, напротив правок — пустые места -->
+            <ScrollViewer Grid.Row="1" Grid.ColumnSpan="3">
+                <ScrollViewer.Style>
+                    <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource {x:Type ScrollViewer}}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsAligned}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ScrollViewer.Style>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="48" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+
+                    <mdv:MarkdownViewer x:Name="AlignedLeft" Markdown="{Binding Left}" Margin="24,16" />
+                    <mdv:MarkdownViewer x:Name="AlignedRight" Grid.Column="2" Markdown="{Binding Right}" Margin="24,16" />
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+    </DockPanel>
 </UserControl>

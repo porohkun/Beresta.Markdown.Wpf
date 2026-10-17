@@ -99,7 +99,7 @@ on one page, [Settings and Hooks](https://github.com/porohkun/Markdig.Wpf.Viewer
 - **Working with text:** [Selection](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Selection),
   [Copying](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Copying),
   [Links and Anchors](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Links-and-Anchors),
-  [Search Highlighting](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Search-Highlighting),
+  [Marks and Search](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Search-Highlighting),
   [Accessibility](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Accessibility).
 - **Appearance:** [Theming](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Theming),
   [Styles and Templates](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Styles-and-Templates),
@@ -109,6 +109,7 @@ on one page, [Settings and Hooks](https://github.com/porohkun/Markdig.Wpf.Viewer
   [Images](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Images),
   [Task Lists](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Task-Lists),
   [Source Lines and Two Panes](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Source-Lines-and-Two-Panes),
+  [Coordinates](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Coordinates),
   [Live Preview](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Live-Preview).
 - **Your own syntax:** [Extensions](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Extensions).
 - **Ready-made extensions:** [Sets](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Sets),

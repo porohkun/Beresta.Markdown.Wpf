@@ -98,7 +98,7 @@ dotnet add package Markdig.Wpf.Viewer
 - **Работа с текстом:** [Выделение](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Selection-ru),
   [Копирование](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Copying-ru),
   [Ссылки и якоря](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Links-and-Anchors-ru),
-  [Подсветка найденного](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Search-Highlighting-ru),
+  [Пометки и поиск](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Search-Highlighting-ru),
   [Доступность](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Accessibility-ru).
 - **Оформление:** [Тема](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Theming-ru),
   [Стили и шаблоны](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Styles-and-Templates-ru),
@@ -108,6 +108,7 @@ dotnet add package Markdig.Wpf.Viewer
   [Картинки](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Images-ru),
   [Списки задач](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Task-Lists-ru),
   [Строки исходника и две панели](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Source-Lines-and-Two-Panes-ru),
+  [Координаты](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Coordinates-ru),
   [Живой предпросмотр](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Live-Preview-ru).
 - **Свой синтаксис:** [Расширения](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Extensions-ru).
 - **Готовые расширения:** [Наборы](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Kit-Sets-ru),

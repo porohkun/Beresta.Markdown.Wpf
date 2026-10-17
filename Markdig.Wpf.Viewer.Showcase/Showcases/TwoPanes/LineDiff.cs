@@ -37,6 +37,27 @@ public static class LineDiff
         return matches;
     }
 
+    /// <summary>
+    /// Правки между совпавшими строками: куски слева и справа, конец меньше начала — кусок пуст и
+    /// стоит перед своей начальной строкой.
+    /// </summary>
+    public static IEnumerable<(int LeftStart, int LeftEnd, int RightStart, int RightEnd)> Hunks(
+        IReadOnlyList<(int Left, int Right)> matches,
+        int leftCount,
+        int rightCount)
+    {
+        var (left, right) = (0, 0);
+        foreach (var (matchLeft, matchRight) in matches.Append((leftCount, rightCount)))
+        {
+            if (matchLeft > left || matchRight > right)
+            {
+                yield return (left, matchLeft - 1, right, matchRight - 1);
+            }
+
+            (left, right) = (matchLeft + 1, matchRight + 1);
+        }
+    }
+
     /// <summary>Сплошные куски строк, которых нет среди совпавших.</summary>
     public static IEnumerable<(int Start, int End)> Unmatched(int count, IEnumerable<int> matched)
     {
