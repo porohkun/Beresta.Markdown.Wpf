@@ -4,15 +4,38 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Selection;
 using ViewModels;
 
 /// <summary>
 /// Поля с номерами строк исходника — у каждой строки, у которой есть своё место на экране.
-/// Ширина общая на документ — по числу цифр последней строки.
+/// Ширина общая на документ — по числу цифр последней строки. Значки пометок стоят слева от
+/// номеров, полосы — справа.
 /// </summary>
 public sealed class MdLineGutter : Control
 {
+    /// <summary>Ширина полосы пометки вида <see cref="MdMarkKind.Bar"/>.</summary>
+    public static readonly DependencyProperty BarWidthProperty =
+        DependencyProperty.Register(
+            nameof(BarWidth),
+            typeof(double),
+            typeof(MdLineGutter),
+            new FrameworkPropertyMetadata(3.0, FrameworkPropertyMetadataOptions.AffectsMeasure | FrameworkPropertyMetadataOptions.AffectsRender));
+
+    /// <summary>Сторона значка пометки вида <see cref="MdMarkKind.Icon"/>.</summary>
+    public static readonly DependencyProperty IconSizeProperty =
+        DependencyProperty.Register(
+            nameof(IconSize),
+            typeof(double),
+            typeof(MdLineGutter),
+            new FrameworkPropertyMetadata(12.0, FrameworkPropertyMetadataOptions.AffectsMeasure | FrameworkPropertyMetadataOptions.AffectsRender));
+
     private const int MaxLabels = 4096;
+
+    private static readonly DependencyProperty LayerProperty =
+        MdSelection.LayerProperty.AddOwner(
+            typeof(MdLineGutter),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnLayerChanged));
 
     private readonly Dictionary<int, FormattedText> _labels = [];
 
@@ -21,8 +44,56 @@ public sealed class MdLineGutter : Control
         DefaultStyleKeyProperty.OverrideMetadata(typeof(MdLineGutter), new FrameworkPropertyMetadata(typeof(MdLineGutter)));
     }
 
+    public double BarWidth
+    {
+        get => (double)GetValue(BarWidthProperty);
+        set => SetValue(BarWidthProperty, value);
+    }
+
+    public double IconSize
+    {
+        get => (double)GetValue(IconSizeProperty);
+        set => SetValue(IconSizeProperty, value);
+    }
+
     /// <summary>Сколько раз поля рисовались.</summary>
     internal int Renders { get; private set; }
+
+    private double BarColumn => GetValue(LayerProperty) is MdDecorationLayer layer && layer.Has(MdMarkKind.Bar) ? BarWidth : 0;
+
+    private double IconColumn => GetValue(LayerProperty) is MdDecorationLayer layer && layer.Has(MdMarkKind.Icon) ? IconSize : 0;
+
+    /// <summary>Полосы и значки пометок у созданных блоков в координатах полей, в порядке рисования.</summary>
+    internal IReadOnlyList<(MdMarkKind Kind, Rect Area, Brush Brush, Geometry? Icon)> CollectMarks()
+    {
+        var marks = new List<(MdMarkKind Kind, Rect Area, Brush Brush, Geometry? Icon)>();
+        if (TemplatedParent is not MarkdownViewer viewer
+            || GetValue(LayerProperty) is not MdDecorationLayer layer
+            || viewer.RealizedLines() is not { } realized)
+        {
+            return marks;
+        }
+
+        foreach (var mark in layer.LinesWithin(realized.First, realized.Last, MdMarkKind.Bar))
+        {
+            if (viewer.GetLineBand(Math.Max(mark.First, realized.First), Math.Min(mark.Last, realized.Last), this) is { } band)
+            {
+                marks.Add((MdMarkKind.Bar, new(ActualWidth - BarColumn, band.Top, BarColumn, band.Height), mark.Brush!, null));
+            }
+        }
+
+        foreach (var mark in layer.LinesWithin(realized.First, realized.Last, MdMarkKind.Icon))
+        {
+            if (mark.Mark.Icon is { } icon && mark.First >= realized.First && viewer.GetLineBand(mark.First, mark.First, this) is { } band)
+            {
+                var row = Math.Min(band.Height, Label(mark.First).Height);
+                var size = Math.Min(IconColumn, row);
+                marks.Add((MdMarkKind.Icon, new(0, band.Top + (row - size) / 2, size, size), mark.Brush!, icon));
+            }
+        }
+
+        return marks;
+    }
 
     /// <summary>Номера созданных блоков: строка исходника, верх и высота её экранной строки в координатах полей.</summary>
     internal IReadOnlyList<(int Line, double Top, double Height)> CollectNumbers()
@@ -41,18 +112,37 @@ public sealed class MdLineGutter : Control
     {
         var digits = Math.Max(2, (LastLine() + 1).ToString(CultureInfo.InvariantCulture).Length);
         var width = Format(new('9', digits)).WidthIncludingTrailingWhitespace;
-        return new(Math.Ceiling(width) + Padding.Left + Padding.Right, 0);
+        return new(IconColumn + Math.Ceiling(width) + Padding.Left + Padding.Right + BarColumn, 0);
     }
 
     protected override void OnRender(DrawingContext drawingContext)
     {
         Renders++;
 
+        foreach (var (kind, area, brush, icon) in CollectMarks())
+        {
+            if (kind == MdMarkKind.Icon && icon is { Bounds: { IsEmpty: false } bounds })
+            {
+                var scale = Math.Min(area.Width / Math.Max(bounds.Width, 1e-6), area.Height / Math.Max(bounds.Height, 1e-6));
+                var transform = new Matrix();
+                transform.Translate(-bounds.Left, -bounds.Top);
+                transform.Scale(scale, scale);
+                transform.Translate(area.Left + (area.Width - bounds.Width * scale) / 2, area.Top + (area.Height - bounds.Height * scale) / 2);
+                drawingContext.PushTransform(new MatrixTransform(transform));
+                drawingContext.DrawGeometry(brush, null, icon);
+                drawingContext.Pop();
+            }
+            else
+            {
+                drawingContext.DrawRectangle(brush, null, area);
+            }
+        }
+
+        var right = ActualWidth - Padding.Right - BarColumn;
         foreach (var (line, top, height) in CollectNumbers())
         {
             var label = Label(line);
-            var x = ActualWidth - Padding.Right - label.WidthIncludingTrailingWhitespace;
-            drawingContext.DrawText(label, new(x, top + (height - label.Height) / 2));
+            drawingContext.DrawText(label, new(right - label.WidthIncludingTrailingWhitespace, top + (height - label.Height) / 2));
         }
     }
 
@@ -82,6 +172,19 @@ public sealed class MdLineGutter : Control
     {
         base.OnDpiChanged(oldDpi, newDpi);
         _labels.Clear();
+    }
+
+    /// <summary>Сменились пометки — поля перерисовываются; одно выделение их не трогает.</summary>
+    private static void OnLayerChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (ReferenceEquals((e.OldValue as MdDecorationLayer)?.Marks, (e.NewValue as MdDecorationLayer)?.Marks))
+        {
+            return;
+        }
+
+        var gutter = (MdLineGutter)d;
+        gutter.InvalidateMeasure();
+        gutter.InvalidateVisual();
     }
 
     /// <summary>Из номеров, налезающих друг на друга, оставляет один: на своей строке — охотнее, чем у рамки.</summary>

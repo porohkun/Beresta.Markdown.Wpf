@@ -12,13 +12,29 @@ using Selection;
 /// </summary>
 public sealed class MdBlockItem : ContentControl
 {
-    /// <summary>Подсветка поверх блока; <c>null</c> — блок не подсвечен.</summary>
+    /// <summary>Заливка поверх блока; <c>null</c> — блок не залит.</summary>
     public static readonly DependencyProperty HighlightProperty =
         DependencyProperty.Register(
             nameof(Highlight),
             typeof(Brush),
             typeof(MdBlockItem),
             new(null));
+
+    /// <summary>Черта или рамка пометки поверх блока; <c>null</c> — её нет.</summary>
+    public static readonly DependencyProperty HighlightBorderBrushProperty =
+        DependencyProperty.Register(
+            nameof(HighlightBorderBrush),
+            typeof(Brush),
+            typeof(MdBlockItem),
+            new(null));
+
+    /// <summary>Толщина черты или рамки пометки по краям блока.</summary>
+    public static readonly DependencyProperty HighlightBorderThicknessProperty =
+        DependencyProperty.Register(
+            nameof(HighlightBorderThickness),
+            typeof(Thickness),
+            typeof(MdBlockItem),
+            new(default(Thickness)));
 
     private static readonly DependencyProperty LayerProperty =
         MdSelection.LayerProperty.AddOwner(
@@ -39,6 +55,18 @@ public sealed class MdBlockItem : ContentControl
     {
         get => (Brush?)GetValue(HighlightProperty);
         set => SetValue(HighlightProperty, value);
+    }
+
+    public Brush? HighlightBorderBrush
+    {
+        get => (Brush?)GetValue(HighlightBorderBrushProperty);
+        set => SetValue(HighlightBorderBrushProperty, value);
+    }
+
+    public Thickness HighlightBorderThickness
+    {
+        get => (Thickness)GetValue(HighlightBorderThicknessProperty);
+        set => SetValue(HighlightBorderThicknessProperty, value);
     }
 
     /// <summary>Кусок карты неделимого блока; у блока с текстом его нет.</summary>
@@ -69,15 +97,13 @@ public sealed class MdBlockItem : ContentControl
 
     private void UpdateHighlight()
     {
-        Brush? brush = null;
-        if (TryGetAtomicRange(out var range) && GetValue(LayerProperty) is MdDecorationLayer layer)
-        {
-            foreach (var (_, highlight) in layer.Within(range))
-            {
-                brush = highlight;
-            }
-        }
+        var marks = TryGetAtomicRange(out var range) && GetValue(LayerProperty) is MdDecorationLayer layer
+            ? layer.Within(range).Select(mark => (mark.Kind, mark.Brush)).ToList()
+            : [];
 
-        Highlight = brush;
+        var (fill, line, thickness) = MarkLook.Of(marks, this);
+        Highlight = fill;
+        HighlightBorderBrush = line;
+        HighlightBorderThickness = thickness;
     }
 }

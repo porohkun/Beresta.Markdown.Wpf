@@ -214,8 +214,8 @@ public class MdTextBlock : TextBlock
     }
 
     /// <summary>Подсвеченные куски своего текста в порядке рисования.</summary>
-    internal IEnumerable<(int Start, int End, Brush Brush)> Highlights
-        => _highlights.Select(highlight => (highlight.Start, highlight.End, highlight.Brush));
+    internal IEnumerable<(int Start, int End, MdMarkKind Kind, Brush Brush)> Highlights
+        => _highlights.Select(highlight => (highlight.Start, highlight.End, highlight.Kind, highlight.Brush));
 
     /// <summary>Строки исходника, которые начинаются в этом тексте, и экранные строки, где они начинаются.</summary>
     internal IReadOnlyList<(int Line, Rect Row)> SourceRows => _sourceRows ??= FindSourceRows();
@@ -405,9 +405,9 @@ public class MdTextBlock : TextBlock
         var highlights = new List<Highlight>();
         if (TryGetMapRange(out var range) && GetValue(LayerProperty) is MdDecorationLayer layer)
         {
-            foreach (var (part, brush) in layer.Within(range))
+            foreach (var (part, kind, brush) in layer.Within(range))
             {
-                highlights.Add(new(part.Start - range.Start, part.End - range.Start, brush));
+                highlights.Add(new(part.Start - range.Start, part.End - range.Start, kind, brush));
             }
         }
 
@@ -415,7 +415,8 @@ public class MdTextBlock : TextBlock
         {
             if (segment.Overlay is { } overlay)
             {
-                overlay.Background = highlights.LastOrDefault(h => h.Start < segment.End && h.End > segment.Start)?.Brush;
+                var covering = highlights.Where(h => h.Start < segment.End && h.End > segment.Start).ToList();
+                MarkLook.Apply(overlay, this, covering.Select(h => (h.Kind, h.Brush)));
             }
         }
 
@@ -648,5 +649,5 @@ public class MdTextBlock : TextBlock
         public int End => Start + Length;
     }
 
-    private sealed record Highlight(int Start, int End, Brush Brush);
+    private sealed record Highlight(int Start, int End, MdMarkKind Kind, Brush Brush);
 }

@@ -255,6 +255,24 @@
     <!-- ======== Выделение ======== -->
     <SolidColorBrush x:Key="Md.Selection.Brush" Color="#3399FF" Opacity="0.35" />
 
+    <!-- ======== Пометки ======== -->
+    <SolidColorBrush x:Key="Md.Mark.Found.Brush" Color="#FFD54F" Opacity="0.6" />
+    <SolidColorBrush x:Key="Md.Mark.Found.LineBrush" Color="#F9A825" />
+    <SolidColorBrush x:Key="Md.Mark.Current.Brush" Color="#FF9632" Opacity="0.7" />
+    <SolidColorBrush x:Key="Md.Mark.Current.LineBrush" Color="#EF6C00" />
+    <SolidColorBrush x:Key="Md.Mark.Added.Brush" Color="#43A047" Opacity="0.22" />
+    <SolidColorBrush x:Key="Md.Mark.Added.LineBrush" Color="#43A047" />
+    <SolidColorBrush x:Key="Md.Mark.Removed.Brush" Color="#E53935" Opacity="0.22" />
+    <SolidColorBrush x:Key="Md.Mark.Removed.LineBrush" Color="#E53935" />
+    <SolidColorBrush x:Key="Md.Mark.Changed.Brush" Color="#1E88E5" Opacity="0.2" />
+    <SolidColorBrush x:Key="Md.Mark.Changed.LineBrush" Color="#1E88E5" />
+    <SolidColorBrush x:Key="Md.Mark.Comment.Brush" Color="#AB47BC" Opacity="0.25" />
+    <SolidColorBrush x:Key="Md.Mark.Comment.LineBrush" Color="#8E24AA" />
+    <sys:Double x:Key="Md.Mark.UnderlineThickness">2</sys:Double>
+    <sys:Double x:Key="Md.Mark.FrameThickness">1</sys:Double>
+    <sys:Double x:Key="Md.Mark.BarWidth">3</sys:Double>
+    <sys:Double x:Key="Md.Mark.IconSize">12</sys:Double>
+
     <Style x:Key="Md.Paragraph.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}">
         <Setter Property="FontSize" Value="{DynamicResource Md.InlineCode.FontSize}" />
         <Setter Property="FontFamily" Value="{DynamicResource Md.InlineCode.FontFamily}" />
@@ -1522,7 +1540,10 @@
                 <ControlTemplate TargetType="{x:Type p:MdBlockItem}">
                     <Grid>
                         <ContentPresenter />
-                        <Border Background="{TemplateBinding Highlight}" IsHitTestVisible="False" />
+                        <Border Background="{TemplateBinding Highlight}"
+                                BorderBrush="{TemplateBinding HighlightBorderBrush}"
+                                BorderThickness="{TemplateBinding HighlightBorderThickness}"
+                                IsHitTestVisible="False" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
@@ -1536,6 +1557,8 @@
         <Setter Property="FontSize" Value="{DynamicResource Md.Gutter.FontSize}" />
         <Setter Property="Foreground" Value="{DynamicResource Md.Gutter.Foreground}" />
         <Setter Property="Padding" Value="{DynamicResource Md.Gutter.Padding}" />
+        <Setter Property="BarWidth" Value="{DynamicResource Md.Mark.BarWidth}" />
+        <Setter Property="IconSize" Value="{DynamicResource Md.Mark.IconSize}" />
     </Style>
 
     <ContextMenu x:Key="Md.ContextMenu" x:Shared="False">
@@ -1586,6 +1609,7 @@
                             </Grid.ColumnDefinitions>
 
                             <ItemsPresenter Grid.Column="1" />
+                            <p:MdRowMarks x:Name="PART_RowMarks" Grid.Column="1" />
 
                             <!-- BYDESIGN: поля идут после блоков — раскладываются позже и видят их уже на местах -->
                             <p:MdLineGutter x:Name="PART_Gutter" Visibility="Collapsed" />

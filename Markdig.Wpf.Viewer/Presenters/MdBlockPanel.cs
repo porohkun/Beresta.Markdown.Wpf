@@ -43,6 +43,23 @@ public sealed class MdBlockPanel : VirtualizingPanel
     /// <summary>Блок, на который приходится позиция в координатах панели.</summary>
     internal int IndexAtOffset(double offset) => offset < 0 ? 0 : IndexAt(offset) is var index and >= 0 ? index : _keys.Length - 1;
 
+    /// <summary>Номера первого и последнего созданных блоков; созданных нет — <c>null</c>.</summary>
+    internal (int First, int Last)? RealizedRange
+    {
+        get
+        {
+            if (InternalChildren.Count == 0)
+            {
+                return null;
+            }
+
+            var generator = ItemContainerGenerator;
+            var first = generator.IndexFromGeneratorPosition(new(0, 0));
+            var last = generator.IndexFromGeneratorPosition(new(InternalChildren.Count - 1, 0));
+            return first < 0 || last < first ? null : (first, last);
+        }
+    }
+
     protected override Size MeasureOverride(Size availableSize)
     {
         // BYDESIGN: обращение к InternalChildren создаёт генератор контейнеров — до него

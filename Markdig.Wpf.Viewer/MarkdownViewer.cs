@@ -1,5 +1,7 @@
 ﻿namespace MarkdigWpfViewer;
 
+using System.Collections;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Automation.Peers;
@@ -20,6 +22,7 @@ using ViewModels;
 
 /// <summary>Контрол, который показывает markdown-текст блоками по шаблонам темы.</summary>
 [TemplatePart(Name = GutterPart, Type = typeof(MdLineGutter))]
+[TemplatePart(Name = RowMarksPart, Type = typeof(MdRowMarks))]
 public sealed class MarkdownViewer : ItemsControl
 {
     /// <summary>Текст документа.</summary>
@@ -54,7 +57,7 @@ public sealed class MarkdownViewer : ItemsControl
             typeof(MarkdownViewer),
             new(null, OnExtensionsChanged));
 
-    /// <summary>Подсветки кусков текста под выделением: найденное, правки диффа.</summary>
+    /// <summary>Подсветки кусков текста под слоями пометок и выделением: найденное, правки диффа.</summary>
     public static readonly DependencyProperty DecorationsProperty =
         DependencyProperty.Register(
             nameof(Decorations),
@@ -62,13 +65,13 @@ public sealed class MarkdownViewer : ItemsControl
             typeof(MarkdownViewer),
             new(null, OnDecorationsChanged));
 
-    /// <summary>Кисть выделения; рисуется под текстом.</summary>
+    /// <summary>Кисть выделения; рисуется поверх текста и пометок.</summary>
     public static readonly DependencyProperty SelectionBrushProperty =
         DependencyProperty.Register(
             nameof(SelectionBrush),
             typeof(Brush),
             typeof(MarkdownViewer),
-            new(null, OnDecorationsChanged));
+            new(null, OnSelectionBrushChanged));
 
     /// <summary>Можно ли выделять текст; выключение снимает выделение.</summary>
     public static readonly DependencyProperty IsSelectionEnabledProperty =
@@ -192,11 +195,16 @@ public sealed class MarkdownViewer : ItemsControl
 
 
     private const string GutterPart = "PART_Gutter";
+    private const string RowMarksPart = "PART_RowMarks";
 
     private readonly SourcePositions _positions;
     private readonly WidgetStates _states;
     private readonly ModelIdentity _identity = new();
     private readonly ModelCollection<BlockVm> _blocks = [];
+    private readonly MdMarkLayer _decorationLayer = new("Decorations");
+    private readonly ThemeBrushes _themeBrushes;
+    private IReadOnlyList<MarkSet> _markSets = [];
+    private bool _movingMarks;
     private MarkdownPipeline? _pipeline;
     private bool _templatesChanged;
     private bool _viewportNotificationQueued;
@@ -236,6 +244,11 @@ public sealed class MarkdownViewer : ItemsControl
     {
         _states = new(() => ActiveExtensions);
         SetValue(MdWidget.StatesProperty, _states);
+
+        _themeBrushes = new(AddLogicalChild);
+        _themeBrushes.Changed += RebuildMarks;
+        _decorationLayer.Changed += OnMarkLayerChanged;
+        MarkLayers.CollectionChanged += OnMarkLayersChanged;
 
         // BYDESIGN: своя коллекция через SetCurrentValue, а не локальным значением — так её
         // перекрывает общая из стиля, а XAML, который читает свойство мимо геттера, видит не null.
@@ -293,6 +306,9 @@ public sealed class MarkdownViewer : ItemsControl
         get => (IReadOnlyList<MdDecoration>?)GetValue(DecorationsProperty);
         set => SetValue(DecorationsProperty, value);
     }
+
+    /// <summary>Слои пометок в порядке рисования: над декорациями, под выделением.</summary>
+    public ObservableCollection<MdMarkLayer> MarkLayers { get; } = [];
 
     public Brush? SelectionBrush
     {
@@ -374,6 +390,11 @@ public sealed class MarkdownViewer : ItemsControl
     internal MdBlockPanel? BlockPanel { get; set; }
 
     internal MdLineGutter? Gutter { get; private set; }
+
+    internal MdRowMarks? RowMarks { get; private set; }
+
+    // BYDESIGN: кисти пометок — логические потомки вьюера: иначе смена темы до них не доходит.
+    protected override IEnumerator LogicalChildren => WithThemeBrushes(base.LogicalChildren, _themeBrushes.All);
 
     public static bool GetCanToggleTasks(DependencyObject element)
         => (bool)element.GetValue(CanToggleTasksProperty);
@@ -472,6 +493,57 @@ public sealed class MarkdownViewer : ItemsControl
     /// <summary>Рамка куска текстовой карты в координатах вьюера; <see cref="Rect.Empty"/> — кусок не на созданных блоках.</summary>
     public Rect GetRangeBounds(MdTextRange range) => GetRangeRects(range).Aggregate(Rect.Empty, Rect.Union);
 
+    /// <summary>
+    /// Пометки под точкой вьюера в порядке рисования: над текстом — пометки текста под ней и строки
+    /// во всю ширину на её строке, на полях — полосы и значки её строки.
+    /// </summary>
+    public IReadOnlyList<(MdMarkLayer Layer, MdMark Mark)> GetMarksAt(Point point)
+    {
+        var hits = new List<(MdMarkLayer Layer, MdMark Mark)>();
+        var onMargin = Gutter is { IsVisible: true } gutter && new Rect(gutter.RenderSize).Contains(TranslatePoint(point, gutter));
+        var position = onMargin ? null : GetPositionFromPoint(point, snapToText: false);
+        var line = GetSourceLineAt(point.Y) is { } at ? (int)Math.Floor(at) : (int?)null;
+
+        foreach (var set in _markSets)
+        {
+            if (position is { } offset)
+            {
+                hits.AddRange(set
+                    .Within(new MdTextRange(Math.Max(0, offset - 1), 2))
+                    .Where(mark => GetRangeRects(mark.Range).Any(rect => rect.Contains(point)))
+                    .Select(mark => (set.Layer, mark.Mark)));
+            }
+
+            if (line is { } row)
+            {
+                hits.AddRange(set
+                    .Within(row, row)
+                    .Where(mark => onMargin ? mark.Mark.Kind is MdMarkKind.Bar or MdMarkKind.Icon : mark.Mark.Kind == MdMarkKind.Row)
+                    .Select(mark => (set.Layer, mark.Mark)));
+            }
+        }
+
+        return hits;
+    }
+
+    /// <summary>Пометки в позиции текстовой карты в порядке рисования: куски текста, где она стоит, и строки её строки исходника.</summary>
+    public IReadOnlyList<(MdMarkLayer Layer, MdMark Mark)> GetMarksAt(int position)
+    {
+        var hits = new List<(MdMarkLayer Layer, MdMark Mark)>();
+        var line = TextMap.SourceLineOf(position);
+
+        foreach (var set in _markSets)
+        {
+            hits.AddRange(set.Within(new MdTextRange(position, 1)).Select(mark => (set.Layer, mark.Mark)));
+            if (line is { } row)
+            {
+                hits.AddRange(set.Within(row, row).Select(mark => (set.Layer, mark.Mark)));
+            }
+        }
+
+        return hits;
+    }
+
     /// <summary>Выделяет кусок текстовой карты.</summary>
     public void Select(int start, int length) => Selection.Select(start, length);
 
@@ -501,6 +573,7 @@ public sealed class MarkdownViewer : ItemsControl
     {
         base.OnApplyTemplate();
         Gutter = GetTemplateChild(GutterPart) as MdLineGutter;
+        RowMarks = GetTemplateChild(RowMarksPart) as MdRowMarks;
     }
 
     /// <summary>Ближайший вьюер, внутри которого стоит элемент.</summary>
@@ -522,7 +595,44 @@ public sealed class MarkdownViewer : ItemsControl
     }
 
     /// <summary>Созданные блоки встали на другие места или сменились.</summary>
-    internal void OnBlocksArranged() => Gutter?.InvalidateVisual();
+    internal void OnBlocksArranged()
+    {
+        Gutter?.InvalidateVisual();
+        RowMarks?.InvalidateVisual();
+    }
+
+    /// <summary>Строки исходника созданных блоков: от первой строки первого до последней строки последнего.</summary>
+    internal (int First, int Last)? RealizedLines()
+    {
+        if (BlockPanel?.RealizedRange is not { } realized || ItemsSource is not IReadOnlyList<BlockVm> items)
+        {
+            return null;
+        }
+
+        var sources = Enumerable
+            .Range(realized.First, Math.Min(realized.Last, items.Count - 1) - realized.First + 1)
+            .Select(index => items[index].Source)
+            .Where(source => !source.IsEmpty)
+            .ToList();
+
+        return sources.Count == 0 ? null : (sources[0].StartLine, sources[^1].EndLine);
+    }
+
+    /// <summary>
+    /// Полоса строк исходника с <paramref name="first"/> по <paramref name="last"/> в координатах
+    /// элемента: от верха первой до верха следующей за последней; полосы нет — <c>null</c>.
+    /// </summary>
+    internal (double Top, double Height)? GetLineBand(int first, int last, UIElement element)
+    {
+        if (GetSourceLineOffset(first) is not { } top || GetSourceLineOffset(last + 1) is not { } bottom || bottom <= top)
+        {
+            return null;
+        }
+
+        var from = TranslatePoint(new(0, top), element).Y;
+        var to = TranslatePoint(new(0, bottom), element).Y;
+        return (from, to - from);
+    }
 
     internal void OnViewportMaybeChanged()
     {
@@ -619,7 +729,28 @@ public sealed class MarkdownViewer : ItemsControl
     }
 
     private static void OnDecorationsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var decorations = (IReadOnlyList<MdDecoration>?)e.NewValue ?? [];
+        ((MarkdownViewer)d)._decorationLayer.Marks = decorations
+            .Select(decoration => new MdMark(decoration.Range) { Brush = decoration.Brush })
+            .ToList();
+    }
+
+    private static void OnSelectionBrushChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownViewer)d).UpdateLayer();
+
+    private static IEnumerator WithThemeBrushes(IEnumerator? children, IEnumerable<ThemeBrush> brushes)
+    {
+        while (children?.MoveNext() == true)
+        {
+            yield return children.Current;
+        }
+
+        foreach (var brush in brushes)
+        {
+            yield return brush;
+        }
+    }
 
     private static void OnIsSelectionEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownViewer)d).ClearSelection();
@@ -657,6 +788,69 @@ public sealed class MarkdownViewer : ItemsControl
 
     private void OnExtensionsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         => ResetPipeline();
+
+    private void OnMarkLayersChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        foreach (var layer in e.OldItems?.OfType<MdMarkLayer>() ?? [])
+        {
+            layer.Changed -= OnMarkLayerChanged;
+        }
+
+        foreach (var layer in e.NewItems?.OfType<MdMarkLayer>() ?? [])
+        {
+            layer.Changed += OnMarkLayerChanged;
+        }
+
+        RebuildMarks();
+    }
+
+    private void OnMarkLayerChanged(object? sender, EventArgs e)
+    {
+        if (!_movingMarks)
+        {
+            RebuildMarks();
+        }
+    }
+
+    /// <summary>Раскладывает пометки всех слоёв по текущей карте и ставит новый снимок подсветки.</summary>
+    private void RebuildMarks()
+    {
+        _markSets =
+        [
+            new MarkSet(_decorationLayer, TextMap, _themeBrushes.BrushOf),
+            .. MarkLayers.Select(layer => new MarkSet(layer, TextMap, _themeBrushes.BrushOf))
+        ];
+        UpdateLayer();
+        Gutter?.InvalidateMeasure();
+    }
+
+    /// <summary>Пометки слоёв, которые следуют за текстом, отслеживаемыми местами старой карты.</summary>
+    private List<(MdMarkLayer Layer, List<(MdMark Mark, MdTrackedRange? Range, MdTrackedLines? Lines)> Marks)> TrackFollowingMarks()
+        => MarkLayers
+            .Where(layer => layer.FollowsText && layer.Marks.Count > 0)
+            .Select(layer => (layer, layer.Marks
+                .Select(mark => (
+                    mark,
+                    mark.Range is { } range ? TextMap.Track(range) : null,
+                    mark.Lines is { } lines ? TextMap.TrackSourceLines(lines.Start, lines.End) : null))
+                .ToList()))
+            .ToList();
+
+    /// <summary>Пометка на месте своего отслеживаемого места в новой карте; место пропало — <c>null</c>.</summary>
+    private MdMark? Moved((MdMark Mark, MdTrackedRange? Range, MdTrackedLines? Lines) tracked)
+    {
+        if (tracked.Range is { } range)
+        {
+            return TextMap.Find(range) is { IsEmpty: false } found ? tracked.Mark with { Range = found } : null;
+        }
+
+        if (tracked.Lines is { } lines)
+        {
+            return TextMap.Find(lines) is { } span ? tracked.Mark with { Lines = span } : null;
+        }
+
+        return tracked.Mark;
+    }
 
     private void OnSelectionChanged()
     {
@@ -750,7 +944,7 @@ public sealed class MarkdownViewer : ItemsControl
 
     private void UpdateLayer()
     {
-        SetValue(MdSelection.LayerProperty, new MdDecorationLayer(TextMap, Selection.Range, SelectionBrush, Decorations ?? [], IsSelectionEnabled));
+        SetValue(MdSelection.LayerProperty, new MdDecorationLayer(TextMap, Selection?.Range ?? default, SelectionBrush, _markSets, IsSelectionEnabled));
     }
 
     private void ResetPipeline()
@@ -798,6 +992,7 @@ public sealed class MarkdownViewer : ItemsControl
         var selected = Selection is { Range.IsEmpty: false } selection
             ? (Range: TextMap.Track(selection.Range), Backward: selection.Ends.Active < selection.Ends.Anchor)
             : default;
+        var following = TrackFollowingMarks();
 
         string? frontMatter = null;
         var blocks = StyleProvider is null
@@ -824,7 +1019,21 @@ public sealed class MarkdownViewer : ItemsControl
             Selection?.Reset();
         }
 
-        Gutter?.InvalidateMeasure();
+        _movingMarks = true;
+        try
+        {
+            foreach (var (layer, marks) in following)
+            {
+                layer.Marks = marks.Select(Moved).OfType<MdMark>().ToList();
+            }
+        }
+        finally
+        {
+            _movingMarks = false;
+        }
+
+        RebuildMarks();
         Gutter?.InvalidateVisual();
+        RowMarks?.InvalidateVisual();
     }
 }

@@ -311,7 +311,9 @@ internal sealed class SelectionController
         DependencyObject? hit = null;
         VisualTreeHelper.HitTest(
             _viewer,
-            null,
+            candidate => candidate is UIElement { IsHitTestVisible: false }
+                ? HitTestFilterBehavior.ContinueSkipSelfAndChildren
+                : HitTestFilterBehavior.Continue,
             result =>
             {
                 hit = result.VisualHit;
