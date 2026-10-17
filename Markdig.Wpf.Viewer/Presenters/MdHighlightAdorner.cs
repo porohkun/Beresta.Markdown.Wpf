@@ -19,6 +19,15 @@ internal sealed class MdHighlightAdorner : Adorner
 
     protected override void OnRender(DrawingContext drawingContext)
     {
+        // BYDESIGN: места кусков даёт раскладка текста; пока она не готова, подсветка рисуется после неё,
+        // иначе осталась бы пустой.
+        if (!_text.IsMeasureValid || !_text.IsArrangeValid)
+        {
+            _text.LayoutUpdated -= OnTextLayoutUpdated;
+            _text.LayoutUpdated += OnTextLayoutUpdated;
+            return;
+        }
+
         if (_text.TryFindResource("Md.Gap.Brush") is Brush gap)
         {
             foreach (var rect in _text.GapRects)
@@ -29,9 +38,20 @@ internal sealed class MdHighlightAdorner : Adorner
 
         var underline = MarkLook.UnderlineThickness(_text);
         var frame = MarkLook.FrameThickness(_text);
+        var caret = MarkLook.CaretThickness(_text);
 
         foreach (var (start, end, kind, brush) in _text.Highlights)
         {
+            if (kind == MdMarkKind.Caret)
+            {
+                if (_text.GetCaretRect(start) is { } place)
+                {
+                    drawingContext.DrawRectangle(brush, null, new(place.Left - caret / 2, place.Top, caret, place.Height));
+                }
+
+                continue;
+            }
+
             var pen = kind == MdMarkKind.Frame ? new Pen(brush, frame) : null;
             foreach (var rect in _text.GetRangeRects(start, end))
             {
@@ -55,5 +75,11 @@ internal sealed class MdHighlightAdorner : Adorner
                 }
             }
         }
+    }
+
+    private void OnTextLayoutUpdated(object? sender, EventArgs e)
+    {
+        _text.LayoutUpdated -= OnTextLayoutUpdated;
+        InvalidateVisual();
     }
 }

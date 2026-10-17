@@ -2,6 +2,7 @@
 
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 using Presenters;
 using Selection;
@@ -34,6 +35,98 @@ public sealed class MarkTests
         var set = new MarkSet(layer, MdTextMap.Empty, (_, _) => null);
 
         set.Within(4, 9).Select(mark => mark.First).Should().Equal(5, 8);
+    }
+
+    [Fact]
+    public void Набор_отбирает_черты_по_месту_вместе_с_краями_куска()
+    {
+        var layer = new MdMarkLayer("diff")
+        {
+            Marks =
+            [
+                new MdMark(new MdTextRange(5, 0), MdMarkKind.Caret),
+                new MdMark(new MdTextRange(10, 0), MdMarkKind.Caret),
+                new MdMark(new MdTextRange(15, 3), MdMarkKind.Caret),
+                new MdMark(new MdTextRange(7, 0))
+            ]
+        };
+        var set = new MarkSet(layer, MdTextMap.Empty, (_, _) => null);
+
+        set.CaretsWithin(new MdTextRange(5, 5)).Select(mark => mark.Range.Start).Should().Equal(5, 10);
+        set.Within(new MdTextRange(0, 20)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Черта_встаёт_на_место_пустого_куска_и_в_начало_непустого()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "first paragraph" };
+            var window = WpfHost.Show(viewer);
+            var inside = new MdMark(new MdTextRange(6, 0), MdMarkKind.Caret) { Brush = Brushes.Red };
+            var atEnd = new MdMark(new MdTextRange(15, 0), MdMarkKind.Caret) { Brush = Brushes.Green };
+            var wide = new MdMark(new MdTextRange(0, 5), MdMarkKind.Caret) { Brush = Brushes.Blue };
+            var layer = new MdMarkLayer("diff") { Marks = [inside, atEnd, wide] };
+
+            viewer.MarkLayers.Add(layer);
+            WpfHost.Settle(window);
+
+            var text = Visuals.Descendants<MdTextBlock>(viewer).Single();
+            text.Highlights.Should().Equal(
+                (0, 0, MdMarkKind.Caret, (Brush)Brushes.Blue),
+                (6, 6, MdMarkKind.Caret, (Brush)Brushes.Red),
+                (15, 15, MdMarkKind.Caret, (Brush)Brushes.Green));
+            text.GetCaretRect(6)!.Value.Left.Should().BeApproximately(text.GetRangeRects(6, 7).First().Left, 0.5);
+            text.GetCaretRect(15)!.Value.Left.Should().BeApproximately(text.GetRangeRects(14, 15).First().Right, 0.5);
+            viewer.GetMarksAt(6).Should().Equal((layer, inside));
+            viewer.GetMarksAt(7).Should().BeEmpty();
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Черта_на_месте_пустого_куска_следует_за_текстом()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "first\n\nsecond words" };
+            var window = WpfHost.Show(viewer);
+            var at = viewer.TextMap.Text.IndexOf("words", StringComparison.Ordinal);
+            var layer = new MdMarkLayer("diff")
+            {
+                FollowsText = true,
+                Marks = [new MdMark(new MdTextRange(at, 0), MdMarkKind.Caret)]
+            };
+            viewer.MarkLayers.Add(layer);
+
+            viewer.Markdown = "zero\n\nfirst\n\nsecond words";
+
+            layer.Marks.Should().ContainSingle()
+                .Which.Range.Should().Be(new MdTextRange(viewer.TextMap.Text.IndexOf("words", StringComparison.Ordinal), 0));
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Подсветка_дожидается_раскладки_текста()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "first paragraph" };
+            var window = WpfHost.Show(viewer);
+            viewer.MarkLayers.Add(new MdMarkLayer("search") { Marks = [new MdMark(new MdTextRange(0, 5)) { Brush = Brushes.Red }] });
+            WpfHost.Settle(window);
+            var text = Visuals.Descendants<MdTextBlock>(viewer).Single();
+            var adorner = AdornerLayer.GetAdornerLayer(text)!.GetAdorners(text)!.Single();
+
+            text.InvalidateMeasure();
+            adorner.InvalidateVisual();
+            WpfHost.Settle(window);
+
+            VisualTreeHelper.GetDrawing(adorner).Should().NotBeNull();
+            VisualTreeHelper.GetDrawing(adorner)!.Bounds.IsEmpty.Should().BeFalse();
+            window.Close();
+        });
     }
 
     [Fact]

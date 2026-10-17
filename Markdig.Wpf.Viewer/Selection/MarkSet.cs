@@ -5,6 +5,7 @@ using System.Windows.Media;
 /// <summary>
 /// Пометки слоя, разложенные по карте для быстрого отбора: пометки текста — кусками карты, пометки
 /// строк — строками исходника; и те и другие по началу, с самым дальним концом среди предыдущих.
+/// Черты — отдельно, по месту.
 /// </summary>
 internal sealed class MarkSet
 {
@@ -12,6 +13,7 @@ internal sealed class MarkSet
     private readonly int[] _textReach;
     private readonly LineMark[] _lines;
     private readonly int[] _lineReach;
+    private readonly TextMark[] _carets;
     private readonly HashSet<MdMarkKind> _kinds;
 
     /// <param name="brushOf">Кисть темы по имени оформления для вида пометки.</param>
@@ -20,6 +22,7 @@ internal sealed class MarkSet
         Layer = layer;
         var text = new List<TextMark>();
         var lines = new List<LineMark>();
+        var carets = new List<TextMark>();
 
         foreach (var mark in layer.Marks)
         {
@@ -29,6 +32,13 @@ internal sealed class MarkSet
                 if (LinesOf(mark, map) is { } span)
                 {
                     lines.Add(new(mark, span.First, span.Last, brush));
+                }
+            }
+            else if (mark.Kind == MdMarkKind.Caret)
+            {
+                if (RangeOf(mark, map) is { } place)
+                {
+                    carets.Add(new(mark, new(place.Start, 0), brush));
                 }
             }
             else if (RangeOf(mark, map) is { IsEmpty: false } range)
@@ -41,7 +51,9 @@ internal sealed class MarkSet
         _textReach = Reach(_text.Select(mark => mark.Range.End));
         _lines = lines.OrderBy(mark => mark.First).ToArray();
         _lineReach = Reach(_lines.Select(mark => mark.Last));
+        _carets = carets.OrderBy(mark => mark.Range.Start).ToArray();
         _kinds = text
+            .Concat(carets)
             .Where(mark => mark.Brush is not null)
             .Select(mark => mark.Mark.Kind)
             .Concat(lines.Where(mark => mark.Brush is not null).Select(mark => mark.Mark.Kind))
@@ -63,6 +75,17 @@ internal sealed class MarkSet
             {
                 yield return _text[i];
             }
+        }
+    }
+
+    /// <summary>Черты, которые стоят в куске или на его краях, по месту.</summary>
+    public IEnumerable<TextMark> CaretsWithin(MdTextRange range)
+    {
+        for (var i = FirstAtOrAfter(_carets.Length, i => _carets[i].Range.Start >= range.Start);
+             i < _carets.Length && _carets[i].Range.Start <= range.End;
+             i++)
+        {
+            yield return _carets[i];
         }
     }
 

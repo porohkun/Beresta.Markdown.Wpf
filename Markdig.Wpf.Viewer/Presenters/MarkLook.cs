@@ -5,7 +5,10 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Selection;
 
-/// <summary>Как пометки текста ложатся на неделимый кусок: заливка — фоном, черта и рамка — краем.</summary>
+/// <summary>
+/// Как пометки текста ложатся на неделимый кусок: заливка — фоном, черта и рамка — краем; вертикальной
+/// черты у неделимого куска нет.
+/// </summary>
 internal static class MarkLook
 {
     /// <summary>Фон, кисть и толщина края от пометок в порядке рисования: из одинаковых видов — последняя.</summary>
@@ -31,6 +34,9 @@ internal static class MarkLook
                     thickness = new(FrameThickness(element));
                     break;
 
+                case MdMarkKind.Caret:
+                    break;
+
                 default:
                     fill = brush;
                     break;
@@ -54,4 +60,7 @@ internal static class MarkLook
 
     public static double FrameThickness(FrameworkElement element)
         => element.TryFindResource("Md.Mark.FrameThickness") is double value ? value : 1;
+
+    public static double CaretThickness(FrameworkElement element)
+        => element.TryFindResource("Md.Mark.CaretThickness") is double value ? value : 2;
 }

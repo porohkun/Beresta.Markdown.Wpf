@@ -283,6 +283,41 @@ public class MdTextBlock : TextBlock
             .Where(segment => segment.End > start && segment.Start < end)
             .SelectMany(segment => GetRunRects(segment, start, end));
 
+    /// <summary>
+    /// Место черты перед знаком своего текста — без ширины, высотой с его экранную строку; за концом
+    /// текста — после последнего знака.
+    /// </summary>
+    internal Rect? GetCaretRect(int offset)
+    {
+        if (_segments.Count == 0)
+        {
+            return null;
+        }
+
+        var index = _segments.FindIndex(segment => offset >= segment.Start && offset < segment.End);
+        var after = index < 0;
+        var segment = _segments[after ? ^1 : index];
+        if (segment.Overlay is { } overlay)
+        {
+            if (!overlay.IsDescendantOf(this))
+            {
+                return null;
+            }
+
+            var bounds = overlay.TransformToAncestor(this).TransformBounds(new(overlay.RenderSize));
+            return new(after ? bounds.Right : bounds.Left, bounds.Top, 0, bounds.Height);
+        }
+
+        var pointer = segment.Element switch
+        {
+            Run run when !after => run.ContentStart.GetPositionAtOffset(offset - segment.Start, LogicalDirection.Forward),
+            Run run => run.ContentEnd,
+            var element => after ? element.ElementEnd : element.ElementStart
+        };
+        var direction = !after && segment.Element is Run ? LogicalDirection.Forward : LogicalDirection.Backward;
+        return pointer?.GetCharacterRect(direction) is { IsEmpty: false } rect ? new(rect.Left, rect.Top, 0, rect.Height) : null;
+    }
+
     /// <summary>Прямоугольники своего куска в своих координатах: строки текста и неделимые куски целиком.</summary>
     internal IEnumerable<Rect> GetBounds(int start, int end)
     {

@@ -19,5 +19,8 @@ public enum MdMarkKind
     Bar,
 
     /// <summary>Значок на полях у номера первой строки.</summary>
-    Icon
+    Icon,
+
+    /// <summary>Вертикальная черта в начале куска; у пустого куска — на его месте.</summary>
+    Caret
 }

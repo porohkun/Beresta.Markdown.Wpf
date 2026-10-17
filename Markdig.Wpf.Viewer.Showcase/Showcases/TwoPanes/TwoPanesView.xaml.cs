@@ -11,7 +11,7 @@ using Selection;
 /// Две панели: дифф считает витрина. Синхронную прокрутку ведёт <c>MdScrollSync</c>, а правку одной
 /// фигурой — подсветка строк слева, соединение, подсветка справа и общий контур — витрина рисует сама
 /// по координатам вьюеров; панели вровень ставит <c>MdPaneAligner</c>. Строки правок — пометками во всю
-/// ширину и полосами на полях.
+/// ширину и полосами на полях, правки внутри строк — второй подсветкой, чертой и рамками.
 /// </summary>
 public partial class TwoPanesView : UserControl
 {
@@ -76,8 +76,54 @@ public partial class TwoPanesView : UserControl
         MarkChanges(AlignedLeft, removed, "Removed");
         MarkChanges(AlignedRight, added, "Added");
 
+        var (leftPieces, rightPieces) = MarkPieces();
+        SyncLeft.MarkLayers.Add(new MdMarkLayer("Pieces") { Marks = leftPieces });
+        AlignedLeft.MarkLayers.Add(new MdMarkLayer("Pieces") { Marks = leftPieces });
+        SyncRight.MarkLayers.Add(new MdMarkLayer("Pieces") { Marks = rightPieces });
+        AlignedRight.MarkLayers.Add(new MdMarkLayer("Pieces") { Marks = rightPieces });
+
         SyncLeft.ViewportChanged += OnPanesMoved;
         SyncRight.ViewportChanged += OnPanesMoved;
+    }
+
+    /// <summary>
+    /// Правки внутри строк изменённых кусков: дописанное подсвечено, а на его месте с другой стороны —
+    /// черта; удалённое — наоборот; заменённое — в рамках с обеих сторон.
+    /// </summary>
+    private (List<MdMark> Left, List<MdMark> Right) MarkPieces()
+    {
+        var (left, right) = (new List<MdMark>(), new List<MdMark>());
+        foreach (var hunk in _hunks.Where(hunk => hunk.LeftEnd >= hunk.LeftStart && hunk.RightEnd >= hunk.RightStart))
+        {
+            if (SyncLeft.TextMap.RangeOfSourceLines(hunk.LeftStart, hunk.LeftEnd) is not { } from
+                || SyncRight.TextMap.RangeOfSourceLines(hunk.RightStart, hunk.RightEnd) is not { } to)
+            {
+                continue;
+            }
+
+            foreach (var piece in TextDiff.Pieces(SyncLeft.TextMap.GetText(from), SyncRight.TextMap.GetText(to)))
+            {
+                var leftPiece = new MdTextRange(from.Start + piece.LeftStart, piece.LeftLength);
+                var rightPiece = new MdTextRange(to.Start + piece.RightStart, piece.RightLength);
+                if (piece.LeftLength == 0)
+                {
+                    left.Add(new MdMark(leftPiece, MdMarkKind.Caret) { Style = "Added" });
+                    right.Add(new MdMark(rightPiece) { Style = "Added" });
+                }
+                else if (piece.RightLength == 0)
+                {
+                    left.Add(new MdMark(leftPiece) { Style = "Removed" });
+                    right.Add(new MdMark(rightPiece, MdMarkKind.Caret) { Style = "Removed" });
+                }
+                else
+                {
+                    left.Add(new MdMark(leftPiece, MdMarkKind.Frame) { Style = "Changed" });
+                    right.Add(new MdMark(rightPiece, MdMarkKind.Frame) { Style = "Changed" });
+                }
+            }
+        }
+
+        return (left, right);
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)

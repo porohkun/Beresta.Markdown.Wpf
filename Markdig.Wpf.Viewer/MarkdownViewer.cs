@@ -543,6 +543,7 @@ public sealed class MarkdownViewer : ItemsControl
         foreach (var set in _markSets)
         {
             hits.AddRange(set.Within(new MdTextRange(position, 1)).Select(mark => (set.Layer, mark.Mark)));
+            hits.AddRange(set.CaretsWithin(new MdTextRange(position, 0)).Select(mark => (set.Layer, mark.Mark)));
             if (line is { } row)
             {
                 hits.AddRange(set.Within(row, row).Select(mark => (set.Layer, mark.Mark)));
@@ -883,7 +884,9 @@ public sealed class MarkdownViewer : ItemsControl
     {
         if (tracked.Range is { } range)
         {
-            return TextMap.Find(range) is { IsEmpty: false } found ? tracked.Mark with { Range = found } : null;
+            return TextMap.Find(range) is { } found && (!found.IsEmpty || tracked.Mark.Kind == MdMarkKind.Caret)
+                ? tracked.Mark with { Range = found }
+                : null;
         }
 
         if (tracked.Lines is { } lines)

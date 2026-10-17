@@ -10,7 +10,10 @@ internal sealed record MdDecorationLayer(
     IReadOnlyList<MarkSet> Marks,
     bool IsSelectionEnabled = true)
 {
-    /// <summary>Рисуемые пометки текста, которые задевают кусок, в порядке рисования; выделение — последним, заливкой.</summary>
+    /// <summary>
+    /// Рисуемые пометки текста, которые задевают кусок, и черты в нём и на его краях — в порядке
+    /// рисования; выделение — последним, заливкой.
+    /// </summary>
     public IEnumerable<(MdTextRange Range, MdMarkKind Kind, Brush Brush)> Within(MdTextRange range)
     {
         foreach (var set in Marks)
@@ -20,6 +23,14 @@ internal sealed record MdDecorationLayer(
                 if (mark.Brush is { } brush)
                 {
                     yield return (mark.Range.Intersect(range), mark.Mark.Kind, brush);
+                }
+            }
+
+            foreach (var caret in set.CaretsWithin(range))
+            {
+                if (caret.Brush is { } brush)
+                {
+                    yield return (caret.Range, MdMarkKind.Caret, brush);
                 }
             }
         }

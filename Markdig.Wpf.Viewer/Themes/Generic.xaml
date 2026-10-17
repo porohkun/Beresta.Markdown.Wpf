@@ -274,6 +274,7 @@
     <SolidColorBrush x:Key="Md.Mark.Comment.LineBrush" Color="#8E24AA" />
     <sys:Double x:Key="Md.Mark.UnderlineThickness">2</sys:Double>
     <sys:Double x:Key="Md.Mark.FrameThickness">1</sys:Double>
+    <sys:Double x:Key="Md.Mark.CaretThickness">2</sys:Double>
     <sys:Double x:Key="Md.Mark.BarWidth">3</sys:Double>
     <sys:Double x:Key="Md.Mark.IconSize">12</sys:Double>
 
