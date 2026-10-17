@@ -16,18 +16,21 @@ public sealed class MdTextMap
     private readonly List<(BlockVm Block, MdTextRange Range)> _blocks;
     private readonly Dictionary<int, string> _copies;
     private readonly Dictionary<string, MdTextRange> _anchors;
+    private readonly SourceLines? _lines;
+    private Dictionary<long, (BlockVm Block, MdTextRange Range)>? _byId;
 
-    private MdTextMap(Builder builder)
+    private MdTextMap(Builder builder, string? source)
     {
         Text = builder.Text.ToString();
         _owners = builder.Owners;
         _blocks = builder.BlockRanges;
         _copies = builder.Copies;
         _anchors = builder.Anchors;
+        _lines = source is null ? null : new(source);
         Headings = builder.Headings;
     }
 
-    public static MdTextMap Empty { get; } = new(new());
+    public static MdTextMap Empty { get; } = new(new(), null);
 
     /// <summary>Сквозной текст; неделимые элементы — знаком <see cref="ObjectMark"/>.</summary>
     public string Text { get; }
@@ -44,7 +47,15 @@ public sealed class MdTextMap
     {
         var builder = new Builder();
         builder.AppendBlocks(blocks);
-        return new(builder);
+        return new(builder, null);
+    }
+
+    /// <summary>Карта блоков вместе с исходным текстом: отслеживаемые строки узнают себя по тексту строк.</summary>
+    public static MdTextMap Build(IReadOnlyList<BlockVm> blocks, string source)
+    {
+        var builder = new Builder();
+        builder.AppendBlocks(blocks);
+        return new(builder, source);
     }
 
     /// <summary>
@@ -301,24 +312,50 @@ public sealed class MdTextMap
         return text.ToString();
     }
 
-    /// <summary>Место позиции относительно самого глубокого блока с идентификатором — чтобы найти его в карте нового текста.</summary>
-    internal (long NodeId, int Offset)? Locate(int position)
-        => Innermost(position, block => block.NodeId != 0) is { } found
-            ? (found.Block.NodeId, position - found.Range.Start)
-            : null;
-
-    /// <summary>Позиция в этой карте для места из карты прошлого текста; блока больше нет — <c>null</c>.</summary>
-    internal int? Find((long NodeId, int Offset) place)
+    /// <summary>Запоминает кусок этой карты так, чтобы его можно было найти в карте нового текста.</summary>
+    public MdTrackedRange Track(MdTextRange range)
     {
-        foreach (var (block, range) in _blocks)
+        var start = Math.Clamp(range.Start, 0, Length);
+        var end = Math.Clamp(range.End, start, Length);
+        return new(EndAt(start, start, end, isStart: true), EndAt(end, start, end, isStart: false));
+    }
+
+    /// <summary>
+    /// Место отслеживаемого куска в этой карте; блок, где стоит его конец, удалён — <c>null</c>.
+    /// Текст куска удалён целиком — пустой кусок на его месте.
+    /// </summary>
+    public MdTextRange? Find(MdTrackedRange tracked)
+    {
+        if (tracked.Start is not { } first || tracked.End is not { } last
+            || BlockOf(first.NodeId) is not { } startBlock || BlockOf(last.NodeId) is not { } endBlock)
         {
-            if (block.NodeId == place.NodeId)
-            {
-                return range.Start + Math.Clamp(place.Offset, 0, range.Length);
-            }
+            return null;
         }
 
-        return null;
+        var start = startBlock.Range.Start + TextTracking.Place(Text, startBlock.Range, first);
+        var end = endBlock.Range.Start + TextTracking.Place(Text, endBlock.Range, last);
+        return start <= end ? new MdTextRange(start, end - start) : new MdTextRange(end, 0);
+    }
+
+    /// <summary>Запоминает строки исходника с <paramref name="startLine"/> по <paramref name="endLine"/> включительно.</summary>
+    public MdTrackedLines TrackSourceLines(int startLine, int endLine)
+        => new(LineEndAt(Math.Min(startLine, endLine)), LineEndAt(Math.Max(startLine, endLine)));
+
+    /// <summary>
+    /// Строки отслеживаемого диапазона в этом тексте; блок, где стоит его край, удалён — <c>null</c>.
+    /// Удалены строки до конца диапазона — остаётся первая.
+    /// </summary>
+    public (int StartLine, int EndLine)? Find(MdTrackedLines tracked)
+    {
+        if (tracked.Start is not { } first || tracked.End is not { } last
+            || BlockOf(first.NodeId) is not { } startBlock || BlockOf(last.NodeId) is not { } endBlock)
+        {
+            return null;
+        }
+
+        var start = PlaceLine(first, startBlock.Block.Source);
+        var end = PlaceLine(last, endBlock.Block.Source);
+        return (start, Math.Max(start, end));
     }
 
     /// <summary>
@@ -360,6 +397,141 @@ public sealed class MdTextMap
         }
 
         return null;
+    }
+
+    private (BlockVm Block, MdTextRange Range)? BlockOf(long nodeId)
+    {
+        if (_byId is null)
+        {
+            _byId = [];
+            foreach (var entry in _blocks.Where(entry => entry.Block.NodeId != 0))
+            {
+                _byId.TryAdd(entry.Block.NodeId, entry);
+            }
+        }
+
+        return _byId.TryGetValue(nodeId, out var found) ? found : null;
+    }
+
+    /// <summary>Конец куска <paramref name="from"/>–<paramref name="to"/> в позиции <paramref name="position"/>.</summary>
+    private TrackedEnd? EndAt(int position, int from, int to, bool isStart)
+    {
+        if (Innermost(position, block => block.NodeId != 0) is not { } found)
+        {
+            return null;
+        }
+
+        var (block, range) = found;
+        var before = Math.Max(range.Start, position - TextTracking.Context);
+        var after = Math.Min(range.End, position + TextTracking.Context);
+        if (isStart)
+        {
+            after = Math.Min(after, to);
+        }
+        else
+        {
+            before = Math.Max(before, from);
+        }
+
+        return new(block.NodeId, position - range.Start, Text[before..position], Text[position..after], isStart);
+    }
+
+    /// <summary>Край отслеживаемых строк: самый глубокий блок со строкой, а вне блоков — ближайший блок.</summary>
+    private TrackedLine? LineEndAt(int line)
+    {
+        BlockVm? inner = null;
+        BlockVm? next = null;
+        BlockVm? previous = null;
+
+        foreach (var (block, _) in _blocks)
+        {
+            var source = block.Source;
+            if (block.NodeId == 0 || source.IsEmpty)
+            {
+                continue;
+            }
+
+            if (source.StartLine <= line && line <= source.EndLine)
+            {
+                inner = block;
+            }
+            else if (source.StartLine > line)
+            {
+                if (next is null || source.StartLine < next.Source.StartLine)
+                {
+                    next = block;
+                }
+            }
+            else if (previous is null || source.EndLine > previous.Source.EndLine)
+            {
+                previous = block;
+            }
+        }
+
+        var (owner, delta, fromEnd) = inner is not null ? (inner, line - inner.Source.StartLine, false)
+            : next is not null ? (next, line - next.Source.StartLine, false)
+            : previous is not null ? (previous, line - previous.Source.EndLine, true)
+            : default;
+
+        return owner is null
+            ? null
+            : new(
+                owner.NodeId,
+                delta,
+                Inside: inner is not null,
+                fromEnd,
+                _lines?.TextOf(line),
+                _lines?.TextOf(line - 1),
+                _lines?.TextOf(line + 1));
+    }
+
+    /// <summary>
+    /// Строка края в новом тексте: внутри блока — среди его строк, вне блоков — среди строк до
+    /// следующего блока или после предыдущего. Ищется строка с тем же текстом; не нашлась —
+    /// прежний сдвиг от блока.
+    /// </summary>
+    private int PlaceLine(TrackedLine line, MdSourceSpan source)
+    {
+        if (line.Inside)
+        {
+            var inside = Math.Clamp(source.StartLine + line.Delta, source.StartLine, source.EndLine);
+            return SameLine(line, source.StartLine, source.EndLine, inside) ?? inside;
+        }
+
+        var candidate = Math.Max(0, (line.FromEnd ? source.EndLine : source.StartLine) + line.Delta);
+        var (from, to) = line.FromEnd ? (source.EndLine + 1, int.MaxValue) : (0, source.StartLine - 1);
+        return SameLine(line, from, to, candidate) ?? candidate;
+    }
+
+    /// <summary>
+    /// Строка с текстом края между <paramref name="from"/> и <paramref name="to"/>: с теми же соседями
+    /// охотнее, из равных ближайшая к <paramref name="near"/>; нет такой — <c>null</c>.
+    /// </summary>
+    private int? SameLine(TrackedLine line, int from, int to, int near)
+    {
+        if (line.Text is null || _lines is null)
+        {
+            return null;
+        }
+
+        int? best = null;
+        var bestScore = -1;
+        for (var i = Math.Max(0, from); i <= Math.Min(to, _lines.Count - 1); i++)
+        {
+            if (!_lines.Is(i, line.Text))
+            {
+                continue;
+            }
+
+            var score = (_lines.Is(i - 1, line.Previous) ? 1 : 0) + (_lines.Is(i + 1, line.Next) ? 1 : 0);
+            if (score > bestScore || (score == bestScore && Math.Abs(i - near) < Math.Abs(best!.Value - near)))
+            {
+                best = i;
+                bestScore = score;
+            }
+        }
+
+        return best;
     }
 
     internal sealed class Builder

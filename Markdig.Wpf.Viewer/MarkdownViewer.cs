@@ -790,13 +790,13 @@ public sealed class MarkdownViewer : ItemsControl
 
     /// <summary>
     /// Новый текст ложится правками: блок с прежним идентификатором остаётся в своём контейнере.
-    /// Сменились шаблоны — контейнеры создаются заново. Выделение переходит вместе со своими
-    /// блоками; блок исчез — выделение снимается.
+    /// Сменились шаблоны — контейнеры создаются заново. Выделение находит своё место в новом тексте,
+    /// как отслеживаемый кусок; его блок или текст исчез — выделение снимается.
     /// </summary>
     private void Rebuild()
     {
         var selected = Selection is { Range.IsEmpty: false } selection
-            ? (Anchor: TextMap.Locate(selection.Ends.Anchor), Active: TextMap.Locate(selection.Ends.Active))
+            ? (Range: TextMap.Track(selection.Range), Backward: selection.Ends.Active < selection.Ends.Anchor)
             : default;
 
         string? frontMatter = null;
@@ -804,7 +804,7 @@ public sealed class MarkdownViewer : ItemsControl
             ? Array.Empty<BlockVm>()
             : ModelBuilder.Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions, _identity, out frontMatter);
 
-        TextMap = MdTextMap.Build(blocks);
+        TextMap = MdTextMap.Build(blocks, Markdown ?? string.Empty);
         SetValue(FrontMatterPropertyKey, frontMatter);
         _states.Retain(_identity.Contains);
         _blocks.Apply(blocks);
@@ -815,9 +815,9 @@ public sealed class MarkdownViewer : ItemsControl
             Items.Refresh();
         }
 
-        if (selected is ({ } anchor, { } active) && TextMap.Find(anchor) is { } start && TextMap.Find(active) is { } end)
+        if (selected.Range is { } tracked && TextMap.Find(tracked) is { IsEmpty: false } range)
         {
-            Selection!.Restore(start, end);
+            Selection!.Restore(selected.Backward ? range.End : range.Start, selected.Backward ? range.Start : range.End);
         }
         else
         {

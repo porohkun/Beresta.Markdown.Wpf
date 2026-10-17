@@ -541,6 +541,22 @@ public sealed class SelectionTests
     }
 
     [Fact]
+    public void Выделение_держится_за_свои_слова_при_правке_абзаца_перед_ними()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "Hello world again" };
+            var window = WpfHost.Show(viewer);
+            viewer.Select(viewer.TextMap.Text.IndexOf("world", StringComparison.Ordinal), 5);
+
+            viewer.Markdown = "Oh, hello big world again";
+
+            viewer.SelectedText.Should().Be("world");
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Блок_далеко_внизу_прокручивается_в_видимую_область()
     {
         WpfHost.Invoke(() =>
