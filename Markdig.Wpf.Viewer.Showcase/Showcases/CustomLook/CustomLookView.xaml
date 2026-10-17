@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
              xmlns:p="clr-namespace:MarkdigWpfViewer.Presenters;assembly=Markdig.Wpf.Viewer"
              xmlns:s="clr-namespace:MarkdigWpfViewer.Styling;assembly=Markdig.Wpf.Viewer"
@@ -32,15 +33,52 @@
 
     <DockPanel>
         <Border Style="{StaticResource ShowcaseHeader}">
-            <TextBlock TextWrapping="Wrap"
-                       Text="Общий образец в своём виде: свой шрифт у вьюера и свой шаблон заголовка через MdStyleProvider, остальные блоки — по умолчанию." />
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap"
+                           Text="Общий образец в своём виде: свой шрифт у вьюера и свой шаблон заголовка через MdStyleProvider. Справа — ключи темы вьюера: правка значения сразу видна в документе." />
+
+                <!-- Что витрина меняет сама: своё или стандартное -->
+                <WrapPanel Margin="0,8,0,0">
+                    <TextBlock Text="Шрифт"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0" />
+                    <hc:ButtonGroup Margin="0,0,24,0">
+                        <RadioButton Content="Стандарт" IsChecked="{Binding IsCustomFont, Converter={StaticResource Boolean2BooleanReConverter}}" />
+                        <RadioButton Content="Свой" IsChecked="{Binding IsCustomFont}" />
+                    </hc:ButtonGroup>
+                    <TextBlock Text="Заголовки"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0" />
+                    <hc:ButtonGroup>
+                        <RadioButton Content="Стандарт" IsChecked="{Binding IsCustomHeadings, Converter={StaticResource Boolean2BooleanReConverter}}" />
+                        <RadioButton Content="Свой" IsChecked="{Binding IsCustomHeadings}" />
+                    </hc:ButtonGroup>
+                </WrapPanel>
+            </StackPanel>
         </Border>
 
+        <!-- Ключи темы: своё значение ложится в ресурсы вьюера -->
+        <DockPanel DockPanel.Dock="Right"
+                   Width="400"
+                   Margin="0,12,12,12">
+            <DockPanel DockPanel.Dock="Top"
+                       Margin="0,0,0,4">
+                <Button DockPanel.Dock="Right"
+                        Content="Сбросить"
+                        Click="OnReset" />
+                <TextBlock Text="Ключи темы"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
+            </DockPanel>
+            <local:ThemeKeyGrid SelectedObject="{Binding Keys}"
+                                MinTitleWidth="210"
+                                MaxTitleWidth="210" />
+        </DockPanel>
+
         <ScrollViewer>
-            <mdv:MarkdownViewer Markdown="{Binding Text}"
-                                Margin="24,16"
-                                FontFamily="Georgia"
-                                StyleProvider="{StaticResource AccentProvider}" />
+            <mdv:MarkdownViewer x:Name="Viewer"
+                                Markdown="{Binding Text}"
+                                Margin="24,16" />
         </ScrollViewer>
     </DockPanel>
 </UserControl>
