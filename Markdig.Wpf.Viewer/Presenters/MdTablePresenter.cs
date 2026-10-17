@@ -2,8 +2,10 @@
 
 using System.Windows;
 using System.Windows.Controls;
+using Scrolling;
 using ViewModels;
 
+/// <summary>Таблица сеткой: строка таблицы — строка сетки, а пустое место перед строкой — своя строка сетки.</summary>
 public sealed class MdTablePresenter : Control
 {
     public static readonly DependencyProperty TableProperty =
@@ -26,6 +28,11 @@ public sealed class MdTablePresenter : Control
             typeof(DataTemplate),
             typeof(MdTablePresenter),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
+
+    private static readonly DependencyProperty GapsProperty =
+        GapLayout.LayoutProperty.AddOwner(
+            typeof(MdTablePresenter),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnAnyPropertyChanged));
 
     private Grid? _grid;
 
@@ -78,11 +85,23 @@ public sealed class MdTablePresenter : Control
         for (var c = 0; c < Table.ColumnCount; c++)
             _grid.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
 
+        var gaps = GetValue(GapsProperty) as GapLayout ?? GapLayout.Empty;
         for (var r = 0; r < Table.Rows.Count; r++)
         {
+            var row = Table.Rows[r];
+            if (gaps.Before(row) is > 0 and var gap)
+            {
+                var space = new Border();
+                space.SetResourceReference(Border.BackgroundProperty, "Md.Gap.Brush");
+                Grid.SetRow(space, _grid.RowDefinitions.Count);
+                Grid.SetColumnSpan(space, Math.Max(1, Table.ColumnCount));
+                _grid.RowDefinitions.Add(new() { Height = new(gap) });
+                _grid.Children.Add(space);
+            }
+
+            var gridRow = _grid.RowDefinitions.Count;
             _grid.RowDefinitions.Add(new() { Height = GridLength.Auto });
 
-            var row = Table.Rows[r];
             for (var c = 0; c < Table.ColumnCount; c++)
             {
                 var cell = c < row.Cells.Count ? row.Cells[c] : new([]);
@@ -104,7 +123,7 @@ public sealed class MdTablePresenter : Control
                         });
                 }
 
-                Grid.SetRow(presenter, r);
+                Grid.SetRow(presenter, gridRow);
                 Grid.SetColumn(presenter, c);
                 _grid.Children.Add(presenter);
             }

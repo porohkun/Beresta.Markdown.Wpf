@@ -5,7 +5,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using Selection;
 
-/// <summary>Подсветка кусков текста <see cref="MdTextBlock"/>: выделение и пометки.</summary>
+/// <summary>Подсветка кусков текста <see cref="MdTextBlock"/>: штриховка пустых мест, пометки, выделение.</summary>
 internal sealed class MdHighlightAdorner : Adorner
 {
     private readonly MdTextBlock _text;
@@ -19,6 +19,14 @@ internal sealed class MdHighlightAdorner : Adorner
 
     protected override void OnRender(DrawingContext drawingContext)
     {
+        if (_text.TryFindResource("Md.Gap.Brush") is Brush gap)
+        {
+            foreach (var rect in _text.GapRects)
+            {
+                drawingContext.DrawRectangle(gap, null, rect);
+            }
+        }
+
         var underline = MarkLook.UnderlineThickness(_text);
         var frame = MarkLook.FrameThickness(_text);
 

@@ -273,6 +273,22 @@
     <sys:Double x:Key="Md.Mark.BarWidth">3</sys:Double>
     <sys:Double x:Key="Md.Mark.IconSize">12</sys:Double>
 
+    <!-- ======== Пустые места ======== -->
+    <DrawingBrush x:Key="Md.Gap.Brush"
+                  TileMode="Tile"
+                  Viewport="0,0,8,8"
+                  ViewportUnits="Absolute"
+                  Viewbox="0,0,8,8"
+                  ViewboxUnits="Absolute">
+        <DrawingBrush.Drawing>
+            <GeometryDrawing Geometry="M0,8 L8,0 M-1,1 L1,-1 M7,9 L9,7">
+                <GeometryDrawing.Pen>
+                    <Pen Brush="#80909090" Thickness="1" />
+                </GeometryDrawing.Pen>
+            </GeometryDrawing>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+
     <Style x:Key="Md.Paragraph.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}">
         <Setter Property="FontSize" Value="{DynamicResource Md.InlineCode.FontSize}" />
         <Setter Property="FontFamily" Value="{DynamicResource Md.InlineCode.FontFamily}" />
@@ -552,7 +568,6 @@
 
                                 <TextBlock x:Name="LineNumbers"
                                            Visibility="Collapsed"
-                                           Text="{TemplateBinding LineNumbers}"
                                            Foreground="{DynamicResource Md.CodeBlock.LineNumberForeground}"
                                            FontFamily="{DynamicResource Md.CodeBlock.FontFamily}"
                                            FontSize="{DynamicResource Md.CodeBlock.FontSize}"

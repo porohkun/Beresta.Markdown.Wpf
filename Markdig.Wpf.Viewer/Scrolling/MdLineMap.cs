@@ -17,6 +17,9 @@ public sealed class MdLineMap
     /// <summary>Строки совпадают один к одному.</summary>
     public static MdLineMap Identity { get; } = new([]);
 
+    /// <summary>Опорные пары по возрастанию; пусто — строки совпадают один к одному.</summary>
+    internal IReadOnlyList<(double Left, double Right)> Anchors => _anchors;
+
     /// <summary>Строка правого исходника для строки левого.</summary>
     public double ToRight(double left) => Map(left, anchor => anchor.Left, anchor => anchor.Right);
 

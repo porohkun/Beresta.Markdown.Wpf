@@ -1,10 +1,13 @@
 ﻿namespace MarkdigWpfViewer.Presenters;
 
 using System.Net;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Threading;
+using Scrolling;
 using Selection;
 using ViewModels;
 
@@ -12,6 +15,7 @@ using ViewModels;
 [TemplatePart(Name = HeaderPart, Type = typeof(FrameworkElement))]
 [TemplatePart(Name = CodePart, Type = typeof(MdTextBlock))]
 [TemplatePart(Name = CopyPart, Type = typeof(ButtonBase))]
+[TemplatePart(Name = NumbersPart, Type = typeof(TextBlock))]
 public class CodeBlockPresenter : Control
 {
     private static readonly DependencyPropertyKey IsCopiedPropertyKey =
@@ -72,8 +76,14 @@ public class CodeBlockPresenter : Control
     private const string HeaderPart = "PART_Header";
     private const string CodePart = "PART_Code";
     private const string CopyPart = "PART_Copy";
+    private const string NumbersPart = "LineNumbers";
 
     private static readonly TimeSpan CopiedFor = TimeSpan.FromSeconds(1.5);
+
+    private static readonly DependencyProperty GapsProperty =
+        GapLayout.LayoutProperty.AddOwner(
+            typeof(CodeBlockPresenter),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, (d, _) => ((CodeBlockPresenter)d).UpdateNumbers()));
 
     private ButtonBase? _copy;
     private DispatcherTimer? _copied;
@@ -126,6 +136,8 @@ public class CodeBlockPresenter : Control
         {
             _copy.Click += OnCopyClick;
         }
+
+        UpdateNumbers();
     }
 
     /// <summary>Кладёт код в буфер обмена: текстом, блоком кода markdown и HTML; через <see cref="DataObject.CopyingEvent"/>.</summary>
@@ -175,16 +187,22 @@ public class CodeBlockPresenter : Control
             yield return (code.Source.StartLine, header.TransformToAncestor(this).TransformBounds(new(header.RenderSize)));
         }
 
-        if (GetTemplateChild(CodePart) is FrameworkElement { ActualHeight: > 0 } text)
+        if (GetTemplateChild(CodePart) is not MdTextBlock { ActualHeight: > 0 } text)
         {
-            var lines = code.Code.Split('\n').Length;
-            var top = text.TranslatePoint(default, this).Y;
-            var height = text.ActualHeight / lines;
+            yield break;
+        }
 
-            for (var i = 0; i < lines; i++)
+        var toPresenter = text.TransformToAncestor(this);
+        var offset = 0;
+        var lines = code.Code.Split('\n');
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (text.RowAt(offset) is { } row)
             {
-                yield return (code.CodeFirstLine + i, new(0, top + i * height, 0, height));
+                yield return (code.CodeFirstLine + i, toPresenter.TransformBounds(row));
             }
+
+            offset += lines[i].Length + 1;
         }
     }
 
@@ -192,6 +210,50 @@ public class CodeBlockPresenter : Control
     {
         var lines = ((string?)e.NewValue ?? string.Empty).Split('\n').Length;
         d.SetValue(LineNumbersPropertyKey, string.Join("\n", Enumerable.Range(1, lines)));
+        ((CodeBlockPresenter)d).UpdateNumbers();
+    }
+
+    /// <summary>Номера строк столбцом, а напротив пустых мест в коде — такие же пустые места.</summary>
+    private void UpdateNumbers()
+    {
+        if (GetTemplateChild(NumbersPart) is not TextBlock numbers)
+        {
+            return;
+        }
+
+        var gaps = DataContext is CodeBlockVm code && GetValue(GapsProperty) is GapLayout layout ? layout.InCode(code) : [];
+        if (gaps.Count == 0)
+        {
+            numbers.Text = LineNumbers;
+            return;
+        }
+
+        var count = (Code ?? string.Empty).Split('\n').Length;
+        var column = new StringBuilder();
+        numbers.Inlines.Clear();
+
+        for (var i = 0; i < count; i++)
+        {
+            foreach (var (_, height) in gaps.Where(gap => gap.Index == i))
+            {
+                if (column.Length > 0)
+                {
+                    numbers.Inlines.Add(new Run(column.ToString()));
+                    column.Clear();
+                }
+
+                numbers.Inlines.Add(new InlineUIContainer(new Border { Width = 1, Height = height }));
+                numbers.Inlines.Add(new LineBreak());
+            }
+
+            column.Append(i + 1);
+            if (i < count - 1)
+            {
+                column.Append('\n');
+            }
+        }
+
+        numbers.Inlines.Add(new Run(column.ToString()));
     }
 
     private void OnCopyClick(object sender, RoutedEventArgs e) => Copy();

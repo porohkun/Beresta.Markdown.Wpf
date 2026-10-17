@@ -5,12 +5,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using Scrolling;
 using ViewModels;
 
 /// <summary>
 /// Вертикальная панель блоков документа: создаёт только блоки, попавшие в видимую область
 /// прокруток-предков, остальным отводит место по известной или оценённой высоте. Высоты помнит
-/// по идентификаторам блоков, так что новый текст их не сбрасывает.
+/// по идентификаторам блоков, так что новый текст их не сбрасывает. Пустые места перед блоками и
+/// после них отводит и штрихует сама; места внутри несозданного блока входят в оценку его высоты.
 /// </summary>
 public sealed class MdBlockPanel : VirtualizingPanel
 {
@@ -18,11 +20,21 @@ public sealed class MdBlockPanel : VirtualizingPanel
     private const double CacheShare = 0.5;
     private const int MaxPasses = 4;
 
+    private static readonly DependencyProperty GapsProperty =
+        GapLayout.LayoutProperty.AddOwner(
+            typeof(MdBlockPanel),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnGapsChanged));
+
     private readonly Dictionary<HeightKey, double> _heights = [];
     private readonly List<ScrollViewer> _watched = [];
     private readonly List<(UIElement Child, Rect Rect)> _arranged = [];
     private HeightKey[] _keys = [];
+    private double[] _before = [];
+    private double[] _after = [];
+    private double[] _inside = [];
     private double[] _offsets = [0];
+    private double[] _tops = [];
+    private bool _hasGaps;
     private (HeightKey Key, double Top, double ViewportTop)? _anchor;
 
     public MdBlockPanel()
@@ -34,11 +46,21 @@ public sealed class MdBlockPanel : VirtualizingPanel
     /// <summary>Сколько блоков у панели, созданных и нет.</summary>
     internal int ItemCount => _keys.Length;
 
-    /// <summary>Верх блока в координатах панели — измеренный или оценённый.</summary>
-    internal double GetItemTop(int index) => _offsets[Math.Clamp(index, 0, _offsets.Length - 1)];
+    /// <summary>Верх блока в координатах панели — измеренный или оценённый, под пустым местом перед ним.</summary>
+    internal double GetItemTop(int index)
+        => _tops.Length == 0 ? 0 : _tops[Math.Clamp(index, 0, _tops.Length - 1)];
 
-    /// <summary>Низ блока в координатах панели.</summary>
-    internal double GetItemBottom(int index) => _offsets[Math.Clamp(index + 1, 0, _offsets.Length - 1)];
+    /// <summary>Низ блока в координатах панели, над пустым местом после него.</summary>
+    internal double GetItemBottom(int index)
+    {
+        if (_tops.Length == 0)
+        {
+            return 0;
+        }
+
+        var clamped = Math.Clamp(index, 0, _tops.Length - 1);
+        return _offsets[clamped + 1] - _after[clamped];
+    }
 
     /// <summary>Блок, на который приходится позиция в координатах панели.</summary>
     internal int IndexAtOffset(double offset) => offset < 0 ? 0 : IndexAt(offset) is var index and >= 0 ? index : _keys.Length - 1;
@@ -118,7 +140,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
         {
             var child = InternalChildren[i];
             var index = generator.IndexFromGeneratorPosition(new(i, 0));
-            var rect = new Rect(0, _offsets[index], finalSize.Width, child.DesiredSize.Height);
+            var rect = new Rect(0, _tops[index], finalSize.Width, child.DesiredSize.Height);
             child.Arrange(rect);
 
             if (i < _arranged.Count && ReferenceEquals(_arranged[i].Child, child) && _arranged[i].Rect == rect)
@@ -148,8 +170,36 @@ public sealed class MdBlockPanel : VirtualizingPanel
             viewer?.OnBlocksArranged();
         }
 
+        if (_hasGaps)
+        {
+            InvalidateVisual();
+        }
+
         viewer?.OnViewportMaybeChanged();
         return finalSize;
+    }
+
+    /// <summary>Штрихует пустые места перед блоками и после них.</summary>
+    protected override void OnRender(DrawingContext drawingContext)
+    {
+        base.OnRender(drawingContext);
+        if (!_hasGaps || TryFindResource("Md.Gap.Brush") is not Brush brush)
+        {
+            return;
+        }
+
+        for (var i = 0; i < _tops.Length; i++)
+        {
+            if (_before[i] > 0)
+            {
+                drawingContext.DrawRectangle(brush, null, new(0, _offsets[i], ActualWidth, _before[i]));
+            }
+
+            if (_after[i] > 0)
+            {
+                drawingContext.DrawRectangle(brush, null, new(0, _offsets[i + 1] - _after[i], ActualWidth, _after[i]));
+            }
+        }
     }
 
     protected override void OnIsItemsHostChanged(bool oldIsItemsHost, bool newIsItemsHost)
@@ -170,8 +220,8 @@ public sealed class MdBlockPanel : VirtualizingPanel
             return;
         }
 
-        var top = _offsets[index];
-        var bottom = _offsets[index + 1];
+        var top = GetItemTop(index);
+        var bottom = GetItemBottom(index);
         var shift = top < viewport.Top || bottom - top > viewport.Bottom - viewport.Top
             ? top - viewport.Top
             : bottom > viewport.Bottom
@@ -210,13 +260,13 @@ public sealed class MdBlockPanel : VirtualizingPanel
         }
 
         var index = Array.IndexOf(_keys, anchor.Key);
-        return index >= 0 ? _offsets[index] - anchor.Top : 0;
+        return index >= 0 ? _tops[index] - anchor.Top : 0;
     }
 
     private void RememberAnchor(Viewport viewport)
     {
         var index = viewport.PhysicalScroller is not null && viewport.Top > 0 ? IndexAt(viewport.Top) : -1;
-        _anchor = index >= 0 ? (_keys[index], _offsets[index], viewport.Top) : null;
+        _anchor = index >= 0 ? (_keys[index], _tops[index], viewport.Top) : null;
     }
 
     private (int First, int Last) RealizeVisible(Viewport viewport, Size constraint, out double shift)
@@ -226,7 +276,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
         var anchor = viewport.PhysicalScroller is not null && viewport.Top > 0
             ? IndexAt(viewport.Top)
             : -1;
-        var anchorTop = anchor >= 0 ? _offsets[anchor] : 0;
+        var anchorTop = anchor >= 0 ? _tops[anchor] : 0;
         var cache = (viewport.Bottom - viewport.Top) * CacheShare;
         var range = (First: 0, Last: -1);
 
@@ -244,7 +294,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
 
             if (anchor >= 0)
             {
-                shift = _offsets[anchor] - anchorTop;
+                shift = _tops[anchor] - anchorTop;
             }
         }
 
@@ -282,7 +332,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
                 }
 
                 child.Measure(constraint);
-                _heights[_keys[index]] = child.DesiredSize.Height;
+                _heights[_keys[index]] = child.DesiredSize.Height - _inside[index];
             }
         }
     }
@@ -311,11 +361,21 @@ public sealed class MdBlockPanel : VirtualizingPanel
         if (_keys.Length != count)
         {
             _keys = new HeightKey[count];
+            _before = new double[count];
+            _after = new double[count];
+            _inside = new double[count];
         }
 
+        var gaps = GetValue(GapsProperty) as GapLayout ?? GapLayout.Empty;
+        _hasGaps = false;
         for (var i = 0; i < count; i++)
         {
-            _keys[i] = HeightKey.Of(owner!.Items[i]);
+            var item = owner!.Items[i];
+            _keys[i] = HeightKey.Of(item);
+            _before[i] = gaps.Before(item);
+            _after[i] = gaps.After(item);
+            _inside[i] = gaps.Inside(item);
+            _hasGaps |= _before[i] > 0 || _after[i] > 0;
         }
 
         if (_heights.Count > 2 * count + 64)
@@ -344,10 +404,20 @@ public sealed class MdBlockPanel : VirtualizingPanel
         var estimate = known > 0 ? total / known : DefaultHeight;
 
         _offsets = new double[_keys.Length + 1];
+        _tops = new double[_keys.Length];
         for (var i = 0; i < _keys.Length; i++)
         {
-            _offsets[i + 1] = _offsets[i] + (_heights.TryGetValue(_keys[i], out var height) ? height : estimate);
+            var height = (_heights.TryGetValue(_keys[i], out var measured) ? measured : estimate) + _inside[i];
+            _tops[i] = _offsets[i] + _before[i];
+            _offsets[i + 1] = _tops[i] + height + _after[i];
         }
+    }
+
+    private static void OnGapsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var panel = (MdBlockPanel)d;
+        panel.InvalidateMeasure();
+        panel.InvalidateVisual();
     }
 
     private int IndexAt(double y)

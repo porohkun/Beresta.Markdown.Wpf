@@ -66,6 +66,14 @@ public sealed class MarkdownViewer : ItemsControl
             typeof(MarkdownViewer),
             new(null, OnDecorationsChanged));
 
+    /// <summary>Пустые места перед строками исходника — например, чтобы две панели диффа стояли вровень.</summary>
+    public static readonly DependencyProperty GapsProperty =
+        DependencyProperty.Register(
+            nameof(Gaps),
+            typeof(IReadOnlyList<MdGap>),
+            typeof(MarkdownViewer),
+            new(null, OnGapsChanged));
+
     /// <summary>Кисть выделения; рисуется поверх текста и пометок.</summary>
     public static readonly DependencyProperty SelectionBrushProperty =
         DependencyProperty.Register(
@@ -332,6 +340,12 @@ public sealed class MarkdownViewer : ItemsControl
     /// <summary>Слои пометок в порядке рисования: над декорациями, под выделением.</summary>
     public ObservableCollection<MdMarkLayer> MarkLayers { get; } = [];
 
+    public IReadOnlyList<MdGap>? Gaps
+    {
+        get => (IReadOnlyList<MdGap>?)GetValue(GapsProperty);
+        set => SetValue(GapsProperty, value);
+    }
+
     public Brush? SelectionBrush
     {
         get => (Brush?)GetValue(SelectionBrushProperty);
@@ -441,6 +455,9 @@ public sealed class MarkdownViewer : ItemsControl
 
     /// <summary>Строка исходника в позиции вьюера; дробная часть — доля строки.</summary>
     public double? GetSourceLineAt(double offset) => _positions.LineAt(offset);
+
+    /// <summary>Позиции строк исходника в координатах вьюера за один проход; строки — по возрастанию.</summary>
+    internal double?[] GetSourceLineOffsets(IReadOnlyList<double> lines) => _positions.OffsetsOf(lines);
 
     /// <summary>
     /// Строка исходника, которая видна в доле <paramref name="viewportFraction"/> высоты прокрутки,
@@ -767,6 +784,9 @@ public sealed class MarkdownViewer : ItemsControl
     private static void OnFeedSearchChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownViewer)d).UpdateFeedSearch();
 
+    private static void OnGapsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        => ((MarkdownViewer)d).UpdateGapLayout();
+
     private static IEnumerator WithThemeBrushes(IEnumerator? children, IEnumerable<ThemeBrush> brushes)
     {
         while (children?.MoveNext() == true)
@@ -851,6 +871,18 @@ public sealed class MarkdownViewer : ItemsControl
         ];
         UpdateLayer();
         Gutter?.InvalidateMeasure();
+    }
+
+    /// <summary>Раскладывает пустые места по блокам нынешней модели.</summary>
+    private void UpdateGapLayout()
+    {
+        var gaps = Gaps ?? [];
+        if (gaps.Count == 0 && GetValue(GapLayout.LayoutProperty) is null)
+        {
+            return;
+        }
+
+        SetValue(GapLayout.LayoutProperty, gaps.Count == 0 ? GapLayout.Empty : new GapLayout(_blocks, gaps));
     }
 
     /// <summary>Совпадения запроса поиска в ленте, который вьюер унаследовал от списка.</summary>
@@ -1048,6 +1080,7 @@ public sealed class MarkdownViewer : ItemsControl
         SetValue(FrontMatterPropertyKey, frontMatter);
         _states.Retain(_identity.Contains);
         _blocks.Apply(blocks);
+        UpdateGapLayout();
 
         if (_templatesChanged)
         {

@@ -7,6 +7,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using Extensions;
+using Scrolling;
 using Selection;
 using Styling;
 using ViewModels;
@@ -117,6 +118,11 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnStatesChanged));
 
+    private static readonly DependencyProperty GapsProperty =
+        GapLayout.LayoutProperty.AddOwner(
+            typeof(MdTextBlock),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnGapsChanged));
+
     private static readonly DataTemplateSelector SharedSelector = new MarkdownTemplateSelector();
 
     /// <summary>Размер шрифта индекса <c>&lt;sub&gt;</c> и <c>&lt;sup&gt;</c> от размера текста.</summary>
@@ -124,7 +130,9 @@ public class MdTextBlock : TextBlock
 
     private readonly List<Segment> _segments = [];
     private readonly List<(RunVm Run, Span Span)> _styled = [];
+    private readonly List<(Border Space, double Height)> _gapRows = [];
     private List<Highlight> _highlights = [];
+    private IReadOnlyList<(int Offset, double Height)> _gaps = [];
     private List<(int Line, Rect Row)>? _sourceRows;
     private AdornerLayer? _adornerLayer;
     private MdHighlightAdorner? _adorner;
@@ -219,6 +227,27 @@ public class MdTextBlock : TextBlock
 
     /// <summary>Строки исходника, которые начинаются в этом тексте, и экранные строки, где они начинаются.</summary>
     internal IReadOnlyList<(int Line, Rect Row)> SourceRows => _sourceRows ??= FindSourceRows();
+
+    /// <summary>Пустые места между строками своего текста во всю его ширину, в своих координатах.</summary>
+    internal IEnumerable<Rect> GapRects
+        => _gapRows
+            .Where(row => row.Space.IsDescendantOf(this))
+            .Select(row => new Rect(0, row.Space.TranslatePoint(default, this).Y, ActualWidth, row.Height));
+
+    /// <summary>Экранная строка знака своего текста; такого знака нет — <c>null</c>.</summary>
+    internal Rect? RowAt(int offset)
+    {
+        foreach (var segment in _segments)
+        {
+            if (segment.Element is Run run && offset >= segment.Start && offset < segment.End
+                && run.ContentStart.GetPositionAtOffset(offset - segment.Start) is { } pointer)
+            {
+                return pointer.GetCharacterRect(LogicalDirection.Forward);
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>Кусок текстовой карты, который рисует этот блок.</summary>
     internal bool TryGetMapRange(out MdTextRange range)
@@ -318,6 +347,15 @@ public class MdTextBlock : TextBlock
 
     private static void OnStatesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MdTextBlock)d).UpdateWidgetStates();
+
+    private static void OnGapsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var text = (MdTextBlock)d;
+        if (!text.GapsOfRuns().SequenceEqual(text._gaps))
+        {
+            text.Rebuild();
+        }
+    }
 
     private static IEnumerable<Rect> GetRunRects(Segment segment, int start, int end)
     {
@@ -429,7 +467,7 @@ public class MdTextBlock : TextBlock
 
     private void SyncAdorner()
     {
-        if (_highlights.Count == 0)
+        if (_highlights.Count == 0 && _gapRows.Count == 0)
         {
             _adornerLayer?.Remove(_adorner);
             _adornerLayer = null;
@@ -457,12 +495,16 @@ public class MdTextBlock : TextBlock
         Inlines.Clear();
         _segments.Clear();
         _styled.Clear();
+        _gapRows.Clear();
         _sourceRows = null;
+        _gaps = GapsOfRuns();
+        var nextGap = 0;
 
         foreach (var inline in Runs ?? [])
         {
             var start = _segments.Count == 0 ? 0 : _segments[^1].End;
             var length = MdTextMap.TextOf(inline).Length;
+            AddGapRows(start, ref nextGap);
 
             switch (inline)
             {
@@ -481,7 +523,7 @@ public class MdTextBlock : TextBlock
                     break;
 
                 case RunVm run:
-                    _segments.Add(new(inline, start, length, AddRun(run), null, null));
+                    AddRunPieces(run, start, length, ref nextGap);
                     break;
 
                 default:
@@ -499,10 +541,46 @@ public class MdTextBlock : TextBlock
             }
         }
 
+        AddGapRows(int.MaxValue, ref nextGap);
         _highlights = [];
         SyncAdorner();
         UpdateHighlights();
         UpdateWidgetStates();
+    }
+
+    private IReadOnlyList<(int Offset, double Height)> GapsOfRuns()
+        => GetValue(GapsProperty) is GapLayout layout && Runs is { } runs
+            ? layout.InText(runs).OrderBy(gap => gap.Offset).ToList()
+            : [];
+
+    /// <summary>Пустые места, которые встают до позиции <paramref name="position"/> своего текста.</summary>
+    private void AddGapRows(int position, ref int nextGap)
+    {
+        for (; nextGap < _gaps.Count && _gaps[nextGap].Offset <= position; nextGap++)
+        {
+            // BYDESIGN: место — строка из одного вставного элемента: такая строка ровно его высоты,
+            // и соседние экранные строки текста не меняются.
+            var space = new Border { Width = 1, Height = _gaps[nextGap].Height, IsHitTestVisible = false };
+            Inlines.Add(new InlineUIContainer(space));
+            Inlines.Add(new LineBreak());
+            _gapRows.Add((space, _gaps[nextGap].Height));
+        }
+    }
+
+    /// <summary>Кусок текста — одним прогоном, а с пустыми местами внутри — прогоном на каждую часть между ними.</summary>
+    private void AddRunPieces(RunVm run, int start, int length, ref int nextGap)
+    {
+        var text = run.Text ?? string.Empty;
+        var from = 0;
+        while (nextGap < _gaps.Count && _gaps[nextGap].Offset < start + length)
+        {
+            var cut = _gaps[nextGap].Offset - start;
+            _segments.Add(new(run, start + from, cut - from, AddRun(run, text[from..cut]), null, null));
+            from = cut;
+            AddGapRows(start + cut, ref nextGap);
+        }
+
+        _segments.Add(new(run, start + from, length - from, AddRun(run, text[from..]), null, null));
     }
 
     /// <summary>Для каждой строки исходника — экранная строка её первого инлайна.</summary>
@@ -554,9 +632,9 @@ public class MdTextBlock : TextBlock
         }
     }
 
-    private Run AddRun(RunVm run)
+    private Run AddRun(RunVm run, string content)
     {
-        var text = new Run(run.Text ?? string.Empty);
+        var text = new Run(content);
         Inline current = text;
 
         if (run.Strike)

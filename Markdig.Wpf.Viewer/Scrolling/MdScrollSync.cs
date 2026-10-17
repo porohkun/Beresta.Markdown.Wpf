@@ -12,7 +12,7 @@ public sealed class MdScrollSync : IDisposable
 {
     private readonly MarkdownViewer _left;
     private readonly MarkdownViewer _right;
-    private readonly MdLineMap _map;
+    private MdLineMap _map;
     private readonly double _anchorFraction;
     private ScrollViewer? _leftScroller;
     private ScrollViewer? _rightScroller;
@@ -29,6 +29,17 @@ public sealed class MdScrollSync : IDisposable
 
         Attach(left);
         Attach(right);
+    }
+
+    /// <summary>Соответствие строк; новая карта — например, после нового диффа — сразу подтягивает второй вьюер.</summary>
+    public MdLineMap Map
+    {
+        get => _map;
+        set
+        {
+            _map = value;
+            Sync();
+        }
     }
 
     public void Dispose()
