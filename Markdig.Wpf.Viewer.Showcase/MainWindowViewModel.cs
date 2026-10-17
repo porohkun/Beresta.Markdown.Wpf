@@ -8,6 +8,7 @@ using Showcases.Document;
 using Showcases.Extensions;
 using Showcases.Kit;
 using Showcases.LargeDocument;
+using Showcases.MarginButtons;
 using Showcases.Preview;
 using Showcases.Sets;
 using Showcases.TwoPanes;
@@ -25,6 +26,7 @@ public sealed class MainWindowViewModel : BindableBase
             new SetsViewModel(Options),
             new CustomLookViewModel(Options),
             new TwoPanesViewModel(Options),
+            new MarginButtonsViewModel(Options),
             new LargeDocumentViewModel(Options),
             new PreviewViewModel(Options),
             new CopyingViewModel(Options),

@@ -123,7 +123,10 @@ internal sealed class SourcePositions
     private double ToViewer(MdBlockPanel panel, double panelOffset)
         => panel.TranslatePoint(new(0, panelOffset), _viewer).Y;
 
-    /// <summary>Созданные элементы блока с известными строками, с их рамками во вьюере.</summary>
+    /// <summary>
+    /// Созданные элементы блока с известными строками, с их рамками во вьюере. Текст отдаёт полосу
+    /// каждой своей строки исходника — от её экранной строки до экранной строки следующей.
+    /// </summary>
     private IEnumerable<(Rect Bounds, double Start, double End, int Depth)> Spans(int index)
     {
         if (_viewer.ItemContainerGenerator.ContainerFromIndex(index) is not FrameworkElement container)
@@ -144,10 +147,26 @@ internal sealed class SourcePositions
                 _ => null
             };
 
-            if (node is FrameworkElement { ActualHeight: > 0 } element && content is NodeVm { Source.IsEmpty: false } model)
+            if (node is FrameworkElement { ActualHeight: > 0 } element
+                && content is NodeVm { Source.IsEmpty: false } model and not InlineVm)
             {
                 var bounds = element.TransformToAncestor(_viewer).TransformBounds(new(element.RenderSize));
                 yield return (bounds, model.Source.StartLine, model.Source.EndLine + 1, depth);
+            }
+
+            if (node is MdTextBlock { ActualHeight: > 0 } textBlock && textBlock.SourceRows is { Count: > 0 } rows)
+            {
+                var toViewer = textBlock.TransformToAncestor(_viewer);
+                for (var i = 0; i < rows.Count; i++)
+                {
+                    var top = rows[i].Row.Top;
+                    var bottom = i + 1 < rows.Count ? rows[i + 1].Row.Top : textBlock.ActualHeight;
+                    if (bottom > top)
+                    {
+                        var end = i + 1 < rows.Count ? rows[i + 1].Line : rows[i].Line + 1;
+                        yield return (toViewer.TransformBounds(new(0, top, textBlock.ActualWidth, bottom - top)), rows[i].Line, end, depth + 1);
+                    }
+                }
             }
 
             if (node is CodeBlockPresenter { DataContext: CodeBlockVm code } presenterOfCode

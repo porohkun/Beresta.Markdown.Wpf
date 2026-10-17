@@ -280,12 +280,13 @@ public sealed class MarkdownViewer : ItemsControl
         // BYDESIGN: фокус по щелчку нужен ради копирования; показывать при этом вьюер целиком
         // внешняя прокрутка не должна.
         AddHandler(RequestBringIntoViewEvent, new RequestBringIntoViewEventHandler((_, e) => e.Handled = ReferenceEquals(e.TargetObject, this)));
+        AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler((_, _) => OnViewportMaybeChanged()));
     }
 
     /// <summary>Выделение изменилось.</summary>
     public event EventHandler? SelectionChanged;
 
-    /// <summary>Видимая часть документа могла сместиться: прокрутка, уточнились высоты блоков.</summary>
+    /// <summary>Раскладка видимой части могла смениться: прокрутка снаружи и внутри блоков, уточнились высоты, новый текст.</summary>
     public event EventHandler? ViewportChanged;
 
     /// <summary>Новый текст лёг в документ: прежняя карта и новая.</summary>
@@ -513,6 +514,9 @@ public sealed class MarkdownViewer : ItemsControl
 
     /// <summary>Рамка куска текстовой карты в координатах вьюера; <see cref="Rect.Empty"/> — кусок не на созданных блоках.</summary>
     public Rect GetRangeBounds(MdTextRange range) => GetRangeRects(range).Aggregate(Rect.Empty, Rect.Union);
+
+    /// <summary>Геометрия документа сразу в координатах элемента: куски текста, строки исходника, точки.</summary>
+    public MdCoordinates GetCoordinates(UIElement relativeTo) => new(this, relativeTo);
 
     /// <summary>
     /// Пометки под точкой вьюера в порядке рисования: над текстом — пометки текста под ней и строки

@@ -13,6 +13,7 @@
            xmlns:look="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.CustomLook"
            xmlns:panes="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.TwoPanes"
            xmlns:large="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.LargeDocument"
+           xmlns:margin="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.MarginButtons"
            xmlns:preview="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Preview"
            xmlns:copying="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Copying"
            xmlns:about="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.About"
@@ -91,6 +92,9 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type panes:TwoPanesViewModel}">
             <panes:TwoPanesView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type margin:MarginButtonsViewModel}">
+            <margin:MarginButtonsView />
         </DataTemplate>
         <DataTemplate DataType="{x:Type large:LargeDocumentViewModel}">
             <large:LargeDocumentView />
