@@ -6,6 +6,9 @@ using System.Text;
 /// <summary>Длинная история чата витрины, одна и та же при каждом запуске: короткие и длинные сообщения вперемешку.</summary>
 public static class ChatHistory
 {
+    /// <summary>Каким по счёту с конца ленты стоит протокол встречи на несколько экранов.</summary>
+    private const int MinutesFromEnd = 3;
+
     private static readonly CultureInfo Russian = CultureInfo.GetCultureInfo("ru-RU");
 
     private static readonly string[] Logins = ["me", "anna", "boris", "vera"];
@@ -82,16 +85,22 @@ public static class ChatHistory
 
         for (var i = 0; i < count; i++)
         {
-            var login = Logins[random.Next(Logins.Length)];
             time = time.AddMinutes(random.Next(1, 40));
+            var stamp = time.ToString("d MMMM, HH:mm", Russian);
+            if (i == count - MinutesFromEnd)
+            {
+                messages.Add(new(People["me"], stamp, Minutes(random, 40), true));
+                continue;
+            }
 
+            var login = Logins[random.Next(Logins.Length)];
             var text = Text(random);
             while (text.Contains('@' + login, StringComparison.Ordinal))
             {
                 text = Text(random);
             }
 
-            messages.Add(new(People[login], time.ToString("d MMMM, HH:mm", Russian), text, login == "me"));
+            messages.Add(new(People[login], stamp, text, login == "me"));
         }
 
         return messages;
@@ -102,7 +111,7 @@ public static class ChatHistory
         < 45 => Replies[random.Next(Replies.Length)],
         < 85 => Paragraph(random, 1 + random.Next(3)),
         < 97 => Summary(random),
-        _ => Minutes(random)
+        _ => Minutes(random, 20 + random.Next(30))
     };
 
     /// <summary>Абзац из нескольких фраз.</summary>
@@ -131,11 +140,10 @@ public static class ChatHistory
         return text.Append('\n').Append(Paragraph(random, 2)).ToString();
     }
 
-    /// <summary>Протокол встречи на десятки абзацев с заголовками.</summary>
-    private static string Minutes(Random random)
+    /// <summary>Протокол встречи: <paramref name="items"/> пунктов по абзацу, по шесть под заголовком.</summary>
+    private static string Minutes(Random random, int items)
     {
         var text = new StringBuilder("**Протокол встречи**");
-        var items = 20 + random.Next(30);
         for (var i = 1; i <= items; i++)
         {
             if (i % 6 == 1)

@@ -11,13 +11,14 @@
              d:DataContext="{d:DesignInstance local:ChatViewModel}">
     <UserControl.Resources>
         <SolidColorBrush x:Key="MineBubbleBrush" Color="{DynamicResource PrimaryColor}" Opacity="0.16" />
+        <SolidColorBrush x:Key="MineBubbleBorderBrush" Color="{DynamicResource PrimaryColor}" Opacity="0.32" />
     </UserControl.Resources>
 
     <DockPanel>
         <Border Style="{StaticResource ShowcaseHeader}">
             <StackPanel>
                 <TextBlock TextWrapping="Wrap"
-                           Text="Лента на десять тысяч сообщений в одной прокрутке: в каждом пузыре свой вьюер с набором ChatSet, а создаются вьюеры только для видимых. Лента держится у последнего сообщения — StickyScroll." />
+                           Text="Лента на десять тысяч сообщений в одной прокрутке: в каждом пузыре свой вьюер с набором ChatSet, вьюеры создаются только для видимых сообщений, а в сообщении на несколько экранов — только видимые блоки. Лента держится у последнего сообщения — StickyScroll." />
 
                 <!-- Сколько вьюеров создано и сколько стоит в ленте сейчас -->
                 <TextBlock x:Name="Counter"
@@ -56,7 +57,9 @@
                             MaxWidth="620"
                             Margin="24,3,96,3"
                             Padding="12,6,12,4"
-                            CornerRadius="12"
+                            CornerRadius="0,12,12,12"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource BorderBrush}"
                             Background="{DynamicResource SecondaryRegionBrush}">
                         <StackPanel>
                             <TextBlock x:Name="Author"
@@ -82,6 +85,8 @@
                             <Setter TargetName="Bubble" Property="HorizontalAlignment" Value="Right" />
                             <Setter TargetName="Bubble" Property="Margin" Value="96,3,24,3" />
                             <Setter TargetName="Bubble" Property="Background" Value="{DynamicResource MineBubbleBrush}" />
+                            <Setter TargetName="Bubble" Property="BorderBrush" Value="{DynamicResource MineBubbleBorderBrush}" />
+                            <Setter TargetName="Bubble" Property="CornerRadius" Value="12,12,0,12" />
                             <Setter TargetName="Author" Property="Visibility" Value="Collapsed" />
                         </DataTrigger>
                     </DataTemplate.Triggers>

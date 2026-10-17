@@ -9,13 +9,22 @@
              d:DataContext="{d:DesignInstance local:LargeDocumentViewModel}">
     <DockPanel>
         <Border Style="{StaticResource ShowcaseHeader}">
-            <TextBlock TextWrapping="Wrap"
-                       Text="Три тысячи блоков в одном вьюере: контролы создаются только для видимых, остальные — по мере прокрутки." />
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap"
+                           Text="Тысячи блоков в одном вьюере — многократно повторённый lorem ipsum. Контролы создаются только для видимых блоков и небольшого запаса вокруг, остальным отводится место по оценённой высоте." />
+
+                <!-- Сколько блоков в документе, сколько контролов создано и сколько из них видно -->
+                <TextBlock x:Name="Counter"
+                           Margin="0,6,0,0"
+                           Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
         </Border>
 
-        <ScrollViewer>
-            <mdv:MarkdownViewer Markdown="{Binding Text}"
-                                Margin="24,16" />
+        <ScrollViewer x:Name="Scroll">
+            <mdv:MarkdownViewer x:Name="Viewer"
+                                Markdown="{Binding Text}"
+                                Margin="24,16"
+                                ViewportChanged="OnViewportChanged" />
         </ScrollViewer>
     </DockPanel>
 </UserControl>
