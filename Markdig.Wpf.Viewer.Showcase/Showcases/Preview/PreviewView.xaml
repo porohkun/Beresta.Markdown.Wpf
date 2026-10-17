@@ -6,11 +6,13 @@
              xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
              xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Preview"
              mc:Ignorable="d"
-             d:DataContext="{d:DesignInstance local:PreviewViewModel}">
+             d:DataContext="{d:DesignInstance local:PreviewViewModel}"
+             Loaded="OnLoaded"
+             Unloaded="OnUnloaded">
     <DockPanel>
         <Border Style="{StaticResource ShowcaseHeader}">
             <TextBlock TextWrapping="Wrap"
-                       Text="Редактор и предпросмотр рядом: каждая правка доходит до вьюера изменениями — неизменившиеся блоки остаются как были, а видимое не прыгает." />
+                       Text="Редактор и предпросмотр рядом: каждая правка доходит до вьюера изменениями — неизменившиеся блоки остаются как были, а видимое не прыгает. Прокрутка общая — MdScrollSync между вьюером и редактором через MdTextBoxLines; по нему же стоят номера строк редактора." />
         </Border>
 
         <Grid>
@@ -19,18 +21,31 @@
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
 
-            <TextBox x:Name="Editor"
-                     Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
-                     AcceptsReturn="True"
-                     AcceptsTab="True"
-                     TextWrapping="Wrap"
-                     VerticalContentAlignment="Top"
-                     VerticalScrollBarVisibility="Auto"
-                     FontFamily="Consolas"
-                     Margin="12" />
+            <DockPanel Margin="12">
+                <!-- Номера строк редактора: по строкам исходника, а не по экранным строкам -->
+                <Canvas x:Name="Numbers"
+                        DockPanel.Dock="Left"
+                        Width="36"
+                        Margin="0,0,6,0"
+                        ClipToBounds="True"
+                        Visibility="{Binding Options.ShowSourceLineNumbers, Converter={StaticResource Boolean2VisibilityConverter}}"
+                        IsVisibleChanged="OnNumbersVisibleChanged" />
+                <TextBox x:Name="Editor"
+                         Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True"
+                         AcceptsTab="True"
+                         TextWrapping="Wrap"
+                         VerticalContentAlignment="Top"
+                         VerticalScrollBarVisibility="Auto"
+                         FontFamily="Consolas"
+                         TextChanged="OnEditorChanged"
+                         SizeChanged="OnEditorChanged"
+                         ScrollViewer.ScrollChanged="OnEditorChanged" />
+            </DockPanel>
 
             <ScrollViewer Grid.Column="1">
-                <mdv:MarkdownViewer Markdown="{Binding Text}"
+                <mdv:MarkdownViewer x:Name="Viewer"
+                                    Markdown="{Binding Text}"
                                     Margin="24,16" />
             </ScrollViewer>
         </Grid>

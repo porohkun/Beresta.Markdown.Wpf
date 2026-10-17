@@ -24,7 +24,7 @@ using ViewModels;
 /// <summary>Контрол, который показывает markdown-текст блоками по шаблонам темы.</summary>
 [TemplatePart(Name = GutterPart, Type = typeof(MdLineGutter))]
 [TemplatePart(Name = RowMarksPart, Type = typeof(MdRowMarks))]
-public sealed class MarkdownViewer : ItemsControl
+public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 {
     /// <summary>Текст документа.</summary>
     public static readonly DependencyProperty MarkdownProperty =
@@ -446,6 +446,9 @@ public sealed class MarkdownViewer : ItemsControl
     /// </summary>
     public bool ScrollToSourceLine(double line, double viewportFraction = 0)
         => StartScroll(() => ScrollToSourceLineOnce(line, viewportFraction));
+
+    /// <summary>Прокрутка, в которой стоит вьюер.</summary>
+    ScrollViewer? IMdScrollSide.Scroller => Scrollers.Nearest(this);
 
     /// <summary>
     /// Прокручивает прокрутку, в которой стоит вьюер, так, чтобы начало куска текстовой карты встало
