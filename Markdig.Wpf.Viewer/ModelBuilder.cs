@@ -73,14 +73,16 @@ internal sealed partial class ModelBuilder
 
     /// <summary>
     /// Разбирает документ, как <see cref="Parse(string, MarkdownPipeline?, IReadOnlyList{MdExtension}?, ModelIdentity?)"/>,
-    /// и отдаёт текст front matter без разбора; нет его — <c>null</c>.
+    /// и отдаёт текст front matter без разбора; нет его — <c>null</c>. Без <paramref name="commit"/> память
+    /// разборов запоминает этот разбор, только когда её <see cref="ModelIdentity.Commit"/> вызовут отдельно.
     /// </summary>
     public static IReadOnlyList<BlockVm> Parse(
         string markdown,
         MarkdownPipeline? pipeline,
         IReadOnlyList<MdExtension>? extensions,
         ModelIdentity? identity,
-        out string? frontMatter)
+        out string? frontMatter,
+        bool commit = true)
     {
         markdown ??= string.Empty;
         identity ??= new();
@@ -92,7 +94,11 @@ internal sealed partial class ModelBuilder
 
         var smartyPants = pipeline.Extensions.Find<SmartyPantsExtension>()?.Options.Mapping;
         var blocks = new ModelBuilder(markdown, extensions ?? [], identity, smartyPants).ConvertBlocks(document, listDepth: 0);
-        identity.Commit();
+        if (commit)
+        {
+            identity.Commit();
+        }
+
         return blocks;
     }
 

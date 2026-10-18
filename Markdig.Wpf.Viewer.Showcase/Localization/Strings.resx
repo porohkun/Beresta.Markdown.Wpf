@@ -211,7 +211,7 @@
     <value>Blocks in the document: {0:N0}. Controls created: {1:N0}, of them visible: {2:N0}.</value>
   </data>
   <data name="LargeDocument.Header" xml:space="preserve">
-    <value>Thousands of blocks in one viewer — lorem ipsum repeated many times. Controls are created only for the visible blocks and a small reserve around them; the rest get room by an estimated height.</value>
+    <value>Thousands of blocks in one viewer — lorem ipsum repeated many times. Controls are created only for the visible blocks and a small reserve around them; the rest get room by an estimated height. The text is parsed outside the interface thread — BackgroundParseThreshold.</value>
   </data>
   <data name="LargeDocument.Section" xml:space="preserve">
     <value>Section {0}</value>

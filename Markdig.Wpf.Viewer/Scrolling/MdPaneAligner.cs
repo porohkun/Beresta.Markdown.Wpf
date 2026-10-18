@@ -121,7 +121,7 @@ public sealed class MdPaneAligner : IDisposable
             .ToList();
     }
 
-    private static int LineCount(MarkdownViewer viewer) => (viewer.Markdown ?? string.Empty).Split('\n').Length;
+    private static int LineCount(MarkdownViewer viewer) => viewer.Source.Split('\n').Length;
 
     /// <summary>
     /// Где в содержимом прокрутки вьюера стояли бы пустые места строк, не будь у вьюера мест: верх

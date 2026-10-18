@@ -64,6 +64,14 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(null, OnDocumentKeyChanged));
 
+    /// <summary>Длина текста в знаках, с которой он разбирается вне потока интерфейса; 0 — всегда в нём.</summary>
+    public static readonly DependencyProperty BackgroundParseThresholdProperty =
+        DependencyProperty.Register(
+            nameof(BackgroundParseThreshold),
+            typeof(int),
+            typeof(MarkdownViewer),
+            new(0));
+
     /// <summary>Шаблоны встроенных блоков.</summary>
     public static readonly DependencyProperty StyleProviderProperty =
         DependencyProperty.Register(
@@ -246,6 +254,10 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     private bool _updatingMarks;
     private IReadOnlyList<MdExtension> _activeExtensions = [];
     private MarkdownPipeline? _pipeline;
+    private Task<ParsedDocument>? _parsing;
+    private bool _rebuildQueued;
+    private bool _discardRunning;
+    private bool _forgetQueued;
     private bool _templatesChanged;
     private bool _viewportNotificationQueued;
     private (Func<bool> Step, int Attempts)? _pendingScroll;
@@ -328,6 +340,12 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     {
         get => (Action<MarkdownPipelineBuilder>?)GetValue(PipelineSetupProperty);
         set => SetValue(PipelineSetupProperty, value);
+    }
+
+    public int BackgroundParseThreshold
+    {
+        get => (int)GetValue(BackgroundParseThresholdProperty);
+        set => SetValue(BackgroundParseThresholdProperty, value);
     }
 
     public object? DocumentKey
@@ -436,10 +454,13 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     public string SelectedText => TextMap.GetText(Selection.Range);
 
     /// <summary>Выделенное, записанное markdown со своим оформлением; считается по запросу.</summary>
-    public string SelectedMarkdown => MdMarkdownWriter.Write(_blocks, TextMap, Markdown ?? string.Empty, Selection.Range);
+    public string SelectedMarkdown => MdMarkdownWriter.Write(_blocks, TextMap, Source, Selection.Range);
 
     /// <summary>Свои расширения, следом общие — в порядке опроса.</summary>
     internal IReadOnlyList<MdExtension> ActiveExtensions => _activeExtensions;
+
+    /// <summary>Текст показанного документа: из него собраны блоки и карта; текст, который ещё разбирается, сюда не попадает.</summary>
+    internal string Source { get; private set; } = string.Empty;
 
     internal SelectionController Selection { get; }
 
@@ -623,7 +644,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     public void Refresh()
     {
         _pipeline = null;
-        Rebuild();
+        Rebuild(discardRunning: true);
     }
 
     /// <summary>Выделяет кусок текстовой карты.</summary>
@@ -817,8 +838,8 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     private static void OnDocumentKeyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var viewer = (MarkdownViewer)d;
-        viewer._identity.Forget();
-        viewer.Rebuild();
+        viewer._forgetQueued = true;
+        viewer.Rebuild(discardRunning: true);
     }
 
     /// <summary>Сменилось то, что контейнеры берут при создании: провайдер стилей, загрузчик картинок, адрес документа.</summary>
@@ -1102,7 +1123,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         _pipeline = null;
         _templatesChanged = true;
         _states.Clear();
-        Rebuild();
+        Rebuild(discardRunning: true);
     }
 
     private MarkdownPipeline GetPipeline()
@@ -1142,11 +1163,100 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     }
 
     /// <summary>
-    /// Новый текст ложится правками: блок с прежним идентификатором остаётся в своём контейнере.
+    /// Разбирает текст заново: короткий — сразу, длинный — в фоне, по одному разбору за раз. Правки,
+    /// пришедшие во время разбора, схлопываются в одну — последнюю. <paramref name="discardRunning"/> —
+    /// идущий разбор устарел целиком: другие настройка разбора, расширения или документ.
+    /// </summary>
+    private void Rebuild(bool discardRunning = false)
+    {
+        if (_parsing is not null)
+        {
+            _rebuildQueued = true;
+            _discardRunning |= discardRunning;
+            return;
+        }
+
+        StartParse();
+    }
+
+    private void StartParse()
+    {
+        if (_forgetQueued)
+        {
+            _forgetQueued = false;
+            _identity.Forget();
+        }
+
+        var markdown = Markdown ?? string.Empty;
+        if (StyleProvider is null)
+        {
+            Apply(new([], null, MdTextMap.Build([], markdown), markdown));
+            return;
+        }
+
+        var pipeline = GetPipeline();
+        var extensions = ActiveExtensions;
+        if (BackgroundParseThreshold <= 0 || markdown.Length < BackgroundParseThreshold)
+        {
+            ParseHere(markdown, pipeline, extensions);
+            return;
+        }
+
+        var parsing = Task.Run(() => Parse(markdown, pipeline, extensions));
+        _parsing = parsing;
+        parsing.ContinueWith(_ => Dispatcher.BeginInvoke(() => FinishParse(parsing)), TaskScheduler.Default);
+    }
+
+    /// <summary>Разбирает и кладёт текст в потоке интерфейса.</summary>
+    private void ParseHere(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions)
+    {
+        var document = Parse(markdown, pipeline, extensions);
+        _identity.Commit();
+        Apply(document);
+    }
+
+    /// <summary>
+    /// Фоновый разбор кончился: ложится, если не устарел целиком, а потом разбирается последний текст,
+    /// если он пришёл. Разбор упал в фоне — тот же текст разбирается в потоке интерфейса.
+    /// </summary>
+    private void FinishParse(Task<ParsedDocument> parsing)
+    {
+        _parsing = null;
+        var queued = _rebuildQueued;
+        var discard = _discardRunning;
+        _rebuildQueued = false;
+        _discardRunning = false;
+
+        if (!parsing.IsCompletedSuccessfully && !queued)
+        {
+            ParseHere(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions);
+            return;
+        }
+
+        if (parsing.IsCompletedSuccessfully && !discard)
+        {
+            _identity.Commit();
+            Apply(parsing.Result);
+        }
+
+        if (queued || discard)
+        {
+            StartParse();
+        }
+    }
+
+    private ParsedDocument Parse(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions)
+    {
+        var blocks = ModelBuilder.Parse(markdown, pipeline, extensions, _identity, out var frontMatter, commit: false);
+        return new(blocks, frontMatter, MdTextMap.Build(blocks, markdown), markdown);
+    }
+
+    /// <summary>
+    /// Разобранный текст ложится правками: блок с прежним идентификатором остаётся в своём контейнере.
     /// Сменились шаблоны — контейнеры создаются заново. Выделение находит своё место в новом тексте,
     /// как отслеживаемый кусок; его блок или текст исчез — выделение снимается.
     /// </summary>
-    private void Rebuild()
+    private void Apply(ParsedDocument document)
     {
         var old = TextMap;
         var selected = Selection is { Range.IsEmpty: false } selection
@@ -1154,15 +1264,11 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             : default;
         var following = TrackFollowingMarks();
 
-        string? frontMatter = null;
-        var blocks = StyleProvider is null
-            ? Array.Empty<BlockVm>()
-            : ModelBuilder.Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions, _identity, out frontMatter);
-
-        TextMap = MdTextMap.Build(blocks, Markdown ?? string.Empty);
-        SetValue(FrontMatterPropertyKey, frontMatter);
+        Source = document.Markdown;
+        TextMap = document.TextMap;
+        SetValue(FrontMatterPropertyKey, document.FrontMatter);
         _states.Retain(_identity.Contains);
-        _blocks.Apply(blocks);
+        _blocks.Apply(document.Blocks);
         UpdateGapLayout();
 
         if (_templatesChanged)
@@ -1200,4 +1306,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         Gutter?.InvalidateVisual();
         RowMarks?.InvalidateVisual();
     }
+
+    /// <summary>Разобранный текст: блоки, front matter и текстовая карта.</summary>
+    private sealed record ParsedDocument(IReadOnlyList<BlockVm> Blocks, string? FrontMatter, MdTextMap TextMap, string Markdown);
 }

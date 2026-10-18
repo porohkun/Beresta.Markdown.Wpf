@@ -24,6 +24,7 @@
         <ScrollViewer x:Name="Scroll">
             <mdv:MarkdownViewer x:Name="Viewer"
                                 Markdown="{Binding Text}"
+                                BackgroundParseThreshold="50000"
                                 Margin="24,16"
                                 ViewportChanged="OnViewportChanged" />
         </ScrollViewer>
