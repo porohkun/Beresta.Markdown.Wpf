@@ -80,8 +80,7 @@
     <Brush x:Key="Md.Image.AltForeground">Gray</Brush>
     <Thickness x:Key="Md.Task.Margin">0,0,6,0</Thickness>
     <sys:Double x:Key="Md.Task.Size">13</sys:Double>
-    <Brush x:Key="Md.Task.BoxBrush">#8C959F</Brush>
-    <Brush x:Key="Md.Task.CheckedBrush">#0969DA</Brush>
+    <Brush x:Key="Md.Task.Brush">#0969DA</Brush>
     <Brush x:Key="Md.Task.MarkBrush">White</Brush>
     <GridLength x:Key="Md.Footnote.MarkerWidth">24</GridLength>
     <Brush x:Key="Md.Footnote.MarkerForeground">Gray</Brush>
@@ -365,8 +364,7 @@
         <Setter Property="Width" Value="{DynamicResource Md.Task.Size}" />
         <Setter Property="Height" Value="{DynamicResource Md.Task.Size}" />
         <Setter Property="Margin" Value="{DynamicResource Md.Task.Margin}" />
-        <Setter Property="BoxBrush" Value="{DynamicResource Md.Task.BoxBrush}" />
-        <Setter Property="CheckedBrush" Value="{DynamicResource Md.Task.CheckedBrush}" />
+        <Setter Property="Brush" Value="{DynamicResource Md.Task.Brush}" />
         <Setter Property="MarkBrush" Value="{DynamicResource Md.Task.MarkBrush}" />
     </Style>
 
@@ -1293,32 +1291,28 @@
         </Style.Triggers>
     </Style>
 
-    <Brush x:Key="Md.TaskStatus.Foreground">#0969DA</Brush>
-    <Geometry x:Key="Md.TaskStatus.InProgress.Icon">F0 M1,8 A7,7 0 1 1 15,8 A7,7 0 1 1 1,8 Z M2.5,8 A5.5,5.5 0 1 0 13.5,8 A5.5,5.5 0 1 0 2.5,8 Z M8,4 A4,4 0 0 1 8,12 Z</Geometry>
-    <Geometry x:Key="Md.TaskStatus.Cancelled.Icon">F0 M1,8 A7,7 0 1 1 15,8 A7,7 0 1 1 1,8 Z M2.5,8 A5.5,5.5 0 1 0 13.5,8 A5.5,5.5 0 1 0 2.5,8 Z M4.5,7.25 L11.5,7.25 L11.5,8.75 L4.5,8.75 Z</Geometry>
-    <Geometry x:Key="Md.TaskStatus.Forwarded.Icon">F0 M1,8 A7,7 0 1 1 15,8 A7,7 0 1 1 1,8 Z M2.5,8 A5.5,5.5 0 1 0 13.5,8 A5.5,5.5 0 1 0 2.5,8 Z M6,4.5 L10.5,8 L6,11.5 L6,9.6 L8.2,8 L6,6.4 Z</Geometry>
-    <Geometry x:Key="Md.TaskStatus.Question.Icon">F0 M1,8 A7,7 0 1 1 15,8 A7,7 0 1 1 1,8 Z M2.5,8 A5.5,5.5 0 1 0 13.5,8 A5.5,5.5 0 1 0 2.5,8 Z M5.5,6.25 A2.5,2.5 0 0 1 10.5,6.25 C10.5,7.5 8.75,7.9 8.75,9.25 L7.25,9.25 C7.25,7.25 9,7.2 9,6.25 A1,1 0 0 0 7,6.25 Z M7.25,10.25 L8.75,10.25 L8.75,11.75 L7.25,11.75 Z</Geometry>
-    <Geometry x:Key="Md.TaskStatus.Important.Icon">F0 M1,8 A7,7 0 1 1 15,8 A7,7 0 1 1 1,8 Z M2.5,8 A5.5,5.5 0 1 0 13.5,8 A5.5,5.5 0 1 0 2.5,8 Z M7.25,4 L8.75,4 L8.75,9.5 L7.25,9.5 Z M7.25,10.75 L8.75,10.75 L8.75,12.25 L7.25,12.25 Z</Geometry>
+    <!-- Знаки статусов — в квадрате флажка 16 на 16 -->
+    <Geometry x:Key="Md.TaskStatus.InProgress.Icon">M3,3 L8,3 L8,13 L3,13 Z</Geometry>
+    <Geometry x:Key="Md.TaskStatus.Cancelled.Icon">M3.5,7.25 L12.5,7.25 L12.5,8.75 L3.5,8.75 Z</Geometry>
+    <Geometry x:Key="Md.TaskStatus.Forwarded.Icon">M6,4 L11,8 L6,12 L6,10 L8.5,8 L6,6 Z</Geometry>
+    <Geometry x:Key="Md.TaskStatus.Question.Icon">M5.5,6.25 A2.5,2.5 0 0 1 10.5,6.25 C10.5,7.5 8.75,7.9 8.75,9.25 L7.25,9.25 C7.25,7.25 9,7.2 9,6.25 A1,1 0 0 0 7,6.25 Z M7.25,10.25 L8.75,10.25 L8.75,11.75 L7.25,11.75 Z</Geometry>
+    <Geometry x:Key="Md.TaskStatus.Important.Icon">M7.25,3.5 L8.75,3.5 L8.75,9.5 L7.25,9.5 Z M7.25,10.75 L8.75,10.75 L8.75,12.25 L7.25,12.25 Z</Geometry>
     <DataTemplate x:Key="Md.TaskStatus.Template" DataType="{x:Type vm:TaskVm}">
-        <Path x:Name="Icon"
-              Width="14"
-              Height="14"
-              Stretch="Uniform"
-              Margin="{DynamicResource Md.Task.Margin}"
-              Fill="{DynamicResource Md.TaskStatus.Foreground}"
-              Data="{DynamicResource Md.TaskStatus.InProgress.Icon}" />
+        <p:MdTaskMark x:Name="Icon"
+                      Style="{DynamicResource Md.Task.Style}"
+                      Glyph="{DynamicResource Md.TaskStatus.InProgress.Icon}" />
         <DataTemplate.Triggers>
             <DataTrigger Binding="{Binding Status}" Value="-">
-                <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.TaskStatus.Cancelled.Icon}" />
+                <Setter TargetName="Icon" Property="Glyph" Value="{DynamicResource Md.TaskStatus.Cancelled.Icon}" />
             </DataTrigger>
             <DataTrigger Binding="{Binding Status}" Value="&gt;">
-                <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.TaskStatus.Forwarded.Icon}" />
+                <Setter TargetName="Icon" Property="Glyph" Value="{DynamicResource Md.TaskStatus.Forwarded.Icon}" />
             </DataTrigger>
             <DataTrigger Binding="{Binding Status}" Value="?">
-                <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.TaskStatus.Question.Icon}" />
+                <Setter TargetName="Icon" Property="Glyph" Value="{DynamicResource Md.TaskStatus.Question.Icon}" />
             </DataTrigger>
             <DataTrigger Binding="{Binding Status}" Value="!">
-                <Setter TargetName="Icon" Property="Data" Value="{DynamicResource Md.TaskStatus.Important.Icon}" />
+                <Setter TargetName="Icon" Property="Glyph" Value="{DynamicResource Md.TaskStatus.Important.Icon}" />
             </DataTrigger>
         </DataTemplate.Triggers>
     </DataTemplate>

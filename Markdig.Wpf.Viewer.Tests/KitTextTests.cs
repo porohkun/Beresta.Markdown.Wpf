@@ -1,11 +1,13 @@
 ﻿namespace MarkdigWpfViewer.Tests;
 
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Shapes;
 using Extensions;
 using Kit;
 using Presenters;
@@ -151,17 +153,26 @@ public sealed class KitTextTests
     }
 
     [Fact]
-    public void Статус_задачи_рисуется_своим_значком()
+    public void Статус_задачи_рисуется_знаком_в_том_же_квадрате_что_и_флажок()
     {
         WpfHost.Invoke(() =>
         {
-            var viewer = new MarkdownViewer { Markdown = "- [>] later" };
+            var viewer = new MarkdownViewer { Markdown = "- [>] later\n- [ ] todo" };
             viewer.Extensions.Add(new TaskStatuses());
             var window = WpfHost.Show(viewer);
 
-            Visuals.Descendants<Path>(viewer).Should().ContainSingle()
-                .Which.Data.Should().BeSameAs(viewer.FindResource("Md.TaskStatus.Forwarded.Icon"));
-            Visuals.Descendants<MdTaskMark>(viewer).Should().BeEmpty();
+            var marks = Visuals.Descendants<MdTaskMark>(viewer).ToList();
+            marks.Should().HaveCount(2);
+            marks[0].Glyph.Should().BeSameAs(viewer.FindResource("Md.TaskStatus.Forwarded.Icon"));
+            marks[1].Glyph.Should().BeNull();
+            marks[0].RenderSize.Should().Be(marks[1].RenderSize);
+            var peer = UIElementAutomationPeer.CreatePeerForElement(marks[0]);
+            ((IToggleProvider)peer.GetPattern(PatternInterface.Toggle)).ToggleState.Should().Be(ToggleState.Indeterminate);
+
+            viewer.Resources["Md.Task.Brush"] = Brushes.Red;
+            WpfHost.Settle(window);
+
+            marks.Select(mark => mark.Brush).Should().OnlyContain(brush => brush == Brushes.Red);
             window.Close();
         });
     }

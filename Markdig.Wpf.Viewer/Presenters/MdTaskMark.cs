@@ -5,7 +5,7 @@ using System.Windows.Automation.Peers;
 using System.Windows.Media;
 using Automation;
 
-/// <summary>Картинка флажка задачи: пустой квадрат или залитый с галочкой. Не нажимается.</summary>
+/// <summary>Картинка флажка задачи: пустой квадрат, залитый с галочкой или со знаком статуса. Не нажимается.</summary>
 public sealed class MdTaskMark : FrameworkElement
 {
     public static readonly DependencyProperty IsCheckedProperty =
@@ -15,16 +15,16 @@ public sealed class MdTaskMark : FrameworkElement
             typeof(MdTaskMark),
             new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender));
 
-    public static readonly DependencyProperty BoxBrushProperty =
+    public static readonly DependencyProperty GlyphProperty =
         DependencyProperty.Register(
-            nameof(BoxBrush),
-            typeof(Brush),
+            nameof(Glyph),
+            typeof(Geometry),
             typeof(MdTaskMark),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
 
-    public static readonly DependencyProperty CheckedBrushProperty =
+    public static readonly DependencyProperty BrushProperty =
         DependencyProperty.Register(
-            nameof(CheckedBrush),
+            nameof(Brush),
             typeof(Brush),
             typeof(MdTaskMark),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
@@ -43,18 +43,18 @@ public sealed class MdTaskMark : FrameworkElement
         set => SetValue(IsCheckedProperty, value);
     }
 
-    /// <summary>Рамка пустого квадрата.</summary>
-    public Brush? BoxBrush
+    /// <summary>Знак статуса задачи в пустом квадрате, в координатах квадрата 16 на 16; нет знака — обычный флажок.</summary>
+    public Geometry? Glyph
     {
-        get => (Brush?)GetValue(BoxBrushProperty);
-        set => SetValue(BoxBrushProperty, value);
+        get => (Geometry?)GetValue(GlyphProperty);
+        set => SetValue(GlyphProperty, value);
     }
 
-    /// <summary>Заливка квадрата выполненной задачи.</summary>
-    public Brush? CheckedBrush
+    /// <summary>Цвет флажка: рамка пустого квадрата, заливка выполненного, знак статуса.</summary>
+    public Brush? Brush
     {
-        get => (Brush?)GetValue(CheckedBrushProperty);
-        set => SetValue(CheckedBrushProperty, value);
+        get => (Brush?)GetValue(BrushProperty);
+        set => SetValue(BrushProperty, value);
     }
 
     /// <summary>Галочка на залитом квадрате.</summary>
@@ -75,11 +75,18 @@ public sealed class MdTaskMark : FrameworkElement
         var corner = size / 6;
         if (!IsChecked)
         {
-            drawingContext.DrawRoundedRectangle(null, new Pen(BoxBrush, 1), new(0.5, 0.5, size - 1, size - 1), corner, corner);
+            drawingContext.DrawRoundedRectangle(null, new Pen(Brush, 1), new(0.5, 0.5, size - 1, size - 1), corner, corner);
+            if (Glyph is { } glyph)
+            {
+                drawingContext.PushTransform(new ScaleTransform(size / 16, size / 16));
+                drawingContext.DrawGeometry(Brush, null, glyph);
+                drawingContext.Pop();
+            }
+
             return;
         }
 
-        drawingContext.DrawRoundedRectangle(CheckedBrush, null, new(0, 0, size, size), corner, corner);
+        drawingContext.DrawRoundedRectangle(Brush, null, new(0, 0, size, size), corner, corner);
 
         var mark = new StreamGeometry();
         using (var context = mark.Open())
