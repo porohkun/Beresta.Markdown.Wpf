@@ -327,7 +327,8 @@ internal sealed partial class ModelBuilder
             Width = Pixels(image.Attributes.GetValueOrDefault("width")),
             Height = Pixels(image.Attributes.GetValueOrDefault("height")),
             Href = state.Href,
-            Hyperlink = state.Hyperlink
+            Hyperlink = state.Hyperlink,
+            LinkTitle = state.LinkTitle
         };
 
     /// <summary>Размер из атрибута: число пикселей, можно с <c>px</c>.</summary>
@@ -1147,7 +1148,8 @@ internal sealed partial class ModelBuilder
                 Width = Pixels(Attribute("width")),
                 Height = Pixels(Attribute("height")),
                 Href = state.Href,
-                Hyperlink = state.Hyperlink
+                Hyperlink = state.Hyperlink,
+                LinkTitle = state.LinkTitle
             },
             image));
     }

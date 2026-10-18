@@ -20,5 +20,8 @@ public sealed record ImageVm(string Url, string Alt) : InlineVm, IMdCopyText
     /// <summary>Разбор <see cref="Href"/>.</summary>
     public Uri? Hyperlink { get; init; }
 
+    /// <summary>Заголовок ссылки вокруг картинки; нет — <c>null</c>.</summary>
+    public string? LinkTitle { get; init; }
+
     public string CopyText => Alt;
 }

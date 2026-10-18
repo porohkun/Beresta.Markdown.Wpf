@@ -9,6 +9,7 @@ public sealed class SelectedMarkdownTests
     [Theory]
     [InlineData("Абзац с **жирным словом** и [ссылкой](https://example.com).", "с жирным сл", "с **жирным сл**")]
     [InlineData("see [the docs](https://x.example/a) now", "the do", "[the do](https://x.example/a)")]
+    [InlineData("see [the docs](https://x.example/a \"Docs\") now", "the do", "[the do](https://x.example/a \"Docs\")")]
     [InlineData("use `foo()` here", "foo()", "`foo()`")]
     [InlineData("**bold *both* bold** tail", "bold both bold", "**bold *both* bold**")]
     [InlineData("## Title here", "Title", "Title")]
@@ -47,6 +48,9 @@ public sealed class SelectedMarkdownTests
     [InlineData("<div align=\"center\">\n\ntext\n\n</div>")]
     [InlineData("<details>\n<summary>S</summary>\n\nx\n\n</details>")]
     [InlineData("[![Y](y.svg)](https://x.example) and [text ![i](i.png)](https://t.example)")]
+    [InlineData("see [the docs](https://x.example/a \"The \\\"docs\\\"\") and [text ![i](i.png)](https://t.example \"T\")")]
+    [InlineData("[![Y](y.svg)](https://x.example \"T\")")]
+    [InlineData("Text with a note[^note].\n\n[^note]: The note.\n\nAfter.")]
     public void Выделенный_целиком_документ_пишется_как_был(string markdown)
     {
         CopyAll(markdown).Should().Be(markdown);
@@ -70,6 +74,7 @@ public sealed class SelectedMarkdownTests
     [InlineData("<h1 align=\"center\">Title</h1>", "<div align=\"center\">\n\n# Title\n\n</div>")]
     [InlineData("<details open><summary>S</summary>x</details>", "<details open>\n<summary>S</summary>\n\nx\n\n</details>")]
     [InlineData("<a href=\"https://x.example\"><img src=\"y.svg\" alt=\"Y\"></a>", "[![Y](y.svg)](https://x.example)")]
+    [InlineData("<a href=\"https://x.example\" title=\"T\">x</a>", "[x](https://x.example \"T\")")]
     [InlineData("<img src=\"x.png\" width=\"100\" title=\"T\">", "![](x.png \"T\"){width=100}")]
     [InlineData("<p align=\"center\"><a href=\"x\"><img src=\"a.svg\"></a> <a href=\"y\"><img src=\"b.svg\"></a></p>",
         "<div align=\"center\">\n\n[![](a.svg)](x) [![](b.svg)](y)\n\n</div>")]

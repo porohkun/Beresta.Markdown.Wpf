@@ -87,7 +87,9 @@ public sealed class MdTextBoxLines : IMdScrollSide
         var rows = new List<(int Line, double Top, double Height)>();
         var first = TextBox.GetFirstVisibleLineIndex();
         var last = TextBox.GetLastVisibleLineIndex();
-        if (first < 0 || last < first || Scroller is not { } scroller)
+
+        // BYDESIGN: видимые строки помнят прежнюю раскладку, пока новый текст не разложен; таких строк уже нет.
+        if (first < 0 || last < first || last >= TextBox.LineCount || Scroller is not { } scroller)
         {
             return rows;
         }

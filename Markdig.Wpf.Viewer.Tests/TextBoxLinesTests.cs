@@ -50,6 +50,27 @@ public sealed class TextBoxLinesTests
     }
 
     [Fact]
+    public void Видимые_строки_без_раскладки_нового_текста_пусты()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var editor = new TextBox { Text = LongText, AcceptsReturn = true, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+            var window = WpfHost.Show(editor, height: 300);
+            var lines = new MdTextBoxLines(editor);
+            lines.ScrollToSourceLine(300);
+            WpfHost.Settle(window);
+
+            editor.Text = "short";
+
+            lines.VisibleRows(editor).Should().BeEmpty();
+            lines.GetVisibleSourceLine(0.38);
+            WpfHost.Settle(window);
+            lines.VisibleRows(editor).Select(row => row.Line).Should().Equal(0);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Вьюер_догоняет_прокрученный_редактор()
     {
         WpfHost.Invoke(() =>

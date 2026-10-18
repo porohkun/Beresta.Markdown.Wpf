@@ -90,6 +90,9 @@ internal sealed partial class MdMarkdownWriter
             ? $"<{href.Replace("<", "%3C").Replace(">", "%3E")}>"
             : href;
 
+    private static string Title(string? title)
+        => title is null ? string.Empty : $" \"{title.Replace("\"", "\\\"")}\"";
+
     private static string Escape(string text)
     {
         var escaped = new StringBuilder(text.Length);
@@ -128,7 +131,7 @@ internal sealed partial class MdMarkdownWriter
         var markers = new List<Marker>();
         if ((run.Href ?? run.Hyperlink?.OriginalString) is { } href && run.Markup is not { ReplacesLink: true })
         {
-            markers.Add(new("[", $"]({Destination(href)})", Emphasis: false));
+            markers.Add(new("[", $"]({Destination(href)}{Title(run.LinkTitle)})", Emphasis: false));
         }
 
         if (run.Markup is { } frame)
@@ -252,7 +255,7 @@ internal sealed partial class MdMarkdownWriter
                 _other = true;
                 return ["---"];
 
-            case FootnoteVm footnote when _selection.Start <= range.Start && _selection.End >= range.End && SourceOf(footnote) is { } whole:
+            case FootnoteVm footnote when _selection.Start <= range.Start && _selection.End >= range.End && FootnoteSource(footnote) is { } whole:
                 _other = true;
                 return whole.Split('\n');
 
@@ -539,6 +542,19 @@ internal sealed partial class MdMarkdownWriter
             ? _source.Substring(span.Start, span.Length)
             : null;
 
+    /// <summary>Исходник сноски с начала её строки — вместе с меткой.</summary>
+    private string? FootnoteSource(FootnoteVm footnote)
+    {
+        if (footnote.Source is not { IsEmpty: false } span || span.End > _source.Length)
+        {
+            return null;
+        }
+
+        // BYDESIGN: кусок сноски у разбора начинается после её метки `[^имя]:`.
+        var start = span.Start == 0 ? 0 : _source.LastIndexOf('\n', span.Start - 1) + 1;
+        return _source[start..span.End];
+    }
+
     /// <summary>Начертание или ссылка: что ставится до куска текста и что после.</summary>
     private readonly record struct Marker(string Open, string Close, bool Emphasis, bool IsFrame = false);
 
@@ -576,7 +592,7 @@ internal sealed partial class MdMarkdownWriter
                     var wanted = _open.Where(marker => !marker.IsFrame && !marker.Close.StartsWith("](", StringComparison.Ordinal)).ToList();
                     if ((image.Href ?? image.Hyperlink?.OriginalString) is { } link)
                     {
-                        wanted.Add(new("[", $"]({Destination(link)})", Emphasis: false));
+                        wanted.Add(new("[", $"]({Destination(link)}{Title(image.LinkTitle)})", Emphasis: false));
                     }
 
                     Append(Open(wanted, ImageMarkdown(image)));
@@ -683,7 +699,7 @@ internal sealed partial class MdMarkdownWriter
                 return source;
             }
 
-            var title = image.Title is { } text ? $" \"{text.Replace("\"", "\\\"")}\"" : string.Empty;
+            var title = Title(image.Title);
             var size = new[] { ("width", image.Width), ("height", image.Height) }
                 .Where(pair => pair.Item2 is not null)
                 .Select(pair => $"{pair.Item1}={pair.Item2!.Value.ToString(CultureInfo.InvariantCulture)}")
