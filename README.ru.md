@@ -1,4 +1,4 @@
-﻿# Beresta.Markdown.Wpf v0.6.0
+﻿# Beresta.Markdown.Wpf v0.7.0
 
 [English](https://github.com/porohkun/Beresta.Markdown.Wpf/blob/main/README.md) | **Русский**
 

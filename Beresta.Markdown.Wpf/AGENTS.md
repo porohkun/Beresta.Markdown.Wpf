@@ -187,7 +187,8 @@ Markdig получает текст одним куском, без нарезк
 ## Версия
 
 Версия пакета записана в csproj четырьмя свойствами (`Version`, `AssemblyVersion`, `FileVersion`,
-`InformationalVersion`) и в заголовках корневых `README.md` и `README.ru.md`; меняются все разом.
+`InformationalVersion`), в заголовках корневых `README.md` и `README.ru.md` и в таблице страниц вики
+`Comparison` на обоих языках; меняются все разом.
 
 ## Агентские файлы
 

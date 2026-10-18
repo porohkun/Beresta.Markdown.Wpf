@@ -3,6 +3,7 @@
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<RootNamespace>Beresta.Markdown.Wpf.Showcase</RootNamespace>
+		<ApplicationIcon>icon.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -19,6 +20,7 @@
 		<EmbeddedResource Include="Samples\*.md;Showcases\**\*.md" WithCulture="false" />
 		<None Update="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
 		<Resource Include="Samples\*.png" />
+		<Resource Include="icon.ico" />
 	</ItemGroup>
 
 </Project>
