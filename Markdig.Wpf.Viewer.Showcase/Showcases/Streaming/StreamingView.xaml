@@ -50,7 +50,7 @@
         <ScrollViewer x:Name="Scroll"
                       b:StickyScroll.Edge="{Binding Edge}"
                       b:StickyScroll.CanUnstick="{Binding CanUnstick}">
-            <mdv:MarkdownViewer x:Name="Viewer" Margin="24,16" />
+            <mdv:MarkdownViewer x:Name="Viewer" Margin="24,16" ImagePolicy="{x:Static mdv:MdImagePolicy.Untrusted}" />
         </ScrollViewer>
     </DockPanel>
 </UserControl>

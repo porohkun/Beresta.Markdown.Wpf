@@ -128,6 +128,14 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(MdImageLoader.Instance, OnContainersSourceChanged));
 
+    /// <summary>Какие картинки загружать; наследуется. По умолчанию — <see cref="MdImagePolicy.Default"/>.</summary>
+    public static readonly DependencyProperty ImagePolicyProperty =
+        DependencyProperty.RegisterAttached(
+            nameof(ImagePolicy),
+            typeof(MdImagePolicy),
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(MdImagePolicy.Default, FrameworkPropertyMetadataOptions.Inherits, OnImagePolicyChanged));
+
     /// <summary>Адрес документа: от него разбираются относительные адреса картинок.</summary>
     public static readonly DependencyProperty BaseUriProperty =
         DependencyProperty.Register(
@@ -382,6 +390,12 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         set => SetValue(ImageLoaderProperty, value);
     }
 
+    public MdImagePolicy ImagePolicy
+    {
+        get => (MdImagePolicy)GetValue(ImagePolicyProperty);
+        set => SetValue(ImagePolicyProperty, value);
+    }
+
     public Uri? BaseUri
     {
         get => (Uri?)GetValue(BaseUriProperty);
@@ -437,6 +451,12 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 
     // BYDESIGN: кисти пометок — логические потомки вьюера: иначе смена темы до них не доходит.
     protected override IEnumerator LogicalChildren => WithThemeBrushes(base.LogicalChildren, _themeBrushes.All);
+
+    public static MdImagePolicy GetImagePolicy(DependencyObject element)
+        => (MdImagePolicy)element.GetValue(ImagePolicyProperty);
+
+    public static void SetImagePolicy(DependencyObject element, MdImagePolicy value)
+        => element.SetValue(ImagePolicyProperty, value);
 
     public static MdExtensionCollection? GetSharedExtensions(DependencyObject element)
         => (MdExtensionCollection?)element.GetValue(SharedExtensionsProperty);
@@ -807,6 +827,14 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         var viewer = (MarkdownViewer)d;
         viewer._templatesChanged = true;
         viewer.Rebuild();
+    }
+
+    private static void OnImagePolicyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is MarkdownViewer)
+        {
+            OnContainersSourceChanged(d, e);
+        }
     }
 
     private static void OnDecorationsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

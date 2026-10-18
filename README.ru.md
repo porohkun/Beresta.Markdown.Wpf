@@ -106,6 +106,7 @@ dotnet add package Markdig.Wpf.Viewer
   [Номера строк](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Line-Numbers-ru).
 - **Встраивание в приложение:** [Ссылки приложения](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Application-Links-ru),
   [Картинки](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Images-ru),
+  [Чужой текст](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Untrusted-Text-ru),
   [Списки задач](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Task-Lists-ru),
   [Строки исходника и две панели](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Source-Lines-and-Two-Panes-ru),
   [Координаты](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Coordinates-ru),

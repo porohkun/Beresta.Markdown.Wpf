@@ -30,6 +30,7 @@
 
         <ItemsControl x:Name="Messages"
                       ItemsSource="{Binding Messages}"
+                      mdv:MarkdownViewer.ImagePolicy="{x:Static mdv:MdImagePolicy.Untrusted}"
                       VirtualizingPanel.IsVirtualizing="True"
                       VirtualizingPanel.VirtualizationMode="Recycling"
                       VirtualizingPanel.ScrollUnit="Pixel"

@@ -107,6 +107,7 @@ on one page, [Settings and Hooks](https://github.com/porohkun/Markdig.Wpf.Viewer
   [Line Numbers](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Line-Numbers).
 - **Integration:** [Application Links](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Application-Links),
   [Images](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Images),
+  [Untrusted Text](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Untrusted-Text),
   [Task Lists](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Task-Lists),
   [Source Lines and Two Panes](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Source-Lines-and-Two-Panes),
   [Coordinates](https://github.com/porohkun/Markdig.Wpf.Viewer/wiki/Coordinates),

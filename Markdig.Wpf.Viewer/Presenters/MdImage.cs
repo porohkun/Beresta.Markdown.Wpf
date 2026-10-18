@@ -198,6 +198,12 @@ public sealed class MdImage : Control
         }
 
         var uri = Resolve(image.Url, viewer.BaseUri);
+        if (!viewer.ImagePolicy.Allows(image.Url, uri))
+        {
+            SetValue(ImageSourcePropertyKey, null);
+            return;
+        }
+
         var width = loader is MdImageLoader ? DecodeWidth(image) : 0;
         var ticket = MdImageCache.Shared.Request(
             loader,
