@@ -72,12 +72,17 @@
         </DataTemplate>
 
         <!-- Оформление «Chip» для чипов ::текст:: -->
+        <SolidColorBrush x:Key="ChipBrush" Color="{DynamicResource PrimaryColor}" Opacity="0.16" />
+        <Style x:Key="Md.Chip.Style" TargetType="{x:Type Span}">
+            <Setter Property="Background" Value="{DynamicResource ChipBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+        </Style>
     </UserControl.Resources>
 
     <DockPanel>
         <Border Style="{StaticResource ShowcaseHeader}">
             <TextBlock TextWrapping="Wrap"
-                       Text="Свой синтаксис на MdExtension: заметка :::note со своим состоянием, упоминание @имя со своим разбором и чипы ::текст:: — оформленный текст, а не виджет. Упоминания и чипы подключены одним набором MdExtensionSet." />
+                       Text="Свой синтаксис на MdExtension: заметка :::note со своим состоянием, упоминание @имя со своим разбором и чипы ::текст:: — оформленный текст, а не виджет. Каждое расширение подключено отдельно, строкой в Extensions вьюера; наборы — на витрине «Наборы»." />
         </Border>
 
         <ScrollViewer>
@@ -85,10 +90,8 @@
                                 Margin="24,16">
                 <mdv:MarkdownViewer.Extensions>
                     <local:NoteExtension Template="{StaticResource NoteTemplate}" />
-                    <mdx:MdExtensionSet>
-                        <local:MentionExtension Template="{StaticResource MentionTemplate}" />
-                        <local:ChipExtension />
-                    </mdx:MdExtensionSet>
+                    <local:MentionExtension Template="{StaticResource MentionTemplate}" />
+                    <local:ChipExtension />
                 </mdv:MarkdownViewer.Extensions>
             </mdv:MarkdownViewer>
         </ScrollViewer>

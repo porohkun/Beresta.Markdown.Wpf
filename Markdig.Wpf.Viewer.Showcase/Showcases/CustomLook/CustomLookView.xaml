@@ -59,7 +59,7 @@
 
         <!-- Ключи темы: своё значение ложится в ресурсы вьюера -->
         <DockPanel DockPanel.Dock="Right"
-                   Width="400"
+                   Width="440"
                    Margin="0,12,12,12">
             <DockPanel DockPanel.Dock="Top"
                        Margin="0,0,0,4">
@@ -71,8 +71,8 @@
                            VerticalAlignment="Center" />
             </DockPanel>
             <local:ThemeKeyGrid SelectedObject="{Binding Keys}"
-                                MinTitleWidth="210"
-                                MaxTitleWidth="210" />
+                                MinTitleWidth="240"
+                                MaxTitleWidth="240" />
         </DockPanel>
 
         <ScrollViewer>

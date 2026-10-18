@@ -88,7 +88,7 @@ public partial class TwoPanesView : UserControl
 
     /// <summary>
     /// Правки внутри строк изменённых кусков: дописанное подсвечено, а на его месте с другой стороны —
-    /// черта; удалённое — наоборот; заменённое — в рамках с обеих сторон.
+    /// черта; удалённое — наоборот; заменённое — удалённое слева и дописанное справа.
     /// </summary>
     private (List<MdMark> Left, List<MdMark> Right) MarkPieces()
     {
@@ -117,8 +117,8 @@ public partial class TwoPanesView : UserControl
                 }
                 else
                 {
-                    left.Add(new MdMark(leftPiece, MdMarkKind.Frame) { Style = "Changed" });
-                    right.Add(new MdMark(rightPiece, MdMarkKind.Frame) { Style = "Changed" });
+                    left.Add(new MdMark(leftPiece) { Style = "Removed" });
+                    right.Add(new MdMark(rightPiece) { Style = "Added" });
                 }
             }
         }
@@ -147,9 +147,9 @@ public partial class TwoPanesView : UserControl
         return (left, left + viewer.ActualWidth);
     }
 
-    /// <summary>Кисть от цвета удалённого у левого края соединения к цвету добавленного у правого.</summary>
-    private LinearGradientBrush Gradient(string part, double from, double to)
-        => new(ColorOf($"Md.Mark.Removed.{part}"), ColorOf($"Md.Mark.Added.{part}"), new Point(from, 0), new Point(to, 0))
+    /// <summary>Кисть от цвета левого оформления у левого края соединения к цвету правого у правого.</summary>
+    private LinearGradientBrush Gradient(string leftStyle, string rightStyle, string part, double from, double to)
+        => new(ColorOf($"Md.Mark.{leftStyle}.{part}"), ColorOf($"Md.Mark.{rightStyle}.{part}"), new Point(from, 0), new Point(to, 0))
         {
             MappingMode = BrushMappingMode.Absolute
         };
@@ -161,9 +161,8 @@ public partial class TwoPanesView : UserControl
             : Colors.Transparent;
 
     /// <summary>
-    /// Каждая правка — одна фигура: соединение между панелями заливается от цвета удалённого к цвету
-    /// добавленного вплоть до подсветки строк, а контур идёт по границам строк правки в обеих панелях и
-    /// замыкается у дальних краёв подсветки.
+    /// Каждая правка — одна фигура из подсветки строк, соединения между панелями и контура: вставка —
+    /// цветом добавленного, удаление — цветом удалённого, изменение — переходом от одного к другому.
     /// </summary>
     private void DrawConnections()
     {
@@ -174,8 +173,6 @@ public partial class TwoPanesView : UserControl
         var (rightStart, rightEnd) = Edges(SyncRight);
         var gapStart = Gap.Offset;
         var gapEnd = gapStart + Gap.ActualWidth;
-        var fill = Gradient("Brush", gapStart, gapEnd);
-        var stroke = Gradient("LineBrush", gapStart, gapEnd);
 
         foreach (var hunk in _hunks)
         {
@@ -186,6 +183,11 @@ public partial class TwoPanesView : UserControl
             {
                 continue;
             }
+
+            var leftStyle = hunk.LeftEnd < hunk.LeftStart ? "Added" : "Removed";
+            var rightStyle = hunk.RightEnd < hunk.RightStart ? "Removed" : "Added";
+            var fill = Gradient(leftStyle, rightStyle, "Brush", gapStart, gapEnd);
+            var stroke = Gradient(leftStyle, rightStyle, "LineBrush", gapStart, gapEnd);
 
             Connections.Children.Add(new Polygon
             {
