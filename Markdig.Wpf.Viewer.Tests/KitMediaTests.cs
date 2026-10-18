@@ -1,5 +1,6 @@
 ﻿namespace MarkdigWpfViewer.Tests;
 
+using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
@@ -308,6 +309,30 @@ public sealed class KitMediaTests
                 .Where(text => text.Runs?.OfType<RunVm>().Any(run => run.Text is "title" or "Hello") == true)
                 .Should().HaveCount(2).And.OnlyContain(text => ReferenceEquals(text.Foreground, Brushes.Green));
             texts.Select(text => text.Text).Should().Contain(["guide.pdf", "docs/guide.pdf"]);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Карточки_берут_общее_скругление_рамку_таблицы_и_вид_подписи()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "![Talk](https://vimeo.com/123456)\n\n{{< pdf docs/guide.pdf >}}" };
+            viewer.Extensions.Add(new MdExtensionSet { Extensions = { new VideoCards(), new Shortcodes() } });
+            viewer.Resources["Md.Card.CornerRadius"] = new CornerRadius(9);
+            viewer.Resources["Md.Table.BorderThickness"] = new Thickness(3);
+            viewer.Resources["Md.Figure.CaptionForeground"] = Brushes.Red;
+            viewer.Resources["Md.Figure.CaptionFontSize"] = 20.0;
+            var window = WpfHost.Show(viewer);
+
+            Visuals.Descendants<Button>(viewer)
+                .Select(card => Visuals.Descendants<Border>(card).First())
+                .Should().HaveCount(2)
+                .And.OnlyContain(frame => frame.CornerRadius == new CornerRadius(9) && frame.BorderThickness == new Thickness(3));
+            var address = Visuals.Descendants<TextBlock>(viewer).Single(text => text.Text == "docs/guide.pdf");
+            address.Foreground.Should().Be(Brushes.Red);
+            address.FontSize.Should().Be(20);
             window.Close();
         });
     }

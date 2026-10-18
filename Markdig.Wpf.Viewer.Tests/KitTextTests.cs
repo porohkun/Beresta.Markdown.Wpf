@@ -178,6 +178,30 @@ public sealed class KitTextTests
     }
 
     [Fact]
+    public void Правки_CriticMarkup_красятся_цветами_пометок_и_маркера()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "{++add++} {--cut--} {==mark==}{>>note<<}" };
+            viewer.Extensions.Add(new CriticMarkup());
+            viewer.Resources["Md.Mark.Added.LineBrush"] = Brushes.Green;
+            viewer.Resources["Md.Mark.Removed.LineBrush"] = Brushes.Red;
+            viewer.Resources["Md.Marked.Background"] = Brushes.Yellow;
+            viewer.Resources["Md.Mark.Comment.LineBrush"] = Brushes.Purple;
+            var window = WpfHost.Show(viewer);
+
+            Styled(viewer, "Md.Critic.Insertion.Style").Foreground.Should().Be(Brushes.Green);
+            Styled(viewer, "Md.Critic.Deletion.Style").Foreground.Should().Be(Brushes.Red);
+            Styled(viewer, "Md.Critic.Highlight.Style").Background.Should().Be(Brushes.Yellow);
+            var icon = viewer.FindResource("Md.Critic.CommentIcon");
+            Visuals.Descendants<System.Windows.Shapes.Path>(viewer)
+                .Single(path => ReferenceEquals(path.Data, icon))
+                .Fill.Should().Be(Brushes.Purple);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Сноска_подсказкой_прячет_определение()
     {
         var blocks = Parse("Text[^1].\n\n[^1]: The **note**.", new FootnoteTips());
@@ -187,9 +211,11 @@ public sealed class KitTextTests
             .Should().Be(new FootnoteTipVm(1, "The **note**.") { Source = blocks.OfType<ParagraphVm>().Single().Inlines.OfType<FootnoteTipVm>().Single().Source, NodeId = blocks.OfType<ParagraphVm>().Single().Inlines.OfType<FootnoteTipVm>().Single().NodeId });
     }
 
-    private static Span Spoiler(MarkdownViewer viewer)
+    private static Span Spoiler(MarkdownViewer viewer) => Styled(viewer, "Md.Spoiler.Style");
+
+    private static Span Styled(MarkdownViewer viewer, string key)
     {
-        var style = (Style)viewer.FindResource("Md.Spoiler.Style");
+        var style = (Style)viewer.FindResource(key);
         return Visuals.Descendants<MdTextBlock>(viewer).SelectMany(text => Spans(text.Inlines)).Single(span => ReferenceEquals(span.Style, style));
     }
 

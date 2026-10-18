@@ -30,6 +30,7 @@
     <SolidColorBrush x:Key="Md.Heading.Foreground" Color="{DynamicResource PrimaryTextColor}" />
     <SolidColorBrush x:Key="Md.Paragraph.LinkForeground" Color="{DynamicResource PrimaryColor}" />
     <SolidColorBrush x:Key="Md.Heading.LinkForeground" Color="{DynamicResource PrimaryColor}" />
+    <SolidColorBrush x:Key="Md.Mention.Background" Color="{DynamicResource PrimaryColor}" Opacity="0.16" />
 
     <!-- Код -->
     <SolidColorBrush x:Key="Md.InlineCode.Background" Color="{DynamicResource SecondaryRegionColor}" />

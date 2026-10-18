@@ -15,7 +15,7 @@
     <!-- ======== Md.Paragraph ======== -->
     <!-- Md.Paragraph.FontFamily и Md.Paragraph.Foreground не заданы: текст берёт их у приложения -->
     <sys:Double x:Key="Md.Paragraph.FontSize">14</sys:Double>
-    <Brush x:Key="Md.Paragraph.LinkForeground">Blue</Brush>
+    <Brush x:Key="Md.Paragraph.LinkForeground">#0969DA</Brush>
 
     <!-- ======== Начертания ======== -->
     <Style x:Key="Md.Strong.Style" TargetType="{x:Type Span}">
@@ -176,7 +176,7 @@
 
     <!-- ======== Md.Heading ======== -->
     <!-- Md.Heading.FontFamily и Md.Heading.Foreground не заданы: заголовок берёт их у приложения -->
-    <Brush x:Key="Md.Heading.LinkForeground">Blue</Brush>
+    <Brush x:Key="Md.Heading.LinkForeground">#0969DA</Brush>
 
     <Thickness x:Key="Md.Heading1.Margin">0,14,0,0</Thickness>
     <sys:Double x:Key="Md.Heading1.FontSize">28</sys:Double>
@@ -1139,13 +1139,12 @@
         <Setter Property="Foreground" Value="#CF222E" />
     </Style>
 
+    <!-- Тег — ссылка с фоном упоминания; цвет текста у него от ссылки -->
     <Style x:Key="Md.Tag.Style" TargetType="{x:Type Span}">
-        <Setter Property="Background" Value="#DDF4FF" />
-        <Setter Property="Foreground" Value="#0969DA" />
+        <Setter Property="Background" Value="{DynamicResource Md.Mention.Background}" />
     </Style>
 
     <Brush x:Key="Md.Mention.Background">#DDF4FF</Brush>
-    <Brush x:Key="Md.Mention.Foreground">#0969DA</Brush>
     <Thickness x:Key="Md.Mention.Padding">4,0</Thickness>
     <CornerRadius x:Key="Md.Mention.CornerRadius">8</CornerRadius>
     <DataTemplate x:Key="Md.Mention.Template" DataType="{x:Type kit:MentionVm}">
@@ -1162,7 +1161,7 @@
                             CornerRadius="{DynamicResource Md.Mention.CornerRadius}"
                             Padding="{DynamicResource Md.Mention.Padding}">
                         <TextBlock Text="{Binding DisplayName, StringFormat='@{0}'}"
-                                   Foreground="{DynamicResource Md.Mention.Foreground}" />
+                                   Foreground="{DynamicResource Md.Paragraph.LinkForeground}" />
                     </Border>
                 </ControlTemplate>
             </Button.Template>
@@ -1252,24 +1251,24 @@
         </StackPanel>
     </DataTemplate>
 
+    <!-- Правки — цветами пометок диффа, выделение — маркером, комментарий — цветом пометок-комментариев -->
     <Style x:Key="Md.Critic.Insertion.Style" TargetType="{x:Type Span}">
-        <Setter Property="Foreground" Value="#1A7F37" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Mark.Added.LineBrush}" />
         <Setter Property="TextDecorations" Value="Underline" />
     </Style>
     <Style x:Key="Md.Critic.Deletion.Style" TargetType="{x:Type Span}">
-        <Setter Property="Foreground" Value="#CF222E" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Mark.Removed.LineBrush}" />
         <Setter Property="TextDecorations" Value="Strikethrough" />
     </Style>
     <Style x:Key="Md.Critic.Highlight.Style" TargetType="{x:Type Span}">
-        <Setter Property="Background" Value="#66F2CC00" />
+        <Setter Property="Background" Value="{DynamicResource Md.Marked.Background}" />
     </Style>
 
-    <Brush x:Key="Md.Critic.CommentForeground">#9A6700</Brush>
     <Geometry x:Key="Md.Critic.CommentIcon">M1,2 L15,2 L15,11 L6.5,11 L3.5,14 L3.5,11 L1,11 Z</Geometry>
     <DataTemplate x:Key="Md.Critic.Comment.Template" DataType="{x:Type kit:CriticCommentVm}">
         <Border Background="Transparent" Padding="2,0" Cursor="Help" ToolTip="{Binding Text}">
             <Path Data="{DynamicResource Md.Critic.CommentIcon}"
-                  Fill="{DynamicResource Md.Critic.CommentForeground}"
+                  Fill="{DynamicResource Md.Mark.Comment.LineBrush}"
                   Width="12"
                   Height="12"
                   Stretch="Uniform" />
@@ -1332,9 +1331,11 @@
     </DataTemplate>
 
     <!-- ======== Готовые расширения: медиа и данные ======== -->
+    <!-- Карточки видео и ссылки: общее скругление, рамка — как у таблицы -->
+    <CornerRadius x:Key="Md.Card.CornerRadius">6</CornerRadius>
+
     <sys:Double x:Key="Md.VideoCard.Width">320</sys:Double>
     <sys:Double x:Key="Md.VideoCard.PreviewHeight">180</sys:Double>
-    <CornerRadius x:Key="Md.VideoCard.CornerRadius">6</CornerRadius>
     <Thickness x:Key="Md.VideoCard.TitlePadding">8,6</Thickness>
     <Brush x:Key="Md.VideoCard.PreviewBackground">#24292F</Brush>
     <Brush x:Key="Md.VideoCard.PlayBackground">#CC000000</Brush>
@@ -1369,8 +1370,8 @@
                     <Border Width="{DynamicResource Md.VideoCard.Width}"
                             Background="Transparent"
                             BorderBrush="{DynamicResource Md.Table.BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{DynamicResource Md.VideoCard.CornerRadius}">
+                            BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                            CornerRadius="{DynamicResource Md.Card.CornerRadius}">
                         <StackPanel>
                             <Grid Height="{DynamicResource Md.VideoCard.PreviewHeight}"
                                   Background="{DynamicResource Md.VideoCard.PreviewBackground}"
@@ -1405,10 +1406,8 @@
         </Button>
     </DataTemplate>
 
+    <!-- Адрес карточки-ссылки — видом подписи фигуры -->
     <Thickness x:Key="Md.LinkCard.Padding">10,6</Thickness>
-    <CornerRadius x:Key="Md.LinkCard.CornerRadius">6</CornerRadius>
-    <Brush x:Key="Md.LinkCard.AddressForeground">Gray</Brush>
-    <sys:Double x:Key="Md.LinkCard.AddressFontSize">12</sys:Double>
     <Geometry x:Key="Md.LinkCard.Icon">M6,2 L2,2 L2,14 L14,14 L14,10 M9,2 L14,2 L14,7 M14,2 L7,9</Geometry>
     <DataTemplate x:Key="Md.LinkCard.Template" DataType="{x:Type kit:LinkCardVm}">
         <Button Style="{x:Null}"
@@ -1422,8 +1421,8 @@
                 <ControlTemplate TargetType="{x:Type Button}">
                     <Border Background="Transparent"
                             BorderBrush="{DynamicResource Md.Table.BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{DynamicResource Md.LinkCard.CornerRadius}"
+                            BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                            CornerRadius="{DynamicResource Md.Card.CornerRadius}"
                             Padding="{DynamicResource Md.LinkCard.Padding}">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -1444,8 +1443,8 @@
                                            Foreground="{DynamicResource Md.Paragraph.LinkForeground}" />
                                 <TextBlock Text="{Binding Href}"
                                            TextTrimming="CharacterEllipsis"
-                                           FontSize="{DynamicResource Md.LinkCard.AddressFontSize}"
-                                           Foreground="{DynamicResource Md.LinkCard.AddressForeground}" />
+                                           FontSize="{DynamicResource Md.Figure.CaptionFontSize}"
+                                           Foreground="{DynamicResource Md.Figure.CaptionForeground}" />
                             </StackPanel>
                         </Grid>
                     </Border>

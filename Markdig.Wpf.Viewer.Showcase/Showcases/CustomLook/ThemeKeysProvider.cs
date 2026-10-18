@@ -38,12 +38,12 @@ public sealed class ThemeKeysProvider : TypeDescriptionProvider
         ["Image"] = "Картинки",
         ["Gutter"] = "Поля с номерами строк",
         ["Mark"] = "Пометки",
-        ["Mention"] = "Упоминания",
+        ["Mention"] = "Упоминания и теги",
         ["ColorCode"] = "Коды цветов",
-        ["Critic"] = "Правки CriticMarkup",
         ["Spoiler"] = "Спойлеры",
-        ["LinkCard"] = "Карточки-ссылки",
-        ["VideoCard"] = "Карточки видео",
+        ["Card"] = "Карточки",
+        ["LinkCard"] = "Карточки",
+        ["VideoCard"] = "Карточки",
         ["Toc"] = "Оглавление"
     };
 

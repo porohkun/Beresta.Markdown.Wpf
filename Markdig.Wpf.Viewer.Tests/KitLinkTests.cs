@@ -6,6 +6,7 @@ using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Media;
 using Extensions;
 using Kit;
 using Presenters;
@@ -233,6 +234,31 @@ public sealed class KitLinkTests
         });
     }
 
+    [Fact]
+    public void Тег_и_упоминание_берут_фон_упоминания_и_цвет_ссылки()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "#idea and @ivan" };
+            viewer.Extensions.Add(new Tags());
+            viewer.Extensions.Add(new Mentions());
+            viewer.Resources["Md.Mention.Background"] = Brushes.Yellow;
+            viewer.Resources["Md.Paragraph.LinkForeground"] = Brushes.Red;
+            var window = WpfHost.Show(viewer);
+
+            var style = (Style)viewer.FindResource("Md.Tag.Style");
+            var tag = Visuals.Descendants<MdTextBlock>(viewer)
+                .SelectMany(text => Spans(text.Inlines))
+                .Single(span => ReferenceEquals(span.Style, style));
+            tag.Background.Should().Be(Brushes.Yellow);
+            tag.Foreground.Should().Be(Brushes.Red);
+            var chip = Visuals.Descendants<Button>(viewer).Single();
+            Visuals.Descendants<Border>(chip).First().Background.Should().Be(Brushes.Yellow);
+            Visuals.Descendants<TextBlock>(chip).Single().Foreground.Should().Be(Brushes.Red);
+            window.Close();
+        });
+    }
+
     private static IssueLinks Issues() => new()
     {
         Templates =
@@ -251,6 +277,9 @@ public sealed class KitLinkTests
 
     private static List<RunVm> Runs(string markdown, MdExtension extension)
         => Inlines(markdown, extension).OfType<RunVm>().ToList();
+
+    private static IEnumerable<Span> Spans(InlineCollection inlines)
+        => inlines.OfType<Span>().SelectMany(span => Spans(span.Inlines).Prepend(span));
 
     private static List<Hyperlink> Links(MarkdownViewer viewer)
         => Visuals.Descendants<MdListPresenter>(viewer)
