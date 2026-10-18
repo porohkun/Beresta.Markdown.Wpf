@@ -53,6 +53,17 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new FrameworkPropertyMetadata(null, OnPipelineChanged));
 
+    /// <summary>
+    /// Ключ документа: сменился — текст считается другим документом, и выделение, свёрнутость и другие
+    /// состояния виджетов в него не переходят.
+    /// </summary>
+    public static readonly DependencyProperty DocumentKeyProperty =
+        DependencyProperty.Register(
+            nameof(DocumentKey),
+            typeof(object),
+            typeof(MarkdownViewer),
+            new(null, OnDocumentKeyChanged));
+
     /// <summary>Шаблоны встроенных блоков.</summary>
     public static readonly DependencyProperty StyleProviderProperty =
         DependencyProperty.Register(
@@ -309,6 +320,12 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     {
         get => (Action<MarkdownPipelineBuilder>?)GetValue(PipelineSetupProperty);
         set => SetValue(PipelineSetupProperty, value);
+    }
+
+    public object? DocumentKey
+    {
+        get => GetValue(DocumentKeyProperty);
+        set => SetValue(DocumentKeyProperty, value);
     }
 
     public IMdStyleProvider? StyleProvider
@@ -579,6 +596,16 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         return hits;
     }
 
+    /// <summary>
+    /// Собирает документ заново из того же текста: расширения снова спрашивают приложение — резолвер,
+    /// шаблоны ссылок, обработчики. Выделение и состояния виджетов остаются.
+    /// </summary>
+    public void Refresh()
+    {
+        _pipeline = null;
+        Rebuild();
+    }
+
     /// <summary>Выделяет кусок текстовой карты.</summary>
     public void Select(int start, int length) => Selection.Select(start, length);
 
@@ -737,6 +764,19 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         }
     }
 
+    /// <summary>Вьюер потерял мышь посреди протаскивания — переключение окна, всплывшее окно: протаскивание и автопрокрутка кончаются.</summary>
+    protected override void OnLostMouseCapture(MouseEventArgs e)
+    {
+        base.OnLostMouseCapture(e);
+
+        // BYDESIGN: только своя потеря — захват, который вьюер забирает у ссылки в начале протаскивания,
+        // тоже поднимает это событие, но от ссылки.
+        if (ReferenceEquals(e.OriginalSource, this))
+        {
+            Selection.Release();
+        }
+    }
+
     protected override void OnPreviewMouseLeftButtonUp(MouseButtonEventArgs e)
     {
         base.OnPreviewMouseLeftButtonUp(e);
@@ -753,6 +793,13 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 
     private static void OnPipelineChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownViewer)d).ResetPipeline();
+
+    private static void OnDocumentKeyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var viewer = (MarkdownViewer)d;
+        viewer._identity.Forget();
+        viewer.Rebuild();
+    }
 
     /// <summary>Сменилось то, что контейнеры берут при создании: провайдер стилей, загрузчик картинок, адрес документа.</summary>
     private static void OnContainersSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

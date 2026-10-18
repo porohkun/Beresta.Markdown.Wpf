@@ -17,6 +17,27 @@ public sealed class SelectionTests
     private const string ThreeParagraphs = "first paragraph\n\nsecond **bold** paragraph\n\nthird paragraph";
 
     [Fact]
+    public void Потеря_захвата_мыши_останавливает_протаскивание_и_автопрокрутку()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = string.Join("\n\n", Enumerable.Range(0, 100).Select(i => $"Paragraph {i}")) };
+            var scroll = new ScrollViewer { Content = viewer };
+            var window = WpfHost.Show(scroll);
+            var below = scroll.TranslatePoint(new(10, scroll.ActualHeight + 20), viewer);
+            viewer.Selection.Press(Visuals.PointOf(viewer, 0), extend: false).Should().BeTrue();
+            viewer.Selection.Drag(below).Should().BeTrue();
+            viewer.Selection.IsAutoScrolling.Should().BeTrue();
+
+            viewer.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0) { RoutedEvent = Mouse.LostMouseCaptureEvent });
+
+            viewer.Selection.IsAutoScrolling.Should().BeFalse();
+            viewer.Selection.Drag(below).Should().BeFalse();
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Попадание_мышью_возвращает_смещение_каждого_знака()
     {
         WpfHost.Invoke(() =>

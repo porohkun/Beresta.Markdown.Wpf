@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using Extensions;
+using Kit;
 using Markdig.Syntax;
 using Presenters;
 using ViewModels;
@@ -113,6 +114,81 @@ public sealed class WidgetTests
     }
 
     /// <summary>Галочка, привязанная к состоянию своего виджета.</summary>
+    [Fact]
+    public void Новый_документ_не_получает_состояний_и_выделения_прежнего()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Extensions = { Toggle() }, DocumentKey = "a", Markdown = "one two three\n\n```toggle\n```" };
+            var window = WpfHost.Show(viewer);
+            Visuals.Descendants<CheckBox>(viewer).Single().IsChecked = true;
+            viewer.Select(4, 3);
+
+            viewer.DocumentKey = "b";
+            viewer.Markdown = "uno dos tres\n\n```toggle\n```";
+            WpfHost.Settle(window);
+
+            Visuals.Descendants<CheckBox>(viewer).Single().IsChecked.Should().BeFalse();
+            viewer.SelectionLength.Should().Be(0);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Ключ_документа_после_текста_тоже_начинает_новый_документ()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Extensions = { Toggle() }, DocumentKey = "a", Markdown = "one two three\n\n```toggle\n```" };
+            var window = WpfHost.Show(viewer);
+            Visuals.Descendants<CheckBox>(viewer).Single().IsChecked = true;
+            viewer.Select(4, 3);
+
+            viewer.Markdown = "uno dos tres\n\n```toggle\n```";
+            viewer.DocumentKey = "b";
+            WpfHost.Settle(window);
+
+            Visuals.Descendants<CheckBox>(viewer).Single().IsChecked.Should().BeFalse();
+            viewer.SelectionLength.Should().Be(0);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Refresh_заново_спрашивает_резолвер_и_сохраняет_выделение_и_состояния()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var pages = new Pages();
+            var viewer = new MarkdownViewer
+            {
+                Extensions = { Toggle(), new WikiLinks { Resolver = pages } },
+                Markdown = "See [[Later]] here.\n\n```toggle\n```"
+            };
+            var window = WpfHost.Show(viewer);
+            var box = Visuals.Descendants<CheckBox>(viewer).Single();
+            box.IsChecked = true;
+            viewer.Select(0, 3);
+            StyleNames(viewer).Should().Contain("WikiLink.Missing");
+
+            pages.Known.Add("Later");
+            viewer.Refresh();
+            WpfHost.Settle(window);
+
+            StyleNames(viewer).Should().Contain("WikiLink").And.NotContain("WikiLink.Missing");
+            Visuals.Descendants<CheckBox>(viewer).Single().Should().BeSameAs(box);
+            box.IsChecked.Should().BeTrue();
+            viewer.SelectedText.Should().Be("See");
+            window.Close();
+        });
+    }
+
+    private static List<string?> StyleNames(MarkdownViewer viewer)
+        => viewer.Items.OfType<ParagraphVm>()
+            .SelectMany(paragraph => paragraph.Inlines.OfType<RunVm>())
+            .Select(run => run.StyleName)
+            .ToList();
+
     private static DataTemplate StateCheckBox()
     {
         var box = new FrameworkElementFactory(typeof(CheckBox));
@@ -140,6 +216,13 @@ public sealed class WidgetTests
     public sealed class ToggleState
     {
         public bool IsOn { get; set; }
+    }
+
+    private sealed class Pages : IMdLinkResolver
+    {
+        public HashSet<string> Known { get; } = [];
+
+        public bool PageExists(string page) => Known.Contains(page);
     }
 
     private sealed record ToggleVm : BlockVm;

@@ -43,18 +43,6 @@
     </Style>
     <Style x:Key="Md.Abbreviation.Style" TargetType="{x:Type Span}">
         <Setter Property="Cursor" Value="Help" />
-        <Setter Property="TextDecorations">
-            <Setter.Value>
-                <TextDecorationCollection>
-                    <TextDecoration Location="Underline" PenOffset="1">
-                        <TextDecoration.Pen>
-                            <Pen Thickness="1" DashStyle="{x:Static DashStyles.Dot}"
-                                 Brush="{StaticResource Md.Abbreviation.UnderlineBrush}" />
-                        </TextDecoration.Pen>
-                    </TextDecoration>
-                </TextDecorationCollection>
-            </Setter.Value>
-        </Setter>
     </Style>
 
     <!-- ======== Md.InlineCode ======== -->
@@ -446,6 +434,7 @@
         <Setter Property="InsertedStyle" Value="{DynamicResource Md.Inserted.Style}" />
         <Setter Property="CiteStyle" Value="{DynamicResource Md.Cite.Style}" />
         <Setter Property="AbbreviationStyle" Value="{DynamicResource Md.Abbreviation.Style}" />
+        <Setter Property="AbbreviationUnderlineBrush" Value="{DynamicResource Md.Abbreviation.UnderlineBrush}" />
     </Style>
 
     <Style x:Key="Md.Figure.CaptionStyle" TargetType="{x:Type p:MdTextBlock}"
@@ -469,6 +458,7 @@
         <Setter Property="InsertedStyle" Value="{DynamicResource Md.Inserted.Style}" />
         <Setter Property="CiteStyle" Value="{DynamicResource Md.Cite.Style}" />
         <Setter Property="AbbreviationStyle" Value="{DynamicResource Md.Abbreviation.Style}" />
+        <Setter Property="AbbreviationUnderlineBrush" Value="{DynamicResource Md.Abbreviation.UnderlineBrush}" />
         <Setter Property="Margin" Value="{DynamicResource Md.Heading6.Margin}" />
         <Setter Property="FontSize" Value="{DynamicResource Md.Heading6.FontSize}" />
         <Setter Property="FontWeight" Value="{DynamicResource Md.Heading6.FontWeight}" />

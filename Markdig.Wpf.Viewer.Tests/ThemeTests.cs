@@ -32,6 +32,27 @@ public sealed class ThemeTests
     }
 
     [Fact]
+    public void Подчёркивание_сокращения_берёт_кисть_по_ключу_темы_и_следует_её_смене()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "*[HTML]: Hyper Text\n\nHTML here" };
+            viewer.Resources["Md.Abbreviation.UnderlineBrush"] = Brushes.Red;
+            var window = WpfHost.Show(viewer);
+            Underline(viewer).Should().Be(Brushes.Red);
+
+            viewer.Resources["Md.Abbreviation.UnderlineBrush"] = Brushes.Blue;
+            Underline(viewer).Should().Be(Brushes.Blue);
+            window.Close();
+        });
+
+        static Brush Underline(MarkdownViewer viewer)
+            => Spans(Visuals.Descendants<MdTextBlock>(viewer).Single().Inlines)
+                .Single(span => Equals(span.ToolTip, "Hyper Text"))
+                .TextDecorations.Single().Pen.Brush;
+    }
+
+    [Fact]
     public void Стиль_начертания_перекрывается_ключом_темы()
     {
         WpfHost.Invoke(() =>
@@ -85,4 +106,7 @@ public sealed class ThemeTests
             window.Close();
         });
     }
+
+    private static IEnumerable<Span> Spans(InlineCollection inlines)
+        => inlines.OfType<Span>().SelectMany(span => Spans(span.Inlines).Prepend(span));
 }

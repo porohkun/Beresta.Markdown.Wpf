@@ -53,6 +53,16 @@ internal sealed class ModelIdentity
         _ids.Clear();
     }
 
+    /// <summary>Забывает прошлый разбор: следующий получает только новые идентификаторы.</summary>
+    public void Forget()
+    {
+        _roots = NoEntries;
+        _children = [];
+        _blankLines = [];
+        _parts = [];
+        _models = [];
+    }
+
     /// <summary>Идентификатор узла нового разбора; 0 — узел не из сопоставленного документа.</summary>
     public long IdOf(MarkdownObject node) => _ids.TryGetValue(node, out var id) ? id : 0;
 

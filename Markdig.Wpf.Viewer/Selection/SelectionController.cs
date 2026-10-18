@@ -45,6 +45,9 @@ internal sealed class SelectionController
     /// <summary>Якорь и активный конец в текстовой карте.</summary>
     public (int Anchor, int Active) Ends => (_anchor, _active);
 
+    /// <summary>Идёт автопрокрутка: выделение протащили за край видимой области.</summary>
+    public bool IsAutoScrolling => _autoScroll.IsEnabled;
+
     public static bool IsInteractive(DependencyObject? source, DependencyObject viewer)
     {
         for (var node = source; node is not null && !ReferenceEquals(node, viewer); node = ParentOf(node))

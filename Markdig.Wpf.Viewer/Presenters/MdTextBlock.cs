@@ -110,6 +110,14 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
+    /// <summary>Кисть пунктира под сокращением, если стиль сокращения не задаёт свои линии.</summary>
+    public static readonly DependencyProperty AbbreviationUnderlineBrushProperty =
+        DependencyProperty.Register(
+            nameof(AbbreviationUnderlineBrush),
+            typeof(Brush),
+            typeof(MdTextBlock),
+            new FrameworkPropertyMetadata(Brushes.Gray, OnAnyPropertyChanged));
+
     private static readonly DependencyProperty LayerProperty =
         MdSelection.LayerProperty.AddOwner(
             typeof(MdTextBlock),
@@ -221,6 +229,12 @@ public class MdTextBlock : TextBlock
     {
         get => (Style?)GetValue(AbbreviationStyleProperty);
         set => SetValue(AbbreviationStyleProperty, value);
+    }
+
+    public Brush? AbbreviationUnderlineBrush
+    {
+        get => (Brush?)GetValue(AbbreviationUnderlineBrushProperty);
+        set => SetValue(AbbreviationUnderlineBrushProperty, value);
     }
 
     /// <summary>Подсвеченные куски своего текста в порядке рисования.</summary>
@@ -791,6 +805,11 @@ public class MdTextBlock : TextBlock
         {
             var abbreviation = Wrap(current, AbbreviationStyle, _ => { });
             abbreviation.ToolTip = expansion;
+            if (DependencyPropertyHelper.GetValueSource(abbreviation, Inline.TextDecorationsProperty).BaseValueSource == BaseValueSource.Default)
+            {
+                abbreviation.TextDecorations = AbbreviationUnderline();
+            }
+
             current = abbreviation;
         }
 
@@ -838,6 +857,18 @@ public class MdTextBlock : TextBlock
         }
 
         return current;
+    }
+
+    /// <summary>Пунктир под сокращением кистью <see cref="AbbreviationUnderlineBrush"/>.</summary>
+    private TextDecorationCollection AbbreviationUnderline()
+    {
+        var pen = new Pen(AbbreviationUnderlineBrush ?? Brushes.Gray, 1) { DashStyle = DashStyles.Dot };
+        var underline = new TextDecorationCollection
+        {
+            new TextDecoration(TextDecorationLocation.Underline, pen, 1, TextDecorationUnit.FontRecommended, TextDecorationUnit.FontRecommended)
+        };
+        underline.Freeze();
+        return underline;
     }
 
     /// <summary>Линии по коду от начертаний вокруг: зачёркивание, подчёркивание вставки.</summary>
