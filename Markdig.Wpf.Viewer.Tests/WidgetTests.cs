@@ -19,7 +19,7 @@ public sealed class WidgetTests
     {
         WpfHost.Invoke(() =>
         {
-            var viewer = new MarkdownViewer { Extensions = [Toggle()], Markdown = "```toggle\n```\n\n" + Paragraphs };
+            var viewer = new MarkdownViewer { Extensions = { Toggle() }, Markdown = "```toggle\n```\n\n" + Paragraphs };
             var scroll = new ScrollViewer { Content = viewer };
             var window = WpfHost.Show(scroll);
             Visuals.Descendants<CheckBox>(viewer).Single().IsChecked = true;
@@ -51,7 +51,7 @@ public sealed class WidgetTests
                 Template = item => item is TestWidgets.MentionVm ? template : null,
                 State = node => node is TestWidgets.MentionVm ? new ToggleState() : null
             };
-            var viewer = new MarkdownViewer { Extensions = [stateful], Markdown = "hello @ivan and @maria" };
+            var viewer = new MarkdownViewer { Extensions = { stateful }, Markdown = "hello @ivan and @maria" };
             var window = WpfHost.Show(viewer);
             Visuals.Descendants<CheckBox>(viewer).First().IsChecked = true;
 
@@ -71,7 +71,7 @@ public sealed class WidgetTests
             var note = TestWidgets.Note();
             var outer = new LambdaExtension
                 { Block = note.Block, Template = note.Template, State = node => node is TestWidgets.NoteVm ? new ToggleState() : null };
-            var viewer = new MarkdownViewer { Extensions = [outer, Toggle()], Markdown = ":::note T\ninside\n\n```toggle\n```\n:::" };
+            var viewer = new MarkdownViewer { Extensions = { outer, Toggle() }, Markdown = ":::note T\ninside\n\n```toggle\n```\n:::" };
             var window = WpfHost.Show(viewer);
 
             var noteBorder = Visuals.Descendants<Border>(viewer).Single(border => Equals(border.Tag, "note"));
@@ -95,7 +95,7 @@ public sealed class WidgetTests
                 Template = item => item is LateVm ? template : null
             };
             var before = string.Join("\n\n", Enumerable.Range(0, 40).Select(i => $"Before {i}"));
-            var viewer = new MarkdownViewer { Extensions = [late], Markdown = before + "\n\n```late\n```\n\n" + Paragraphs };
+            var viewer = new MarkdownViewer { Extensions = { late }, Markdown = before + "\n\n```late\n```\n\n" + Paragraphs };
             var window = WpfHost.Show(new ScrollViewer { Content = viewer });
             var firstAfter = 40 * 2 + 3;
 

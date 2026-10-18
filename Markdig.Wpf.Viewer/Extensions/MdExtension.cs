@@ -8,7 +8,8 @@ using ViewModels;
 
 /// <summary>
 /// Расширение вьюера под свой синтаксис: настройка разбора, превращение своих узлов Markdig в
-/// виджеты и шаблоны для них. Подключается через <see cref="MarkdownViewer.Extensions"/>.
+/// виджеты и шаблоны для них. Подключается через <see cref="MarkdownViewer.Extensions"/> или
+/// <see cref="MarkdownViewer.SharedExtensions"/>.
 /// </summary>
 public abstract class MdExtension
 {

@@ -29,11 +29,18 @@ public sealed partial class ObsidianCallouts : MdExtension
         }
     }
 
-    /// <summary>Плашка из цитаты: первая строка — вид, сворачиваемость и заголовок, остальное — содержимое.</summary>
-    private static CalloutVm FromQuote(QuoteBlock quote, Match marker, MdConvertContext context)
+    /// <summary>
+    /// Плашка из цитаты: первая строка — вид, сворачиваемость и заголовок, остальное — содержимое.
+    /// Первый блок не абзац — цитата остаётся цитатой.
+    /// </summary>
+    private static BlockVm FromQuote(QuoteBlock quote, Match marker, MdConvertContext context)
     {
         var blocks = context.ConvertChildren(quote).ToList();
-        var first = (ParagraphVm)blocks[0];
+        if (blocks is not [ParagraphVm first, ..])
+        {
+            return new QuoteVm(blocks);
+        }
+
         var title = marker.Groups["title"].Success ? marker.Groups["title"].Index : marker.Length;
         var rest = Skip(first.Inlines, title);
         var lineEnd = rest.FindIndex(inline => inline is LineBreakVm);

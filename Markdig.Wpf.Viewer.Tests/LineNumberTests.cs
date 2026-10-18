@@ -233,8 +233,8 @@ public sealed class LineNumberTests
                     ? TestWidgets.Template("<Border Tag='note' Padding='0,20,0,0'><p:MdBlocksPresenter Blocks='{Binding Blocks}' /></Border>")
                     : null
             };
-            var tightViewer = new MarkdownViewer { Extensions = [note], Markdown = text, ShowSourceLineNumbers = true };
-            var paddedViewer = new MarkdownViewer { Extensions = [padded], Markdown = text, ShowSourceLineNumbers = true };
+            var tightViewer = new MarkdownViewer { Extensions = { note }, Markdown = text, ShowSourceLineNumbers = true };
+            var paddedViewer = new MarkdownViewer { Extensions = { padded }, Markdown = text, ShowSourceLineNumbers = true };
             var window = WpfHost.Show(new StackPanel { Children = { tightViewer, paddedViewer } });
 
             tightViewer.Gutter!.CollectNumbers().Select(number => number.Line).Should().Equal(0, 1, 3);

@@ -153,6 +153,22 @@ public sealed class MarkupTests
     }
 
     [Fact]
+    public void Исключение_загрузчика_оставляет_alt()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { ImageLoader = new ThrowingLoader(), Markdown = "![company logo](logo.png)" };
+            var window = WpfHost.Show(viewer);
+
+            var image = Visuals.Descendants<MdImage>(viewer).Single();
+            image.ImageSource.Should().BeNull();
+            var alt = (TextBlock)image.Template.FindName("Alt", image);
+            (alt.Text, alt.Visibility).Should().Be(("company logo", Visibility.Visible));
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Задача_рисуется_картинкой_флажка_а_не_контролом()
     {
         WpfHost.Invoke(() =>
@@ -265,6 +281,12 @@ public sealed class MarkupTests
             bitmap.Freeze();
             return Task.FromResult<ImageSource?>(bitmap);
         }
+    }
+
+    private sealed class ThrowingLoader : IMdImageLoader
+    {
+        public Task<ImageSource?> LoadAsync(string url, Uri? uri, CancellationToken cancellationToken)
+            => throw new InvalidOperationException("The loader failed.");
     }
 
     private sealed record TipVm(string Tip) : InlineVm;

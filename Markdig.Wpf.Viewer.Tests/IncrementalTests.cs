@@ -144,7 +144,7 @@ public sealed class IncrementalTests
                 Block = (block, _) => block is FencedCodeBlock { Info: "input" } ? new InputVm() : null,
                 Template = item => item is InputVm ? template : null
             };
-            var viewer = new MarkdownViewer { Extensions = [input], Markdown = "Intro\n\n```input\n```\n\nOutro" };
+            var viewer = new MarkdownViewer { Extensions = { input }, Markdown = "Intro\n\n```input\n```\n\nOutro" };
             var window = WpfHost.Show(viewer);
             var box = Visuals.Descendants<TextBox>(viewer).Single();
             box.Text = "typed";

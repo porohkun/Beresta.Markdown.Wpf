@@ -191,7 +191,7 @@ public sealed class MdImage : Control
         var loading = MdImageCache.Get(
             loader,
             uri?.ToString() ?? image.Url,
-            () => loader.LoadAsync(image.Url, uri, CancellationToken.None));
+            () => Start(loader, image.Url, uri));
 
         if (loading.IsCompleted)
         {
@@ -201,6 +201,19 @@ public sealed class MdImage : Control
 
         SetValue(ImageSourcePropertyKey, null);
         loading.ContinueWith(done => Dispatcher.BeginInvoke(() => Show(image, done)), TaskScheduler.Default);
+    }
+
+    /// <summary>Загрузка картинки; исключение загрузчика — такая же неудачная загрузка.</summary>
+    private static Task<ImageSource?> Start(IMdImageLoader loader, string url, Uri? uri)
+    {
+        try
+        {
+            return loader.LoadAsync(url, uri, CancellationToken.None);
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<ImageSource?>(exception);
+        }
     }
 
     private void Show(ImageVm image, Task<ImageSource?> loading)

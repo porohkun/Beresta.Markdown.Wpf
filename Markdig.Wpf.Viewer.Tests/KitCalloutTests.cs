@@ -3,9 +3,11 @@
 using System.Windows;
 using Extensions;
 using Kit;
+using Markdig.Syntax;
 using Presenters;
 using Selection;
 using ViewModels;
+using static TestWidgets;
 
 /// <summary>Готовые расширения плашек и сворачиваемого: Obsidian, MkDocs, контейнеры <c>:::вид</c>.</summary>
 public sealed class KitCalloutTests
@@ -22,6 +24,14 @@ public sealed class KitCalloutTests
     public void Плашки_Obsidian(string markdown, string expected)
     {
         ModelDump.Of(markdown, new ObsidianCallouts()).Should().Be(expected);
+    }
+
+    [Fact]
+    public void Плашка_Obsidian_остаётся_цитатой_когда_абзац_забрало_другое_расширение()
+    {
+        var paragraphs = new LambdaExtension { Block = (block, _) => block is ParagraphBlock ? new DiagramVm("paragraph") : null };
+
+        ModelDump.Of("> [!note] Title\n> body", paragraphs, new ObsidianCallouts()).Should().Be("Q[{DiagramVm}]");
     }
 
     [Theory]

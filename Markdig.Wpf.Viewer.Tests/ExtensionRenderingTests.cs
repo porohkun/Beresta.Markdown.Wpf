@@ -14,7 +14,7 @@ public sealed class ExtensionRenderingTests
     {
         WpfHost.Invoke(() =>
         {
-            var viewer = new MarkdownViewer { Extensions = [Note()], Markdown = ":::note T\nвнутри **жирное**\n:::" };
+            var viewer = new MarkdownViewer { Extensions = { Note() }, Markdown = ":::note T\nвнутри **жирное**\n:::" };
             var window = WpfHost.Show(viewer);
 
             var note = Visuals.Descendants<Border>(viewer).Single(border => Equals(border.Tag, "note"));
@@ -28,7 +28,7 @@ public sealed class ExtensionRenderingTests
     {
         WpfHost.Invoke(() =>
         {
-            var viewer = new MarkdownViewer { Extensions = [Mention()], Markdown = "привет @ivan!" };
+            var viewer = new MarkdownViewer { Extensions = { Mention() }, Markdown = "привет @ivan!" };
             var window = WpfHost.Show(viewer);
 
             var text = Visuals.Descendants<MdTextBlock>(viewer).Single();
@@ -60,8 +60,8 @@ public sealed class ExtensionRenderingTests
         WpfHost.Invoke(() =>
         {
             MdExtensionCollection shared = [Note()];
-            var first = new MarkdownViewer { Extensions = shared, Markdown = ":::note A\na\n:::" };
-            var second = new MarkdownViewer { Extensions = shared, Markdown = ":::note B\nb\n:::" };
+            var first = new MarkdownViewer { SharedExtensions = shared, Markdown = ":::note A\na\n:::" };
+            var second = new MarkdownViewer { SharedExtensions = shared, Markdown = ":::note B\nb\n:::" };
             var panel = new StackPanel { Children = { first, second } };
             var window = WpfHost.Show(panel);
 

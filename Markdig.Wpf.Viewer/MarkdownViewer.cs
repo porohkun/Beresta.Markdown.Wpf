@@ -50,13 +50,13 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(null, OnContainersSourceChanged));
 
-    /// <summary>Расширения под свой синтаксис.</summary>
-    public static readonly DependencyProperty ExtensionsProperty =
-        DependencyProperty.Register(
-            nameof(Extensions),
+    /// <summary>Общие расширения нескольких вьюеров; заданные на окне, панели или в стиле, наследуются вьюерами внутри.</summary>
+    public static readonly DependencyProperty SharedExtensionsProperty =
+        DependencyProperty.RegisterAttached(
+            nameof(SharedExtensions),
             typeof(MdExtensionCollection),
             typeof(MarkdownViewer),
-            new(null, OnExtensionsChanged));
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnSharedExtensionsChanged));
 
     /// <summary>Подсветки кусков текста под слоями пометок и выделением: найденное, правки диффа.</summary>
     public static readonly DependencyProperty DecorationsProperty =
@@ -214,6 +214,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     private IReadOnlyList<MarkSet> _markSets = [];
     private readonly MdMarkLayer _feedLayer = new("Feed search");
     private bool _updatingMarks;
+    private IReadOnlyList<MdExtension> _activeExtensions = [];
     private MarkdownPipeline? _pipeline;
     private bool _templatesChanged;
     private bool _viewportNotificationQueued;
@@ -259,10 +260,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         _decorationLayer.Changed += OnMarkLayerChanged;
         _feedLayer.Changed += OnMarkLayerChanged;
         MarkLayers.CollectionChanged += OnMarkLayersChanged;
-
-        // BYDESIGN: своя коллекция через SetCurrentValue, а не локальным значением — так её
-        // перекрывает общая из стиля, а XAML, который читает свойство мимо геттера, видит не null.
-        SetCurrentValue(ExtensionsProperty, new MdExtensionCollection());
+        Extensions.CollectionChanged += OnExtensionsCollectionChanged;
         ItemsSource = _blocks;
 
         Selection = new(this);
@@ -302,11 +300,13 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         set => SetValue(StyleProviderProperty, value);
     }
 
-    /// <summary>Расширения вьюера; общую коллекцию на несколько вьюеров можно задать стилем.</summary>
-    public MdExtensionCollection Extensions
+    /// <summary>Свои расширения вьюера; опрашиваются раньше общих.</summary>
+    public MdExtensionCollection Extensions { get; } = [];
+
+    public MdExtensionCollection? SharedExtensions
     {
-        get => (MdExtensionCollection)GetValue(ExtensionsProperty);
-        set => SetValue(ExtensionsProperty, value);
+        get => (MdExtensionCollection?)GetValue(SharedExtensionsProperty);
+        set => SetValue(SharedExtensionsProperty, value);
     }
 
     public IReadOnlyList<MdDecoration>? Decorations
@@ -390,8 +390,8 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     /// <summary>Выделенное, записанное markdown со своим оформлением; считается по запросу.</summary>
     public string SelectedMarkdown => MdMarkdownWriter.Write(_blocks, TextMap, Markdown ?? string.Empty, Selection.Range);
 
-    internal IReadOnlyList<MdExtension> ActiveExtensions
-        => GetValue(ExtensionsProperty) as MdExtensionCollection ?? (IReadOnlyList<MdExtension>)[];
+    /// <summary>Свои расширения, следом общие — в порядке опроса.</summary>
+    internal IReadOnlyList<MdExtension> ActiveExtensions => _activeExtensions;
 
     internal SelectionController Selection { get; }
 
@@ -403,6 +403,12 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 
     // BYDESIGN: кисти пометок — логические потомки вьюера: иначе смена темы до них не доходит.
     protected override IEnumerator LogicalChildren => WithThemeBrushes(base.LogicalChildren, _themeBrushes.All);
+
+    public static MdExtensionCollection? GetSharedExtensions(DependencyObject element)
+        => (MdExtensionCollection?)element.GetValue(SharedExtensionsProperty);
+
+    public static void SetSharedExtensions(DependencyObject element, MdExtensionCollection? value)
+        => element.SetValue(SharedExtensionsProperty, value);
 
     public static bool GetShowCodeCopyButton(DependencyObject element)
         => (bool)element.GetValue(ShowCodeCopyButtonProperty);
@@ -787,18 +793,22 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         return null;
     }
 
-    private static void OnExtensionsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    private static void OnSharedExtensionsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        var viewer = (MarkdownViewer)d;
+        if (d is not MarkdownViewer viewer)
+        {
+            return;
+        }
 
+        // BYDESIGN: подписка слабая — общая коллекция живёт дольше вьюеров и не должна их держать.
         if (e.OldValue is MdExtensionCollection oldExtensions)
         {
-            oldExtensions.CollectionChanged -= viewer.OnExtensionsCollectionChanged;
+            CollectionChangedEventManager.RemoveHandler(oldExtensions, viewer.OnExtensionsCollectionChanged);
         }
 
         if (e.NewValue is MdExtensionCollection newExtensions)
         {
-            newExtensions.CollectionChanged += viewer.OnExtensionsCollectionChanged;
+            CollectionChangedEventManager.AddHandler(newExtensions, viewer.OnExtensionsCollectionChanged);
         }
 
         viewer.ResetPipeline();
@@ -997,6 +1007,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 
     private void ResetPipeline()
     {
+        _activeExtensions = [.. Extensions, .. SharedExtensions ?? []];
         _pipeline = null;
         _templatesChanged = true;
         _states.Clear();
