@@ -24,6 +24,7 @@ using MarkdigWpfViewer.Scrolling;
 using MarkdigWpfViewer.Search;
 using MarkdigWpfViewer.Selection;
 using MarkdigWpfViewer.Showcase;
+using MarkdigWpfViewer.Showcase.Localization;
 using MarkdigWpfViewer.Showcase.Showcases.TwoPanes;
 using Polygon = System.Windows.Shapes.Polygon;
 
@@ -94,15 +95,8 @@ var thread = new Thread(() =>
     var loader = new ShotLoader();
     var resolver = new ShotResolver();
 
-    // Подписи интерфейса — английские, как в теме библиотеки
-    var generic = new ResourceDictionary
-    {
-        Source = new Uri("pack://application:,,,/Markdig.Wpf.Viewer;component/Themes/Generic.xaml")
-    };
-    var captions = generic.Keys
-        .OfType<string>()
-        .Where(key => key.StartsWith("Md.", StringComparison.Ordinal) && generic[key] is string)
-        .ToDictionary(key => key, key => (string)generic[key]);
+    // Вики английская — витрина в английской локализации
+    Localizer.Apply(russian: false);
 
     // Вьюер
     if (Wanted("overview.png"))
@@ -538,7 +532,9 @@ var thread = new Thread(() =>
     // BYDESIGN: тёмная тема — последней: она переключает тему всего приложения.
     if (Wanted("dark-theme.png"))
     {
-        new MainWindowViewModel().Options.IsDark = true;
+        var options = new MainWindowViewModel().Options;
+        options.IsRussian = false;
+        options.IsDark = true;
         Shot("dark-theme.png", new MarkdownViewer { Markdown = Overview, ImageLoader = loader }, 760);
     }
 
@@ -566,10 +562,6 @@ var thread = new Thread(() =>
         };
         frame.SetResourceReference(Border.BackgroundProperty, "RegionBrush");
         frame.SetResourceReference(TextElement.ForegroundProperty, "PrimaryTextBrush");
-        foreach (var (key, caption) in captions)
-        {
-            frame.Resources[key] = caption;
-        }
 
         // BYDESIGN: окно за экраном и не становится активным: снимок не мелькает перед пользователем и не забирает его ввод.
         var window = new Window
