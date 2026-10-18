@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
+using Kit;
 using Presenters;
 using Selection;
 
@@ -111,6 +112,38 @@ public sealed partial class BehaviorTests
             var start = int.Parse(Offset().Match(html).Groups["start"].Value);
             var end = int.Parse(Offset().Match(html).Groups["end"].Value);
             Encoding.UTF8.GetString(bytes, start, end - start).Should().Be("<p>Привет, <strong>мир</strong></p>\n");
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void HTML_в_буфере_собирает_конвейер_разбора_с_расширениями()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Extensions = { new WikiLinks(), new Spoilers() }, Markdown = "See [[Page]], ||secret|| here." };
+            var window = WpfHost.Show(viewer);
+            viewer.SelectAll();
+
+            var html = viewer.CreateCopyData()!.GetData(DataFormats.Html).Should().BeOfType<string>().Subject;
+
+            html.Should().Contain("<a href=\"wiki:Page\">Page</a>").And.Contain("<span class=\"spoiler\">secret</span>");
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Синтаксис_без_своего_HTML_идёт_в_HTML_исходным_текстом()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Extensions = { TestWidgets.Mention() }, Markdown = "hello @ivan & co" };
+            var window = WpfHost.Show(viewer);
+            viewer.SelectAll();
+
+            var html = viewer.CreateCopyData()!.GetData(DataFormats.Html).Should().BeOfType<string>().Subject;
+
+            html.Should().Contain("<p>hello @ivan &amp; co</p>");
             window.Close();
         });
     }

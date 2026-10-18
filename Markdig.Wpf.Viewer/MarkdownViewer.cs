@@ -34,11 +34,22 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.None, OnMarkdownChanged));
 
-    /// <summary>Базовая настройка разбора Markdig; не задана — расширенная по умолчанию.</summary>
+    /// <summary>
+    /// Готовая настройка разбора Markdig; не задана — расширенная по умолчанию. С расширениями вьюера
+    /// от неё берутся только расширения Markdig, настройки построителя — через <see cref="PipelineSetup"/>.
+    /// </summary>
     public static readonly DependencyProperty MarkdownPipelineProperty =
         DependencyProperty.Register(
             nameof(MarkdownPipeline),
             typeof(MarkdownPipeline),
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(null, OnPipelineChanged));
+
+    /// <summary>Настройка разбора Markdig на новом построителе, поверх неё — расширения вьюера; задана — вместо <see cref="MarkdownPipeline"/>.</summary>
+    public static readonly DependencyProperty PipelineSetupProperty =
+        DependencyProperty.Register(
+            nameof(PipelineSetup),
+            typeof(Action<MarkdownPipelineBuilder>),
             typeof(MarkdownViewer),
             new FrameworkPropertyMetadata(null, OnPipelineChanged));
 
@@ -292,6 +303,12 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     {
         get => (MarkdownPipeline?)GetValue(MarkdownPipelineProperty);
         set => SetValue(MarkdownPipelineProperty, value);
+    }
+
+    public Action<MarkdownPipelineBuilder>? PipelineSetup
+    {
+        get => (Action<MarkdownPipelineBuilder>?)GetValue(PipelineSetupProperty);
+        set => SetValue(PipelineSetupProperty, value);
     }
 
     public IMdStyleProvider? StyleProvider
@@ -677,8 +694,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         }
 
         var markdown = SelectedMarkdown;
-        var html = Markdig.Markdown.ToHtml(markdown, MarkdownPipeline ?? ModelBuilder.DefaultPipeline);
-        var data = MdClipboard.Data(markdownAsText ? markdown : SelectedText, markdown, html);
+        var data = MdClipboard.Data(markdownAsText ? markdown : SelectedText, markdown, MdClipboard.Html(markdown, GetPipeline()));
         return MdClipboard.Approve(this, data) ? data : null;
     }
 
@@ -1022,15 +1038,24 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         }
 
         var extensions = ActiveExtensions;
-        if (extensions.Count == 0)
+        if (PipelineSetup is null && extensions.Count == 0)
         {
             return _pipeline = MarkdownPipeline ?? ModelBuilder.DefaultPipeline;
         }
 
         var builder = new MarkdownPipelineBuilder();
-        foreach (var markdigExtension in (MarkdownPipeline ?? ModelBuilder.DefaultPipeline).Extensions)
+        if (PipelineSetup is { } setup)
         {
-            builder.Extensions.Add(markdigExtension);
+            setup(builder);
+        }
+        else
+        {
+            // BYDESIGN: из готового конвейера достаются только расширения Markdig — настройки
+            // построителя он не отдаёт; для них есть PipelineSetup.
+            foreach (var markdigExtension in (MarkdownPipeline ?? ModelBuilder.DefaultPipeline).Extensions)
+            {
+                builder.Extensions.Add(markdigExtension);
+            }
         }
 
         foreach (var extension in extensions)

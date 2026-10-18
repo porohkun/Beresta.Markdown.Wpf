@@ -296,6 +296,7 @@
     <Style x:Key="Md.Paragraph.InlineCodeStyle" TargetType="{x:Type p:InlineCodePresenter}">
         <Setter Property="FontSize" Value="{DynamicResource Md.InlineCode.FontSize}" />
         <Setter Property="FontFamily" Value="{DynamicResource Md.InlineCode.FontFamily}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.InlineCode.Foreground}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type p:InlineCodePresenter}">
@@ -307,7 +308,8 @@
                         <TextBlock Text="{TemplateBinding Text}"
                                    FontSize="{TemplateBinding FontSize}"
                                    FontFamily="{TemplateBinding FontFamily}"
-                                   Foreground="{DynamicResource Md.InlineCode.Foreground}" />
+                                   Foreground="{TemplateBinding Foreground}"
+                                   TextDecorations="{TemplateBinding TextDecorations}" />
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -316,6 +318,7 @@
 
     <Style x:Key="Md.Kbd.Style" TargetType="{x:Type p:InlineCodePresenter}">
         <Setter Property="FontFamily" Value="{DynamicResource Md.Kbd.FontFamily}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Kbd.Foreground}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type p:InlineCodePresenter}">
@@ -327,7 +330,8 @@
                         <TextBlock Text="{TemplateBinding Text}"
                                    FontSize="{TemplateBinding FontSize}"
                                    FontFamily="{TemplateBinding FontFamily}"
-                                   Foreground="{DynamicResource Md.Kbd.Foreground}" />
+                                   Foreground="{TemplateBinding Foreground}"
+                                   TextDecorations="{TemplateBinding TextDecorations}" />
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

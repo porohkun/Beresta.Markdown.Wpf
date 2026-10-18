@@ -553,9 +553,20 @@ public class MdTextBlock : TextBlock
 
                 case RunVm { Code: true } or RunVm { Kbd: true }:
                     var boxed = (RunVm)inline;
-                    var presenter = new InlineCodePresenter { Text = boxed.Text, Style = boxed.Code ? InlineCodeStyle : KbdStyle };
+                    var presenter = new InlineCodePresenter
+                    {
+                        Text = boxed.Text,
+                        Style = boxed.Code ? InlineCodeStyle : KbdStyle,
+                        TextDecorations = DecorationsOf(boxed)
+                    };
+
+                    if (boxed.Hyperlink is not null && LinkForeground is { } linkForeground)
+                    {
+                        presenter.Foreground = linkForeground;
+                    }
+
                     var (container, overlay) = CreateAtomic(presenter);
-                    Inlines.Add(container);
+                    Inlines.Add(Dress(boxed, container));
                     _segments.Add(new(inline, start, length, container, overlay, null));
                     break;
 
@@ -682,8 +693,14 @@ public class MdTextBlock : TextBlock
     private Run AddRun(RunVm run, string content)
     {
         var text = new Run(content);
-        Inline current = text;
+        Inlines.Add(Dress(run, text));
+        return text;
+    }
 
+    /// <summary>Кусок текста или код в начертаниях, оформлении и ссылке своего инлайна.</summary>
+    private Inline Dress(RunVm run, Inline inner)
+    {
+        var current = inner;
         if (run.Strike)
         {
             current = Wrap(current, StrikeStyle, span => span.TextDecorations = System.Windows.TextDecorations.Strikethrough);
@@ -764,9 +781,18 @@ public class MdTextBlock : TextBlock
             current = link;
         }
 
-        Inlines.Add(current);
-        return text;
+        return current;
     }
+
+    /// <summary>Линии по коду от начертаний вокруг: зачёркивание, подчёркивание вставки.</summary>
+    private static TextDecorationCollection? DecorationsOf(RunVm run)
+        => (run.Strike, run.Inserted) switch
+        {
+            (true, true) => [.. System.Windows.TextDecorations.Strikethrough, .. System.Windows.TextDecorations.Underline],
+            (true, false) => System.Windows.TextDecorations.Strikethrough,
+            (false, true) => System.Windows.TextDecorations.Underline,
+            _ => null
+        };
 
     /// <summary>Кусок своего текста: где он в карте и каким элементом нарисован.</summary>
     private readonly record struct Segment(InlineVm Inline, int Start, int Length, TextElement Element, Border? Overlay, ContentPresenter? Widget)

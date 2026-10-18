@@ -4,6 +4,8 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
+using Markdig;
+using Markdig.Renderers;
 
 /// <summary>Запись в буфер обмена: данные собираются в форматы, проходят <see cref="DataObject.CopyingEvent"/> и кладутся разом.</summary>
 internal static class MdClipboard
@@ -20,6 +22,19 @@ internal static class MdClipboard
         data.SetData(MdDataFormats.Markdown, new MemoryStream(Encoding.UTF8.GetBytes(markdown)));
         data.SetData(DataFormats.Html, HtmlFormat(html));
         return data;
+    }
+
+    /// <summary>HTML разметки конвейером разбора; узел без своего HTML-рендерера — исходным текстом.</summary>
+    public static string Html(string markdown, MarkdownPipeline pipeline)
+    {
+        var document = Markdown.Parse(markdown, pipeline);
+        using var writer = new StringWriter();
+        var renderer = new HtmlRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.ObjectRenderers.Add(new SourceHtmlRenderer(markdown));
+        renderer.Render(document);
+        writer.Flush();
+        return writer.ToString();
     }
 
     /// <summary>Поднимает <see cref="DataObject.CopyingEvent"/> на источнике; <c>false</c> — приложение отменило копирование.</summary>

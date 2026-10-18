@@ -24,6 +24,24 @@ public sealed class InlineTests
     }
 
     [Fact]
+    public void Почтовая_автоссылка_ведёт_на_mailto()
+    {
+        var paragraph = (ParagraphVm)ModelBuilder.Parse("write <user@example.com>")[0];
+
+        paragraph.Inlines.OfType<RunVm>().Should().ContainSingle(run => run.Href == "mailto:user@example.com")
+            .Which.Text.Should().Be("user@example.com");
+    }
+
+    [Fact]
+    public void Ссылка_на_заголовок_по_его_тексту_ведёт_к_якорю()
+    {
+        var paragraph = ModelBuilder.Parse("# My Heading\n\nSee [My Heading].").OfType<ParagraphVm>().Single();
+
+        paragraph.Inlines.OfType<RunVm>().Should().ContainSingle(run => run.Href == "#my-heading")
+            .Which.Text.Should().Be("My Heading");
+    }
+
+    [Fact]
     public void Каждая_строка_исходника_начинается_с_новой_строки()
     {
         ModelDump.Of("first\nsecond *third\nfourth*").Should().Be("P(first\nsecond third\nfourth)");

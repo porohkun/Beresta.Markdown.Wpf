@@ -1036,7 +1036,7 @@ internal sealed partial class ModelBuilder
                     break;
 
                 case AutolinkInline autolink:
-                    AddLink(autolink.Url, null, null, state, output, node);
+                    AddText(autolink.Url, Linked(state, autolink.IsEmail ? $"mailto:{autolink.Url}" : autolink.Url, null), output, node);
                     break;
 
                 case HtmlInline html:
@@ -1072,7 +1072,7 @@ internal sealed partial class ModelBuilder
                     break;
 
                 case LinkInline link:
-                    AddLink(link.Url, link.Title, link.FirstChild, state, output, node);
+                    AddLink(link.GetDynamicUrl?.Invoke() ?? link.Url, link.Title, link.FirstChild, state, output, node);
                     break;
 
                 case EmphasisInline emphasis:
@@ -1184,13 +1184,7 @@ internal sealed partial class ModelBuilder
         List<InlineVm> output,
         Inline node)
     {
-        var linkedState = state with
-        {
-            Hyperlink = TryCreateUri(url),
-            Href = url,
-            LinkTitle = string.IsNullOrEmpty(title) ? null : title
-        };
-
+        var linkedState = Linked(state, url, title);
         if (firstChild is not null)
         {
             WalkInline(firstChild, linkedState, output);
@@ -1202,6 +1196,15 @@ internal sealed partial class ModelBuilder
             AddText(url, linkedState, output, node);
         }
     }
+
+    /// <summary>Начертание текста внутри ссылки.</summary>
+    private static InlineState Linked(InlineState state, string? url, string? title)
+        => state with
+        {
+            Hyperlink = TryCreateUri(url),
+            Href = url,
+            LinkTitle = string.IsNullOrEmpty(title) ? null : title
+        };
 
     private void AddText(string text, InlineState state, List<InlineVm> output, Inline node)
     {

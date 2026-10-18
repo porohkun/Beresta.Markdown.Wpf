@@ -1,5 +1,6 @@
 ﻿namespace MarkdigWpfViewer.Tests;
 
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Navigation;
@@ -145,6 +146,52 @@ public sealed class LinkTests
             LinkOf(viewer, "b").ToolTip.Should().Be("https://b.example");
             window.Close();
         });
+    }
+
+    [Fact]
+    public void Код_внутри_ссылки_остаётся_ссылкой()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var opener = new RecordingOpener();
+            var viewer = new MarkdownViewer { Markdown = "Use [`MarkdownViewer`](https://example.com/api) and [plain](https://example.com)." };
+            MarkdownLink.SetOpener(viewer, opener);
+            var window = WpfHost.Show(viewer);
+
+            var links = Visuals.Descendants<MdTextBlock>(viewer).SelectMany(block => Hyperlinks(block.Inlines)).ToList();
+            links.Select(link => link.NavigateUri.OriginalString).Should().Equal("https://example.com/api", "https://example.com");
+            var code = Visuals.Descendants<InlineCodePresenter>(viewer).Single();
+            Ancestors(code).Should().Contain(links[0]);
+
+            Click(links[0]);
+            opener.Opened.Should().Equal("https://example.com/api");
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Код_и_клавиша_берут_начертание_и_цвет_ссылки_вокруг()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "**`bold`** ~~`gone`~~ [<kbd>Ctrl</kbd>](https://example.com)" };
+            var window = WpfHost.Show(viewer);
+            var text = Visuals.Descendants<MdTextBlock>(viewer).Single();
+            var presenters = Visuals.Descendants<InlineCodePresenter>(viewer).ToList();
+
+            presenters[0].FontWeight.Should().Be(FontWeights.SemiBold);
+            presenters[1].TextDecorations.Should().BeEquivalentTo(TextDecorations.Strikethrough);
+            presenters[2].Foreground.Should().Be(text.LinkForeground);
+            window.Close();
+        });
+    }
+
+    private static IEnumerable<DependencyObject> Ancestors(DependencyObject element)
+    {
+        for (var node = LogicalTreeHelper.GetParent(element); node is not null; node = LogicalTreeHelper.GetParent(node))
+        {
+            yield return node;
+        }
     }
 
     private static Hyperlink LinkOf(MarkdownViewer viewer, string text)

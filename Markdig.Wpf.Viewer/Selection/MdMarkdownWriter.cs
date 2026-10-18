@@ -571,9 +571,9 @@ internal sealed partial class MdMarkdownWriter
         {
             switch (inline)
             {
-                case RunVm { Code: false, Href: { } href } run when run.Text == href && to - from == run.Text.Length:
-                    Open(Markers(run with { Href = null, Hyperlink = null }), href);
-                    Append($"<{href}>");
+                case RunVm { Code: false, Href: { } href } run when (run.Text == href || href == $"mailto:{run.Text}") && to - from == run.Text.Length:
+                    Open(Markers(run with { Href = null, Hyperlink = null }), run.Text);
+                    Append($"<{run.Text}>");
                     break;
 
                 case RunVm run:
