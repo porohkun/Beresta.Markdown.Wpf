@@ -8,8 +8,6 @@ public sealed class TwoPanesViewModel : ShowcaseViewModel
     {
     }
 
-    public override string Title => "Две панели";
-
     public string Left { get; } = Samples.Near<TwoPanesViewModel>("Left.md");
 
     public string Right { get; } = Samples.Near<TwoPanesViewModel>("Right.md");

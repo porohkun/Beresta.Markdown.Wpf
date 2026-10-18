@@ -8,7 +8,5 @@ public sealed class ExtensionsViewModel : ShowcaseViewModel
     {
     }
 
-    public override string Title => "Расширения";
-
     public string Text { get; } = Samples.Near<ExtensionsViewModel>("Extensions.md");
 }

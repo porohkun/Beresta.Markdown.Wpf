@@ -15,8 +15,6 @@ public sealed class CustomLookViewModel : ShowcaseViewModel
         };
     }
 
-    public override string Title => "Свой вид";
-
     public string Text => Samples.Document;
 
     /// <summary>Ключи темы вьюера со своими значениями.</summary>

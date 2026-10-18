@@ -88,6 +88,9 @@ var thread = new Thread(() =>
             case "dark":
                 model.Options.IsDark = true;
                 break;
+            case "lang":
+                model.Options.IsRussian = value == "ru";
+                break;
             case "gutter":
                 model.Options.ShowSourceLineNumbers = !model.Options.ShowSourceLineNumbers;
                 break;

@@ -8,8 +8,6 @@ public sealed class PreviewViewModel : ShowcaseViewModel
     {
     }
 
-    public override string Title => "Предпросмотр";
-
     /// <summary>Текст из редактора; вьюер перерисовывает его на каждую правку.</summary>
     public string Text
     {

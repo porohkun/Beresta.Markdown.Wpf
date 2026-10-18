@@ -23,8 +23,6 @@ public sealed class LargeDocumentViewModel : ShowcaseViewModel
     {
     }
 
-    public override string Title => "Большой документ";
-
     /// <summary>Многократно повторённый lorem ipsum: разделы с заголовком и абзацами разной длины.</summary>
     public string Text { get; } = string.Join(
         "\n\n",

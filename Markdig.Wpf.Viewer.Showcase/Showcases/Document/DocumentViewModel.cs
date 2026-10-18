@@ -8,7 +8,5 @@ public sealed class DocumentViewModel : ShowcaseViewModel
     {
     }
 
-    public override string Title => "Документ";
-
     public string Text { get; } = Samples.Document;
 }

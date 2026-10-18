@@ -26,8 +26,6 @@ public sealed class SetsViewModel : ShowcaseViewModel
         Selected = Dialects[0];
     }
 
-    public override string Title => "Наборы";
-
     public IReadOnlyList<Dialect> Dialects { get; }
 
     public Dialect Selected

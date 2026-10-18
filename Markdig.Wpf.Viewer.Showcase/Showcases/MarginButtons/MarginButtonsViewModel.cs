@@ -8,7 +8,5 @@ public sealed class MarginButtonsViewModel : ShowcaseViewModel
     {
     }
 
-    public override string Title => "Кнопки на полях";
-
     public string Markdown { get; } = Samples.Near<MarginButtonsViewModel>("MarginButtons.md");
 }

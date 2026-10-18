@@ -12,8 +12,6 @@ public sealed class AboutViewModel : ShowcaseViewModel
     {
     }
 
-    public override string Title => "О витрине";
-
     /// <summary>Описание витрины и уведомления из файла, который лежит рядом с программой.</summary>
     public string Text { get; } =
         Samples.Near<AboutViewModel>("About.md")

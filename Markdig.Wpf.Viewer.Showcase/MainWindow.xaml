@@ -6,6 +6,7 @@
            xmlns:hc="https://handyorg.github.io/handycontrol"
            xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
            xmlns:local="clr-namespace:MarkdigWpfViewer.Showcase"
+           xmlns:loc="clr-namespace:MarkdigWpfViewer.Showcase.Localization"
            xmlns:document="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Document"
            xmlns:extensions="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Extensions"
            xmlns:kit="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Kit"
@@ -21,7 +22,7 @@
            xmlns:about="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.About"
            mc:Ignorable="d"
            d:DataContext="{d:DesignInstance local:MainWindowViewModel, IsDesignTimeCreatable=True}"
-           Title="Markdig.Wpf.Viewer — витрина"
+           Title="{loc:Text Window.Title}"
            Width="1100"
            Height="800"
            WindowStartupLocation="CenterScreen"
@@ -140,12 +141,19 @@
 
             <hc:ButtonGroup HorizontalAlignment="Left"
                             VerticalAlignment="Bottom"
+                            Margin="8,0,0,0">
+                <RadioButton Content="EN" IsChecked="{Binding Options.IsEnglish}" />
+                <RadioButton Content="RU" IsChecked="{Binding Options.IsRussian}" />
+            </hc:ButtonGroup>
+
+            <hc:ButtonGroup HorizontalAlignment="Left"
+                            VerticalAlignment="Bottom"
                             Margin="16,0,0,0">
-                <ToggleButton Content="Номера строк исходника"
+                <ToggleButton Content="{loc:Text Options.SourceLineNumbers}"
                               IsChecked="{Binding Options.ShowSourceLineNumbers}" />
-                <ToggleButton Content="Номера строк в коде"
+                <ToggleButton Content="{loc:Text Options.CodeLineNumbers}"
                               IsChecked="{Binding Options.ShowCodeLineNumbers}" />
-                <ToggleButton Content="Выделение"
+                <ToggleButton Content="{loc:Text Options.Selection}"
                               IsChecked="{Binding Options.IsSelectionEnabled}" />
             </hc:ButtonGroup>
         </StackPanel>

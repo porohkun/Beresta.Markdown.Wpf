@@ -18,8 +18,6 @@ public sealed class StreamingViewModel : ShowcaseViewModel
     {
     }
 
-    public override string Title => "Поток";
-
     /// <summary>Ответ, который поддельная модель отдаёт кусками: общий образец и рассказ о потоке вслед.</summary>
     public string Answer { get; } = Samples.Document + "\n\n---\n\n" + Samples.Near<StreamingViewModel>("Answer.md");
 

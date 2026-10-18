@@ -8,7 +8,5 @@ public sealed class ChatViewModel : ShowcaseViewModel
     {
     }
 
-    public override string Title => "Чат";
-
     public IReadOnlyList<ChatMessage> Messages => field ??= ChatHistory.Generate(10_000);
 }

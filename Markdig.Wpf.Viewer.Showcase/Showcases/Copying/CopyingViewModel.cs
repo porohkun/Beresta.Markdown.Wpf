@@ -12,8 +12,6 @@ public sealed class CopyingViewModel : ShowcaseViewModel
         Choice = Choices[0];
     }
 
-    public override string Title => "Копирование";
-
     public string Text => Samples.Document;
 
     public IReadOnlyList<CopyChoice> Choices { get; } =

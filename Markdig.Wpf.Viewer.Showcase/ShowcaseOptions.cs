@@ -1,14 +1,38 @@
 ﻿namespace MarkdigWpfViewer.Showcase;
 
+using Localization;
 using Theming;
 
-/// <summary>Общие настройки всех витрин: тема, номера строк, выделение.</summary>
+/// <summary>Общие настройки всех витрин: тема, язык, номера строк, выделение.</summary>
 public sealed class ShowcaseOptions : BindableBase
 {
+    public ShowcaseOptions()
+    {
+        IsRussian = Localizer.IsSystemRussian;
+    }
+
     public bool IsDark
     {
         get;
         set => Set(ref field, value, () => ThemeSwitcher.Apply(value));
+    }
+
+    /// <summary>Витрина по-русски; иначе — по-английски. При запуске — язык системы.</summary>
+    public bool IsRussian
+    {
+        get;
+        set => Set(ref field, value, () =>
+        {
+            Localizer.Apply(value);
+            RaisePropertyChanged(nameof(IsEnglish));
+        });
+    }
+
+    /// <summary>Витрина по-английски — обратное <see cref="IsRussian"/>, для переключателя.</summary>
+    public bool IsEnglish
+    {
+        get => !IsRussian;
+        set => IsRussian = !value;
     }
 
     public bool ShowSourceLineNumbers
