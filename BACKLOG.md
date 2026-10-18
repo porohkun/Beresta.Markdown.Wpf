@@ -13,7 +13,7 @@
   NuGet Markdig не получит, и вьюер упадёт на первом разборе. Сначала выяснить, намеренно ли это.
   Источник: разбор csproj при знакомстве с проектом.
 - [x] **README молчит о подключении темы.** Без `Themes/Generic.xaml` в ресурсах приложения
-  (`pack://application:,,,/Markdig.Wpf.Viewer;component/Themes/Generic.xaml`, как в `App.xaml`
+  (`pack://application:,,,/Beresta.Markdown.Wpf;component/Themes/Generic.xaml`, как в `App.xaml`
   демо) вьюер пуст: сборка библиотеки не объявляет `ThemeInfo`, и тема сама не подхватывается.
   Два пути: описать подключение в README либо объявить `ThemeInfo` в библиотеке — тогда
   подключение станет необязательным, а перекрытие ключей темы у потребителя продолжит работать.

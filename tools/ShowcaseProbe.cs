@@ -1,4 +1,4 @@
-﻿#:project ../Markdig.Wpf.Viewer.Showcase/Markdig.Wpf.Viewer.Showcase.csproj
+﻿#:project ../Beresta.Markdown.Wpf.Showcase/Beresta.Markdown.Wpf.Showcase.csproj
 #:property TargetFramework=net10.0-windows
 #:property UseWPF=true
 #:property PublishAot=false
@@ -16,15 +16,15 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using MarkdigWpfViewer;
-using MarkdigWpfViewer.Scrolling;
-using MarkdigWpfViewer.Selection;
-using MarkdigWpfViewer.Showcase;
-using MarkdigWpfViewer.Showcase.Localization;
-using MarkdigWpfViewer.Showcase.Showcases.Copying;
-using MarkdigWpfViewer.Showcase.Showcases.CustomLook;
-using MarkdigWpfViewer.Showcase.Showcases.Sets;
-using MarkdigWpfViewer.Showcase.Showcases.TwoPanes;
+using Beresta.Markdown.Wpf;
+using Beresta.Markdown.Wpf.Scrolling;
+using Beresta.Markdown.Wpf.Selection;
+using Beresta.Markdown.Wpf.Showcase;
+using Beresta.Markdown.Wpf.Showcase.Localization;
+using Beresta.Markdown.Wpf.Showcase.Showcases.Copying;
+using Beresta.Markdown.Wpf.Showcase.Showcases.CustomLook;
+using Beresta.Markdown.Wpf.Showcase.Showcases.Sets;
+using Beresta.Markdown.Wpf.Showcase.Showcases.TwoPanes;
 using ColorPicker = HandyControl.Controls.ColorPicker;
 using NumericUpDown = HandyControl.Controls.NumericUpDown;
 using PropertyItem = HandyControl.Controls.PropertyItem;

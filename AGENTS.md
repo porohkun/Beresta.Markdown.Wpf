@@ -1,7 +1,7 @@
-﻿# Markdig.Wpf.Viewer
+﻿# Beresta.Markdown.Wpf
 
 WPF-контрол, который показывает markdown: текст разбирает Markdig, рисуют шаблоны WPF. Выходит
-NuGet-пакетом `Markdig.Wpf.Viewer` и подключается сабмодулем — так им пользуется Storaxis. Стек:
+NuGet-пакетом `Beresta.Markdown.Wpf` и подключается сабмодулем — так им пользуется Storaxis. Стек:
 .NET 10 (`net10.0-windows`), WPF, Markdig.
 
 Термины — в [`GLOSSARY.md`](GLOSSARY.md), и только там.
@@ -10,23 +10,23 @@ NuGet-пакетом `Markdig.Wpf.Viewer` и подключается сабмо
 
 | Проект | Пространство имён | Что это |
 |---|---|---|
-| [`Markdig.Wpf.Viewer`](Markdig.Wpf.Viewer/AGENTS.md) | `MarkdigWpfViewer` | библиотека: вьюер, разбор, тема по умолчанию; то, что уходит в пакет |
-| [`Markdig.Wpf.Viewer.Showcase`](Markdig.Wpf.Viewer.Showcase/AGENTS.md) | `MarkdigWpfViewer.Showcase` | витрина на HandyControls: встраивание, темы, сценарии списком слева, образец разметки; в пакет не входит |
-| `Markdig.Wpf.Viewer.Tests` | `MarkdigWpfViewer.Tests` | тесты библиотеки: разбор, панель блоков, выделение, позиции, виджеты; xUnit и FluentAssertions |
+| [`Beresta.Markdown.Wpf`](Beresta.Markdown.Wpf/AGENTS.md) | `Beresta.Markdown.Wpf` | библиотека: вьюер, разбор, тема по умолчанию; то, что уходит в пакет |
+| [`Beresta.Markdown.Wpf.Showcase`](Beresta.Markdown.Wpf.Showcase/AGENTS.md) | `Beresta.Markdown.Wpf.Showcase` | витрина на HandyControls: встраивание, темы, сценарии списком слева, образец разметки; в пакет не входит |
+| `Beresta.Markdown.Wpf.Tests` | `Beresta.Markdown.Wpf.Tests` | тесты библиотеки: разбор, панель блоков, выделение, позиции, виджеты; xUnit и FluentAssertions |
 
 ## Зависимости
 
-`Markdig.Wpf.Viewer.Showcase` → `Markdig.Wpf.Viewer` → пакет Markdig. Библиотека о витрине не
-знает и знать не должна. `Markdig.Wpf.Viewer.Tests` → `Markdig.Wpf.Viewer` и видит его внутренние
+`Beresta.Markdown.Wpf.Showcase` → `Beresta.Markdown.Wpf` → пакет Markdig. Библиотека о витрине не
+знает и знать не должна. `Beresta.Markdown.Wpf.Tests` → `Beresta.Markdown.Wpf` и видит его внутренние
 типы.
 
 ## Команды
 
 | Что | Команда |
 |---|---|
-| Сборка | `dotnet build Markdig.Wpf.Viewer.slnx` |
-| Тесты | `dotnet test Markdig.Wpf.Viewer.Tests` |
-| Витрина | `dotnet run --project Markdig.Wpf.Viewer.Showcase` |
+| Сборка | `dotnet build Beresta.Markdown.Wpf.slnx` |
+| Тесты | `dotnet test Beresta.Markdown.Wpf.Tests` |
+| Витрина | `dotnet run --project Beresta.Markdown.Wpf.Showcase` |
 | Витрина для проверок агентом | `dotnet run tools/ShowcaseProbe.cs -- <шаги через запятую> [папка снимков]` |
 | Снимки для вики | `dotnet run tools/WikiShots.cs -- [картинки через запятую] [--lang en\|ru] [--out папка]` |
 

@@ -1,4 +1,4 @@
-﻿#:project ../Markdig.Wpf.Viewer.Showcase/Markdig.Wpf.Viewer.Showcase.csproj
+﻿#:project ../Beresta.Markdown.Wpf.Showcase/Beresta.Markdown.Wpf.Showcase.csproj
 #:property TargetFramework=net10.0-windows
 #:property UseWPF=true
 #:property PublishAot=false
@@ -17,15 +17,15 @@ using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using MarkdigWpfViewer;
-using MarkdigWpfViewer.Extensions;
-using MarkdigWpfViewer.Kit;
-using MarkdigWpfViewer.Scrolling;
-using MarkdigWpfViewer.Search;
-using MarkdigWpfViewer.Selection;
-using MarkdigWpfViewer.Showcase;
-using MarkdigWpfViewer.Showcase.Localization;
-using MarkdigWpfViewer.Showcase.Showcases.TwoPanes;
+using Beresta.Markdown.Wpf;
+using Beresta.Markdown.Wpf.Extensions;
+using Beresta.Markdown.Wpf.Kit;
+using Beresta.Markdown.Wpf.Scrolling;
+using Beresta.Markdown.Wpf.Search;
+using Beresta.Markdown.Wpf.Selection;
+using Beresta.Markdown.Wpf.Showcase;
+using Beresta.Markdown.Wpf.Showcase.Localization;
+using Beresta.Markdown.Wpf.Showcase.Showcases.TwoPanes;
 using Polygon = System.Windows.Shapes.Polygon;
 
 const int ExtendedStyle = -20;
@@ -67,10 +67,11 @@ var thread = new Thread(() =>
     var loader = new ShotLoader();
     var resolver = new ShotResolver();
 
-    // Снимки каждой вики — в локализации витрины на её языке
+    // Снимки каждой вики — в локализации витрины на её языке; свой загрузчик на язык — у баннера своя подпись
     foreach (var russian in languages)
     {
         Localizer.Apply(russian);
+        loader = new ShotLoader();
         Light(russian);
     }
 
@@ -82,6 +83,7 @@ var thread = new Thread(() =>
         foreach (var russian in languages)
         {
             options.IsRussian = russian;
+            loader = new ShotLoader();
             Shot(russian, "dark-theme.png", new MarkdownViewer { Markdown = Overview(russian), ImageLoader = loader }, 760);
         }
     }
@@ -160,9 +162,9 @@ var thread = new Thread(() =>
             var viewer = (MarkdownViewer)XamlReader.Parse("""
                 <mdv:MarkdownViewer xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                                    xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
-                                    xmlns:p="clr-namespace:MarkdigWpfViewer.Presenters;assembly=Markdig.Wpf.Viewer"
-                                    xmlns:ext="clr-namespace:MarkdigWpfViewer.Showcase.Showcases.Extensions;assembly=Markdig.Wpf.Viewer.Showcase">
+                                    xmlns:mdv="clr-namespace:Beresta.Markdown.Wpf;assembly=Beresta.Markdown.Wpf"
+                                    xmlns:p="clr-namespace:Beresta.Markdown.Wpf.Presenters;assembly=Beresta.Markdown.Wpf"
+                                    xmlns:ext="clr-namespace:Beresta.Markdown.Wpf.Showcase.Showcases.Extensions;assembly=Beresta.Markdown.Wpf.Showcase">
                     <mdv:MarkdownViewer.Extensions>
                         <ext:NoteExtension>
                             <ext:NoteExtension.Template>
@@ -203,10 +205,10 @@ var thread = new Thread(() =>
             var viewer = (MarkdownViewer)XamlReader.Parse("""
                 <mdv:MarkdownViewer xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                                    xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
-                                    xmlns:p="clr-namespace:MarkdigWpfViewer.Presenters;assembly=Markdig.Wpf.Viewer"
-                                    xmlns:s="clr-namespace:MarkdigWpfViewer.Styling;assembly=Markdig.Wpf.Viewer"
-                                    xmlns:vm="clr-namespace:MarkdigWpfViewer.ViewModels;assembly=Markdig.Wpf.Viewer">
+                                    xmlns:mdv="clr-namespace:Beresta.Markdown.Wpf;assembly=Beresta.Markdown.Wpf"
+                                    xmlns:p="clr-namespace:Beresta.Markdown.Wpf.Presenters;assembly=Beresta.Markdown.Wpf"
+                                    xmlns:s="clr-namespace:Beresta.Markdown.Wpf.Styling;assembly=Beresta.Markdown.Wpf"
+                                    xmlns:vm="clr-namespace:Beresta.Markdown.Wpf.ViewModels;assembly=Beresta.Markdown.Wpf">
                     <mdv:MarkdownViewer.StyleProvider>
                         <s:MdStyleProvider BasedOn="{StaticResource Md.DefaultStyleProvider}">
                             <s:MdStyleProvider.HeadingTemplate>
@@ -470,7 +472,7 @@ var thread = new Thread(() =>
 
         Kit(russian, "kit-mkdocs.png", new MkDocsSet(), L("""
             !!! note "Install"
-                Run `dotnet add package Markdig.Wpf.Viewer`.
+                Run `dotnet add package Beresta.Markdown.Wpf`.
 
             ??? warning "Collapsed at first"
                 Click the title to read.
@@ -479,7 +481,7 @@ var thread = new Thread(() =>
                 A collapsible admonition that starts open.
             """, """
             !!! note "Установка"
-                Выполни `dotnet add package Markdig.Wpf.Viewer`.
+                Выполни `dotnet add package Beresta.Markdown.Wpf`.
 
             ??? warning "Свёрнуто сразу"
                 Щёлкни заголовок, чтобы прочитать.
@@ -766,12 +768,12 @@ bool Wanted(string name)
 
 static string Overview(bool russian) => russian
     ? """
-      # Markdig.Wpf.Viewer
+      # Beresta.Markdown.Wpf
 
       ![Баннер](banner.png)
 
       **Контрол WPF**, который рисует *Markdown*: не ~~HTML~~, а родные элементы WPF, `виртуализированно` и с выделением.
-      Ссылки вроде [репозитория](https://github.com/porohkun/Markdig.Wpf.Viewer) открываются в браузере.
+      Ссылки вроде [репозитория](https://github.com/porohkun/Beresta.Markdown.Wpf) открываются в браузере.
 
       ## Списки и задачи
 
@@ -799,12 +801,12 @@ static string Overview(bool russian) => russian
       <kbd>Ctrl</kbd>+<kbd>C</kbd> копирует, H<sub>2</sub>O и E = mc<sup>2</sup> тоже работают.
       """
     : """
-      # Markdig.Wpf.Viewer
+      # Beresta.Markdown.Wpf
 
       ![Banner](banner.png)
 
       A **WPF control** that renders *Markdown*: ~~HTML~~ native WPF elements, `virtualized` and selectable.
-      Links like [the repository](https://github.com/porohkun/Markdig.Wpf.Viewer) open in the browser.
+      Links like [the repository](https://github.com/porohkun/Beresta.Markdown.Wpf) open in the browser.
 
       ## Lists and tasks
 
@@ -929,18 +931,27 @@ sealed class ShotLoader : IMdImageLoader
         var visual = new DrawingVisual();
         using (var context = visual.RenderOpen())
         {
-            var background = new LinearGradientBrush(Color.FromRgb(0x32, 0x6C, 0xF3), Color.FromRgb(0x7A, 0x3F, 0xD9), 20);
+            var background = new LinearGradientBrush(Color.FromRgb(0x4A, 0x31, 0x22), Color.FromRgb(0x94, 0x5E, 0x33), 20);
             context.DrawRoundedRectangle(background, null, new Rect(0, 0, width, height), 16, 16);
-            var mark = Text("M↓", FontWeights.Bold, 72, Brushes.White);
-            context.DrawRoundedRectangle(new SolidColorBrush(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF)), null, new Rect(32, 28, 116, 104), 12, 12);
-            context.DrawText(mark, new Point(32 + (116 - mark.Width) / 2, 28 + (104 - mark.Height) / 2));
-            context.DrawText(Text("Markdig.Wpf.Viewer", FontWeights.SemiBold, 36, Brushes.White), new Point(176, 46));
-            var subtitle = new SolidColorBrush(Color.FromArgb(0xDD, 0xFF, 0xFF, 0xFF));
+            context.DrawImage(Icon(), new Rect(20, 12, 136, 136));
+            context.DrawText(Text("Beresta.Markdown.Wpf", FontWeights.SemiBold, 36, new SolidColorBrush(Color.FromRgb(0xFF, 0xF8, 0xEC))), new Point(176, 42));
             var caption = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ru" ? "Markdown для WPF" : "Markdown for WPF";
-            context.DrawText(Text(caption, FontWeights.Normal, 22, subtitle), new Point(178, 94));
+            context.DrawText(Text(caption, FontWeights.Normal, 22, new SolidColorBrush(Color.FromRgb(0xEE, 0xD9, 0xBC))), new Point(178, 90));
         }
 
         return Render(visual, width, height);
+    }
+
+    /// <summary>Значок пакета из корня репозитория.</summary>
+    private static ImageSource Icon([CallerFilePath] string script = "")
+    {
+        var icon = new BitmapImage();
+        icon.BeginInit();
+        icon.UriSource = new Uri(Path.GetFullPath(Path.Combine(Path.GetDirectoryName(script)!, "..", "icon512.png")));
+        icon.CacheOption = BitmapCacheOption.OnLoad;
+        icon.EndInit();
+        icon.Freeze();
+        return icon;
     }
 
     private static ImageSource Still()
