@@ -277,7 +277,7 @@ public sealed class MdTextMap
 
             case CodeBlockVm code when TryGetRange(code.Runs, out var codeRange):
                 var before = Math.Clamp(position - codeRange.Start, 0, code.Code.Length);
-                return code.CodeFirstLine + code.Code.AsSpan(0, before).Count('\n');
+                return code.CodeFirstLine + CharCount.In(code.Code.AsSpan(0, before), '\n');
 
             case TableVm table:
                 foreach (var row in table.Rows)

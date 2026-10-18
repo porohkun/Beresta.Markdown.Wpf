@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
+		<TargetFrameworks>net7.0-windows;net8.0-windows;net9.0-windows;net10.0-windows</TargetFrameworks>
 		<RootNamespace>Beresta.Markdown.Wpf.Tests</RootNamespace>
 		<IsTestProject>true</IsTestProject>
 		<IsPackable>false</IsPackable>
@@ -9,7 +9,9 @@
 
 	<ItemGroup>
 		<PackageReference Include="FluentAssertions" Version="6.12.1" />
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
+		<!-- BYDESIGN: Microsoft.NET.Test.Sdk новее 17.11 не поддерживает .NET 7 — под него своя версия. -->
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0" Condition="'$(TargetFramework)' != 'net7.0-windows'" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" Condition="'$(TargetFramework)' == 'net7.0-windows'" />
 		<PackageReference Include="xunit" Version="2.5.3" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
 	</ItemGroup>

@@ -197,7 +197,7 @@ internal sealed class GapLayout
     private static int CodeLineAt(CodeBlockVm code, int offset)
         => offset > code.Code.Length
             ? code.Code.Split('\n').Length
-            : code.Code.AsSpan(0, offset).Count('\n');
+            : CharCount.In(code.Code.AsSpan(0, offset), '\n');
 
     private void AddText(object inlines, int offset, double height)
     {

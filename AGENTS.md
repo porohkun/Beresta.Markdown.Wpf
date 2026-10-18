@@ -2,7 +2,7 @@
 
 WPF-контрол, который показывает markdown: текст разбирает Markdig, рисуют шаблоны WPF. Выходит
 NuGet-пакетом `Beresta.Markdown.Wpf` и подключается сабмодулем — так им пользуется Storaxis. Стек:
-WPF и Markdig; библиотека и тесты собираются под .NET 8 и .NET 10 (`net8.0-windows`,
+WPF и Markdig; библиотека и тесты собираются под .NET 7, 8, 9 и 10 (`net7.0-windows` —
 `net10.0-windows`), витрина — под .NET 10.
 
 Термины — в [`GLOSSARY.md`](GLOSSARY.md), и только там.
