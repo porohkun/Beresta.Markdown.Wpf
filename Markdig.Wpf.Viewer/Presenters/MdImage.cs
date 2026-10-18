@@ -34,6 +34,7 @@ public sealed class MdImage : Control
 
 
     private MdTextBlock? _text;
+    private MdImageCache.Ticket? _waiting;
     private bool _pressed;
 
     public MdImage()
@@ -44,7 +45,11 @@ public sealed class MdImage : Control
             Load();
             InvalidateMeasure();
         };
-        Unloaded += (_, _) => Watch(null);
+        Unloaded += (_, _) =>
+        {
+            Watch(null);
+            StopWaiting();
+        };
     }
 
     public ImageVm? Image
@@ -102,7 +107,11 @@ public sealed class MdImage : Control
         var image = e.NewValue as ImageVm;
         view.Cursor = image?.Href is null ? null : Cursors.Hand;
         view.ToolTip = image?.Title;
-        view.Load();
+        view.StopWaiting();
+        if (view.IsLoaded)
+        {
+            view.Load();
+        }
     }
 
     /// <summary>Размер из атрибутов, а без них — в пикселях картинки, как в браузере.</summary>
@@ -181,6 +190,7 @@ public sealed class MdImage : Control
     /// <summary>Загруженное — сразу, загружаемое — когда придёт; сбой загрузчика оставляет alt.</summary>
     private void Load()
     {
+        StopWaiting();
         if (Image is not { } image || MarkdownViewer.Owning(this) is not { ImageLoader: { } loader } viewer)
         {
             SetValue(ImageSourcePropertyKey, null);
@@ -188,39 +198,49 @@ public sealed class MdImage : Control
         }
 
         var uri = Resolve(image.Url, viewer.BaseUri);
-        var loading = MdImageCache.Get(
+        var width = loader is MdImageLoader ? DecodeWidth(image) : 0;
+        var ticket = MdImageCache.Shared.Request(
             loader,
             uri?.ToString() ?? image.Url,
-            () => Start(loader, image.Url, uri));
+            width,
+            token => loader is MdImageLoader standard ? standard.LoadAsync(image.Url, uri, width, token) : loader.LoadAsync(image.Url, uri, token));
 
-        if (loading.IsCompleted)
+        if (ticket.Loading.IsCompleted)
         {
-            Show(image, loading);
+            ticket.Dispose();
+            Show(ticket.Loading);
             return;
         }
 
+        _waiting = ticket;
         SetValue(ImageSourcePropertyKey, null);
-        loading.ContinueWith(done => Dispatcher.BeginInvoke(() => Show(image, done)), TaskScheduler.Default);
+        ticket.Loading.ContinueWith(_ => Dispatcher.BeginInvoke(() => Arrived(ticket)), TaskScheduler.Default);
     }
 
-    /// <summary>Загрузка картинки; исключение загрузчика — такая же неудачная загрузка.</summary>
-    private static Task<ImageSource?> Start(IMdImageLoader loader, string url, Uri? uri)
+    /// <summary>Ширина декодирования в пикселях: не больше ширины из разметки и ширины экрана, шагами по 256.</summary>
+    private int DecodeWidth(ImageVm image)
     {
-        try
+        var width = Math.Min(image.Width ?? double.PositiveInfinity, SystemParameters.PrimaryScreenWidth);
+        var pixels = width * VisualTreeHelper.GetDpi(this).DpiScaleX;
+        return (int)Math.Ceiling(pixels / 256) * 256;
+    }
+
+    private void Arrived(MdImageCache.Ticket ticket)
+    {
+        if (ReferenceEquals(_waiting, ticket))
         {
-            return loader.LoadAsync(url, uri, CancellationToken.None);
-        }
-        catch (Exception exception)
-        {
-            return Task.FromException<ImageSource?>(exception);
+            StopWaiting();
+            Show(ticket.Loading);
         }
     }
 
-    private void Show(ImageVm image, Task<ImageSource?> loading)
+    private void Show(Task<ImageSource?> loading)
+        => SetValue(ImageSourcePropertyKey, loading.IsCompletedSuccessfully ? loading.Result : null);
+
+    /// <summary>Картинку больше не ждут: ушла из окна или сменилась.</summary>
+    private void StopWaiting()
     {
-        if (ReferenceEquals(Image, image))
-        {
-            SetValue(ImageSourcePropertyKey, loading.IsCompletedSuccessfully ? loading.Result : null);
-        }
+        _waiting?.Dispose();
+        _waiting = null;
     }
 }

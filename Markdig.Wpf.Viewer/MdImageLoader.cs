@@ -20,10 +20,14 @@ public sealed class MdImageLoader : IMdImageLoader
 
     public static MdImageLoader Instance { get; } = new();
 
-    public async Task<ImageSource?> LoadAsync(string url, Uri? uri, CancellationToken cancellationToken)
+    public Task<ImageSource?> LoadAsync(string url, Uri? uri, CancellationToken cancellationToken)
+        => LoadAsync(url, uri, 0, cancellationToken);
+
+    /// <summary>Картинка, декодированная не шире <paramref name="width"/> пикселей; 0 — в полный размер.</summary>
+    internal async Task<ImageSource?> LoadAsync(string url, Uri? uri, int width, CancellationToken cancellationToken)
     {
         var bytes = await ReadAsync(url, uri, cancellationToken);
-        return bytes is null ? null : await Task.Run(() => Decode(bytes), cancellationToken);
+        return bytes is null ? null : await Task.Run(() => Decode(bytes, width), cancellationToken);
     }
 
     private static async Task<byte[]?> ReadAsync(string url, Uri? uri, CancellationToken cancellationToken)
@@ -95,13 +99,18 @@ public sealed class MdImageLoader : IMdImageLoader
         }
     }
 
-    private static ImageSource? Decode(byte[] bytes)
+    private static ImageSource? Decode(byte[] bytes, int width)
     {
         try
         {
             var image = new BitmapImage();
             image.BeginInit();
             image.CacheOption = BitmapCacheOption.OnLoad;
+            if (width > 0 && PixelWidthOf(bytes) > width)
+            {
+                image.DecodePixelWidth = width;
+            }
+
             image.StreamSource = new MemoryStream(bytes);
             image.EndInit();
             image.Freeze();
@@ -116,5 +125,12 @@ public sealed class MdImageLoader : IMdImageLoader
             // BYDESIGN: формат, который WPF не декодирует (SVG и подобные), показывается alt.
             return null;
         }
+    }
+
+    /// <summary>Ширина картинки в пикселях по её заголовку, без декодирования.</summary>
+    private static int PixelWidthOf(byte[] bytes)
+    {
+        using var stream = new MemoryStream(bytes);
+        return BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None).Frames[0].PixelWidth;
     }
 }
