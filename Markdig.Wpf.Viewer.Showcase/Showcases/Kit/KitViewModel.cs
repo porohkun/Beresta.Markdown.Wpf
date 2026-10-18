@@ -8,10 +8,9 @@ public sealed class KitViewModel : ShowcaseViewModel
     public KitViewModel(ShowcaseOptions options)
         : base(options)
     {
-        Localizer.Changed += () => RaisePropertyChanged(nameof(LastLink));
     }
 
-    public string Text { get; } = Samples.Near<KitViewModel>("Kit.md");
+    public string Text => Samples.Near<KitViewModel>("Kit.md");
 
     /// <summary>Цель последней нажатой ссылки своей схемы: <c>wiki:</c>, <c>tag:</c>, <c>mention:</c>; не нажимали — <c>null</c>.</summary>
     public string? LastHref

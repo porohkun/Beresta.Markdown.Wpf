@@ -19,7 +19,7 @@ public sealed class StreamingViewModel : ShowcaseViewModel
     }
 
     /// <summary>Ответ, который поддельная модель отдаёт кусками: общий образец и рассказ о потоке вслед.</summary>
-    public string Answer { get; } = Samples.Document + "\n\n---\n\n" + Samples.Near<StreamingViewModel>("Answer.md");
+    public string Answer => Samples.Document + "\n\n---\n\n" + Samples.Near<StreamingViewModel>("Answer.md");
 
     /// <summary>Скорость модели: 0 — как модель, 1 — быстро, 2 — всё разом.</summary>
     public int Speed

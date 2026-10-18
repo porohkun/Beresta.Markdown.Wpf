@@ -1,53 +1,53 @@
-﻿# Отчёт о релизе
+﻿# Release report
 
-Этот документ — левая половина диффа. Справа — та же статья после правок: что-то
-переписано, что-то добавлено, что-то удалено. Прокрути любую сторону — вторая догонит её по
-неизменённым строкам.
+This document is the left half of a diff. On the right is the same article after the edits: something
+is rewritten, something added, something removed. Scroll either side — the other catches up with it by the
+unchanged lines.
 
-## Что нового
+## What's new
 
-- выделение текста мышью
-- подсветка найденного
-- синхронная прокрутка двух вьюеров
+- selecting text with the mouse
+- highlighting of what is found
+- synchronized scrolling of two viewers
 
-## Как это устроено
+## How it works
 
-Вьюер знает позицию каждой строки исходника и умеет прокрутиться к строке. Помощник
-синхронизации переводит строку ведущей панели в строку ведомой и прокручивает её.
+The viewer knows the position of every source line and can scroll to a line. The sync
+helper turns a line of the leading pane into a line of the following one and scrolls it there.
 
-Между неизменёнными строками позиция пересчитывается линейно. Поэтому в изменённом куске одна
-панель едет быстрее другой.
+Between unchanged lines the position is recalculated linearly. That is why in a changed piece one
+pane moves faster than the other.
 
-## Пример кода
+## Code sample
 
 ```csharp
 var sync = new MdScrollSync(left, right, map);
 left.ScrollToSourceLine(100);
 ```
 
-## Ограничения
+## Limitations
 
-Прокрутка должна быть попиксельной. Логическая прокрутка списков сдвигает элементами, а не
-пикселями, и строку в точку привязки так не поставить.
+Scrolling has to be per pixel. Logical scrolling of lists moves by items, not
+by pixels, and cannot put a line onto the anchor point that way.
 
-## Длинный раздел
+## A long section
 
-Абзац первый: текст, который нужен для объёма, чтобы документ не помещался в окно.
+Paragraph one: text that is here for volume, so that the document does not fit into the window.
 
-Абзац второй: текст, который нужен для объёма, чтобы документ не помещался в окно.
+Paragraph two: text that is here for volume, so that the document does not fit into the window.
 
-Абзац третий: текст, который нужен для объёма, чтобы документ не помещался в окно.
+Paragraph three: text that is here for volume, so that the document does not fit into the window.
 
-Абзац четвёртый: текст, который нужен для объёма, чтобы документ не помещался в окно.
+Paragraph four: text that is here for volume, so that the document does not fit into the window.
 
-Абзац пятый: текст, который нужен для объёма, чтобы документ не помещался в окно.
+Paragraph five: text that is here for volume, so that the document does not fit into the window.
 
-Абзац шестой: текст, который нужен для объёма, чтобы документ не помещался в окно.
+Paragraph six: text that is here for volume, so that the document does not fit into the window.
 
-Абзац седьмой: текст, который нужен для объёма, чтобы документ не помещался в окно.
+Paragraph seven: text that is here for volume, so that the document does not fit into the window.
 
-Абзац восьмой: текст, который нужен для объёма, чтобы документ не помещался в окно.
+Paragraph eight: text that is here for volume, so that the document does not fit into the window.
 
-## Итог
+## Summary
 
-Дифф считает приложение, вьюер даёт «что где» и «прокрути к».
+The application computes the diff, the viewer gives «what is where» and «scroll to».

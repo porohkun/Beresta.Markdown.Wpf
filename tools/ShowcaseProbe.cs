@@ -121,6 +121,24 @@ var thread = new Thread(() =>
                 Console.WriteLine(found.Count == 0
                     ? "кириллицы вне вьюеров нет"
                     : $"кириллица вне вьюеров: {string.Join(" | ", found)}");
+
+                // Со значением all — и весь текст видимых вьюеров
+                if (value == "all")
+                {
+                    foreach (var viewer in Viewers(window))
+                    {
+                        var words = viewer.TextMap.Text
+                            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+                            .Where(word => word.Any(IsCyrillic))
+                            .Distinct()
+                            .ToList();
+                        if (words.Count > 0)
+                        {
+                            Console.WriteLine($"кириллица во вьюере {viewer.Name}: {string.Join(" ", words.Take(12))}");
+                        }
+                    }
+                }
+
                 break;
             }
 

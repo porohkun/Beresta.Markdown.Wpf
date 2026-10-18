@@ -9,5 +9,8 @@ public sealed class ChatResolver : IMdLinkResolver
 
     public bool PageExists(string page) => true;
 
-    public string? DisplayName(string user) => ChatHistory.People.GetValueOrDefault(user);
+    public string? DisplayName(string user)
+        => ChatHistory.Logins.FirstOrDefault(login => string.Equals(login, user, StringComparison.OrdinalIgnoreCase)) is { } known
+            ? ChatHistory.NameOf(known)
+            : null;
 }

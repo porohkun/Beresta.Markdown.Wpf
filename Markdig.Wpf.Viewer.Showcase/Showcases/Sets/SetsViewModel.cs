@@ -25,7 +25,6 @@ public sealed class SetsViewModel : ShowcaseViewModel
             new("Chat", new ChatSet { Resolver = SetsResolver.Instance })
         ];
         Selected = Dialects[0];
-        Localizer.Changed += () => RaisePropertyChanged(nameof(LastLink));
     }
 
     public IReadOnlyList<Dialect> Dialects { get; }

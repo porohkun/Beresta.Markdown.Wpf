@@ -16,7 +16,7 @@
 
 	<ItemGroup>
 		<None Remove="Samples\*.md;Showcases\**\*.md" />
-		<EmbeddedResource Include="Samples\*.md;Showcases\**\*.md" />
+		<EmbeddedResource Include="Samples\*.md;Showcases\**\*.md" WithCulture="false" />
 		<None Update="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
 		<Resource Include="Samples\*.png" />
 	</ItemGroup>

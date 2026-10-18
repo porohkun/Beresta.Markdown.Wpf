@@ -1,127 +1,128 @@
 ﻿---
-title: Готовые расширения
-tags: [витрина, расширения]
+title: Ready-made extensions
+tags: [showcase, extensions]
 author:
-  name: Витрина
+  name: Showcase
   url: https://github.com/porohkun/Markdig.Wpf.Viewer
 ---
 
-# Готовые расширения
+# Ready-made extensions
 
-Синтаксис других программ, который библиотека знает сама. По умолчанию он выключен; здесь подключены
-все готовые расширения. Оглавление ниже — тоже расширение: абзац `[TOC]`. Карточка свойств выше —
-front matter этого документа.
+Syntax of other programs that the library knows by itself. It is off by default; all the ready-made
+extensions are connected here. The table of contents below is an extension too: the paragraph `[TOC]`. The
+properties card above is the front matter of this document.
 
 [TOC]
 
-## Связи
+## Links
 
-Вики-ссылки: [[Витрина]], [[Расширения#Чипы|подпись вместо имени]], [[Несуществующая страница]] —
-такой страницы резолвер витрины не знает, — и [[#Плашки Obsidian]] к разделу этого документа.
+Wiki links: [[Showcase]], [[Extensions#Chips|a caption instead of the name]], [[Missing page]] — the
+resolver of the showcase does not know such a page, — and [[#Obsidian callouts]] to a section of this document.
 
-Теги #витрина и #связи/вложенный — чипами; `C#` и `#123` — не теги. Упоминания @ivan и @maria —
-с именами от резолвера; почта a@b.com — не упоминание. Задача #1 ведёт на GitHub по шаблону витрины.
+Tags #showcase and #links/nested are chips; `C#` and `#123` are not tags. Mentions @ivan and @maria come
+with names from the resolver; the address a@b.com is not a mention. Issue #1 leads to GitHub by the
+template of the showcase.
 
-Картинка встраиванием: ![[banner.png|160]]
+An embedded image: ![[banner.png|160]]
 
-## Работа над текстом
+## Working on text
 
-Чипы: ::готово::{.success}, ::в работе::{.info}, ::риск::{.warning}, ::стоп::{.danger} и ::просто чип::.
-Цвета в коде получают кружок: `#0969DA`, `rgb(26, 127, 55)`, `hsl(280, 60%, 55%)`.
+Chips: ::done::{.success}, ::in progress::{.info}, ::risk::{.warning}, ::stop::{.danger} and ::just a chip::.
+Colors in code get a swatch: `#0969DA`, `rgb(26, 127, 55)`, `hsl(280, 60%, 55%)`.
 
-Правки CriticMarkup: текст {++добавлен++}, {--удалён--}, {~~заменён~>исправлен~~} и
-{==выделен==}{>>комментарий виден в подсказке<<}.
+CriticMarkup review marks: text {++added++}, {--removed--}, {~~replaced~>corrected~~} and
+{==highlighted==}{>>the comment shows in a tooltip<<}.
 
-Комментарий %%невидимый%% не рисуется, как и блок ниже.
+A comment %%invisible%% is not drawn, nor is the block below.
 
 %%
-Этот блок — комментарий на несколько строк.
+This block is a comment of several lines.
 %%
 
-Спойлер: ||щёлкни, чтобы раскрыть||.
+A spoiler: ||click to reveal||.
 
-- [/] задача в работе
-- [>] перенесена
-- [?] под вопросом
-- [!] важная
-- [-] отменена
-- [ ] обычная
-- [x] выполненная
+- [/] a task in progress
+- [>] moved
+- [?] in question
+- [!] important
+- [-] cancelled
+- [ ] an ordinary one
+- [x] a done one
 
-Сноска подсказкой[^tip] — наведи на номер.
+A footnote in a tooltip[^tip] — hover over the number.
 
-[^tip]: Определение сноски не рисуется, а показывается подсказкой.
+[^tip]: The footnote definition is not drawn but shown in a tooltip.
 
-## Плашки Obsidian
+## Obsidian callouts
 
-> [!info] Свой заголовок после вида
-> Вид — любой: у известных свой цвет и значок, незнакомый рисуется заметкой.
+> [!info] A title of its own after the kind
+> Any kind goes: the known ones have their own color and icon, an unknown one is drawn as a note.
 
-> [!faq]- Другое имя вида, свёрнута сразу
-> `faq` — другое имя вида `question`: цвет и значок вопроса, заголовок — `Faq`.
+> [!faq]- Another name of a kind, collapsed at first
+> `faq` is another name of the `question` kind: the color and icon of a question, the title is `Faq`.
 
-> [!success]+ Сворачиваемая, развёрнута
-> > [!quote] Плашки вкладываются
-> > Цитата внутри успеха.
+> [!success]+ Collapsible, expanded
+> > [!quote] Callouts nest
+> > A quote inside a success.
 
 > [!todo]
-> - [ ] без заголовка — заголовок вида из подписей темы
+> - [ ] without a title — the title of the kind from the theme captions
 
-## Предупреждения MkDocs
+## MkDocs admonitions
 
-!!! example "Пример"
-    Содержимое — под отступом в четыре пробела, внутри любой markdown:
+!!! example "Example"
+    The content is indented by four spaces, any markdown goes inside:
 
     ```csharp
     viewer.Extensions.Add(new MkDocsAdmonitions());
     ```
 
-??? bug "Свёрнутое — три вопроса"
-    Видно, когда развернёшь.
+??? bug "Collapsed — three question marks"
+    Visible once expanded.
 
-???+ danger "Развёрнутое — три вопроса и плюс"
-    Сворачивается щелчком по заголовку.
+???+ danger "Expanded — three question marks and a plus"
+    Collapses with a click on the title.
 
-## Контейнеры `:::вид`
+## Containers `:::kind`
 
-:::tip Совет из Docusaurus
-Известное имя — плашкой, заголовок — после имени.
+:::tip A tip from Docusaurus
+A known name is a callout, the title goes after the name.
 :::
 
-:::warning[Заголовок в скобках, как в Docusaurus 3]
-Тоже плашка.
+:::warning[A title in brackets, as in Docusaurus 3]
+A callout too.
 :::
 
-:::details Подробности из VuePress
-Сворачиваемый блок.
+:::details Details from VuePress
+A collapsible block.
 :::
 
-:::spoiler {state="open"} Спойлер HackMD, развёрнутый
-`spoiler` — тоже сворачиваемый блок.
+:::spoiler {state="open"} A HackMD spoiler, expanded
+`spoiler` is a collapsible block too.
 :::
 
-## Медиа и данные
+## Media and data
 
-Картинка-ссылка на видео становится карточкой с превью; щелчок открывает видео:
+An image link to a video becomes a card with a preview; a click opens the video:
 
 [![Me at the zoo](https://img.youtube.com/vi/jNQXAC9IVRw/hqdefault.jpg)](https://www.youtube.com/watch?v=jNQXAC9IVRw)
 
-Картинка с адресом Vimeo — карточка без превью: ![Big Buck Bunny](https://vimeo.com/1084537)
+An image with a Vimeo address is a card without a preview: ![Big Buck Bunny](https://vimeo.com/1084537)
 
-Шорткоды Hugo и Jekyll — виджеты по имени. Имя `kbd` регистрирует витрина: {{< kbd Ctrl+Shift+P >}}.
-Незнакомый шорткод {{< unknown >}} остаётся текстом.
+Hugo and Jekyll shortcodes are widgets by name. The `kbd` name is registered by the showcase: {{< kbd Ctrl+Shift+P >}}.
+An unknown shortcode {{< unknown >}} stays text.
 
-{{< youtube jNQXAC9IVRw "Me at the zoo — шорткодом" >}}
+{{< youtube jNQXAC9IVRw "Me at the zoo — by a shortcode" >}}
 
 {% pdf "https://example.com/guide.pdf" %}
 
-Эмодзи-шорткоды: :rocket: :tada: :white_check_mark:; смайлик :) остаётся текстом.
+Emoji shortcodes: :rocket: :tada: :white_check_mark:; the smiley :) stays text.
 
-Блок кода `csv` — таблицей, первая строка — заголовок:
+A `csv` code block is a table, the first row is the header:
 
 ```csv
-Город,Население,"Площадь, км²"
-Москва,13 010 112,2561
-Санкт-Петербург,5 601 911,1439
-Новосибирск,1 633 595,502
+City,Population,"Area, km²"
+Moscow,13 010 112,2561
+Saint Petersburg,5 601 911,1439
+Novosibirsk,1 633 595,502
 ```

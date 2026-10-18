@@ -13,7 +13,7 @@ public sealed class AboutViewModel : ShowcaseViewModel
     }
 
     /// <summary>Описание витрины и уведомления из файла, который лежит рядом с программой.</summary>
-    public string Text { get; } =
+    public string Text =>
         Samples.Near<AboutViewModel>("About.md")
         + File.ReadAllText(Path.Combine(AppContext.BaseDirectory, NoticesFile));
 }

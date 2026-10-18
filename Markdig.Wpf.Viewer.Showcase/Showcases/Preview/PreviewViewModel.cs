@@ -14,4 +14,11 @@ public sealed class PreviewViewModel : ShowcaseViewModel
         get;
         set => Set(ref field, value);
     } = Samples.Document;
+
+    /// <summary>Язык сменился: правка редактора уступает образцу на новом языке.</summary>
+    protected override void OnLanguageChanged()
+    {
+        Text = Samples.Document;
+        base.OnLanguageChanged();
+    }
 }

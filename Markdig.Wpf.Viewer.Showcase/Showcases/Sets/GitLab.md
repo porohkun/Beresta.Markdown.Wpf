@@ -1,37 +1,37 @@
 ﻿[[_TOC_]]
 
-Выше — оглавление GitLab, `[[_TOC_]]`: оно собирается из заголовков документа, а щелчок по пункту
-прокручивает к своему разделу.
+Above is the GitLab table of contents, `[[_TOC_]]`: it is built from the headings of the document, and a click
+on an item scrolls to its section.
 
-## Что вошло
+## What is in
 
-- исправляет #42 :rocket: — новый цвет значка `#FC6D26`;
-- закрывает #57 — таблицы в тёмной теме :bug:;
-- ссылка на задачу ведёт в GitLab по шаблону витрины, а код цвета показан образцом.
+- fixes #42 :rocket: — the new badge color is `#FC6D26`;
+- closes #57 — tables in the dark theme :bug:;
+- an issue link leads to GitLab by the template of the showcase, and a color code is shown with a swatch.
 
-## Как проверить
+## How to check
 
-1. Собери витрину и открой вкладку «Наборы».
-2. Переключи тему — образцы цвета `#FC6D26` и `#1F75CB` остаются своими.
-3. Щёлкни задачу #42 — откроется её страница.
+1. Build the showcase and open the Sets tab.
+2. Switch the theme — the swatches of `#FC6D26` and `#1F75CB` keep their colors.
+3. Click issue #42 — its page opens.
 
 ```bash
 dotnet run --project Markdig.Wpf.Viewer.Showcase
 ```
 
-## Стенд
+## Staging
 
-Собрано на стенде и проверено на светлой и тёмной теме :white_check_mark:. Перед выкаткой
-посмотрели, как значок выглядит на фоне `#FAFAFA` и на тёмном `#1F1F1F`.
+Built on staging and checked in the light and the dark theme :white_check_mark:. Before the rollout
+we looked at the badge on `#FAFAFA` and on the dark `#1F1F1F`.
 
-Замечания с ревью:
+Review notes:
 
-- подпись под значком сдвинута на пиксель — поправлено;
-- в узком окне оглавление переносится по словам — так и задумано;
-- ссылки на задачи без шаблона остаются текстом.
+- the caption under the badge was off by a pixel — fixed;
+- in a narrow window the table of contents wraps by words — as intended;
+- issue links without a template stay text.
 
-## Прод
+## Production
 
-Выкатили после ревью :white_check_mark: — #42 и #57 закрыты.
+Rolled out after the review :white_check_mark: — #42 and #57 are closed.
 
-Следующий выпуск соберём, когда закроем #61 :eyes:.
+The next release goes out when we close #61 :eyes:.

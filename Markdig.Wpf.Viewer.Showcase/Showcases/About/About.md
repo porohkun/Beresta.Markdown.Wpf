@@ -1,10 +1,10 @@
-﻿# О витрине
+﻿# About the showcase
 
-Витрина показывает `Markdig.Wpf.Viewer` в настоящем приложении: оформление HandyControls, светлая
-и тёмная тема, сценарии встраивания списком слева.
+The showcase shows `Markdig.Wpf.Viewer` in a real application: HandyControls styling, the light and
+the dark theme, and embedding scenarios listed on the left.
 
-Вместе с витриной распространяются сторонние библиотеки. Их лицензии требуют прикладывать
-уведомления — они ниже и в файле `THIRD-PARTY-NOTICES.md` рядом с программой.
+Third-party libraries are distributed together with the showcase. Their licenses require attaching
+notices — they are below and in the `THIRD-PARTY-NOTICES.md` file next to the program.
 
 ---
 

@@ -15,7 +15,6 @@ public sealed class CopyingViewModel : ShowcaseViewModel
         : base(options)
     {
         Choice = Choices[0];
-        Localizer.Changed += () => RaisePropertyChanged(nameof(Formats));
     }
 
     public string Text => Samples.Document;

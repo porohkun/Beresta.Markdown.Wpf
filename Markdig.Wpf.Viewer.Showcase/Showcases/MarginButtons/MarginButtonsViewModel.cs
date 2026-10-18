@@ -8,5 +8,5 @@ public sealed class MarginButtonsViewModel : ShowcaseViewModel
     {
     }
 
-    public string Markdown { get; } = Samples.Near<MarginButtonsViewModel>("MarginButtons.md");
+    public string Markdown => Samples.Near<MarginButtonsViewModel>("MarginButtons.md");
 }

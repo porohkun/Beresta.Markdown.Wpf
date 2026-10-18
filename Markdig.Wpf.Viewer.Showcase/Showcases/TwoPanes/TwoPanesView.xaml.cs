@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Localization;
 using Scrolling;
 using Selection;
 
@@ -22,6 +23,7 @@ public partial class TwoPanesView : UserControl
     public TwoPanesView()
     {
         InitializeComponent();
+        Localizer.Follow(this, Rebuild);
     }
 
     private static void MarkChanges(MarkdownViewer viewer, IEnumerable<(int Start, int End)> chunks, string style)
@@ -49,7 +51,10 @@ public partial class TwoPanesView : UserControl
         return coordinates.LineTop(start) is { } top ? (top, top) : null;
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
+    private void OnLoaded(object sender, RoutedEventArgs e) => Connect();
+
+    /// <summary>Дифф текстов панелей: пометки правок, связь прокрутки и выравнивание.</summary>
+    private void Connect()
     {
         if (_sync is not null || DataContext is not TwoPanesViewModel model)
         {
@@ -126,7 +131,9 @@ public partial class TwoPanesView : UserControl
         return (left, right);
     }
 
-    private void OnUnloaded(object sender, RoutedEventArgs e)
+    private void OnUnloaded(object sender, RoutedEventArgs e) => Disconnect();
+
+    private void Disconnect()
     {
         SyncLeft.ViewportChanged -= OnPanesMoved;
         SyncRight.ViewportChanged -= OnPanesMoved;
@@ -134,6 +141,19 @@ public partial class TwoPanesView : UserControl
         _aligner?.Dispose();
         _sync = null;
         _aligner = null;
+    }
+
+    /// <summary>Тексты сменились вместе с языком: дифф, пометки и связь панелей — заново.</summary>
+    private void Rebuild()
+    {
+        Disconnect();
+        foreach (var viewer in new[] { SyncLeft, SyncRight, AlignedLeft, AlignedRight })
+        {
+            viewer.MarkLayers.Clear();
+        }
+
+        Connect();
+        DrawConnections();
     }
 
     private void OnPanesMoved(object? sender, EventArgs e) => DrawConnections();

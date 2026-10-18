@@ -8,5 +8,5 @@ public sealed class ExtensionsViewModel : ShowcaseViewModel
     {
     }
 
-    public string Text { get; } = Samples.Near<ExtensionsViewModel>("Extensions.md");
+    public string Text => Samples.Near<ExtensionsViewModel>("Extensions.md");
 }

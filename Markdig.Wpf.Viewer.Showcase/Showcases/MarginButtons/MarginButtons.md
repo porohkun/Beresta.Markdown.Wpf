@@ -1,60 +1,60 @@
-﻿# Закладки на полях
+﻿# Bookmarks in the margin
 
-Слева от текста — колонка приложения, а не вьюера. Кружки в ней — обычные кнопки WPF. Щёлкни по
-кружку — строка станет закладкой: приложение поставит на неё пометку во всю ширину.
+To the left of the text is a column of the application, not of the viewer. The circles in it are ordinary WPF
+buttons. Click a circle — the line becomes a bookmark: the application puts a full-width mark on it.
 
-Кнопки есть только у видимых строк: прокрути документ — колонка перестроится. Длинная строка
-абзаца переносится на несколько экранных строк, а кнопка всё равно стоит у её начала — вьюер знает,
-где начинается каждая строка исходника.
+Only visible lines have buttons: scroll the document — the column rebuilds. A long line of a
+paragraph wraps onto several screen lines, and the button still stands at its start — the viewer knows
+where each source line begins.
 
-## Как это сделано
+## How it is done
 
-Колонка и вьюер лежат в одной прокрутке. Вьюер отвечает, какие строки видны и где каждая из них
-стоит в координатах колонки, и сообщает, когда раскладка сменилась. Остальное делает приложение:
+The column and the viewer are in one scroll. The viewer tells which lines are visible and where each of
+them stands in the coordinates of the column, and reports when the layout changes. The rest is up to the application:
 
-- создаёт кнопки для видимых строк с текстом;
-- ставит каждую по середине её экранной строки;
-- после каждой смены раскладки ставит кнопки заново;
-- закладку показывает пометкой своего слоя.
+- it creates buttons for the visible lines with text;
+- puts each one in the middle of its screen line;
+- places the buttons again after every change of the layout;
+- shows a bookmark as a mark of its own layer.
 
 ```csharp
 foreach (var (line, top, height) in Viewer.GetCoordinates(Marks).VisibleRows())
 {
-    // кнопка встаёт в колонке на top, высота строки — height
+    // the button goes to top in the column, the line height is height
 }
 ```
 
-## Строки разной высоты
+## Lines of different heights
 
-У заголовка, абзаца, пункта списка, строки таблицы и строки кода своя высота, и кнопка встаёт
-точно на свою строку.
+A heading, a paragraph, a list item, a table row and a line of code each have a height of their own, and the
+button lands exactly on its line.
 
-| Что | Высота строки |
+| What | Line height |
 |---|---|
-| заголовок | крупный шрифт |
-| абзац | обычный текст |
-| код | моноширинный шрифт |
+| heading | a large font |
+| paragraph | ordinary text |
+| code | a monospaced font |
 
-> Цитата тоже состоит из строк исходника, и у каждой своя кнопка. Вторая строка цитаты.
-> Третья строка цитаты.
+> A quote is made of source lines too, and each of them has a button. The second line of the quote.
+> The third line of the quote.
 
-## Длинный текст
+## Long text
 
-Абзацы ниже нужны, чтобы было что прокручивать. Первый абзац. Вьюер создаёт только видимые блоки,
-а колонка — только видимые кнопки, так что длина документа на них не сказывается.
+The paragraphs below are here so that there is something to scroll. The first paragraph. The viewer creates
+only the visible blocks, and the column only the visible buttons, so the length of the document does not matter to them.
 
-Второй абзац. Эта строка исходника очень длинная: в окне она занимает несколько экранных строк, а кнопка стоит у первой из них, потому что вьюер знает, где начинается каждая строка исходника, даже когда текст переносится.
-Это вторая строка того же абзаца: она начинается с новой экранной строки, и у неё своя кнопка.
+The second paragraph. This source line is very long: in the window it takes several screen lines, and the button stands at the first of them, because the viewer knows where each source line begins even when the text wraps.
+This is the second line of the same paragraph: it starts on a new screen line, and it has a button of its own.
 
-Третий абзац. Закладки — пометки вида «строки во всю ширину» в слое приложения. Их видно поверх
-текста и поверх фона блоков.
+The third paragraph. Bookmarks are marks of the full-width row kind in the application's layer. They show
+over the text and over the background of the blocks.
 
-Четвёртый абзац. Прокрути до конца и обратно: кнопки следуют за строками.
+The fourth paragraph. Scroll to the end and back: the buttons follow the lines.
 
-Пятый абзац. Ещё немного текста, чтобы документ был длиннее окна.
+The fifth paragraph. A bit more text so that the document is longer than the window.
 
-Шестой абзац. И ещё немного.
+The sixth paragraph. And a bit more.
 
-Седьмой абзац. Конец документа близко.
+The seventh paragraph. The end of the document is near.
 
-Восьмой абзац. Последний.
+The eighth paragraph. The last one.

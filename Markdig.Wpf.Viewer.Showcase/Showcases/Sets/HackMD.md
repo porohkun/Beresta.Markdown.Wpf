@@ -1,19 +1,19 @@
 ﻿[TOC]
 
-## Заметки встречи
+## Meeting notes
 
 :::success
-Выпустили в пятницу!
+Shipped on Friday!
 :::
 
 :::warning
-Проверить на тёмной теме.
+Check it in the dark theme.
 :::
 
 {%youtube jNQXAC9IVRw %}
 
 {%pdf https://example.com/guide.pdf %}
 
-:::spoiler Открытые вопросы
-Видно, когда развернёшь.
+:::spoiler Open questions
+Visible once expanded.
 :::

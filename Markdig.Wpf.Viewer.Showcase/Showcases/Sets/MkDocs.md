@@ -1,11 +1,11 @@
-﻿!!! note "Установка"
-    Выполни `dotnet add package Markdig.Wpf.Viewer`.
+﻿!!! note "Installation"
+    Run `dotnet add package Markdig.Wpf.Viewer`.
 
 !!! tip
-    Без заголовка — заголовок вида.
+    Without a title — the title of the kind.
 
-??? warning "Свёрнуто сразу"
-    Щёлкни заголовок, чтобы прочитать.
+??? warning "Collapsed at first"
+    Click the title to read.
 
-???+ example "Развёрнуто сразу"
-    Сворачиваемое предупреждение, открытое с начала.
+???+ example "Expanded at first"
+    A collapsible admonition that starts open.

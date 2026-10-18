@@ -1,16 +1,16 @@
 ﻿---
-title: Заметки к релизу
+title: Release notes
 version: 0.6.0
 ---
 
-# Заметки к релизу
+# Release notes
 
-Спасибо @anna за #1 и @boris за #2 :tada:
+Thanks @anna for #1 and @boris for #2 :tada:
 
-Цвет акцента — `#0969DA`, предупреждения — `rgb(154, 103, 0)`.
+The accent color is `#0969DA`, the warning one is `rgb(154, 103, 0)`.
 
 > [!NOTE]
-> Плашки GitHub, таблицы и списки задач вьюер рисует и без набора: выключи его и сравни.
+> The viewer draws GitHub callouts, tables and task lists even without the set: turn it off and compare.
 
-- [x] карточка свойств из front matter
-- [x] упоминания, ссылки на задачи, коды цветов, эмодзи
+- [x] a properties card from front matter
+- [x] mentions, issue links, color codes, emoji

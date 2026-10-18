@@ -1,31 +1,32 @@
-﻿# Как показать длинный ответ модели и не уронить интерфейс
+﻿# How to show a long model answer without bringing the UI down
 
-Ответ языковой модели приходит **кусками**: по слову, по слогу, иногда по одной букве. Если на каждый
-кусок перерисовывать весь документ, интерфейс начнёт заикаться уже на втором экране текста. Ниже —
-как устроен показ, который не заикается, и что из этого делает вьюер сам.
+A language model answer arrives **in pieces**: a word, a syllable, sometimes a single letter at a time. If
+the whole document is redrawn for every piece, the UI starts stuttering by the second screen of text. Below
+is how a display that does not stutter works, and which part of it the viewer does by itself.
 
-## Почему нельзя перерисовывать на каждый кусок
+## Why you cannot redraw on every piece
 
-Модель отдаёт десятки кусков в секунду, а сеть пачкует их как хочет: то тишина, то сразу сотня. Каждая
-перерисовка документа — это разбор текста, сравнение с прежним документом и раскладка новых блоков.
+A model gives out dozens of pieces a second, and the network batches them as it likes: now silence, now a
+hundred at once. Every redraw of the document means parsing the text, comparing it with the previous
+document and laying out the new blocks.
 
-- Кусков больше, чем кадров на экране: перерисовка чаще кадра не видна, но стоит.
-- Разбор растёт вместе с текстом: чем длиннее ответ, тем дороже каждый лишний раз.
-- Поток интерфейса один: пока он разбирает текст, он не прокручивает и не отвечает на мышь.
+- There are more pieces than frames on the screen: a redraw more often than a frame is not visible, but costs.
+- Parsing grows with the text: the longer the answer, the more every extra time costs.
+- There is one UI thread: while it parses text, it does not scroll and does not answer the mouse.
 
-> Хорошее правило: показывать не каждый кусок, а **всё, что накопилось**, когда интерфейс свободен.
+> A good rule: show not every piece, but **everything that has piled up** when the UI is free.
 
-## Как это устроено
+## How it works
 
-1. Куски складываются в общий текст — из любого потока выполнения, хоть из фонового.
-2. Первый кусок после паузы уходит во вьюер сразу.
-3. Следующие ждут интервала — по умолчанию сто миллисекунд — и уходят одной пачкой.
-4. Пачка — это весь накопленный текст, а вьюер кладёт его правками: блоки, которые не изменились,
-   остаются как были.
-5. Завершение отдаёт остаток сразу, не дожидаясь интервала.
+1. Pieces are appended to a common text — from any thread, a background one included.
+2. The first piece after a pause goes to the viewer at once.
+3. The next ones wait for the interval — a hundred milliseconds by default — and go as one batch.
+4. A batch is the whole accumulated text, and the viewer applies it as edits: the blocks that did not
+   change stay as they were.
+5. Completion hands over the rest at once, without waiting for the interval.
 
-Сколько бы кусков ни пришло, вьюер обновляется не чаще раза в интервал: на минуту ответа — не больше
-шестисот разборов.
+However many pieces arrive, the viewer updates no more often than once per interval: for a minute of answer,
+no more than six hundred parses.
 
 ```csharp
 var stream = new MdMarkdownStream(Viewer) { Interval = TimeSpan.FromMilliseconds(100) };
@@ -38,11 +39,11 @@ await foreach (var piece in model.StreamAsync(question))
 stream.Complete();
 ```
 
-## Прокрутка за ответом
+## Scrolling after the answer
 
-Пока ответ растёт, удобно держать прокрутку у конца. Но если человек ушёл читать начало, тянуть его вниз
-на каждом куске — верный способ его разозлить. Поэтому прокрутка **отлипает**, когда её уводят от края,
-и прилипает снова, когда её возвращают к концу.
+While the answer grows, it is handy to keep the scroll at the end. But if the person has gone to read the
+beginning, pulling them down on every piece is a sure way to annoy them. So the scroll **comes unstuck**
+when it is taken away from the edge, and sticks again when it is brought back to the end.
 
 ```xml
 <ScrollViewer b:StickyScroll.Edge="Bottom"
@@ -52,73 +53,73 @@ stream.Complete();
 ```
 
 > [!TIP]
-> Чтобы прокрутка держалась у конца всегда, выключи `CanUnstick`. А если новое приходит сверху, как в
-> ленте событий, поставь край `Top`.
+> To keep the scroll at the end always, turn `CanUnstick` off. And if the new text arrives at the top, as in
+> an event feed, set the edge to `Top`.
 
-## Сравнение подходов
+## Approaches compared
 
-| Подход | Разборов на ответ | Интерфейс | Что пишет приложение |
+| Approach | Parses per answer | UI | What the application writes |
 |---|---|---|---|
-| Весь текст на каждый кусок | по числу кусков | заикается | цикл и вызов в поток интерфейса |
-| Свой таймер и буфер | по таймеру | ровно | таймер, буфер и вызов в поток интерфейса |
-| `MdMarkdownStream` | не чаще интервала | ровно, первый кусок сразу | одну строку на кусок |
+| The whole text on every piece | as many as pieces | stutters | a loop and a call to the UI thread |
+| Its own timer and buffer | by the timer | smooth | a timer, a buffer and a call to the UI thread |
+| `MdMarkdownStream` | no more often than the interval | smooth, the first piece at once | one line per piece |
 
-## Что проверить в своём приложении
+## What to check in your application
 
-- [x] куски приходят из фонового потока выполнения
-- [x] прокрутка не дёргается, пока читаешь начало
-- [ ] длинный блок кода в середине ответа
-- [ ] таблица, которая растёт строка за строкой
+- [x] pieces arrive from a background thread
+- [x] the scroll does not jerk while you read the beginning
+- [ ] a long code block in the middle of the answer
+- [ ] a table that grows row by row
 
-## Частые вопросы
+## Frequent questions
 
-**Не потеряется ли выделение, пока текст растёт?** Нет: выделение держится за свои слова, а блоки выше
-конца ответа не меняются.
+**Will the selection be lost while the text grows?** No: the selection holds on to its words, and the blocks
+above the end of the answer do not change.
 
-**Что будет с незакрытым блоком кода?** Пока ограда не закрыта, всё после неё — код. Так и должно быть:
-модель ещё не дописала блок, и вьюер честно показывает, что есть.
+**What happens to an unclosed code block?** Until the fence is closed, everything after it is code. That is
+as it should be: the model has not finished the block yet, and the viewer honestly shows what there is.
 
-**А если модель пришлёт `**жирный` без закрывающих звёздочек?** Звёздочки видны, пока не придёт пара. Как
-только она придёт, слово станет жирным.
+**And if the model sends `**bold` without the closing asterisks?** The asterisks are visible until the pair
+arrives. As soon as it arrives, the word becomes bold.
 
-**Можно ли начать заново?** Да: `Reset` очищает вьюер, и поток снова принимает куски.
+**Can you start over?** Yes: `Reset` clears the viewer, and the stream accepts pieces again.
 
-## Длинное продолжение
+## A long continuation
 
-Дальше — просто много текста, чтобы было что прокручивать, пока ответ ещё идёт.
+What follows is just a lot of text, so that there is something to scroll while the answer is still coming.
 
-### Шаг первый: принять кусок
+### Step one: take a piece
 
-Кусок может прийти откуда угодно: из обработчика сети, из цикла по асинхронному перечислению, из
-таймера. Вьюер про это ничего не знает и знать не должен: он получает уже накопленный текст и только в
-своём потоке.
+A piece can come from anywhere: from a network handler, from a loop over an async enumeration, from a
+timer. The viewer knows nothing about it and should not: it gets the already accumulated text, and only on
+its own thread.
 
-### Шаг второй: накопить
+### Step two: accumulate
 
-Накопление дешёвое: кусок дописывается в конец строки. Дорого только показывать, поэтому показ один на
-пачку, а не на кусок.
+Accumulating is cheap: a piece is appended to the end of a string. Only showing is expensive, so there is
+one showing per batch, not per piece.
 
-### Шаг третий: показать
+### Step three: show
 
-Показ разбирает весь текст целиком. Это важно: ссылке по метке, сноске, пункту списка из нескольких
-абзацев нужен контекст, и разбор куска отдельно от остального дал бы другой документ.
+Showing parses the whole text at once. That matters: a reference link, a footnote, a list item of several
+paragraphs need context, and parsing a piece apart from the rest would give a different document.
 
-### Шаг четвёртый: не сдвинуть видимое
+### Step four: do not shift what is visible
 
-Новый текст ложится правками. Если ответ растёт внизу, а человек читает середину, видимое не уезжает:
-блоки выше не меняются, а их высоты уже известны.
+The new text is applied as edits. If the answer grows at the bottom while the person reads the middle,
+what is visible does not move: the blocks above do not change, and their heights are already known.
 
-### Шаг пятый: прокрутить, если надо
+### Step five: scroll if needed
 
-Прилипшая прокрутка следит за краем. Выросло содержимое — прокрутка возвращается к краю. Человек увёл
-прокрутку — она отлипла и больше не мешает. Вернул к краю — прилипла снова.
+A stuck scroll watches its edge. The content grew — the scroll goes back to the edge. The person moved the
+scroll away — it came unstuck and no longer gets in the way. Brought it back to the edge — it sticks again.
 
-### Шаг шестой: закончить
+### Step six: finish
 
-`Complete` говорит, что кусков больше не будет: остаток уходит во вьюер, а новый кусок до `Reset` —
-ошибка, а не тихая потеря данных.
+`Complete` says that there will be no more pieces: the rest goes to the viewer, and a new piece before
+`Reset` is an error, not a quiet loss of data.
 
-### Итог
+### Summary
 
-Потоковый показ — это не отдельный режим вьюера, а обычный новый текст, который приходит часто. Всё, что
-нужно сверху, — копить куски и отдавать их пачками не чаще разумного интервала.
+Streaming display is not a separate mode of the viewer, but an ordinary new text that comes often. All that
+is needed on top is to accumulate pieces and hand them over in batches no more often than a sensible interval.

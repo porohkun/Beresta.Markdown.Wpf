@@ -24,6 +24,9 @@
   <data name="Chat.Header" xml:space="preserve">
     <value>Лента на десять тысяч сообщений в одной прокрутке: в каждом пузыре свой вьюер с набором ChatSet, вьюеры создаются только для видимых сообщений, а в сообщении на несколько экранов — только видимые блоки. Лента держится у последнего сообщения — StickyScroll.</value>
   </data>
+  <data name="Chat.Stamp" xml:space="preserve">
+    <value>d MMMM, HH:mm</value>
+  </data>
   <data name="Chat.Title" xml:space="preserve">
     <value>Чат</value>
   </data>
@@ -210,6 +213,9 @@
   <data name="LargeDocument.Header" xml:space="preserve">
     <value>Тысячи блоков в одном вьюере — многократно повторённый lorem ipsum. Контролы создаются только для видимых блоков и небольшого запаса вокруг, остальным отводится место по оценённой высоте.</value>
   </data>
+  <data name="LargeDocument.Section" xml:space="preserve">
+    <value>Раздел {0}</value>
+  </data>
   <data name="LargeDocument.Title" xml:space="preserve">
     <value>Большой документ</value>
   </data>
@@ -236,6 +242,24 @@
   </data>
   <data name="Options.SourceLineNumbers" xml:space="preserve">
     <value>Номера строк исходника</value>
+  </data>
+  <data name="People.anna" xml:space="preserve">
+    <value>Анна Смирнова</value>
+  </data>
+  <data name="People.boris" xml:space="preserve">
+    <value>Борис Иванов</value>
+  </data>
+  <data name="People.ivan" xml:space="preserve">
+    <value>Иван Петров</value>
+  </data>
+  <data name="People.maria" xml:space="preserve">
+    <value>Мария Сидорова</value>
+  </data>
+  <data name="People.me" xml:space="preserve">
+    <value>Я</value>
+  </data>
+  <data name="People.vera" xml:space="preserve">
+    <value>Вера Козлова</value>
   </data>
   <data name="Preview.Header" xml:space="preserve">
     <value>Редактор и предпросмотр рядом: каждая правка доходит до вьюера изменениями — неизменившиеся блоки остаются как были, а видимое не прыгает. Прокрутка общая — MdScrollSync между вьюером и редактором через MdTextBoxLines; по нему же стоят номера строк редактора.</value>

@@ -1,164 +1,164 @@
 ﻿---
-title: Витрина вьюера
-tags: [образец, витрина]
+title: Viewer showcase
+tags: [sample, showcase]
 ---
 
-# Витрина вьюера
+# Viewer showcase
 
-![Баннер витрины](banner.png "Картинка из ресурсов витрины: адрес разобран от BaseUri")
+![Showcase banner](banner.png "An image from the showcase resources: the address is resolved against BaseUri")
 
-Этот документ собран, чтобы проверять **встраивание** и *смену визуала*: тему, шрифты, свои
-шаблоны. Здесь есть ~~всё~~ почти всё, что вьюер умеет рисовать, и `код посреди строки`.
+This document is put together to check **embedding** and *a change of look*: the theme, fonts, your own
+templates. Here is ~~everything~~ almost everything the viewer can draw, and `code in the middle of a line`.
 
-## Текст и ссылки
+## Text and links
 
-Обычный абзац с [ссылкой наружу](https://github.com/porohkun/Markdig.Wpf.Viewer), адресом
-www.example.com без схемы и ***жирным курсивом***. Спецсимволы: &copy; &amp; &laquo;кавычки&raquo;.
+An ordinary paragraph with [a link outside](https://github.com/porohkun/Markdig.Wpf.Viewer), the address
+www.example.com without a scheme and ***bold italic***. Special characters: &copy; &amp; &laquo;quotes&raquo;.
 
-Ссылка [на таблицу](#таблица) ведёт внутрь документа, а у [этой ссылки](https://github.com/porohkun/Markdig.Wpf.Viewer "Репозиторий вьюера")
-есть подсказка.
+The link [to the table](#table) leads inside the document, and [this link](https://github.com/porohkun/Markdig.Wpf.Viewer "The viewer repository")
+has a tooltip.
 
-Жёсткий перенос строки —  
-вот здесь.
+A hard line break —  
+right here.
 
-Строчный HTML: <kbd>Ctrl</kbd>+<kbd>C</kbd> копирует, вода — H<sub>2</sub>O, площадь — м<sup>2</sup>,
-перенос тегом<br>тоже работает.<!-- а этот комментарий не виден -->
+Inline HTML: <kbd>Ctrl</kbd>+<kbd>C</kbd> copies, water is H<sub>2</sub>O, the area is m<sup>2</sup>,
+a break by a tag<br>works too.<!-- and this comment is not visible -->
 
-Индексы и без тегов: H~2~O и x^2^. Ещё ==выделение маркером==, ++вставка++ и название
-""Войны и мира"". Сокращение HTML подсказывает расшифровку.
+Indices without tags too: H~2~O and x^2^. Also ==a highlighter mark==, ++an insertion++ and the title
+""War and Peace"". The abbreviation HTML shows its expansion.
 
 *[HTML]: HyperText Markup Language
 
-У этого предложения есть сноска[^витрина].
+This sentence has a footnote[^showcase].
 
-[^витрина]: Сноска рисуется там, где написана; стрелка возвращает к ссылке.
+[^showcase]: A footnote is drawn where it is written; the arrow leads back to the reference.
 
-### Заголовок третьего уровня
-#### Четвёртого
-##### Пятого
-###### Шестого
+### A third-level heading
+#### Fourth
+##### Fifth
+###### Sixth
 
-## Списки
+## Lists
 
-- первый пункт
-- второй пункт
-  - вложенный
-    - ещё глубже
-- пункт из двух абзацев
+- the first item
+- the second item
+  - nested
+    - deeper still
+- an item of two paragraphs
 
-  второй абзац того же пункта
+  the second paragraph of the same item
 
-7) нумерация с семи
-8) и со скобкой
+7) numbering from seven
+8) and with a parenthesis
 
-c. буквами с третьего
-d. и дальше
+c. letters from the third
+d. and on
 
-iv. римскими с четвёртого
-v. и дальше
+iv. Roman numerals from the fourth
+v. and on
 
-- [ ] задача
-- [x] сделанная задача
+- [ ] a task
+- [x] a done task
 
-## Определения
+## Definitions
 
 Markdig
-:   Разборщик markdown для .NET: даёт вьюеру дерево документа.
+:   A markdown parser for .NET: gives the viewer the tree of the document.
 
-Плашка
 Callout
-:   Блок с цветом, значком и заголовком своего вида.
-:   Вид пишется в первой строке цитаты.
+Admonition
+:   A block with the color, icon and title of its kind.
+:   The kind is written in the first line of the quote.
 
-## Цитата
+## Quote
 
-> Цитата с **выделением** и списком:
+> A quote with **emphasis** and a list:
 >
-> - раз
-> - два
+> - one
+> - two
 
-## Плашки
+## Callouts
 
 > [!NOTE]
-> Заметка — то, что стоит знать даже при беглом чтении.
+> A note — what is worth knowing even when skimming.
 
 > [!TIP]
-> Совет — как сделать проще.
+> A tip — how to make it simpler.
 
 > [!IMPORTANT]
-> Важное — без этого не обойтись.
+> Important — you cannot do without this.
 
 > [!WARNING]
-> Предупреждение — требует **внимания** сразу.
+> A warning — needs **attention** at once.
 
 > [!CAUTION]
-> Осторожно — у действия есть последствия.
+> Caution — the action has consequences.
 
-## HTML из README
+## HTML from README
 
 <p align="center">
-  <img src="banner.png" width="240" alt="Баннер витрины">
+  <img src="banner.png" width="240" alt="Showcase banner">
   <br>
-  <b>Markdig.Wpf.Viewer</b> — markdown для WPF
+  <b>Markdig.Wpf.Viewer</b> — markdown for WPF
 </p>
 
 <details>
-<summary>Сворачиваемый блок — щёлкни, чтобы развернуть</summary>
+<summary>A collapsible block — click to expand</summary>
 
-Внутри — обычный **markdown**:
+Inside is ordinary **markdown**:
 
-- пункт
-- ещё пункт
+- an item
+- one more item
 
 </details>
 
 <details open>
-<summary>Развёрнутый сразу: атрибут <code>open</code></summary>
+<summary>Expanded at once: the <code>open</code> attribute</summary>
 
-Свёрнутость переживает прокрутку и новый текст.
+Being collapsed survives scrolling and a new text.
 
 </details>
 
 <div align="right">
 
-Текст, выровненный вправо.
+Text aligned to the right.
 
 </div>
 
-## Таблица
+## Table
 
-| Слева | По центру | Справа |
+| Left | Center | Right |
 |:------|:---------:|-------:|
 | a     | b         | c      |
-| `код` | **жирный** | 10    |
+| `code` | **bold** | 10    |
 
-Сетка-таблица держит в ячейке несколько блоков:
+A grid table holds several blocks in a cell:
 
 +------------------+----------------+
-| Ячейка           | Содержимое     |
+| Cell             | Content        |
 +==================+================+
-| Первый абзац     | - пункт        |
-|                  | - ещё пункт    |
-| Второй абзац     |                |
+| First paragraph  | - item         |
+|                  | - another item |
+| Second paragraph |                |
 +------------------+----------------+
 
-## Фигура
+## Figure
 
 ^^^
-![Баннер витрины](banner.png)
-^^^ Подпись под картинкой
+![Showcase banner](banner.png)
+^^^ A caption under the image
 
-## Код
+## Code
 
 ```csharp
 public sealed class Example
 {
-    public string Name { get; } = "витрина";
+    public string Name { get; } = "showcase";
 }
 ```
 
 ---
 
-Конец документа.
+The end of the document.
 
-^^ Подвал — мелким текстом в конце.
+^^ A footer — in small text at the end.

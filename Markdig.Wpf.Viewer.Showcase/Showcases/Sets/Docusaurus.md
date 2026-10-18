@@ -1,11 +1,11 @@
-﻿:::tip Совет
-У контейнера вид и заголовок.
+﻿:::tip Tip
+A container has a kind and a title.
 :::
 
-:::danger[Заголовок в скобках]
-Как в Docusaurus 3.
+:::danger[A title in brackets]
+As in Docusaurus 3.
 :::
 
-:::details Подробности
-Сворачиваемый блок из VuePress.
+:::details Details
+A collapsible block from VuePress.
 :::

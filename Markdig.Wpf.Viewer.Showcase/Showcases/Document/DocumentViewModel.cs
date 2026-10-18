@@ -8,5 +8,5 @@ public sealed class DocumentViewModel : ShowcaseViewModel
     {
     }
 
-    public string Text { get; } = Samples.Document;
+    public string Text => Samples.Document;
 }

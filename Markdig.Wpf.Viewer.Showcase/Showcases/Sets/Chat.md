@@ -1,7 +1,7 @@
-﻿@anna сборка зелёная :white_check_mark:
+﻿@anna the build is green :white_check_mark:
 
-Ответ — ||42||, щёлкни, чтобы увидеть :wink:
+The answer is ||42||, click to see it :wink:
 
-@boris посмотришь? :eyes:
+@boris can you take a look? :eyes:
 
-Здесь только разметка одного сообщения; лента сообщений в пузырях — в витрине «Чат».
+This is just the markup of one message; the feed of messages in bubbles is in the Chat showcase.

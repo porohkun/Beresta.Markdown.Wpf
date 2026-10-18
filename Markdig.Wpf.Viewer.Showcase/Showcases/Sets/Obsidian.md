@@ -1,21 +1,21 @@
 ﻿---
-tags: [проект, wpf]
-status: черновик
+tags: [project, wpf]
+status: draft
 ---
 
-> [!tip] Ежедневная заметка
-> Ссылки на [[Дорожная карта]], [[Несуществующая страница]] и раздел [[#Задачи]].
+> [!tip] Daily note
+> Links to [[Roadmap]], [[Missing page]] and the section [[#Tasks]].
 
-Тег #идея, комментарий %%его не видно%% и встроенная картинка:
+The tag #idea, a comment %%you cannot see it%% and an embedded image:
 
 ![[banner.png|240]]
 
-## Задачи
+## Tasks
 
-- [ ] новая
-- [x] сделана
-- [/] в работе
-- [>] перенесена
-- [?] под вопросом
-- [!] важная
-- [-] отменена
+- [ ] new
+- [x] done
+- [/] in progress
+- [>] moved
+- [?] in question
+- [!] important
+- [-] cancelled

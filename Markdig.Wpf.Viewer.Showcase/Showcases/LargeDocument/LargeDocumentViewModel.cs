@@ -1,5 +1,7 @@
 ﻿namespace MarkdigWpfViewer.Showcase.Showcases.LargeDocument;
 
+using Localization;
+
 /// <summary>Документ на тысячи блоков: создаются только видимые.</summary>
 public sealed class LargeDocumentViewModel : ShowcaseViewModel
 {
@@ -24,12 +26,12 @@ public sealed class LargeDocumentViewModel : ShowcaseViewModel
     }
 
     /// <summary>Многократно повторённый lorem ipsum: разделы с заголовком и абзацами разной длины.</summary>
-    public string Text { get; } = string.Join(
+    public string Text => string.Join(
         "\n\n",
         Enumerable.Range(0, Sections * (ParagraphsPerSection + 1)).Select(Block));
 
     /// <summary>Блок по номеру: заголовок раздела либо абзац из одной-шести фраз.</summary>
     private static string Block(int index) => index % (ParagraphsPerSection + 1) == 0
-        ? $"## Раздел {index / (ParagraphsPerSection + 1) + 1}"
+        ? "## " + string.Format(Localizer.Text("LargeDocument.Section"), index / (ParagraphsPerSection + 1) + 1)
         : string.Join(" ", Enumerable.Range(index, 1 + index % 6).Select(i => Sentences[i % Sentences.Length]));
 }

@@ -31,7 +31,7 @@ public partial class StreamingView : UserControl
         _statusTimer.Tick += (_, _) => UpdateStatus();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
-        Localizer.Follow(this, UpdateStatus);
+        Localizer.Follow(this, OnLanguageChanged);
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -89,6 +89,17 @@ public partial class StreamingView : UserControl
     }
 
     private void OnStop(object sender, RoutedEventArgs e) => _cancel?.Cancel();
+
+    /// <summary>Язык сменился: поток останавливается, вьюер пустеет до нового запуска.</summary>
+    private async void OnLanguageChanged()
+    {
+        _cancel?.Cancel();
+        await _producer;
+        _stream.Reset();
+        _chunks = 0;
+        _updates = 0;
+        UpdateStatus();
+    }
 
     /// <summary>
     /// Поддельная модель: куски по нескольку знаков, около 300 знаков в секунду, вдвое быстрее или всё

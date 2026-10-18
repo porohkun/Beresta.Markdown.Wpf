@@ -24,6 +24,9 @@
   <data name="Chat.Header" xml:space="preserve">
     <value>A feed of ten thousand messages in one scroll: every bubble is a viewer of its own with the ChatSet set; viewers are created only for the visible messages, and in a message several screens long only for the visible blocks. The feed holds on to the last message — StickyScroll.</value>
   </data>
+  <data name="Chat.Stamp" xml:space="preserve">
+    <value>MMMM d, HH:mm</value>
+  </data>
   <data name="Chat.Title" xml:space="preserve">
     <value>Chat</value>
   </data>
@@ -210,6 +213,9 @@
   <data name="LargeDocument.Header" xml:space="preserve">
     <value>Thousands of blocks in one viewer — lorem ipsum repeated many times. Controls are created only for the visible blocks and a small reserve around them; the rest get room by an estimated height.</value>
   </data>
+  <data name="LargeDocument.Section" xml:space="preserve">
+    <value>Section {0}</value>
+  </data>
   <data name="LargeDocument.Title" xml:space="preserve">
     <value>Large document</value>
   </data>
@@ -236,6 +242,24 @@
   </data>
   <data name="Options.SourceLineNumbers" xml:space="preserve">
     <value>Source line numbers</value>
+  </data>
+  <data name="People.anna" xml:space="preserve">
+    <value>Anna Smirnova</value>
+  </data>
+  <data name="People.boris" xml:space="preserve">
+    <value>Boris Ivanov</value>
+  </data>
+  <data name="People.ivan" xml:space="preserve">
+    <value>Ivan Petrov</value>
+  </data>
+  <data name="People.maria" xml:space="preserve">
+    <value>Maria Sidorova</value>
+  </data>
+  <data name="People.me" xml:space="preserve">
+    <value>Me</value>
+  </data>
+  <data name="People.vera" xml:space="preserve">
+    <value>Vera Kozlova</value>
   </data>
   <data name="Preview.Header" xml:space="preserve">
     <value>An editor and a preview side by side: every edit reaches the viewer as changes — unchanged blocks stay as they were, and the visible part does not jump. The scroll is shared — MdScrollSync between the viewer and the editor through MdTextBoxLines; the line numbers of the editor follow it too.</value>

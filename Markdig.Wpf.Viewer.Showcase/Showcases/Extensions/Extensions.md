@@ -1,34 +1,34 @@
-﻿# Расширения
+﻿# Extensions
 
-Здесь подключены три расширения витрины, каждое отдельно: заметка, упоминание и чип. Заметку можно
-свернуть щелчком по заголовку — она запомнит это, даже уйдя из видимого. Упоминание копируется как
-`@имя`.
+Three extensions of the showcase are connected here, each on its own: a note, a mention and a chip. A note
+can be collapsed with a click on its title — it remembers that even after leaving the visible area. A mention
+is copied as `@name`.
 
-:::note Заметка
-Внутри заметки — обычная разметка: **жирный**, `код`, [ссылка](https://example.com).
+:::note Note
+Inside a note is ordinary markup: **bold**, `code`, [a link](https://example.com).
 
-- пункты списка
-- и упоминание @ivan прямо в пункте
+- list items
+- and a mention @ivan right in an item
 :::
 
-Упоминания живут прямо в тексте: напиши @ivan или @maria, и они станут плашками. Щелчок по
-упоминанию ведёт на профиль тем же путём, что ссылка в тексте.
+Mentions live right in the text: write @ivan or @maria, and they turn into pills. A click on a
+mention leads to the profile the same way as a link in the text does.
 
-Чип — оформленный текст, а не виджет: ::готово:: и ::чип с **жирным**:: выделяются кусками,
-находятся поиском и копируются как markdown обратно в `::…::`. Вид чипа — стиль витрины по имени его
-оформления.
+A chip is styled text, not a widget: ::done:: and ::a chip with **bold**:: are selected in pieces,
+found by search and copied as markdown back into `::…::`. The look of a chip is a showcase style named after
+its styling.
 
-::::note Вложенность
-Заметка может содержать другие заметки.
+::::note Nesting
+A note can contain other notes.
 
-:::note Внутренняя
-Вложенная заметка с **выделением**.
+:::note Inner
+A nested note with **emphasis**.
 :::
 ::::
 
-Всё, что расширения не узнали, разбирается как обычно: `:::warning` без своего расширения
-показывает своё содержимое.
+Everything the extensions did not recognize is parsed as usual: a `:::warning` without an extension of its
+own shows its content.
 
 :::warning
-Неизвестный контейнер — содержимое не теряется.
+An unknown container — the content is not lost.
 :::

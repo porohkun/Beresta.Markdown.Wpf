@@ -8,9 +8,9 @@ public sealed class TwoPanesViewModel : ShowcaseViewModel
     {
     }
 
-    public string Left { get; } = Samples.Near<TwoPanesViewModel>("Left.md");
+    public string Left => Samples.Near<TwoPanesViewModel>("Left.md");
 
-    public string Right { get; } = Samples.Near<TwoPanesViewModel>("Right.md");
+    public string Right => Samples.Near<TwoPanesViewModel>("Right.md");
 
     /// <summary>Панели вровень с пустыми местами; иначе — синхронная прокрутка.</summary>
     public bool IsAligned
