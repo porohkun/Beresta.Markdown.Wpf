@@ -12,7 +12,8 @@ public sealed class MdMarkdownStream
 {
     private readonly MarkdownViewer _viewer;
     private readonly StringBuilder _text = new();
-    private readonly Lock _gate = new();
+    // BYDESIGN: object, а не Lock — Lock нет в .NET 8.
+    private readonly object _gate = new();
     private TimeSpan _interval = TimeSpan.FromMilliseconds(100);
     private long _lastFlush;
     private bool _flushQueued;

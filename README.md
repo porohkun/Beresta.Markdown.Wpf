@@ -30,7 +30,7 @@ the viewer draws it with WPF controls and templates.
 dotnet add package Beresta.Markdown.Wpf
 ```
 
-Requires .NET 10 (`net10.0-windows`) with WPF.
+Requires .NET 8 or later (`net8.0-windows`) with WPF.
 
 IntelliSense documentation comes in English and Russian: Visual Studio with a Russian interface shows
 the Russian one.

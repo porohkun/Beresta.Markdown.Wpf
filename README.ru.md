@@ -30,7 +30,7 @@
 dotnet add package Beresta.Markdown.Wpf
 ```
 
-Нужны .NET 10 (`net10.0-windows`) и WPF.
+Нужны .NET 8 или новее (`net8.0-windows`) и WPF.
 
 Документация IntelliSense — на английском и русском: Visual Studio с русским интерфейсом показывает
 русскую.
