@@ -4,7 +4,8 @@ The Markdig.Wpf.Viewer Showcase is distributed together with the following third
 
 ## HandyControls
 
-- Package: HandyControls 3.6.0, <https://github.com/ghost1372/HandyControls>
+- Packages: HandyControls 3.6.0 and its Russian language pack HandyControls.Lang.ru 3.6.0,
+  <https://github.com/ghost1372/HandyControls>
 - A fork of HandyControl, <https://github.com/HandyOrg/HandyControl>
 - License: MIT
 

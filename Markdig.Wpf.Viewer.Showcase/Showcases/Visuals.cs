@@ -21,4 +21,23 @@ public static class Visuals
 
         return null;
     }
+
+    /// <summary>Все потомки типа <typeparamref name="T"/> обходом в глубину.</summary>
+    public static IEnumerable<T> Descendants<T>(DependencyObject root)
+        where T : DependencyObject
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T found)
+            {
+                yield return found;
+            }
+
+            foreach (var deeper in Descendants<T>(child))
+            {
+                yield return deeper;
+            }
+        }
+    }
 }

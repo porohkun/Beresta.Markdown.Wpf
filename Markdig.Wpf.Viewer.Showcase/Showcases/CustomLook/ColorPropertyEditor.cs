@@ -69,6 +69,17 @@ public sealed class ColorPropertyEditor : PropertyEditorBase
             Converter = new Boolean2BooleanReConverter()
         });
 
+        // BYDESIGN: ширина кнопок пикера в шаблоне HandyControl задана под английские подписи — русская
+        // «Подтвердить» в неё не влезает.
+        _picker.Loaded += (_, _) =>
+        {
+            foreach (var choice in Visuals.Descendants<Button>(_picker).Where(button => button.Content is string))
+            {
+                choice.Width = double.NaN;
+                choice.MinWidth = 80;
+            }
+        };
+
         SolidColorBrush? opened = null;
         popup.Opened += (_, _) => opened = _picker.SelectedBrush;
         _picker.Confirmed += (_, _) => button.IsChecked = false;
