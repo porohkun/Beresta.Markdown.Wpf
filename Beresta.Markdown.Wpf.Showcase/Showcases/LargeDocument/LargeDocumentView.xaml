@@ -1,0 +1,32 @@
+﻿<UserControl x:Class="Beresta.Markdown.Wpf.Showcase.Showcases.LargeDocument.LargeDocumentView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Beresta.Markdown.Wpf.Showcase.Localization"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mdv="clr-namespace:Beresta.Markdown.Wpf;assembly=Beresta.Markdown.Wpf"
+             xmlns:local="clr-namespace:Beresta.Markdown.Wpf.Showcase.Showcases.LargeDocument"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance local:LargeDocumentViewModel}">
+    <DockPanel>
+        <Border Style="{StaticResource ShowcaseHeader}">
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap"
+                           Text="{loc:Text LargeDocument.Header}" />
+
+                <!-- Сколько блоков в документе, сколько контролов создано и сколько из них видно -->
+                <TextBlock x:Name="Counter"
+                           Margin="0,6,0,0"
+                           Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer x:Name="Scroll">
+            <mdv:MarkdownViewer x:Name="Viewer"
+                                Markdown="{Binding Text}"
+                                BackgroundParseThreshold="50000"
+                                Margin="24,16"
+                                ViewportChanged="OnViewportChanged" />
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

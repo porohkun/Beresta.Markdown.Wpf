@@ -1,0 +1,53 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
+		<RootNamespace>Beresta.Markdown.Wpf</RootNamespace>
+	</PropertyGroup>
+
+	<!-- Documentation -->
+	<PropertyGroup>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
+	</PropertyGroup>
+
+	<!-- Package -->
+	<PropertyGroup>
+		<IsPackable>true</IsPackable>
+		<PackageId>Beresta.Markdown.Wpf</PackageId>
+		<Version>0.7.0</Version>
+		<AssemblyVersion>0.7.0.0</AssemblyVersion>
+		<FileVersion>0.7.0.0</FileVersion>
+		<InformationalVersion>0.7.0</InformationalVersion>
+		<Title>Beresta.Markdown.Wpf</Title>
+		<Authors>Porohkun</Authors>
+		<Description>A WPF control that shows Markdown with native WPF elements: virtualized, selectable across blocks, themed through resource keys, with ready-made extensions for the syntax of GitHub, Obsidian, MkDocs and other programs. Markdig parses the text.</Description>
+		<PackageIcon>icon512.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageProjectUrl>https://github.com/porohkun/Beresta.Markdown.Wpf</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/porohkun/Beresta.Markdown.Wpf</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageTags>markdown;wpf;markdig;viewer;markdown-viewer;xaml;control;gfm;obsidian</PackageTags>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\README.md" Pack="true" PackagePath="\" Visible="false" />
+		<None Include="..\icon512.png" Pack="true" PackagePath="\" Visible="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Markdig" Version="1.1.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Beresta.Markdown.Wpf.Tests" />
+	</ItemGroup>
+
+	<Import Project="Docs\Documentation.targets" />
+
+</Project>

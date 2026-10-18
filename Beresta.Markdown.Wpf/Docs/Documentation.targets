@@ -1,0 +1,65 @@
+﻿<Project>
+
+	<!-- Package: English docs of the public API next to the assembly, Russian ones in ru -->
+	<PropertyGroup>
+		<RussianDocumentationFile>$(MSBuildThisFileDirectory)$(MSBuildProjectName).ru.xml</RussianDocumentationFile>
+		<TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);PackDocumentation</TargetsForTfmSpecificBuildOutput>
+	</PropertyGroup>
+
+	<Target Name="PackDocumentation" DependsOnTargets="DocumentationProjectOutputGroup">
+		<PropertyGroup>
+			<_PublicDocumentationFile>$(ProjectDir)$(IntermediateOutputPath)public\$(TargetName).xml</_PublicDocumentationFile>
+		</PropertyGroup>
+
+		<FilterDocumentation
+			Source="@(DocumentationProjectOutputGroupOutput->'%(FullPath)')"
+			Members="$(RussianDocumentationFile)"
+			Destination="$(_PublicDocumentationFile)" />
+
+		<ItemGroup>
+			<DocumentationProjectOutputGroupOutput Remove="@(DocumentationProjectOutputGroupOutput)" />
+			<BuildOutputInPackage
+				Include="$(_PublicDocumentationFile)"
+				FinalOutputPath="$(_PublicDocumentationFile)"
+				TargetPath="$(TargetName).xml" />
+			<BuildOutputInPackage
+				Include="$(RussianDocumentationFile)"
+				FinalOutputPath="$(RussianDocumentationFile)"
+				TargetPath="ru\$(TargetName).xml" />
+		</ItemGroup>
+	</Target>
+
+	<!-- Leaves in the docs only the members of the Russian file -->
+	<UsingTask
+		TaskName="FilterDocumentation"
+		TaskFactory="RoslynCodeTaskFactory"
+		AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+		<ParameterGroup>
+			<Source ParameterType="System.String" Required="true" />
+			<Members ParameterType="System.String" Required="true" />
+			<Destination ParameterType="System.String" Required="true" />
+		</ParameterGroup>
+		<Task>
+			<Using Namespace="System.Xml.Linq" />
+			<Code Type="Fragment" Language="cs"><![CDATA[
+var names = new HashSet<string>(XDocument.Load(Members)
+	.Descendants("member")
+	.Select(member => (string)member.Attribute("name")));
+var document = XDocument.Load(Source, LoadOptions.PreserveWhitespace);
+foreach (var member in document.Descendants("member").Where(member => !names.Contains((string)member.Attribute("name"))).ToList())
+{
+	if (member.PreviousNode is XText space && string.IsNullOrWhiteSpace(space.Value))
+	{
+		space.Remove();
+	}
+
+	member.Remove();
+}
+
+Directory.CreateDirectory(Path.GetDirectoryName(Destination));
+document.Save(Destination, SaveOptions.DisableFormatting);
+]]></Code>
+		</Task>
+	</UsingTask>
+
+</Project>

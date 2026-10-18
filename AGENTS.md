@@ -1,8 +1,9 @@
-﻿# Markdig.Wpf.Viewer
+﻿# Beresta.Markdown.Wpf
 
 WPF-контрол, который показывает markdown: текст разбирает Markdig, рисуют шаблоны WPF. Выходит
-NuGet-пакетом `Markdig.Wpf.Viewer` и подключается сабмодулем — так им пользуется Storaxis. Стек:
-.NET 10 (`net10.0-windows`), WPF, Markdig.
+NuGet-пакетом `Beresta.Markdown.Wpf` и подключается сабмодулем — так им пользуется Storaxis. Стек:
+WPF и Markdig; библиотека и тесты собираются под .NET 8 и .NET 10 (`net8.0-windows`,
+`net10.0-windows`), витрина — под .NET 10.
 
 Термины — в [`GLOSSARY.md`](GLOSSARY.md), и только там.
 
@@ -10,23 +11,25 @@ NuGet-пакетом `Markdig.Wpf.Viewer` и подключается сабмо
 
 | Проект | Пространство имён | Что это |
 |---|---|---|
-| [`Markdig.Wpf.Viewer`](Markdig.Wpf.Viewer/AGENTS.md) | `MarkdigWpfViewer` | библиотека: вьюер, разбор, тема по умолчанию; то, что уходит в пакет |
-| [`Markdig.Wpf.Viewer.Showcase`](Markdig.Wpf.Viewer.Showcase/AGENTS.md) | `MarkdigWpfViewer.Showcase` | витрина на HandyControls: встраивание, темы, сценарии списком слева, образец разметки; в пакет не входит |
-| `Markdig.Wpf.Viewer.Tests` | `MarkdigWpfViewer.Tests` | тесты библиотеки: разбор, панель блоков, выделение, позиции, виджеты; xUnit и FluentAssertions |
+| [`Beresta.Markdown.Wpf`](Beresta.Markdown.Wpf/AGENTS.md) | `Beresta.Markdown.Wpf` | библиотека: вьюер, разбор, тема по умолчанию; то, что уходит в пакет |
+| [`Beresta.Markdown.Wpf.Showcase`](Beresta.Markdown.Wpf.Showcase/AGENTS.md) | `Beresta.Markdown.Wpf.Showcase` | витрина на HandyControls: встраивание, темы, сценарии списком слева, образец разметки; в пакет не входит |
+| `Beresta.Markdown.Wpf.Tests` | `Beresta.Markdown.Wpf.Tests` | тесты библиотеки: разбор, панель блоков, выделение, позиции, виджеты; xUnit и FluentAssertions |
 
 ## Зависимости
 
-`Markdig.Wpf.Viewer.Showcase` → `Markdig.Wpf.Viewer` → пакет Markdig. Библиотека о витрине не
-знает и знать не должна. `Markdig.Wpf.Viewer.Tests` → `Markdig.Wpf.Viewer` и видит его внутренние
+`Beresta.Markdown.Wpf.Showcase` → `Beresta.Markdown.Wpf` → пакет Markdig. Библиотека о витрине не
+знает и знать не должна. `Beresta.Markdown.Wpf.Tests` → `Beresta.Markdown.Wpf` и видит его внутренние
 типы.
 
 ## Команды
 
 | Что | Команда |
 |---|---|
-| Сборка | `dotnet build Markdig.Wpf.Viewer.slnx` |
-| Тесты | `dotnet test Markdig.Wpf.Viewer.Tests` |
-| Витрина | `dotnet run --project Markdig.Wpf.Viewer.Showcase` |
+| Сборка | `dotnet build Beresta.Markdown.Wpf.slnx` |
+| Тесты | `dotnet test Beresta.Markdown.Wpf.Tests` |
+| Витрина | `dotnet run --project Beresta.Markdown.Wpf.Showcase` |
+| Витрина для проверок агентом | `dotnet run tools/ShowcaseProbe.cs -- <шаги через запятую> [папка снимков]` |
+| Снимки для вики | `dotnet run tools/WikiShots.cs -- [картинки через запятую] [--lang en\|ru] [--out папка]` |
 
 ## Соглашения
 
@@ -43,6 +46,14 @@ NuGet-пакетом `Markdig.Wpf.Viewer` и подключается сабмо
   поймал расхождение кода с ожидаемым — правится код.
 - Тест, которому нужен WPF, работает через `WpfHost` тестового проекта: приложение WPF в процессе
   одно, и поток у него один.
+- Витрину для своих проверок запускай скриптом `tools/ShowcaseProbe.cs`, а не `dotnet run --project`:
+  его окно за экраном и не становится активным, поэтому не мелькает перед пользователем и не забирает
+  его ввод. Шаги — ветки `switch` в скрипте, после каждого шага в папку ложится снимок окна. Нужного
+  шага нет — допиши его в скрипт.
+- В проверках не открывай всплывающие окна и не трогай буфер обмена. Всплывающее окно WPF выводит на
+  экран, даже когда окно витрины за его пределами, — содержимое такого окна рисуй в картинку, как шаг
+  `pickershot`. Буфер обмена общий с пользователем: текст и разметку выделенного бери из
+  `SelectedText` и `SelectedMarkdown`.
 
 ### Стиль кода
 
@@ -56,7 +67,11 @@ NuGet-пакетом `Markdig.Wpf.Viewer` и подключается сабмо
 - Документы и комментарии описывают код, каким он есть: без истории, обоснований сделанного
   выбора и пересказа кода.
 - Определение термина — только в глоссарии; на месте употребления остаётся следствие.
-- XML-док на публичном члене — по-русски, одна-две строки о том, что это. Обоснований в нём нет.
+- XML-док — одна-две строки о том, что это. Обоснований в нём нет.
+- XML-док на публичном члене библиотеки — по-английски, а его русский перевод с тем же устройством
+  — в `Beresta.Markdown.Wpf/Docs/Beresta.Markdown.Wpf.ru.xml`; на внутреннем члене и в остальных
+  проектах — по-русски. Перекрытие и реализация интерфейса берут доку `<inheritdoc/>`, обёртка
+  свойства зависимости — `<inheritdoc cref="…Property"/>` с поля.
 - Обычный комментарий бывает двух видов: подпись блока кода либо пометка «это не баг», которая
   начинается с `BYDESIGN:`. Других нет.
 - `README.md` — страница пакета на английском, `README.ru.md` — её копия на русском. Пишутся для
@@ -65,6 +80,10 @@ NuGet-пакетом `Markdig.Wpf.Viewer` и подключается сабмо
 - Документация для потребителя — вики в `docs/wiki/` по правилам GitHub Wiki: английская страница и
   её русская копия с суффиксом `-ru`, рубрики в `_Sidebar.md`, снимки в `docs/wiki/images/`. У
   каждой возможности — минимальный рабочий пример с пометкой, куда его положить.
+- Снимки вики снимает `tools/WikiShots.cs`, по умолчанию все сразу в `docs/wiki/images/` и для
+  обеих вики: `имя.png` — в английской локализации витрины для английских страниц, `имя-ru.png` —
+  в русской для русских. Новый снимок — новый блок в скрипте с текстом на обоих языках, а не
+  картинка, снятая в обход него.
 - **Новая возможность или изменение старой отражается в вики на обоих языках, а в `README.md` и
   `README.ru.md` — если они о ней говорят.**
 - Планы — только в `ROADMAP.md` (этапы текущей фичи), `BACKLOG.md` (отложенное),

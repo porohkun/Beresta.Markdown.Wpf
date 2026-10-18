@@ -2,7 +2,7 @@
 
 Вьюер рисует диаграммы, описанные текстом. Общая часть и два рисовальщика обходятся без чужих
 .NET-библиотек и могут жить в основной библиотеке; рисовальщик mermaid без сети — пакет-спутник
-`Markdig.Wpf.Viewer.Diagrams.WebView2`.
+`Beresta.Markdown.Wpf.Diagrams.WebView2`.
 
 ## Задача
 
@@ -66,7 +66,7 @@ Graphviz — отдельная программа на C. Годных рисо
 
 ## Рисовальщик 3 — mermaid без сети через WebView2
 
-- Пакет-спутник `Markdig.Wpf.Viewer.Diagrams.WebView2`.
+- Пакет-спутник `Beresta.Markdown.Wpf.Diagrams.WebView2`.
 - WebView2 — компонент Microsoft, который встраивает в программу движок браузера Edge (пакет
   `Microsoft.Web.WebView2`). Сам движок — WebView2 Runtime в варианте Evergreen — входит в
   Windows 11. На Windows 10 он стоит почти везде, но не всюду; Microsoft советует приложению

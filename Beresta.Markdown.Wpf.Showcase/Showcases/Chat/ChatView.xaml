@@ -1,0 +1,99 @@
+﻿<UserControl x:Class="Beresta.Markdown.Wpf.Showcase.Showcases.Chat.ChatView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Beresta.Markdown.Wpf.Showcase.Localization"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mdv="clr-namespace:Beresta.Markdown.Wpf;assembly=Beresta.Markdown.Wpf"
+             xmlns:kit="clr-namespace:Beresta.Markdown.Wpf.Kit;assembly=Beresta.Markdown.Wpf"
+             xmlns:b="clr-namespace:Beresta.Markdown.Wpf.Behaviors;assembly=Beresta.Markdown.Wpf"
+             xmlns:local="clr-namespace:Beresta.Markdown.Wpf.Showcase.Showcases.Chat"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance local:ChatViewModel}">
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="MineBubbleBrush" Color="{DynamicResource PrimaryColor}" Opacity="0.16" />
+        <SolidColorBrush x:Key="MineBubbleBorderBrush" Color="{DynamicResource PrimaryColor}" Opacity="0.32" />
+    </UserControl.Resources>
+
+    <DockPanel>
+        <Border Style="{StaticResource ShowcaseHeader}">
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap"
+                           Text="{loc:Text Chat.Header}" />
+
+                <!-- Сколько вьюеров создано и сколько стоит в ленте сейчас -->
+                <TextBlock x:Name="Counter"
+                           Margin="0,6,0,0"
+                           Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+        </Border>
+
+        <ItemsControl x:Name="Messages"
+                      ItemsSource="{Binding Messages}"
+                      mdv:MarkdownViewer.ImagePolicy="{x:Static mdv:MdImagePolicy.Untrusted}"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      VirtualizingPanel.VirtualizationMode="Recycling"
+                      VirtualizingPanel.ScrollUnit="Pixel"
+                      ScrollViewer.CanContentScroll="True">
+            <ItemsControl.Template>
+                <ControlTemplate TargetType="{x:Type ItemsControl}">
+                    <!-- Лента открывается на последних сообщениях и держится у конца, пока её не прокрутят -->
+                    <ScrollViewer x:Name="Scroll"
+                                  CanContentScroll="True"
+                                  Padding="0,4"
+                                  b:StickyScroll.Edge="Bottom">
+                        <ItemsPresenter />
+                    </ScrollViewer>
+                </ControlTemplate>
+            </ItemsControl.Template>
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <!-- Пузырь сообщения: чужое слева с именем автора, своё справа -->
+                <DataTemplate DataType="{x:Type local:ChatMessage}">
+                    <Border x:Name="Bubble"
+                            HorizontalAlignment="Left"
+                            MaxWidth="620"
+                            Margin="24,3,96,3"
+                            Padding="12,6,12,4"
+                            CornerRadius="0,12,12,12"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            Background="{DynamicResource SecondaryRegionBrush}">
+                        <StackPanel>
+                            <TextBlock x:Name="Author"
+                                       Text="{Binding Author}"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource PrimaryBrush}" />
+                            <mdv:MarkdownViewer Markdown="{Binding Text}"
+                                                ShowSourceLineNumbers="False"
+                                                IsSelectionEnabled="{Binding DataContext.Options.IsSelectionEnabled, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                                Initialized="OnViewerInitialized">
+                                <mdv:MarkdownViewer.Extensions>
+                                    <kit:ChatSet Resolver="{x:Static local:ChatResolver.Instance}" />
+                                </mdv:MarkdownViewer.Extensions>
+                            </mdv:MarkdownViewer>
+                            <TextBlock Text="{Binding Time}"
+                                       HorizontalAlignment="Right"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource ThirdlyTextBrush}" />
+                        </StackPanel>
+                    </Border>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsMine}" Value="True">
+                            <Setter TargetName="Bubble" Property="HorizontalAlignment" Value="Right" />
+                            <Setter TargetName="Bubble" Property="Margin" Value="96,3,24,3" />
+                            <Setter TargetName="Bubble" Property="Background" Value="{DynamicResource MineBubbleBrush}" />
+                            <Setter TargetName="Bubble" Property="BorderBrush" Value="{DynamicResource MineBubbleBorderBrush}" />
+                            <Setter TargetName="Bubble" Property="CornerRadius" Value="12,12,0,12" />
+                            <Setter TargetName="Author" Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </DockPanel>
+</UserControl>

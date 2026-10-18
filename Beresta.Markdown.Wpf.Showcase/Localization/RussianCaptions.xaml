@@ -1,0 +1,27 @@
+﻿<!-- Подписи вьюера по-русски; в английском режиме словарь снят и действуют подписи темы вьюера -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <sys:String x:Key="Md.ContextMenu.Copy">Копировать</sys:String>
+    <sys:String x:Key="Md.ContextMenu.CopyMarkdown">Копировать как markdown</sys:String>
+    <sys:String x:Key="Md.ContextMenu.SelectAll">Выделить всё</sys:String>
+    <sys:String x:Key="Md.CodeBlock.CopyToolTip">Копировать код</sys:String>
+    <sys:String x:Key="Md.Callout.Note.Title">Заметка</sys:String>
+    <sys:String x:Key="Md.Callout.Tip.Title">Совет</sys:String>
+    <sys:String x:Key="Md.Callout.Important.Title">Важно</sys:String>
+    <sys:String x:Key="Md.Callout.Warning.Title">Предупреждение</sys:String>
+    <sys:String x:Key="Md.Callout.Caution.Title">Осторожно</sys:String>
+    <sys:String x:Key="Md.Details.Title">Подробности</sys:String>
+    <sys:String x:Key="Md.Callout.Abstract.Title">Кратко</sys:String>
+    <sys:String x:Key="Md.Callout.Info.Title">Сведения</sys:String>
+    <sys:String x:Key="Md.Callout.Todo.Title">Сделать</sys:String>
+    <sys:String x:Key="Md.Callout.Success.Title">Успех</sys:String>
+    <sys:String x:Key="Md.Callout.Question.Title">Вопрос</sys:String>
+    <sys:String x:Key="Md.Callout.Failure.Title">Неудача</sys:String>
+    <sys:String x:Key="Md.Callout.Danger.Title">Опасность</sys:String>
+    <sys:String x:Key="Md.Callout.Bug.Title">Ошибка</sys:String>
+    <sys:String x:Key="Md.Callout.Example.Title">Пример</sys:String>
+    <sys:String x:Key="Md.Callout.Quote.Title">Цитата</sys:String>
+
+</ResourceDictionary>

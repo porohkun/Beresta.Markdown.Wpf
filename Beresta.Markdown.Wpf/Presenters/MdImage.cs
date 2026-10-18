@@ -1,0 +1,261 @@
+﻿namespace Beresta.Markdown.Wpf.Presenters;
+
+using System.Windows;
+using System.Windows.Automation.Peers;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Automation;
+using ViewModels;
+
+/// <summary>
+/// An image of the document: loads itself with the loader of the viewer and shows the alt text
+/// until it loads; no wider than the text it stands in. An image inside a link opens as a link.
+/// </summary>
+public sealed class MdImage : Control
+{
+    /// <summary>The model of the image.</summary>
+    public static readonly DependencyProperty ImageProperty =
+        DependencyProperty.Register(
+            nameof(Image),
+            typeof(ImageVm),
+            typeof(MdImage),
+            new(null, OnImageChanged));
+
+    private static readonly DependencyPropertyKey ImageSourcePropertyKey =
+        DependencyProperty.RegisterReadOnly(
+            nameof(ImageSource),
+            typeof(ImageSource),
+            typeof(MdImage),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure));
+
+    /// <summary>The loaded image; until it is there — <c>null</c>.</summary>
+    public static readonly DependencyProperty ImageSourceProperty = ImageSourcePropertyKey.DependencyProperty;
+
+
+    private MdTextBlock? _text;
+    private MdImageCache.Ticket? _waiting;
+    private bool _pressed;
+
+    /// <summary>Creates an empty image.</summary>
+    public MdImage()
+    {
+        Loaded += (_, _) =>
+        {
+            Watch(FindText());
+            Load();
+            InvalidateMeasure();
+        };
+        Unloaded += (_, _) =>
+        {
+            Watch(null);
+            StopWaiting();
+        };
+    }
+
+    /// <inheritdoc cref="ImageProperty"/>
+    public ImageVm? Image
+    {
+        get => (ImageVm?)GetValue(ImageProperty);
+        set => SetValue(ImageProperty, value);
+    }
+
+    /// <inheritdoc cref="ImageSourceProperty"/>
+    public ImageSource? ImageSource => (ImageSource?)GetValue(ImageSourceProperty);
+
+    /// <inheritdoc/>
+    protected override Size MeasureOverride(Size constraint)
+    {
+        if (ImageSource is not { } source || Image is not { } image)
+        {
+            return base.MeasureOverride(constraint);
+        }
+
+        var natural = NaturalSize(source, image);
+        var limit = Math.Min(constraint.Width, FindText() is { ActualWidth: > 0 } text ? text.ActualWidth : double.PositiveInfinity);
+        var scale = natural.Width > limit ? limit / natural.Width : 1;
+        var size = new Size(natural.Width * scale, natural.Height * scale);
+
+        base.MeasureOverride(size);
+        return size;
+    }
+
+    /// <inheritdoc/>
+    protected override AutomationPeer OnCreateAutomationPeer() => new MdImageAutomationPeer(this);
+
+    /// <inheritdoc/>
+    protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+    {
+        base.OnMouseLeftButtonDown(e);
+        _pressed = Image?.Href is not null;
+    }
+
+    /// <inheritdoc/>
+    protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
+    {
+        base.OnMouseLeftButtonUp(e);
+        if (_pressed && Image is { Href: { } href } image)
+        {
+            _pressed = false;
+            e.Handled = true;
+            MarkdownLink.Activate(this, href, image.Hyperlink);
+        }
+    }
+
+    /// <inheritdoc/>
+    protected override void OnMouseLeave(MouseEventArgs e)
+    {
+        base.OnMouseLeave(e);
+        _pressed = false;
+    }
+
+    private static void OnImageChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var view = (MdImage)d;
+        var image = e.NewValue as ImageVm;
+        view.Cursor = image?.Href is null ? null : Cursors.Hand;
+        view.ToolTip = image?.Title;
+        view.StopWaiting();
+        if (view.IsLoaded)
+        {
+            view.Load();
+        }
+    }
+
+    /// <summary>Размер из атрибутов, а без них — в пикселях картинки, как в браузере.</summary>
+    private static Size NaturalSize(ImageSource source, ImageVm image)
+    {
+        var (width, height) = source is BitmapSource bitmap
+            ? (bitmap.PixelWidth, bitmap.PixelHeight)
+            : (source.Width, source.Height);
+
+        return (image.Width, image.Height) switch
+        {
+            ({ } w, { } h) => new(w, h),
+            ({ } w, null) => new(w, width > 0 ? w * height / width : 0),
+            (null, { } h) => new(height > 0 ? h * width / height : 0, h),
+            _ => new(width, height)
+        };
+    }
+
+    /// <summary>Адрес из разметки, разобранный от адреса документа.</summary>
+    private static Uri? Resolve(string url, Uri? baseUri)
+    {
+        if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        if (Uri.TryCreate(url, UriKind.Absolute, out var absolute))
+        {
+            return absolute;
+        }
+
+        if (baseUri is { IsAbsoluteUri: true } && Uri.TryCreate(baseUri, url, out var combined))
+        {
+            return combined;
+        }
+
+        return Uri.TryCreate(url, UriKind.Relative, out var relative) ? relative : null;
+    }
+
+    private MdTextBlock? FindText()
+    {
+        for (var node = VisualTreeHelper.GetParent(this); node is not null; node = VisualTreeHelper.GetParent(node))
+        {
+            if (node is MdTextBlock text)
+            {
+                return text;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Следит за шириной текста вокруг: картинка не шире него.</summary>
+    private void Watch(MdTextBlock? text)
+    {
+        if (_text is not null)
+        {
+            _text.SizeChanged -= OnTextSizeChanged;
+        }
+
+        _text = text;
+        if (_text is not null)
+        {
+            _text.SizeChanged += OnTextSizeChanged;
+        }
+    }
+
+    private void OnTextSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (e.WidthChanged)
+        {
+            InvalidateMeasure();
+        }
+    }
+
+    /// <summary>Загруженное — сразу, загружаемое — когда придёт; сбой загрузчика оставляет alt.</summary>
+    private void Load()
+    {
+        StopWaiting();
+        if (Image is not { } image || MarkdownViewer.Owning(this) is not { ImageLoader: { } loader } viewer)
+        {
+            SetValue(ImageSourcePropertyKey, null);
+            return;
+        }
+
+        var uri = Resolve(image.Url, viewer.BaseUri);
+        if (!viewer.ImagePolicy.Allows(image.Url, uri))
+        {
+            SetValue(ImageSourcePropertyKey, null);
+            return;
+        }
+
+        var width = loader is MdImageLoader ? DecodeWidth(image) : 0;
+        var ticket = MdImageCache.Shared.Request(
+            loader,
+            uri?.ToString() ?? image.Url,
+            width,
+            token => loader is MdImageLoader standard ? standard.LoadAsync(image.Url, uri, width, token) : loader.LoadAsync(image.Url, uri, token));
+
+        if (ticket.Loading.IsCompleted)
+        {
+            ticket.Dispose();
+            Show(ticket.Loading);
+            return;
+        }
+
+        _waiting = ticket;
+        SetValue(ImageSourcePropertyKey, null);
+        ticket.Loading.ContinueWith(_ => Dispatcher.BeginInvoke(() => Arrived(ticket)), TaskScheduler.Default);
+    }
+
+    /// <summary>Ширина декодирования в пикселях: не больше ширины из разметки и ширины экрана, шагами по 256.</summary>
+    private int DecodeWidth(ImageVm image)
+    {
+        var width = Math.Min(image.Width ?? double.PositiveInfinity, SystemParameters.PrimaryScreenWidth);
+        var pixels = width * VisualTreeHelper.GetDpi(this).DpiScaleX;
+        return (int)Math.Ceiling(pixels / 256) * 256;
+    }
+
+    private void Arrived(MdImageCache.Ticket ticket)
+    {
+        if (ReferenceEquals(_waiting, ticket))
+        {
+            StopWaiting();
+            Show(ticket.Loading);
+        }
+    }
+
+    private void Show(Task<ImageSource?> loading)
+        => SetValue(ImageSourcePropertyKey, loading.IsCompletedSuccessfully ? loading.Result : null);
+
+    /// <summary>Картинку больше не ждут: ушла из окна или сменилась.</summary>
+    private void StopWaiting()
+    {
+        _waiting?.Dispose();
+        _waiting = null;
+    }
+}
