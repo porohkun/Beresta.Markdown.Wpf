@@ -65,6 +65,8 @@ public sealed class SelectedMarkdownTests
     [InlineData("    indented code", "```\nindented code\n```")]
     [InlineData("a &amp; b", "a & b")]
     [InlineData("# My Heading\n\nSee [My Heading].", "# My Heading\n\nSee [My Heading](#my-heading).")]
+    [InlineData("+---+---+---+\n| a | b | c |\n+===+===+===+\n| wide  | x |\n+-------+---+", "| a | b | c |\n| --- | --- | --- |\n| wide | | x |")]
+    [InlineData("+---+---+\n| a | b |\n+---+---+\n| 1 | 2 |\n+---+---+", "| | |\n| --- | --- |\n| a | b |\n| 1 | 2 |")]
     [InlineData("```cs\r\nx\r\ny\r\n```\r\n\r\ntext\r\nmore", "```cs\nx\ny\n```\n\ntext\nmore")]
     [InlineData("x^2^ and H~2~O", "x<sup>2</sup> and H<sub>2</sub>O")]
     [InlineData("<mark>m</mark> <u>u</u> <cite>c</cite>", "==m== ++u++ \"\"c\"\"")]

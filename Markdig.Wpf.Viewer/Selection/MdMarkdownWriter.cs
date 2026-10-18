@@ -340,20 +340,25 @@ internal sealed partial class MdMarkdownWriter
             return [];
         }
 
-        var header = table.Rows[0];
+        var header = table.Rows[0] is { IsHeader: true } first ? first : null;
         var lines = new List<string>
         {
-            Row(header, whole: !touched.Any(row => ReferenceEquals(row, header))),
+            header is null
+                ? "|" + string.Concat(Enumerable.Repeat(" |", table.ColumnCount))
+                : Row(header, whole: !touched.Any(row => ReferenceEquals(row, header))),
             Separator(table)
         };
         lines.AddRange(touched.Where(row => !ReferenceEquals(row, header)).Select(row => Row(row, whole: false)));
         return lines;
     }
 
+    /// <summary>Строка таблицы; объединённая ячейка — своим текстом и пустыми ячейками на остальных своих столбцах.</summary>
     private string Row(TableRowVm row, bool whole)
     {
         var cells = row.Cells
-            .Select(cell => (cell.HasBlocks ? CellText(cell, whole) : Inlines(cell.Inlines, whole)).Replace("|", "\\|").Replace('\n', ' '))
+            .SelectMany(cell => Enumerable
+                .Repeat(string.Empty, Math.Max(0, cell.ColumnSpan - 1))
+                .Prepend((cell.HasBlocks ? CellText(cell, whole) : Inlines(cell.Inlines, whole)).Replace("|", "\\|").Replace('\n', ' ')))
             .Select(cell => cell.Length == 0 ? " " : $" {cell} ");
         return "|" + string.Join("|", cells) + "|";
     }

@@ -909,34 +909,38 @@ internal sealed partial class ModelBuilder
         return new(ordered, start, listDepth, converted);
     }
 
+    /// <summary>
+    /// Таблица; ячейка встаёт в свой столбец, объединённая занимает несколько, а пропуски — место под
+    /// ячейкой строки выше, конец короткой строки — заполняются пустыми ячейками.
+    /// </summary>
     private TableVm ConvertTable(Table table)
     {
-        var rows = new List<(TableRow Row, bool IsHeader, List<TableCellVm> Cells)>();
+        var rows = new List<(TableRow Row, List<TableCellVm> Cells, int Width)>();
         var maxColumns = table.ColumnDefinitions.Count;
 
-        for (var r = 0; r < table.Count; r++)
+        foreach (var row in table.OfType<TableRow>())
         {
-            if (table[r] is not TableRow row)
-            {
-                continue;
-            }
-
             var cells = new List<TableCellVm>();
-            for (var c = 0; c < row.Count; c++)
+            var width = 0;
+            foreach (var cell in row.OfType<TableCell>())
             {
-                if (row[c] is TableCell cell)
+                for (; width < cell.ColumnIndex; width++)
                 {
-                    cells.Add(Stamp(ConvertCell(cell), cell));
+                    cells.Add(new([]));
                 }
+
+                var span = Math.Max(1, cell.ColumnSpan);
+                cells.Add(Stamp(ConvertCell(cell) with { ColumnSpan = span }, cell));
+                width += span;
             }
 
-            maxColumns = Math.Max(maxColumns, cells.Count);
-            rows.Add((row, r == 0, cells));
+            maxColumns = Math.Max(maxColumns, width);
+            rows.Add((row, cells, width));
         }
 
-        foreach (var (_, _, cells) in rows)
+        foreach (var (_, cells, width) in rows)
         {
-            while (cells.Count < maxColumns)
+            for (var column = width; column < maxColumns; column++)
             {
                 cells.Add(new([]));
             }
@@ -952,7 +956,7 @@ internal sealed partial class ModelBuilder
             })
             .ToList();
 
-        return new(maxColumns, rows.Select(entry => Stamp(new TableRowVm(entry.IsHeader, entry.Cells), entry.Row)).ToList())
+        return new(maxColumns, rows.Select(entry => Stamp(new TableRowVm(entry.Row.IsHeader, entry.Cells), entry.Row)).ToList())
         {
             Alignments = alignments
         };

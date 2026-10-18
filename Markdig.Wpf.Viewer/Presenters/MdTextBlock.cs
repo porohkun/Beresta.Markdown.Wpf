@@ -1,5 +1,7 @@
 ﻿namespace MarkdigWpfViewer.Presenters;
 
+using System.Globalization;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -351,6 +353,60 @@ public class MdTextBlock : TextBlock
             e.Cursor = Cursors.IBeam;
             e.Handled = true;
         }
+    }
+
+    /// <summary>
+    /// Ширина самого длинного куска, который нельзя перенести: слова или неделимого элемента. Элементы
+    /// берут ширину последнего измерения.
+    /// </summary>
+    internal double LongestWordWidth()
+    {
+        var text = new StringBuilder();
+        var runs = new List<(Run Run, int Start)>();
+        var widest = 0.0;
+        foreach (var segment in _segments)
+        {
+            switch (segment.Element)
+            {
+                case Run run:
+                    runs.Add((run, text.Length));
+                    text.Append(run.Text);
+                    break;
+
+                case InlineUIContainer { Child: { } child }:
+                    widest = Math.Max(widest, child.DesiredSize.Width);
+                    text.Append(' ');
+                    break;
+
+                default:
+                    text.Append(' ');
+                    break;
+            }
+        }
+
+        if (runs.Count == 0)
+        {
+            return widest;
+        }
+
+        var formatted = new FormattedText(
+            text.ToString(),
+            CultureInfo.CurrentUICulture,
+            FlowDirection,
+            new Typeface(FontFamily, FontStyle, FontWeight, FontStretch),
+            FontSize,
+            Foreground ?? Brushes.Black,
+            VisualTreeHelper.GetDpi(this).PixelsPerDip);
+
+        foreach (var (run, start) in runs.Where(entry => entry.Run.Text.Length > 0))
+        {
+            formatted.SetFontFamily(run.FontFamily, start, run.Text.Length);
+            formatted.SetFontSize(run.FontSize, start, run.Text.Length);
+            formatted.SetFontWeight(run.FontWeight, start, run.Text.Length);
+            formatted.SetFontStyle(run.FontStyle, start, run.Text.Length);
+        }
+
+        return Math.Max(widest, formatted.MinWidth);
     }
 
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)

@@ -1,6 +1,6 @@
 ﻿namespace MarkdigWpfViewer.ViewModels;
 
-/// <summary>Таблица; строки дополнены пустыми ячейками до <paramref name="ColumnCount"/>.</summary>
+/// <summary>Таблица; ячейки каждой строки с объединёнными и пустыми добивками занимают <paramref name="ColumnCount"/> столбцов.</summary>
 public sealed record TableVm(int ColumnCount, IReadOnlyList<TableRowVm> Rows)
     : BlockVm
 {

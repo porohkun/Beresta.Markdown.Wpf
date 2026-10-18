@@ -936,7 +936,7 @@
                             Padding="{DynamicResource Md.Table.CellPadding}"
                             Background="{DynamicResource Md.Table.HeaderBackground}">
                         <Grid>
-                            <p:MdTextBlock x:Name="Text" Runs="{Binding Inlines}"
+                            <p:MdTextBlock x:Name="Text" Runs="{Binding Inlines}" TextWrapping="WrapWithOverflow"
                                            Style="{DynamicResource Md.Paragraph.Style}" />
                             <p:MdBlocksPresenter x:Name="Blocks" Blocks="{Binding Blocks}" Visibility="Collapsed" />
                         </Grid>
@@ -957,7 +957,7 @@
                             BorderThickness="{DynamicResource Md.Table.BorderThickness}"
                             Padding="{DynamicResource Md.Table.CellPadding}">
                         <Grid>
-                            <p:MdTextBlock x:Name="Text" Runs="{Binding Inlines}"
+                            <p:MdTextBlock x:Name="Text" Runs="{Binding Inlines}" TextWrapping="WrapWithOverflow"
                                            Style="{DynamicResource Md.Paragraph.Style}" />
                             <p:MdBlocksPresenter x:Name="Blocks" Blocks="{Binding Blocks}" Visibility="Collapsed" />
                         </Grid>
