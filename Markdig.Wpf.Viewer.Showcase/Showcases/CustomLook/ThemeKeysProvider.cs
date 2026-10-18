@@ -1,51 +1,69 @@
 ﻿namespace MarkdigWpfViewer.Showcase.Showcases.CustomLook;
 
 using System.ComponentModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
+using Localization;
 
 /// <summary>Свойства <see cref="ThemeKeys"/>: по свойству на цвет, размер и отступ темы вьюера, по группе на блок.</summary>
 public sealed class ThemeKeysProvider : TypeDescriptionProvider
 {
-    private const string Common = "Общие";
+    private const string Common = "Common";
 
     private static readonly Uri ThemeSource = new("pack://application:,,,/Markdig.Wpf.Viewer;component/Themes/Generic.xaml");
 
-    private static readonly Lazy<PropertyDescriptorCollection> Keys = new(Collect);
-
-    /// <summary>Группа ключа по блоку из его имени <c>Md.Блок.Свойство</c>; сквозные ключи — в общей.</summary>
+    /// <summary>Группа ключа по блоку из его имени <c>Md.Блок.Свойство</c>: строка <c>CustomLook.Group.&lt;группа&gt;</c>; сквозные ключи — в общей.</summary>
     private static readonly Dictionary<string, string> Groups = new(StringComparer.Ordinal)
     {
-        ["Paragraph"] = "Текст",
-        ["Abbreviation"] = "Текст",
-        ["Marked"] = "Текст",
-        ["Heading"] = "Заголовки",
-        ["InlineCode"] = "Код в строке",
-        ["Kbd"] = "Клавиши",
-        ["CodeBlock"] = "Блок кода",
-        ["Quote"] = "Цитата",
-        ["Callout"] = "Плашки",
-        ["Details"] = "Сворачиваемый блок",
-        ["List"] = "Списки",
-        ["Task"] = "Задачи",
-        ["DefinitionList"] = "Список определений",
-        ["Table"] = "Таблица",
-        ["Figure"] = "Фигура",
-        ["Footer"] = "Подвал",
-        ["Footnote"] = "Сноски",
-        ["FootnoteTip"] = "Сноски",
-        ["HorizontalRule"] = "Разделитель",
-        ["Image"] = "Картинки",
-        ["Gutter"] = "Поля с номерами строк",
-        ["Mark"] = "Пометки",
-        ["Mention"] = "Упоминания и теги",
-        ["ColorCode"] = "Коды цветов",
-        ["Spoiler"] = "Спойлеры",
-        ["Card"] = "Карточки",
-        ["LinkCard"] = "Карточки",
-        ["VideoCard"] = "Карточки",
-        ["Toc"] = "Оглавление"
+        ["Paragraph"] = "Text",
+        ["Abbreviation"] = "Text",
+        ["Marked"] = "Text",
+        ["Heading"] = "Headings",
+        ["InlineCode"] = "InlineCode",
+        ["Kbd"] = "Kbd",
+        ["CodeBlock"] = "CodeBlock",
+        ["Quote"] = "Quote",
+        ["Callout"] = "Callout",
+        ["Details"] = "Details",
+        ["List"] = "List",
+        ["Task"] = "Task",
+        ["DefinitionList"] = "DefinitionList",
+        ["Table"] = "Table",
+        ["Figure"] = "Figure",
+        ["Footer"] = "Footer",
+        ["Footnote"] = "Footnote",
+        ["FootnoteTip"] = "Footnote",
+        ["HorizontalRule"] = "HorizontalRule",
+        ["Image"] = "Image",
+        ["Gutter"] = "Gutter",
+        ["Mark"] = "Mark",
+        ["Mention"] = "Mention",
+        ["ColorCode"] = "ColorCode",
+        ["Spoiler"] = "Spoiler",
+        ["Card"] = "Card",
+        ["LinkCard"] = "Card",
+        ["VideoCard"] = "Card",
+        ["Toc"] = "Toc"
     };
+
+    private static (CultureInfo Culture, PropertyDescriptorCollection Keys)? _cache;
+
+    /// <summary>Ключи темы с группами на текущем языке.</summary>
+    private static PropertyDescriptorCollection Keys
+    {
+        get
+        {
+            var culture = CultureInfo.CurrentUICulture;
+            if (_cache is not { } cache || !Equals(cache.Culture, culture))
+            {
+                cache = (culture, Collect());
+                _cache = cache;
+            }
+
+            return cache.Keys;
+        }
+    }
 
     public ThemeKeysProvider()
         : base(TypeDescriptor.GetProvider(typeof(object)))
@@ -83,11 +101,11 @@ public sealed class ThemeKeysProvider : TypeDescriptionProvider
            || type == typeof(CornerRadius)
            || type == typeof(GridLength);
 
-    /// <summary>Группа ключа по блоку из его имени; у заголовков уровень не в счёт.</summary>
+    /// <summary>Название группы ключа по блоку из его имени; у заголовков уровень не в счёт.</summary>
     private static string GroupOf(string key)
     {
         var block = key.Split('.')[1].TrimEnd('1', '2', '3', '4', '5', '6');
-        return Groups.GetValueOrDefault(block, Common);
+        return Localizer.Text($"CustomLook.Group.{Groups.GetValueOrDefault(block, Common)}");
     }
 
     /// <summary>Описание типа со свойствами-ключами.</summary>
@@ -98,8 +116,8 @@ public sealed class ThemeKeysProvider : TypeDescriptionProvider
         {
         }
 
-        public override PropertyDescriptorCollection GetProperties() => Keys.Value;
+        public override PropertyDescriptorCollection GetProperties() => Keys;
 
-        public override PropertyDescriptorCollection GetProperties(Attribute[]? attributes) => Keys.Value;
+        public override PropertyDescriptorCollection GetProperties(Attribute[]? attributes) => Keys;
     }
 }

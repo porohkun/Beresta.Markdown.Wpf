@@ -52,7 +52,7 @@ public partial class SetsView : UserControl
     {
         if (DataContext is SetsViewModel model && ShownLinks.Any(prefix => e.Href.StartsWith(prefix, StringComparison.Ordinal)))
         {
-            model.LastLink = "Нажата ссылка: " + e.Href;
+            model.LastHref = e.Href;
             e.Handled = true;
         }
     }

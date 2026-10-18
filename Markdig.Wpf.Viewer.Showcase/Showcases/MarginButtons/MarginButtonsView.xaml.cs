@@ -3,6 +3,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using Localization;
 using Selection;
 
 /// <summary>
@@ -18,6 +19,7 @@ public partial class MarginButtonsView : UserControl
     {
         InitializeComponent();
         Viewer.MarkLayers.Add(_bookmarks);
+        Localizer.Follow(this, PlaceButtons);
     }
 
     private void OnViewportChanged(object? sender, EventArgs e) => PlaceButtons();
@@ -40,7 +42,7 @@ public partial class MarginButtonsView : UserControl
                 Style = (Style)FindResource("LineButton"),
                 IsChecked = _marked.Contains(line),
                 Tag = line,
-                ToolTip = $"Строка {line + 1}"
+                ToolTip = string.Format(Localizer.Text("MarginButtons.Line"), line + 1)
             };
             button.Click += OnToggle;
             Canvas.SetLeft(button, 8);

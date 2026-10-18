@@ -12,29 +12,218 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="About.Header" xml:space="preserve">
+    <value>Что это за программа и уведомления о лицензиях сторонних библиотек, которые идут вместе с ней.</value>
+  </data>
   <data name="About.Title" xml:space="preserve">
     <value>О витрине</value>
+  </data>
+  <data name="Chat.Counter" xml:space="preserve">
+    <value>Сообщений: {0:N0}. Вьюеров создано: {1:N0}, в ленте сейчас: {2:N0}.</value>
+  </data>
+  <data name="Chat.Header" xml:space="preserve">
+    <value>Лента на десять тысяч сообщений в одной прокрутке: в каждом пузыре свой вьюер с набором ChatSet, вьюеры создаются только для видимых сообщений, а в сообщении на несколько экранов — только видимые блоки. Лента держится у последнего сообщения — StickyScroll.</value>
   </data>
   <data name="Chat.Title" xml:space="preserve">
     <value>Чат</value>
   </data>
+  <data name="Copying.Choice.Markdown" xml:space="preserve">
+    <value>Разметку обычным текстом</value>
+  </data>
+  <data name="Copying.Choice.Text" xml:space="preserve">
+    <value>Только текст</value>
+  </data>
+  <data name="Copying.Choice.Viewer" xml:space="preserve">
+    <value>Оба вида, как вьюер</value>
+  </data>
+  <data name="Copying.ClipboardBusy" xml:space="preserve">
+    <value>Буфер обмена занят другой программой</value>
+  </data>
+  <data name="Copying.Copy" xml:space="preserve">
+    <value>Копировать</value>
+  </data>
+  <data name="Copying.CtrlC" xml:space="preserve">
+    <value>Ctrl+C кладёт в буфер</value>
+  </data>
+  <data name="Copying.Formats" xml:space="preserve">
+    <value>Форматы: {0}</value>
+  </data>
+  <data name="Copying.Header" xml:space="preserve">
+    <value>Здесь копирование отдано приложению: у вьюера выключен IsCopyEnabled, и Ctrl+C уходит к привязке команды Copy во вкладке — она кладёт в буфер то, что выбрано справа. Кнопка у выделения стоит по GetRangeBounds и вызывает ту же команду.</value>
+  </data>
+  <data name="Copying.PlainText" xml:space="preserve">
+    <value>Обычный текст</value>
+  </data>
+  <data name="Copying.Refresh" xml:space="preserve">
+    <value>Обновить</value>
+  </data>
   <data name="Copying.Title" xml:space="preserve">
     <value>Копирование</value>
+  </data>
+  <data name="CustomLook.Custom" xml:space="preserve">
+    <value>Свой</value>
+  </data>
+  <data name="CustomLook.Font" xml:space="preserve">
+    <value>Шрифт</value>
+  </data>
+  <data name="CustomLook.Group.Callout" xml:space="preserve">
+    <value>Плашки</value>
+  </data>
+  <data name="CustomLook.Group.Card" xml:space="preserve">
+    <value>Карточки</value>
+  </data>
+  <data name="CustomLook.Group.CodeBlock" xml:space="preserve">
+    <value>Блок кода</value>
+  </data>
+  <data name="CustomLook.Group.ColorCode" xml:space="preserve">
+    <value>Коды цветов</value>
+  </data>
+  <data name="CustomLook.Group.Common" xml:space="preserve">
+    <value>Общие</value>
+  </data>
+  <data name="CustomLook.Group.DefinitionList" xml:space="preserve">
+    <value>Список определений</value>
+  </data>
+  <data name="CustomLook.Group.Details" xml:space="preserve">
+    <value>Сворачиваемый блок</value>
+  </data>
+  <data name="CustomLook.Group.Figure" xml:space="preserve">
+    <value>Фигура</value>
+  </data>
+  <data name="CustomLook.Group.Footer" xml:space="preserve">
+    <value>Подвал</value>
+  </data>
+  <data name="CustomLook.Group.Footnote" xml:space="preserve">
+    <value>Сноски</value>
+  </data>
+  <data name="CustomLook.Group.Gutter" xml:space="preserve">
+    <value>Поля с номерами строк</value>
+  </data>
+  <data name="CustomLook.Group.Headings" xml:space="preserve">
+    <value>Заголовки</value>
+  </data>
+  <data name="CustomLook.Group.HorizontalRule" xml:space="preserve">
+    <value>Разделитель</value>
+  </data>
+  <data name="CustomLook.Group.Image" xml:space="preserve">
+    <value>Картинки</value>
+  </data>
+  <data name="CustomLook.Group.InlineCode" xml:space="preserve">
+    <value>Код в строке</value>
+  </data>
+  <data name="CustomLook.Group.Kbd" xml:space="preserve">
+    <value>Клавиши</value>
+  </data>
+  <data name="CustomLook.Group.List" xml:space="preserve">
+    <value>Списки</value>
+  </data>
+  <data name="CustomLook.Group.Mark" xml:space="preserve">
+    <value>Пометки</value>
+  </data>
+  <data name="CustomLook.Group.Mention" xml:space="preserve">
+    <value>Упоминания и теги</value>
+  </data>
+  <data name="CustomLook.Group.Quote" xml:space="preserve">
+    <value>Цитата</value>
+  </data>
+  <data name="CustomLook.Group.Spoiler" xml:space="preserve">
+    <value>Спойлеры</value>
+  </data>
+  <data name="CustomLook.Group.Table" xml:space="preserve">
+    <value>Таблица</value>
+  </data>
+  <data name="CustomLook.Group.Task" xml:space="preserve">
+    <value>Задачи</value>
+  </data>
+  <data name="CustomLook.Group.Text" xml:space="preserve">
+    <value>Текст</value>
+  </data>
+  <data name="CustomLook.Group.Toc" xml:space="preserve">
+    <value>Оглавление</value>
+  </data>
+  <data name="CustomLook.Header" xml:space="preserve">
+    <value>Общий образец в своём виде: свой шрифт у вьюера и свой шаблон заголовка через MdStyleProvider. Справа — ключи темы вьюера: правка значения сразу видна в документе.</value>
+  </data>
+  <data name="CustomLook.Headings" xml:space="preserve">
+    <value>Заголовки</value>
+  </data>
+  <data name="CustomLook.Keys" xml:space="preserve">
+    <value>Ключи темы</value>
+  </data>
+  <data name="CustomLook.Reset" xml:space="preserve">
+    <value>Сбросить</value>
+  </data>
+  <data name="CustomLook.Standard" xml:space="preserve">
+    <value>Стандарт</value>
   </data>
   <data name="CustomLook.Title" xml:space="preserve">
     <value>Свой вид</value>
   </data>
+  <data name="Document.Back" xml:space="preserve">
+    <value>Назад (Shift+Enter)</value>
+  </data>
+  <data name="Document.Find" xml:space="preserve">
+    <value>Найти:</value>
+  </data>
+  <data name="Document.Found.None" xml:space="preserve">
+    <value>нет</value>
+  </data>
+  <data name="Document.Found.Position" xml:space="preserve">
+    <value>{0} из {1}</value>
+  </data>
+  <data name="Document.Header" xml:space="preserve">
+    <value>Общий образец: всё, что умеет вьюер. Поиск ведёт MdSearch, оглавление слева строится по TextMap.Headings: щелчок прокручивает к заголовку, а при прокрутке в оглавлении отмечается текущий.</value>
+  </data>
+  <data name="Document.Headings" xml:space="preserve">
+    <value>Заголовки</value>
+  </data>
+  <data name="Document.MatchCase" xml:space="preserve">
+    <value>Регистр</value>
+  </data>
+  <data name="Document.Next" xml:space="preserve">
+    <value>Дальше (Enter)</value>
+  </data>
+  <data name="Document.Selected" xml:space="preserve">
+    <value>Выделено знаков:</value>
+  </data>
   <data name="Document.Title" xml:space="preserve">
     <value>Документ</value>
+  </data>
+  <data name="Document.WholeWord" xml:space="preserve">
+    <value>Слово целиком</value>
+  </data>
+  <data name="Extensions.Header" xml:space="preserve">
+    <value>Свой синтаксис на MdExtension: заметка :::note со своим состоянием, упоминание @имя со своим разбором и чипы ::текст:: — оформленный текст, а не виджет. Каждое расширение подключено отдельно, строкой в Extensions вьюера; наборы — на витрине «Наборы».</value>
   </data>
   <data name="Extensions.Title" xml:space="preserve">
     <value>Расширения</value>
   </data>
+  <data name="Kit.Header" xml:space="preserve">
+    <value>Синтаксис других программ, который библиотека знает сама: каждое готовое расширение подключается одной строкой. Здесь подключены все.</value>
+  </data>
   <data name="Kit.Title" xml:space="preserve">
     <value>Готовые расширения</value>
   </data>
+  <data name="LargeDocument.Counter" xml:space="preserve">
+    <value>Блоков в документе: {0:N0}. Контролов создано: {1:N0}, из них видно: {2:N0}.</value>
+  </data>
+  <data name="LargeDocument.Header" xml:space="preserve">
+    <value>Тысячи блоков в одном вьюере — многократно повторённый lorem ipsum. Контролы создаются только для видимых блоков и небольшого запаса вокруг, остальным отводится место по оценённой высоте.</value>
+  </data>
   <data name="LargeDocument.Title" xml:space="preserve">
     <value>Большой документ</value>
+  </data>
+  <data name="Links.Clicked" xml:space="preserve">
+    <value>Нажата ссылка: {0}</value>
+  </data>
+  <data name="Links.Prompt" xml:space="preserve">
+    <value>Нажми вики-ссылку, тег или упоминание — здесь появится их цель.</value>
+  </data>
+  <data name="MarginButtons.Header" xml:space="preserve">
+    <value>Колонка приложения рядом с вьюером, в одной с ним прокрутке: кружки — обычные кнопки WPF у видимых строк, места для них даёт GetCoordinates. Щелчок по кружку делает строку закладкой — пометкой своего слоя.</value>
+  </data>
+  <data name="MarginButtons.Line" xml:space="preserve">
+    <value>Строка {0}</value>
   </data>
   <data name="MarginButtons.Title" xml:space="preserve">
     <value>Кнопки на полях</value>
@@ -48,14 +237,116 @@
   <data name="Options.SourceLineNumbers" xml:space="preserve">
     <value>Номера строк исходника</value>
   </data>
+  <data name="Preview.Header" xml:space="preserve">
+    <value>Редактор и предпросмотр рядом: каждая правка доходит до вьюера изменениями — неизменившиеся блоки остаются как были, а видимое не прыгает. Прокрутка общая — MdScrollSync между вьюером и редактором через MdTextBoxLines; по нему же стоят номера строк редактора.</value>
+  </data>
   <data name="Preview.Title" xml:space="preserve">
     <value>Предпросмотр</value>
+  </data>
+  <data name="Sets.Chat" xml:space="preserve">
+    <value>Чат</value>
+  </data>
+  <data name="Sets.Docusaurus" xml:space="preserve">
+    <value>Docusaurus и VuePress</value>
+  </data>
+  <data name="Sets.GitHub" xml:space="preserve">
+    <value>GitHub</value>
+  </data>
+  <data name="Sets.GitLab" xml:space="preserve">
+    <value>GitLab</value>
+  </data>
+  <data name="Sets.HackMD" xml:space="preserve">
+    <value>HackMD</value>
+  </data>
+  <data name="Sets.Header" xml:space="preserve">
+    <value>Набор — готовые расширения под синтаксис одной программы, подключённые одной строкой. Без флажка тот же документ показан без набора.</value>
+  </data>
+  <data name="Sets.MkDocs" xml:space="preserve">
+    <value>MkDocs</value>
+  </data>
+  <data name="Sets.Obsidian" xml:space="preserve">
+    <value>Obsidian</value>
+  </data>
+  <data name="Sets.Set" xml:space="preserve">
+    <value>Набор</value>
+  </data>
+  <data name="Sets.SetOn" xml:space="preserve">
+    <value>Набор подключён</value>
   </data>
   <data name="Sets.Title" xml:space="preserve">
     <value>Наборы</value>
   </data>
+  <data name="Streaming.Header" xml:space="preserve">
+    <value>Длинный ответ приходит кусками из фонового потока, а MdMarkdownStream отдаёт вьюеру текст пачками не чаще выбранного интервала. Прокрутка прилипает к краю, куда приходит новое, — StickyScroll.</value>
+  </data>
+  <data name="Streaming.Interval.100" xml:space="preserve">
+    <value>Раз в 100 мс</value>
+  </data>
+  <data name="Streaming.Interval.200" xml:space="preserve">
+    <value>Раз в 200 мс</value>
+  </data>
+  <data name="Streaming.Interval.50" xml:space="preserve">
+    <value>Раз в 50 мс</value>
+  </data>
+  <data name="Streaming.Interval.None" xml:space="preserve">
+    <value>Без задержки</value>
+  </data>
+  <data name="Streaming.Speed.AllAtOnce" xml:space="preserve">
+    <value>Всё разом</value>
+  </data>
+  <data name="Streaming.Speed.Fast" xml:space="preserve">
+    <value>Быстро</value>
+  </data>
+  <data name="Streaming.Speed.Model" xml:space="preserve">
+    <value>Как модель</value>
+  </data>
+  <data name="Streaming.Start" xml:space="preserve">
+    <value>Начать</value>
+  </data>
+  <data name="Streaming.Status" xml:space="preserve">
+    <value>Кусков пришло: {0:N0}, вьюер получил текст {1:N0} раз; прокрутка {2}.</value>
+  </data>
+  <data name="Streaming.Status.NotSticking" xml:space="preserve">
+    <value>не прилипает</value>
+  </data>
+  <data name="Streaming.Status.Stuck" xml:space="preserve">
+    <value>прилипла</value>
+  </data>
+  <data name="Streaming.Status.Unstuck" xml:space="preserve">
+    <value>отлипла</value>
+  </data>
+  <data name="Streaming.Stick.Bottom" xml:space="preserve">
+    <value>Прилипать к низу</value>
+  </data>
+  <data name="Streaming.Stick.None" xml:space="preserve">
+    <value>Не прилипать</value>
+  </data>
+  <data name="Streaming.Stick.Top" xml:space="preserve">
+    <value>Прилипать к верху</value>
+  </data>
+  <data name="Streaming.Stop" xml:space="preserve">
+    <value>Остановить</value>
+  </data>
   <data name="Streaming.Title" xml:space="preserve">
     <value>Поток</value>
+  </data>
+  <data name="Streaming.Unstick" xml:space="preserve">
+    <value>Отлипать при прокрутке</value>
+  </data>
+  <data name="TwoPanes.After" xml:space="preserve">
+    <value>Стало</value>
+  </data>
+  <data name="TwoPanes.Aligned" xml:space="preserve">
+    <value>Вровень</value>
+  </data>
+  <data name="TwoPanes.Before" xml:space="preserve">
+    <value>Было</value>
+  </data>
+  <data name="TwoPanes.Header" xml:space="preserve">
+    <value>Две версии статьи, как в диффе: каждая правка — одна фигура из подсветки строк, соединения и контура; вставка зелёная, удаление красное, изменение — переход от одного к другому. Внутри строк убранное подсвечено красным, дописанное — зелёным, а на месте пустого куска — вертикальная черта. Синхронную прокрутку ведёт MdScrollSync, вровень панели ставит MdPaneAligner.</value>
+  </data>
+  <data name="TwoPanes.Synced" xml:space="preserve">
+    <value>Синхронная прокрутка</value>
   </data>
   <data name="TwoPanes.Title" xml:space="preserve">
     <value>Две панели</value>

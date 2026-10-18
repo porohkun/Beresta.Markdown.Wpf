@@ -20,6 +20,7 @@ using MarkdigWpfViewer;
 using MarkdigWpfViewer.Scrolling;
 using MarkdigWpfViewer.Selection;
 using MarkdigWpfViewer.Showcase;
+using MarkdigWpfViewer.Showcase.Localization;
 using MarkdigWpfViewer.Showcase.Showcases.Copying;
 using MarkdigWpfViewer.Showcase.Showcases.CustomLook;
 using MarkdigWpfViewer.Showcase.Showcases.Sets;
@@ -110,6 +111,18 @@ var thread = new Thread(() =>
             case "wait":
                 Pump(int.Parse(value));
                 break;
+            case "cyrillic":
+            {
+                var found = Descendants<TextBlock>(window)
+                    .Where(text => text.IsVisible && !InsideViewer(text) && text.Text.Any(IsCyrillic))
+                    .Select(text => text.Text)
+                    .Distinct()
+                    .ToList();
+                Console.WriteLine(found.Count == 0
+                    ? "кириллицы вне вьюеров нет"
+                    : $"кириллица вне вьюеров: {string.Join(" | ", found)}");
+                break;
+            }
 
             // Прокрутка
             case "scroll":
@@ -205,7 +218,7 @@ var thread = new Thread(() =>
             {
                 var copying = (CopyingViewModel)model.Selected;
                 copying.Choice = copying.Choices[int.Parse(value)];
-                Console.WriteLine($"выбрано: {copying.Choice.Title}");
+                Console.WriteLine($"выбрано: {Localizer.Text(copying.Choice.TitleKey)}");
                 break;
             }
             case "activate":
@@ -391,6 +404,21 @@ static List<ScrollViewer> Scrolls(Window window)
     => Descendants<ScrollViewer>(window)
         .Where(scroll => scroll.IsVisible && Descendants<MarkdownViewer>(scroll).Any())
         .ToList();
+
+static bool InsideViewer(DependencyObject element)
+{
+    for (var node = VisualTreeHelper.GetParent(element); node is not null; node = VisualTreeHelper.GetParent(node))
+    {
+        if (node is MarkdownViewer)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool IsCyrillic(char letter) => letter is >= 'А' and <= 'я' or 'Ё' or 'ё';
 
 static FrameworkElement Root(Window window) => (FrameworkElement)VisualTreeHelper.GetChild(window, 0);
 

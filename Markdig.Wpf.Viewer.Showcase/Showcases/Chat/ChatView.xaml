@@ -1,6 +1,7 @@
 ﻿<UserControl x:Class="MarkdigWpfViewer.Showcase.Showcases.Chat.ChatView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:MarkdigWpfViewer.Showcase.Localization"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
@@ -18,7 +19,7 @@
         <Border Style="{StaticResource ShowcaseHeader}">
             <StackPanel>
                 <TextBlock TextWrapping="Wrap"
-                           Text="Лента на десять тысяч сообщений в одной прокрутке: в каждом пузыре свой вьюер с набором ChatSet, вьюеры создаются только для видимых сообщений, а в сообщении на несколько экранов — только видимые блоки. Лента держится у последнего сообщения — StickyScroll." />
+                           Text="{loc:Text Chat.Header}" />
 
                 <!-- Сколько вьюеров создано и сколько стоит в ленте сейчас -->
                 <TextBlock x:Name="Counter"

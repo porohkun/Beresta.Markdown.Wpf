@@ -1,6 +1,7 @@
 ﻿<UserControl x:Class="MarkdigWpfViewer.Showcase.Showcases.TwoPanes.TwoPanesView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:MarkdigWpfViewer.Showcase.Localization"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:hc="https://handyorg.github.io/handycontrol"
@@ -14,11 +15,11 @@
         <Border Style="{StaticResource ShowcaseHeader}">
             <StackPanel>
                 <TextBlock TextWrapping="Wrap"
-                           Text="Две версии статьи, как в диффе: каждая правка — одна фигура из подсветки строк, соединения и контура; вставка зелёная, удаление красное, изменение — переход от одного к другому. Внутри строк убранное подсвечено красным, дописанное — зелёным, а на месте пустого куска — вертикальная черта. Синхронную прокрутку ведёт MdScrollSync, вровень панели ставит MdPaneAligner." />
+                           Text="{loc:Text TwoPanes.Header}" />
                 <hc:ButtonGroup HorizontalAlignment="Left"
                                 Margin="0,8,0,0">
-                    <RadioButton Content="Синхронная прокрутка" IsChecked="True" />
-                    <RadioButton Content="Вровень" IsChecked="{Binding IsAligned}" />
+                    <RadioButton Content="{loc:Text TwoPanes.Synced}" IsChecked="True" />
+                    <RadioButton Content="{loc:Text TwoPanes.Aligned}" IsChecked="{Binding IsAligned}" />
                 </hc:ButtonGroup>
             </StackPanel>
         </Border>
@@ -34,8 +35,8 @@
                 <RowDefinition />
             </Grid.RowDefinitions>
 
-            <TextBlock Text="Было" Margin="24,8,24,0" FontWeight="SemiBold" />
-            <TextBlock Grid.Column="2" Text="Стало" Margin="24,8,24,0" FontWeight="SemiBold" />
+            <TextBlock Text="{loc:Text TwoPanes.Before}" Margin="24,8,24,0" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="2" Text="{loc:Text TwoPanes.After}" Margin="24,8,24,0" FontWeight="SemiBold" />
 
             <!-- Синхронная прокрутка: у панелей свои прокрутки, поверх них — правки одной фигурой -->
             <Grid Grid.Row="1" Grid.ColumnSpan="3">

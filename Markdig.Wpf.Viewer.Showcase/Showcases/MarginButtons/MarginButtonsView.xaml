@@ -1,6 +1,7 @@
 ﻿<UserControl x:Class="MarkdigWpfViewer.Showcase.Showcases.MarginButtons.MarginButtonsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:MarkdigWpfViewer.Showcase.Localization"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
@@ -37,7 +38,7 @@
     <DockPanel>
         <Border Style="{StaticResource ShowcaseHeader}">
             <TextBlock TextWrapping="Wrap"
-                       Text="Колонка приложения рядом с вьюером, в одной с ним прокрутке: кружки — обычные кнопки WPF у видимых строк, места для них даёт GetCoordinates. Щелчок по кружку делает строку закладкой — пометкой своего слоя." />
+                       Text="{loc:Text MarginButtons.Header}" />
         </Border>
 
         <ScrollViewer>

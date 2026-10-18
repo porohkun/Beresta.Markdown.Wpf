@@ -22,6 +22,13 @@ public static class Localizer
     /// <summary>Строка по ключу на текущем языке; ключа нет — ключ в скобках.</summary>
     public static string Text(string key) => Strings.GetString(key, CultureInfo.CurrentUICulture) ?? $"[{key}]";
 
+    /// <summary>Пока элемент загружен, вызывает <paramref name="refresh"/> при смене языка.</summary>
+    public static void Follow(FrameworkElement element, Action refresh)
+    {
+        element.Loaded += (_, _) => Changed += refresh;
+        element.Unloaded += (_, _) => Changed -= refresh;
+    }
+
     /// <summary>Переключает язык строк витрины, контролов HandyControl и подписей вьюера.</summary>
     public static void Apply(bool russian)
     {

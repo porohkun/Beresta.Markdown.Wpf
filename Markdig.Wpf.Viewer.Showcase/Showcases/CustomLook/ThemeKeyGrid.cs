@@ -4,8 +4,9 @@ using System.Windows;
 using System.Windows.Controls;
 using HandyControl.Controls;
 using HandyControl.Data;
+using Localization;
 
-/// <summary>Сетка свойств HandyControl с редакторами ключей темы и поиском по имени ключа без учёта регистра.</summary>
+/// <summary>Сетка свойств HandyControl с редакторами ключей темы, поиском по имени ключа без учёта регистра и группами на текущем языке.</summary>
 public sealed class ThemeKeyGrid : PropertyGrid
 {
     private ItemsControl? _items;
@@ -15,6 +16,7 @@ public sealed class ThemeKeyGrid : PropertyGrid
     {
         // BYDESIGN: неявный стиль HandyControl ищется по типу контрола, и наследник его сам не находит.
         SetResourceReference(StyleProperty, typeof(PropertyGrid));
+        Localizer.Follow(this, Rebuild);
     }
 
     public override PropertyResolver PropertyResolver { get; } = new ThemeKeyResolver();
@@ -44,6 +46,14 @@ public sealed class ThemeKeyGrid : PropertyGrid
     // BYDESIGN: поиск сетки сравнивает имена в нижнем регистре с запросом как есть, и запрос с заглавной
     // буквой ничего не находит; после её поиска строки показываются заново.
     private void OnSearchStarted(object? sender, FunctionEventArgs<string> e) => Filter(e.Info);
+
+    /// <summary>Строит строки сетки заново — с группами на текущем языке.</summary>
+    private void Rebuild()
+    {
+        var selected = SelectedObject;
+        SetCurrentValue(SelectedObjectProperty, null);
+        SetCurrentValue(SelectedObjectProperty, selected);
+    }
 
     /// <summary>Показывает ключи, в имени которых есть запрос, остальные прячет.</summary>
     private void Filter(string? query)

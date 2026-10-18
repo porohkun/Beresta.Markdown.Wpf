@@ -1,24 +1,30 @@
 ﻿namespace MarkdigWpfViewer.Showcase.Showcases.Copying;
 
+using Localization;
+
 /// <summary>Копирование, отданное приложению: что класть в буфер, выбирается здесь, а рядом видно, что легло.</summary>
 public sealed class CopyingViewModel : ShowcaseViewModel
 {
     private const int Attempts = 10;
     private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(50);
 
+    private IReadOnlyList<string>? _formats;
+    private bool _busy;
+
     public CopyingViewModel(ShowcaseOptions options)
         : base(options)
     {
         Choice = Choices[0];
+        Localizer.Changed += () => RaisePropertyChanged(nameof(Formats));
     }
 
     public string Text => Samples.Document;
 
     public IReadOnlyList<CopyChoice> Choices { get; } =
     [
-        new(CopyKind.Viewer, "Оба вида, как вьюер"),
-        new(CopyKind.Text, "Только текст"),
-        new(CopyKind.Markdown, "Разметку обычным текстом")
+        new(CopyKind.Viewer, "Copying.Choice.Viewer"),
+        new(CopyKind.Text, "Copying.Choice.Text"),
+        new(CopyKind.Markdown, "Copying.Choice.Markdown")
     ];
 
     /// <summary>Что кладёт в буфер Ctrl+C.</summary>
@@ -28,12 +34,13 @@ public sealed class CopyingViewModel : ShowcaseViewModel
         set => Set(ref field, value);
     }
 
-    /// <summary>Форматы, которые сейчас лежат в буфере.</summary>
-    public string Formats
+    /// <summary>Форматы, которые сейчас лежат в буфере, на текущем языке; буфер занят — об этом.</summary>
+    public string Formats => _formats switch
     {
-        get;
-        private set => Set(ref field, value);
-    } = string.Empty;
+        { } formats => string.Format(Localizer.Text("Copying.Formats"), string.Join(", ", formats)),
+        null when _busy => Localizer.Text("Copying.ClipboardBusy"),
+        null => string.Empty
+    };
 
     /// <summary>Обычный текст из буфера.</summary>
     public string PlainText
@@ -56,7 +63,7 @@ public sealed class CopyingViewModel : ShowcaseViewModel
         {
             if (ClipboardSnapshot.TryRead() is { } snapshot)
             {
-                Formats = $"Форматы: {string.Join(", ", snapshot.Formats)}";
+                SetFormats(snapshot.Formats, busy: false);
                 PlainText = snapshot.Text;
                 Markdown = snapshot.Markdown;
                 return;
@@ -67,6 +74,14 @@ public sealed class CopyingViewModel : ShowcaseViewModel
             await Task.Delay(RetryDelay);
         }
 
-        Formats = "Буфер обмена занят другой программой";
+        SetFormats(null, busy: true);
+    }
+
+    /// <summary>Запоминает форматы буфера; прочитать его не удалось — <paramref name="busy"/>.</summary>
+    private void SetFormats(IReadOnlyList<string>? formats, bool busy)
+    {
+        _formats = formats;
+        _busy = busy;
+        RaisePropertyChanged(nameof(Formats));
     }
 }

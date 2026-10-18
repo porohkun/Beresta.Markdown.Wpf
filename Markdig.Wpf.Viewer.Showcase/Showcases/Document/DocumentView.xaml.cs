@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Localization;
 using Search;
 using Selection;
 
@@ -18,6 +19,7 @@ public partial class DocumentView : UserControl
         InitializeComponent();
         _search = new(Viewer);
         _search.PropertyChanged += OnSearchPropertyChanged;
+        Localizer.Follow(this, UpdateCounter);
         SearchBar.DataContext = _search;
         UpdateCounter();
     }
@@ -72,7 +74,7 @@ public partial class DocumentView : UserControl
     private void UpdateCounter()
     {
         Counter.Text = _search.Query.Length == 0 ? string.Empty
-            : _search.Count == 0 ? "нет"
-            : $"{_search.CurrentIndex + 1} из {_search.Count}";
+            : _search.Count == 0 ? Localizer.Text("Document.Found.None")
+            : string.Format(Localizer.Text("Document.Found.Position"), _search.CurrentIndex + 1, _search.Count);
     }
 }

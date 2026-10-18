@@ -1,6 +1,7 @@
 ﻿<UserControl x:Class="MarkdigWpfViewer.Showcase.Showcases.LargeDocument.LargeDocumentView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:MarkdigWpfViewer.Showcase.Localization"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
@@ -11,7 +12,7 @@
         <Border Style="{StaticResource ShowcaseHeader}">
             <StackPanel>
                 <TextBlock TextWrapping="Wrap"
-                           Text="Тысячи блоков в одном вьюере — многократно повторённый lorem ipsum. Контролы создаются только для видимых блоков и небольшого запаса вокруг, остальным отводится место по оценённой высоте." />
+                           Text="{loc:Text LargeDocument.Header}" />
 
                 <!-- Сколько блоков в документе, сколько контролов создано и сколько из них видно -->
                 <TextBlock x:Name="Counter"

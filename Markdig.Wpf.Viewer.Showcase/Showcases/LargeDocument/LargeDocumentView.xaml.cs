@@ -3,28 +3,30 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using Localization;
 using Presenters;
 using ViewModels;
 
 /// <summary>Большой документ в общей прокрутке; сверху — сколько в нём блоков, сколько контролов создано и сколько видно.</summary>
 public partial class LargeDocumentView : UserControl
 {
-    private static readonly CultureInfo Russian = CultureInfo.GetCultureInfo("ru-RU");
-
     public LargeDocumentView()
     {
         InitializeComponent();
+        Localizer.Follow(this, UpdateCounter);
     }
 
-    private void OnViewportChanged(object? sender, EventArgs e)
+    private void OnViewportChanged(object? sender, EventArgs e) => UpdateCounter();
+
+    private void UpdateCounter()
     {
         var created = Visuals.FirstDescendant<MdBlockPanel>(Viewer)?.Children
             .OfType<FrameworkElement>()
             .Where(container => container.DataContext is not BlankLineVm)
             .ToList() ?? [];
         Counter.Text = string.Format(
-            Russian,
-            "Блоков в документе: {0:N0}. Контролов создано: {1:N0}, из них видно: {2:N0}.",
+            CultureInfo.CurrentUICulture,
+            Localizer.Text("LargeDocument.Counter"),
             Viewer.Items.Cast<object>().Count(item => item is not BlankLineVm),
             created.Count,
             created.Count(IsInView));

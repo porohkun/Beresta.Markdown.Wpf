@@ -19,7 +19,7 @@ public partial class KitView : UserControl
     {
         if (DataContext is KitViewModel model && ShownLinks.Any(prefix => e.Href.StartsWith(prefix, StringComparison.Ordinal)))
         {
-            model.LastLink = "Нажата ссылка: " + e.Href;
+            model.LastHref = e.Href;
             e.Handled = true;
         }
     }

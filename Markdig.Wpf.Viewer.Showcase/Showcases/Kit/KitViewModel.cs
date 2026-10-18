@@ -1,19 +1,27 @@
 ﻿namespace MarkdigWpfViewer.Showcase.Showcases.Kit;
 
+using Localization;
+
 /// <summary>Готовые расширения библиотеки: синтаксис других программ, подключённый одной строкой.</summary>
 public sealed class KitViewModel : ShowcaseViewModel
 {
     public KitViewModel(ShowcaseOptions options)
         : base(options)
     {
+        Localizer.Changed += () => RaisePropertyChanged(nameof(LastLink));
     }
 
     public string Text { get; } = Samples.Near<KitViewModel>("Kit.md");
 
-    /// <summary>Последняя нажатая ссылка своей схемы: <c>wiki:</c>, <c>tag:</c>, <c>mention:</c>.</summary>
-    public string LastLink
+    /// <summary>Цель последней нажатой ссылки своей схемы: <c>wiki:</c>, <c>tag:</c>, <c>mention:</c>; не нажимали — <c>null</c>.</summary>
+    public string? LastHref
     {
         get;
-        set => Set(ref field, value);
-    } = "Нажми вики-ссылку, тег или упоминание — здесь появится их цель.";
+        set => Set(ref field, value, () => RaisePropertyChanged(nameof(LastLink)));
+    }
+
+    /// <summary>Подсказка нажать ссылку либо её цель — на текущем языке.</summary>
+    public string LastLink => LastHref is { } href
+        ? string.Format(Localizer.Text("Links.Clicked"), href)
+        : Localizer.Text("Links.Prompt");
 }

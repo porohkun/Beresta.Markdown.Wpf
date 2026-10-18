@@ -12,29 +12,218 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="About.Header" xml:space="preserve">
+    <value>What this program is, and the license notices of the third-party libraries that come with it.</value>
+  </data>
   <data name="About.Title" xml:space="preserve">
     <value>About</value>
+  </data>
+  <data name="Chat.Counter" xml:space="preserve">
+    <value>Messages: {0:N0}. Viewers created: {1:N0}, in the feed now: {2:N0}.</value>
+  </data>
+  <data name="Chat.Header" xml:space="preserve">
+    <value>A feed of ten thousand messages in one scroll: every bubble is a viewer of its own with the ChatSet set; viewers are created only for the visible messages, and in a message several screens long only for the visible blocks. The feed holds on to the last message — StickyScroll.</value>
   </data>
   <data name="Chat.Title" xml:space="preserve">
     <value>Chat</value>
   </data>
+  <data name="Copying.Choice.Markdown" xml:space="preserve">
+    <value>Markdown as plain text</value>
+  </data>
+  <data name="Copying.Choice.Text" xml:space="preserve">
+    <value>Text only</value>
+  </data>
+  <data name="Copying.Choice.Viewer" xml:space="preserve">
+    <value>Both formats, as the viewer does</value>
+  </data>
+  <data name="Copying.ClipboardBusy" xml:space="preserve">
+    <value>The clipboard is busy with another program</value>
+  </data>
+  <data name="Copying.Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Copying.CtrlC" xml:space="preserve">
+    <value>Ctrl+C copies</value>
+  </data>
+  <data name="Copying.Formats" xml:space="preserve">
+    <value>Formats: {0}</value>
+  </data>
+  <data name="Copying.Header" xml:space="preserve">
+    <value>Here copying is left to the application: the viewer has IsCopyEnabled turned off, and Ctrl+C goes to the binding of the Copy command in the tab — it puts on the clipboard what is chosen on the right. The button at the selection is placed with GetRangeBounds and calls the same command.</value>
+  </data>
+  <data name="Copying.PlainText" xml:space="preserve">
+    <value>Plain text</value>
+  </data>
+  <data name="Copying.Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
   <data name="Copying.Title" xml:space="preserve">
     <value>Copying</value>
+  </data>
+  <data name="CustomLook.Custom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="CustomLook.Font" xml:space="preserve">
+    <value>Font</value>
+  </data>
+  <data name="CustomLook.Group.Callout" xml:space="preserve">
+    <value>Callouts</value>
+  </data>
+  <data name="CustomLook.Group.Card" xml:space="preserve">
+    <value>Cards</value>
+  </data>
+  <data name="CustomLook.Group.CodeBlock" xml:space="preserve">
+    <value>Code block</value>
+  </data>
+  <data name="CustomLook.Group.ColorCode" xml:space="preserve">
+    <value>Color codes</value>
+  </data>
+  <data name="CustomLook.Group.Common" xml:space="preserve">
+    <value>Common</value>
+  </data>
+  <data name="CustomLook.Group.DefinitionList" xml:space="preserve">
+    <value>Definition list</value>
+  </data>
+  <data name="CustomLook.Group.Details" xml:space="preserve">
+    <value>Collapsible block</value>
+  </data>
+  <data name="CustomLook.Group.Figure" xml:space="preserve">
+    <value>Figure</value>
+  </data>
+  <data name="CustomLook.Group.Footer" xml:space="preserve">
+    <value>Footer</value>
+  </data>
+  <data name="CustomLook.Group.Footnote" xml:space="preserve">
+    <value>Footnotes</value>
+  </data>
+  <data name="CustomLook.Group.Gutter" xml:space="preserve">
+    <value>Line number margin</value>
+  </data>
+  <data name="CustomLook.Group.Headings" xml:space="preserve">
+    <value>Headings</value>
+  </data>
+  <data name="CustomLook.Group.HorizontalRule" xml:space="preserve">
+    <value>Horizontal rule</value>
+  </data>
+  <data name="CustomLook.Group.Image" xml:space="preserve">
+    <value>Images</value>
+  </data>
+  <data name="CustomLook.Group.InlineCode" xml:space="preserve">
+    <value>Inline code</value>
+  </data>
+  <data name="CustomLook.Group.Kbd" xml:space="preserve">
+    <value>Keyboard keys</value>
+  </data>
+  <data name="CustomLook.Group.List" xml:space="preserve">
+    <value>Lists</value>
+  </data>
+  <data name="CustomLook.Group.Mark" xml:space="preserve">
+    <value>Marks</value>
+  </data>
+  <data name="CustomLook.Group.Mention" xml:space="preserve">
+    <value>Mentions and tags</value>
+  </data>
+  <data name="CustomLook.Group.Quote" xml:space="preserve">
+    <value>Quote</value>
+  </data>
+  <data name="CustomLook.Group.Spoiler" xml:space="preserve">
+    <value>Spoilers</value>
+  </data>
+  <data name="CustomLook.Group.Table" xml:space="preserve">
+    <value>Table</value>
+  </data>
+  <data name="CustomLook.Group.Task" xml:space="preserve">
+    <value>Tasks</value>
+  </data>
+  <data name="CustomLook.Group.Text" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="CustomLook.Group.Toc" xml:space="preserve">
+    <value>Table of contents</value>
+  </data>
+  <data name="CustomLook.Header" xml:space="preserve">
+    <value>The shared sample in a look of its own: a font of its own in the viewer and a heading template of its own through MdStyleProvider. On the right are the keys of the viewer theme: a changed value shows in the document at once.</value>
+  </data>
+  <data name="CustomLook.Headings" xml:space="preserve">
+    <value>Headings</value>
+  </data>
+  <data name="CustomLook.Keys" xml:space="preserve">
+    <value>Theme keys</value>
+  </data>
+  <data name="CustomLook.Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="CustomLook.Standard" xml:space="preserve">
+    <value>Standard</value>
   </data>
   <data name="CustomLook.Title" xml:space="preserve">
     <value>Custom look</value>
   </data>
+  <data name="Document.Back" xml:space="preserve">
+    <value>Back (Shift+Enter)</value>
+  </data>
+  <data name="Document.Find" xml:space="preserve">
+    <value>Find:</value>
+  </data>
+  <data name="Document.Found.None" xml:space="preserve">
+    <value>none</value>
+  </data>
+  <data name="Document.Found.Position" xml:space="preserve">
+    <value>{0} of {1}</value>
+  </data>
+  <data name="Document.Header" xml:space="preserve">
+    <value>The shared sample: everything the viewer can do. MdSearch runs the search, the table of contents on the left is built from TextMap.Headings: a click scrolls to the heading, and while you scroll the current one is marked in the table of contents.</value>
+  </data>
+  <data name="Document.Headings" xml:space="preserve">
+    <value>Headings</value>
+  </data>
+  <data name="Document.MatchCase" xml:space="preserve">
+    <value>Match case</value>
+  </data>
+  <data name="Document.Next" xml:space="preserve">
+    <value>Next (Enter)</value>
+  </data>
+  <data name="Document.Selected" xml:space="preserve">
+    <value>Characters selected:</value>
+  </data>
   <data name="Document.Title" xml:space="preserve">
     <value>Document</value>
+  </data>
+  <data name="Document.WholeWord" xml:space="preserve">
+    <value>Whole word</value>
+  </data>
+  <data name="Extensions.Header" xml:space="preserve">
+    <value>Your own syntax on MdExtension: a :::note note with its own state, an @name mention with its own parsing, and ::text:: chips — styled text, not a widget. Each extension is connected on its own, as a line in Extensions of the viewer; sets are in the Sets showcase.</value>
   </data>
   <data name="Extensions.Title" xml:space="preserve">
     <value>Extensions</value>
   </data>
+  <data name="Kit.Header" xml:space="preserve">
+    <value>Syntax of other programs that the library knows by itself: each ready-made extension is connected with one line. All of them are connected here.</value>
+  </data>
   <data name="Kit.Title" xml:space="preserve">
     <value>Ready-made extensions</value>
   </data>
+  <data name="LargeDocument.Counter" xml:space="preserve">
+    <value>Blocks in the document: {0:N0}. Controls created: {1:N0}, of them visible: {2:N0}.</value>
+  </data>
+  <data name="LargeDocument.Header" xml:space="preserve">
+    <value>Thousands of blocks in one viewer — lorem ipsum repeated many times. Controls are created only for the visible blocks and a small reserve around them; the rest get room by an estimated height.</value>
+  </data>
   <data name="LargeDocument.Title" xml:space="preserve">
     <value>Large document</value>
+  </data>
+  <data name="Links.Clicked" xml:space="preserve">
+    <value>Link clicked: {0}</value>
+  </data>
+  <data name="Links.Prompt" xml:space="preserve">
+    <value>Click a wiki link, a tag or a mention — its target shows up here.</value>
+  </data>
+  <data name="MarginButtons.Header" xml:space="preserve">
+    <value>An application column next to the viewer, in the same scroll: the circles are ordinary WPF buttons at the visible lines, and GetCoordinates gives their places. A click on a circle makes the line a bookmark — a mark of its own layer.</value>
+  </data>
+  <data name="MarginButtons.Line" xml:space="preserve">
+    <value>Line {0}</value>
   </data>
   <data name="MarginButtons.Title" xml:space="preserve">
     <value>Margin buttons</value>
@@ -48,14 +237,116 @@
   <data name="Options.SourceLineNumbers" xml:space="preserve">
     <value>Source line numbers</value>
   </data>
+  <data name="Preview.Header" xml:space="preserve">
+    <value>An editor and a preview side by side: every edit reaches the viewer as changes — unchanged blocks stay as they were, and the visible part does not jump. The scroll is shared — MdScrollSync between the viewer and the editor through MdTextBoxLines; the line numbers of the editor follow it too.</value>
+  </data>
   <data name="Preview.Title" xml:space="preserve">
     <value>Preview</value>
+  </data>
+  <data name="Sets.Chat" xml:space="preserve">
+    <value>Chat</value>
+  </data>
+  <data name="Sets.Docusaurus" xml:space="preserve">
+    <value>Docusaurus and VuePress</value>
+  </data>
+  <data name="Sets.GitHub" xml:space="preserve">
+    <value>GitHub</value>
+  </data>
+  <data name="Sets.GitLab" xml:space="preserve">
+    <value>GitLab</value>
+  </data>
+  <data name="Sets.HackMD" xml:space="preserve">
+    <value>HackMD</value>
+  </data>
+  <data name="Sets.Header" xml:space="preserve">
+    <value>A set is the ready-made extensions for the syntax of one program, connected with one line. Without the check box the same document is shown without the set.</value>
+  </data>
+  <data name="Sets.MkDocs" xml:space="preserve">
+    <value>MkDocs</value>
+  </data>
+  <data name="Sets.Obsidian" xml:space="preserve">
+    <value>Obsidian</value>
+  </data>
+  <data name="Sets.Set" xml:space="preserve">
+    <value>Set</value>
+  </data>
+  <data name="Sets.SetOn" xml:space="preserve">
+    <value>Set connected</value>
   </data>
   <data name="Sets.Title" xml:space="preserve">
     <value>Sets</value>
   </data>
+  <data name="Streaming.Header" xml:space="preserve">
+    <value>A long answer arrives in pieces from a background thread, and MdMarkdownStream hands the text to the viewer in batches no more often than the chosen interval. The scroll sticks to the edge where the new text arrives — StickyScroll.</value>
+  </data>
+  <data name="Streaming.Interval.100" xml:space="preserve">
+    <value>Every 100 ms</value>
+  </data>
+  <data name="Streaming.Interval.200" xml:space="preserve">
+    <value>Every 200 ms</value>
+  </data>
+  <data name="Streaming.Interval.50" xml:space="preserve">
+    <value>Every 50 ms</value>
+  </data>
+  <data name="Streaming.Interval.None" xml:space="preserve">
+    <value>No delay</value>
+  </data>
+  <data name="Streaming.Speed.AllAtOnce" xml:space="preserve">
+    <value>All at once</value>
+  </data>
+  <data name="Streaming.Speed.Fast" xml:space="preserve">
+    <value>Fast</value>
+  </data>
+  <data name="Streaming.Speed.Model" xml:space="preserve">
+    <value>Like a model</value>
+  </data>
+  <data name="Streaming.Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Streaming.Status" xml:space="preserve">
+    <value>Pieces received: {0:N0}, the viewer got text {1:N0} times; the scroll {2}.</value>
+  </data>
+  <data name="Streaming.Status.NotSticking" xml:space="preserve">
+    <value>does not stick</value>
+  </data>
+  <data name="Streaming.Status.Stuck" xml:space="preserve">
+    <value>is stuck</value>
+  </data>
+  <data name="Streaming.Status.Unstuck" xml:space="preserve">
+    <value>came unstuck</value>
+  </data>
+  <data name="Streaming.Stick.Bottom" xml:space="preserve">
+    <value>Stick to the bottom</value>
+  </data>
+  <data name="Streaming.Stick.None" xml:space="preserve">
+    <value>Don't stick</value>
+  </data>
+  <data name="Streaming.Stick.Top" xml:space="preserve">
+    <value>Stick to the top</value>
+  </data>
+  <data name="Streaming.Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
   <data name="Streaming.Title" xml:space="preserve">
     <value>Streaming</value>
+  </data>
+  <data name="Streaming.Unstick" xml:space="preserve">
+    <value>Unstick on scroll</value>
+  </data>
+  <data name="TwoPanes.After" xml:space="preserve">
+    <value>After</value>
+  </data>
+  <data name="TwoPanes.Aligned" xml:space="preserve">
+    <value>Aligned</value>
+  </data>
+  <data name="TwoPanes.Before" xml:space="preserve">
+    <value>Before</value>
+  </data>
+  <data name="TwoPanes.Header" xml:space="preserve">
+    <value>Two versions of an article, as in a diff: each edit is one figure of line highlights, a connection and an outline; an insertion is green, a deletion red, a change goes from one to the other. Inside lines the removed part is highlighted in red, the added part in green, and an empty piece is marked by a vertical bar. MdScrollSync runs the synchronized scrolling, MdPaneAligner lines the panes up.</value>
+  </data>
+  <data name="TwoPanes.Synced" xml:space="preserve">
+    <value>Synchronized scrolling</value>
   </data>
   <data name="TwoPanes.Title" xml:space="preserve">
     <value>Two panes</value>

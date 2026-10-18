@@ -6,14 +6,13 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using Localization;
 using MarkdigWpfViewer.Behaviors;
 using MarkdigWpfViewer.Streaming;
 
 /// <summary>Поддельная модель в фоновом потоке отдаёт ответ кусками, вьюер показывает его пачками.</summary>
 public partial class StreamingView : UserControl
 {
-    private static readonly CultureInfo Russian = CultureInfo.GetCultureInfo("ru-RU");
-
     private static readonly DependencyPropertyDescriptor MarkdownDescriptor =
         DependencyPropertyDescriptor.FromProperty(MarkdownViewer.MarkdownProperty, typeof(MarkdownViewer));
 
@@ -32,6 +31,7 @@ public partial class StreamingView : UserControl
         _statusTimer.Tick += (_, _) => UpdateStatus();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
+        Localizer.Follow(this, UpdateStatus);
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -125,11 +125,11 @@ public partial class StreamingView : UserControl
     private void UpdateStatus()
     {
         var edge = StickyScroll.GetEdge(Scroll) == StickyEdge.None
-            ? "не прилипает"
-            : StickyScroll.GetIsStuck(Scroll) ? "прилипла" : "отлипла";
+            ? Localizer.Text("Streaming.Status.NotSticking")
+            : Localizer.Text(StickyScroll.GetIsStuck(Scroll) ? "Streaming.Status.Stuck" : "Streaming.Status.Unstuck");
         Status.Text = string.Format(
-            Russian,
-            "Кусков пришло: {0:N0}, вьюер получил текст {1:N0} раз; прокрутка {2}.",
+            CultureInfo.CurrentUICulture,
+            Localizer.Text("Streaming.Status"),
             Volatile.Read(ref _chunks),
             _updates,
             edge);

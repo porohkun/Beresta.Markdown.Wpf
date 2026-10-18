@@ -1,6 +1,7 @@
 ﻿<UserControl x:Class="MarkdigWpfViewer.Showcase.Showcases.Kit.KitView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:MarkdigWpfViewer.Showcase.Localization"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mdv="clr-namespace:MarkdigWpfViewer;assembly=Markdig.Wpf.Viewer"
@@ -13,7 +14,7 @@
         <Border Style="{StaticResource ShowcaseHeader}">
             <StackPanel>
                 <TextBlock TextWrapping="Wrap"
-                           Text="Синтаксис других программ, который библиотека знает сама: каждое готовое расширение подключается одной строкой. Здесь подключены все." />
+                           Text="{loc:Text Kit.Header}" />
 
                 <!-- Свои схемы ссылок и адреса-примеры витрина не открывает, а показывает цель -->
                 <TextBlock Margin="0,6,0,0"

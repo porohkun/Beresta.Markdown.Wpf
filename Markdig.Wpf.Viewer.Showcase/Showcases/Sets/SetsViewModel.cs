@@ -1,5 +1,6 @@
 ﻿namespace MarkdigWpfViewer.Showcase.Showcases.Sets;
 
+using Localization;
 using MarkdigWpfViewer.Kit;
 
 /// <summary>Наборы готовых расширений: документ в синтаксисе каждой программы и её набор.</summary>
@@ -15,15 +16,16 @@ public sealed class SetsViewModel : ShowcaseViewModel
 
         Dialects =
         [
-            new("GitHub", Samples.Near<SetsViewModel>("GitHub.md"), github),
-            new("GitLab", Samples.Near<SetsViewModel>("GitLab.md"), gitlab),
-            new("Obsidian", Samples.Near<SetsViewModel>("Obsidian.md"), new ObsidianSet { Resolver = SetsResolver.Instance }),
-            new("MkDocs", Samples.Near<SetsViewModel>("MkDocs.md"), new MkDocsSet()),
-            new("Docusaurus и VuePress", Samples.Near<SetsViewModel>("Docusaurus.md"), new DocusaurusSet()),
-            new("HackMD", Samples.Near<SetsViewModel>("HackMD.md"), new HackMDSet()),
-            new("Чат", Samples.Near<SetsViewModel>("Chat.md"), new ChatSet { Resolver = SetsResolver.Instance })
+            new("GitHub", github),
+            new("GitLab", gitlab),
+            new("Obsidian", new ObsidianSet { Resolver = SetsResolver.Instance }),
+            new("MkDocs", new MkDocsSet()),
+            new("Docusaurus", new DocusaurusSet()),
+            new("HackMD", new HackMDSet()),
+            new("Chat", new ChatSet { Resolver = SetsResolver.Instance })
         ];
         Selected = Dialects[0];
+        Localizer.Changed += () => RaisePropertyChanged(nameof(LastLink));
     }
 
     public IReadOnlyList<Dialect> Dialects { get; }
@@ -41,10 +43,15 @@ public sealed class SetsViewModel : ShowcaseViewModel
         set => Set(ref field, value);
     } = true;
 
-    /// <summary>Последняя нажатая ссылка своей схемы: <c>wiki:</c>, <c>tag:</c>, <c>mention:</c>.</summary>
-    public string LastLink
+    /// <summary>Цель последней нажатой ссылки своей схемы: <c>wiki:</c>, <c>tag:</c>, <c>mention:</c>; не нажимали — <c>null</c>.</summary>
+    public string? LastHref
     {
         get;
-        set => Set(ref field, value);
-    } = "Нажми вики-ссылку, тег или упоминание — здесь появится их цель.";
+        set => Set(ref field, value, () => RaisePropertyChanged(nameof(LastLink)));
+    }
+
+    /// <summary>Подсказка нажать ссылку либо её цель — на текущем языке.</summary>
+    public string LastLink => LastHref is { } href
+        ? string.Format(Localizer.Text("Links.Clicked"), href)
+        : Localizer.Text("Links.Prompt");
 }
