@@ -7,11 +7,13 @@ using Markdig.Syntax;
 using ViewModels;
 
 /// <summary>
-/// Контейнеры <c>:::вид Заголовок</c> Docusaurus, VuePress и HackMD: известный вид — плашкой,
-/// <c>details</c> и <c>spoiler</c> — сворачиваемым блоком. Заголовок — после имени или в квадратных скобках.
+/// Containers <c>:::kind Title</c> of Docusaurus, VuePress and HackMD: a known kind is a callout,
+/// <c>details</c> and <c>spoiler</c> are collapsible blocks. The title follows the name or stands
+/// in square brackets.
 /// </summary>
 public sealed partial class CalloutContainers : MdExtension
 {
+    /// <inheritdoc/>
     public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
     {
         if (block is not CustomContainer container)

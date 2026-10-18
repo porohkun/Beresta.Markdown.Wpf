@@ -18,6 +18,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None
+			Include="..\Beresta.Markdown.Wpf\Docs\Beresta.Markdown.Wpf.ru.xml"
+			Link="Docs\Beresta.Markdown.Wpf.ru.xml"
+			CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Using Include="Xunit" />
 		<Using Include="FluentAssertions" />
 	</ItemGroup>

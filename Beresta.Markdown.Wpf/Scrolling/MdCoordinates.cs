@@ -6,8 +6,8 @@ using Presenters;
 using Selection;
 
 /// <summary>
-/// Геометрия документа в координатах выбранного элемента: куски текста, строки исходника, точки.
-/// Считается при каждом вызове по нынешней раскладке.
+/// The geometry of the document in the coordinates of a chosen element: pieces of text, source
+/// lines, points. Computed on every call from the current layout.
 /// </summary>
 public sealed class MdCoordinates
 {
@@ -17,29 +17,34 @@ public sealed class MdCoordinates
         Target = target;
     }
 
+    /// <summary>The viewer whose document is measured.</summary>
     public MarkdownViewer Viewer { get; }
 
-    /// <summary>Элемент, в координатах которого отвечают методы.</summary>
+    /// <summary>The element in whose coordinates the methods answer.</summary>
     public UIElement Target { get; }
 
-    /// <summary>Прямоугольники куска текстовой карты; есть только у созданных блоков.</summary>
+    /// <summary>Rectangles of a piece of the text map; only created blocks have them.</summary>
     public IReadOnlyList<Rect> RangeRects(MdTextRange range)
         => ToTarget() is { } transform
             ? Viewer.GetRangeRects(range).Select(transform.TransformBounds).ToList()
             : [];
 
-    /// <summary>Рамка куска текстовой карты; кусок не на созданных блоках — <see cref="Rect.Empty"/>.</summary>
+    /// <summary>
+    /// The bounds of a piece of the text map; a piece not on created blocks —
+    /// <see cref="Rect.Empty"/>.
+    /// </summary>
     public Rect RangeBounds(MdTextRange range) => RangeRects(range).Aggregate(Rect.Empty, Rect.Union);
 
-    /// <summary>Верх строки исходника; дробная часть — доля строки.</summary>
+    /// <summary>The top of a source line; the fraction is a part of the line.</summary>
     public double? LineTop(double line)
         => Viewer.GetSourceLineOffset(line) is { } offset && ToTarget() is { } transform
             ? transform.Transform(new(0, offset)).Y
             : null;
 
     /// <summary>
-    /// Полоса строк исходника с <paramref name="first"/> по <paramref name="last"/> включительно во
-    /// всю ширину вьюера: от верха первой до верха следующей за последней.
+    /// The band of source lines from <paramref name="first"/> to <paramref name="last"/> inclusive
+    /// across the width of the viewer: from the top of the first to the top of the one after the
+    /// last.
     /// </summary>
     public Rect? LinesRect(int first, int last)
     {
@@ -53,20 +58,20 @@ public sealed class MdCoordinates
         return transform.TransformBounds(new(0, top, Viewer.ActualWidth, Math.Max(0, bottom - top)));
     }
 
-    /// <summary>Строка исходника в точке; дробная часть — доля строки.</summary>
+    /// <summary>The source line at a point; the fraction is a part of the line.</summary>
     public double? LineAt(Point point)
         => ToViewer(point) is { } local ? Viewer.GetSourceLineAt(local.Y) : null;
 
     /// <summary>
-    /// Позиция в текстовой карте для точки; с <paramref name="snapToText"/> — у ближайшего текста, без
-    /// него вне текста — <c>null</c>.
+    /// The position in the text map for a point; with <paramref name="snapToText"/> — at the
+    /// nearest text, without it outside text — <c>null</c>.
     /// </summary>
     public int? PositionAt(Point point, bool snapToText)
         => ToViewer(point) is { } local ? Viewer.GetPositionFromPoint(local, snapToText) : null;
 
     /// <summary>
-    /// Строки исходника со своим местом на экране в видимой области прокрутки: верх и высота экранной
-    /// строки — там же, где поля ставят номера строк.
+    /// Source lines with their own place on screen in the visible area of the scrolling: the top
+    /// and height of the screen row — where the margin puts line numbers.
     /// </summary>
     public IReadOnlyList<(int Line, double Top, double Height)> VisibleRows()
     {
@@ -88,7 +93,10 @@ public sealed class MdCoordinates
             .ToList();
     }
 
-    /// <summary>Строки исходника у верхнего и нижнего краёв видимой области прокрутки, в которой стоит вьюер.</summary>
+    /// <summary>
+    /// The source lines at the top and bottom edges of the visible area of the scrolling that holds
+    /// the viewer.
+    /// </summary>
     public (int First, int Last)? VisibleLines()
         => Viewer.GetVisibleSourceLine(0) is { } first && Viewer.GetVisibleSourceLine(1) is { } last
             ? ((int)Math.Floor(first), Math.Max((int)Math.Floor(first), (int)Math.Floor(last)))

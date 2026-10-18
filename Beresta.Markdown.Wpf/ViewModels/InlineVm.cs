@@ -1,4 +1,4 @@
 ﻿namespace Beresta.Markdown.Wpf.ViewModels;
 
-/// <summary>Инлайн; от него же наследуются строчные виджеты расширений.</summary>
+/// <summary>An inline; inline widgets of extensions derive from it too.</summary>
 public abstract record InlineVm : NodeVm;

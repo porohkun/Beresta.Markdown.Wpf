@@ -9,8 +9,9 @@ using Markdig.Syntax.Inlines;
 using ViewModels;
 
 /// <summary>
-/// Встраивание картинок <c>![[файл.png]]</c>, <c>![[файл.png|200]]</c>, <c>![[файл.png|200x100]]</c> —
-/// картинкой через загрузчик картинок вьюера. Встраивание не картинки — вики-ссылкой на него.
+/// Embedded images <c>![[file.png]]</c>, <c>![[file.png|200]]</c>, <c>![[file.png|200x100]]</c> as
+/// an image through the image loader of the viewer. An embed that is not an image becomes a wiki
+/// link to it.
 /// </summary>
 public sealed partial class WikiEmbeds : MdExtension
 {
@@ -19,12 +20,14 @@ public sealed partial class WikiEmbeds : MdExtension
         ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".tif", ".tiff", ".ico", ".svg"
     };
 
-    /// <summary>Знает, какие страницы есть, — для встраивания не картинки.</summary>
+    /// <summary>Knows which pages exist, for embeds that are not images.</summary>
     public IMdLinkResolver? Resolver { get; set; }
 
+    /// <inheritdoc/>
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline)
         => pipeline.Extensions.AddIfNotAlready<WikiMarkdigExtension>();
 
+    /// <inheritdoc/>
     public override IReadOnlyList<InlineVm>? ConvertInlines(Inline inline, MdConvertContext context)
     {
         if (inline is not WikiLinkInline { IsEmbed: true } embed)

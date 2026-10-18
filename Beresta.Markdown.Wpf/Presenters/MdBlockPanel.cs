@@ -9,10 +9,9 @@ using Scrolling;
 using ViewModels;
 
 /// <summary>
-/// Вертикальная панель блоков документа: создаёт только блоки, попавшие в видимую область
-/// прокруток-предков, остальным отводит место по известной или оценённой высоте. Высоты помнит
-/// по идентификаторам блоков, так что новый текст их не сбрасывает. Пустые места перед блоками и
-/// после них отводит и штрихует сама; места внутри несозданного блока входят в оценку его высоты.
+/// The vertical panel of the blocks of a document: creates only the blocks that fall into the
+/// visible area of the scrolling ancestors and gives the rest room by a known or estimated height.
+/// Heights are remembered by the ids of blocks, so a new text keeps them.
 /// </summary>
 public sealed class MdBlockPanel : VirtualizingPanel
 {
@@ -37,6 +36,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
     private bool _hasGaps;
     private (HeightKey Key, double Top, double ViewportTop)? _anchor;
 
+    /// <summary>Creates an empty panel.</summary>
     public MdBlockPanel()
     {
         Loaded += (_, _) => WatchScrollViewers();
@@ -82,6 +82,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
         }
     }
 
+    /// <inheritdoc/>
     protected override Size MeasureOverride(Size availableSize)
     {
         // BYDESIGN: обращение к InternalChildren создаёт генератор контейнеров — до него
@@ -131,6 +132,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
         return new(width, _offsets[^1]);
     }
 
+    /// <inheritdoc/>
     protected override Size ArrangeOverride(Size finalSize)
     {
         var generator = ItemContainerGenerator;
@@ -179,7 +181,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
         return finalSize;
     }
 
-    /// <summary>Штрихует пустые места перед блоками и после них.</summary>
+    /// <summary>Hatches the empty places before and after blocks.</summary>
     protected override void OnRender(DrawingContext drawingContext)
     {
         base.OnRender(drawingContext);
@@ -202,6 +204,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
         }
     }
 
+    /// <inheritdoc/>
     protected override void OnIsItemsHostChanged(bool oldIsItemsHost, bool newIsItemsHost)
     {
         base.OnIsItemsHostChanged(oldIsItemsHost, newIsItemsHost);
@@ -212,7 +215,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
         }
     }
 
-    /// <summary>Сдвигает ближайшую прокрутку так, чтобы блок оказался виден целиком или хотя бы сверху.</summary>
+    /// <summary>Moves the nearest scrolling so that the block is visible as a whole or at least from the top.</summary>
     protected override void BringIndexIntoView(int index)
     {
         if (index < 0 || index >= _keys.Length || FindViewport() is not { PhysicalScroller: { } scroller } viewport)
@@ -234,7 +237,10 @@ public sealed class MdBlockPanel : VirtualizingPanel
         }
     }
 
-    /// <summary>Убирает контролы удалённых, заменённых и перенесённых элементов: у перенесённого — с прежнего места.</summary>
+    /// <summary>
+    /// Removes the controls of removed, replaced and moved items: of a moved one — from its former
+    /// place.
+    /// </summary>
     protected override void OnItemsChanged(object sender, ItemsChangedEventArgs args)
     {
         base.OnItemsChanged(sender, args);

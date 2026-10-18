@@ -4,8 +4,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 
 /// <summary>
-/// Открыватель по умолчанию: адреса веба и почты — системным обработчиком, остальное не открывает.
-/// <c>www.example.com</c> без схемы считается адресом веба.
+/// The default opener: addresses of the web and mail go to the system handler, the rest is not
+/// opened. <c>www.example.com</c> without a scheme counts as a web address.
 /// </summary>
 public sealed class MdSystemLinkOpener : IMdLinkOpener
 {
@@ -15,8 +15,10 @@ public sealed class MdSystemLinkOpener : IMdLinkOpener
     {
     }
 
+    /// <summary>The single instance of the opener.</summary>
     public static MdSystemLinkOpener Instance { get; } = new();
 
+    /// <inheritdoc/>
     public void Open(string href, Uri? uri)
     {
         var target = href.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? "http://" + href : href;

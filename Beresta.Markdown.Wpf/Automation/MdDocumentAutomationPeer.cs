@@ -2,10 +2,12 @@
 
 using System.Windows.Automation.Peers;
 
-/// <summary>Вьюер для автоматизации — документ: его дети — созданные блоки, а не вьюмодели.</summary>
+/// <summary>The viewer for UI Automation: a document whose children are the created blocks, not view models.</summary>
 public sealed class MdDocumentAutomationPeer(MarkdownViewer owner) : FrameworkElementAutomationPeer(owner)
 {
+    /// <inheritdoc/>
     protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Document;
 
+    /// <inheritdoc/>
     protected override string GetClassNameCore() => nameof(MarkdownViewer);
 }

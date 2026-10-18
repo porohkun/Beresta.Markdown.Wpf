@@ -7,18 +7,21 @@ using Selection;
 using ViewModels;
 
 /// <summary>
-/// Вики-ссылки <c>[[Страница]]</c>, <c>[[Страница#Раздел]]</c>, <c>[[Страница|подпись]]</c> — ссылкой
-/// <c>wiki:Страница#Раздел</c> с оформлением <c>WikiLink</c>; <c>[[#Раздел]]</c> ведёт к разделу этого
-/// документа. Страница, которой по <see cref="Resolver"/> нет, — с оформлением <c>WikiLink.Missing</c>.
+/// Wiki links <c>[[Page]]</c>, <c>[[Page#Section]]</c>, <c>[[Page|caption]]</c> as a link
+/// <c>wiki:Page#Section</c> with the style <c>WikiLink</c>; <c>[[#Section]]</c> leads to a section
+/// of this document. A page the <see cref="Resolver"/> does not know gets the style
+/// <c>WikiLink.Missing</c>.
 /// </summary>
 public sealed class WikiLinks : MdExtension
 {
-    /// <summary>Знает, какие страницы есть; нет — есть все.</summary>
+    /// <summary>Knows which pages exist; none — every page exists.</summary>
     public IMdLinkResolver? Resolver { get; set; }
 
+    /// <inheritdoc/>
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline)
         => pipeline.Extensions.AddIfNotAlready<WikiMarkdigExtension>();
 
+    /// <inheritdoc/>
     public override IReadOnlyList<InlineVm>? ConvertInlines(Inline inline, MdConvertContext context)
         => inline is WikiLinkInline { IsEmbed: false } link ? [LinkRun(link, context, Resolver)] : null;
 

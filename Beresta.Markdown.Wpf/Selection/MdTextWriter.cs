@@ -2,7 +2,7 @@
 
 using ViewModels;
 
-/// <summary>Запись текста виджета в текстовую карту, по порядку чтения.</summary>
+/// <summary>Writes the text of a widget to the text map, in reading order.</summary>
 public sealed class MdTextWriter
 {
     private readonly Action<string> _text;
@@ -21,12 +21,12 @@ public sealed class MdTextWriter
         _blocks = blocks;
     }
 
-    /// <summary>Текст, которого нет в инлайнах: копируется, но ни один презентер его не подсвечивает.</summary>
+    /// <summary>Text that is not in inlines: it is copied, but no presenter highlights it.</summary>
     public void Text(string text) => _text(text);
 
-    /// <summary>Инлайны, которые виджет рисует через <c>MdTextBlock</c> с этим же списком.</summary>
+    /// <summary>Inlines the widget draws through <c>MdTextBlock</c> with this same list.</summary>
     public void Inlines(IReadOnlyList<InlineVm> inlines) => _inlines(inlines);
 
-    /// <summary>Вложенные блоки — так же, как блоки документа.</summary>
+    /// <summary>Nested blocks — the same way as blocks of the document.</summary>
     public void Blocks(IReadOnlyList<BlockVm> blocks) => _blocks(blocks);
 }

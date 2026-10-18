@@ -6,14 +6,19 @@ using Markdig.Syntax.Inlines;
 using ViewModels;
 
 /// <summary>
-/// Ссылки на задачи по шаблонам приложения: <c>#123</c>, <c>org/repo#45</c>, <c>PROJ-45</c>. Шаблон —
-/// префикс, как он написан перед номером, и адрес с <c>{0}</c> на месте номера. По умолчанию шаблонов нет.
+/// Issue links by templates of the application: <c>#123</c>, <c>org/repo#45</c>, <c>PROJ-45</c>. A
+/// template is a prefix as written before the number and an address with <c>{0}</c> in place of the
+/// number. There are no templates by default.
 /// </summary>
 public sealed partial class IssueLinks : MdExtension
 {
-    /// <summary>Шаблоны: префикс задачи — <c>#</c>, <c>org/repo#</c>, <c>PROJ-</c> — и адрес с <c>{0}</c> на месте номера.</summary>
+    /// <summary>
+    /// Templates: the prefix of an issue — <c>#</c>, <c>org/repo#</c>, <c>PROJ-</c> — and an
+    /// address with <c>{0}</c> in place of the number.
+    /// </summary>
     public Dictionary<string, string> Templates { get; } = new(StringComparer.Ordinal);
 
+    /// <inheritdoc/>
     public override IReadOnlyList<InlineVm>? ConvertInlines(Inline inline, MdConvertContext context)
     {
         if (Templates.Count == 0 || inline is not LiteralInline literal)

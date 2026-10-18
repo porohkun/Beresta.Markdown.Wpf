@@ -5,8 +5,8 @@ using Markdig.Syntax.Inlines;
 using ViewModels;
 
 /// <summary>
-/// Разбор изнутри расширения: вложенная разметка своего узла превращается в модель так же, как
-/// остальной документ.
+/// Parsing from inside an extension: the nested markup of its node becomes model the same way as
+/// the rest of the document.
 /// </summary>
 public sealed class MdConvertContext
 {
@@ -21,23 +21,23 @@ public sealed class MdConvertContext
         _createRun = createRun;
     }
 
-    /// <summary>Блоки внутри своего контейнера, с отступами на месте пустых строк.</summary>
+    /// <summary>The blocks inside its container, with spaces in place of blank lines.</summary>
     public IReadOnlyList<BlockVm> ConvertChildren(ContainerBlock container)
         => _builder.ConvertBlocks(container, _listDepth);
 
-    /// <summary>Инлайны своего узла.</summary>
+    /// <summary>The inlines of its node.</summary>
     public IReadOnlyList<InlineVm> ConvertInlines(ContainerInline? inlines)
         => _builder.ConvertInlines(inlines);
 
-    /// <summary>Кусок текста с начертанием места узла: жирный, курсив, ссылка вокруг.</summary>
+    /// <summary>A piece of text with the formatting of the place of the node: bold, italic, a link around.</summary>
     public RunVm CreateRun(string text)
         => _createRun?.Invoke(text) ?? new RunVm(text);
 
-    /// <summary>Позиция узла в исходнике.</summary>
+    /// <summary>The position of a node in the source.</summary>
     public MdSourceSpan GetSpan(MarkdownObject node)
         => _builder.GetSpan(node);
 
-    /// <summary>Текст узла в исходнике как есть.</summary>
+    /// <summary>The text of a node in the source as is.</summary>
     public string GetSource(MarkdownObject node)
         => _builder.GetSource(node);
 }

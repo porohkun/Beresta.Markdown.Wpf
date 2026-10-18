@@ -1,10 +1,11 @@
 ﻿namespace Beresta.Markdown.Wpf.Selection;
 
 /// <summary>
-/// Виджет, который отдаёт в текстовую карту свой текст и вложенные блоки. Виджет без него
-/// неделимый: выделяется и копируется целиком, а текста в карте у него нет.
+/// A widget that gives its text and nested blocks to the text map. A widget without it is
+/// indivisible: it is selected and copied as a whole and has no text in the map.
 /// </summary>
 public interface IMdTextSource
 {
+    /// <summary>Writes the text and the nested blocks of the widget to the text map in reading order.</summary>
     void WriteText(MdTextWriter writer);
 }

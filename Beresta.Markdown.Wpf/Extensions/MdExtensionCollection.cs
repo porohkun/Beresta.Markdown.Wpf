@@ -2,7 +2,10 @@
 
 using System.Collections.ObjectModel;
 
-/// <summary>Расширения вьюера; порядок — порядок опроса при разборе и выборе шаблона.</summary>
+/// <summary>
+/// Extensions of a viewer; the order is the order in which they are asked when parsing and choosing
+/// a template.
+/// </summary>
 public sealed class MdExtensionCollection : ObservableCollection<MdExtension>
 {
 }

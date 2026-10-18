@@ -7,12 +7,14 @@ using System.Windows.Media;
 
 /// <summary>
 /// Hands the mouse wheel over to the parent instead of letting a nested <see cref="ScrollViewer"/>
-/// swallow it. A ScrollViewer with vertical scrolling disabled still marks the wheel as handled
-/// (falling back to horizontal paging), which freezes the hosting page whenever the pointer sits
-/// over a table or a code block. Shift + wheel keeps scrolling the nested viewer horizontally.
+/// swallow it; Shift + wheel keeps scrolling the nested one sideways.
 /// </summary>
 public static class NestedScroll
 {
+    /// <summary>
+    /// Whether the <see cref="ScrollViewer"/> passes the vertical mouse wheel to the scrolling
+    /// around it.
+    /// </summary>
     public static readonly DependencyProperty PassWheelToParentProperty =
         DependencyProperty.RegisterAttached(
             "PassWheelToParent",
@@ -20,9 +22,11 @@ public static class NestedScroll
             typeof(NestedScroll),
             new(false, OnPassWheelToParentChanged));
 
+    /// <inheritdoc cref="PassWheelToParentProperty"/>
     public static bool GetPassWheelToParent(DependencyObject element)
         => (bool)element.GetValue(PassWheelToParentProperty);
 
+    /// <inheritdoc cref="PassWheelToParentProperty"/>
     public static void SetPassWheelToParent(DependencyObject element, bool value)
         => element.SetValue(PassWheelToParentProperty, value);
 

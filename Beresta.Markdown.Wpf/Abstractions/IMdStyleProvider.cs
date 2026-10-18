@@ -2,55 +2,66 @@
 
 using System.Windows;
 
-/// <summary>Шаблоны встроенных блоков и строчных элементов, по одному на вид; <c>null</c> — элемент не рисуется.</summary>
+/// <summary>
+/// Templates of built-in blocks and inline elements, one per kind; <c>null</c> — the element is not
+/// drawn.
+/// </summary>
 public interface IMdStyleProvider
 {
+    /// <summary>A paragraph.</summary>
     DataTemplate? ParagraphTemplate { get; }
 
+    /// <summary>A heading.</summary>
     DataTemplate? HeadingTemplate { get; }
 
+    /// <summary>A code block.</summary>
     DataTemplate? CodeBlockTemplate { get; }
 
+    /// <summary>A quote.</summary>
     DataTemplate? QuoteTemplate { get; }
 
+    /// <summary>A list.</summary>
     DataTemplate? ListTemplate { get; }
 
+    /// <summary>A table.</summary>
     DataTemplate? TableTemplate { get; }
 
+    /// <summary>A horizontal rule.</summary>
     DataTemplate? HorizontalRuleTemplate { get; }
 
+    /// <summary>The space in place of blank source lines between blocks.</summary>
     DataTemplate? BlankLineTemplate { get; }
 
-    /// <summary>Определение сноски.</summary>
+    /// <summary>A footnote definition.</summary>
     DataTemplate? FootnoteTemplate => null;
 
-    /// <summary>Картинка, строчная.</summary>
+    /// <summary>An image, inline.</summary>
     DataTemplate? ImageTemplate => null;
 
-    /// <summary>Флажок задачи, строчный.</summary>
+    /// <summary>A task box, inline.</summary>
     DataTemplate? TaskTemplate => null;
 
-    /// <summary>Ссылка сноски, строчная: номер или ↩.</summary>
+    /// <summary>A footnote link, inline: a number or ↩.</summary>
     DataTemplate? FootnoteLinkTemplate => null;
 
-    /// <summary>Фигура <c>^^^</c>.</summary>
+    /// <summary>A figure, <c>^^^</c>.</summary>
     DataTemplate? FigureTemplate => null;
 
-    /// <summary>Подпись фигуры.</summary>
+    /// <summary>The caption of a figure.</summary>
     DataTemplate? FigureCaptionTemplate => null;
 
-    /// <summary>Подвал <c>^^</c>.</summary>
+    /// <summary>A footer, <c>^^</c>.</summary>
     DataTemplate? FooterTemplate => null;
 
-    /// <summary>Плашка.</summary>
+    /// <summary>A callout.</summary>
     DataTemplate? CalloutTemplate => null;
 
-    /// <summary>Сворачиваемый блок.</summary>
+    /// <summary>A collapsible block.</summary>
     DataTemplate? DetailsTemplate => null;
 
-    /// <summary>Список определений.</summary>
+    /// <summary>A definition list.</summary>
     DataTemplate? DefinitionListTemplate => null;
 
-    /// <summary>Блоки с общим выравниванием из HTML.</summary>
+    /// <summary>Blocks with a common alignment from HTML.</summary>
     DataTemplate? AlignedTemplate => null;
 }

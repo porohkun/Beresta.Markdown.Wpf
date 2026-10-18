@@ -1,8 +1,8 @@
 ﻿namespace Beresta.Markdown.Wpf.Selection;
 
 /// <summary>
-/// Строки исходника, которые находят своё место в новом тексте — по блокам, где они стоят, и тексту
-/// строк. Пропадают вместе со своим блоком.
+/// Source lines that find their place in new text — by the blocks they stand in and by the text of
+/// the lines. They vanish together with their block.
 /// </summary>
 public sealed class MdTrackedLines
 {

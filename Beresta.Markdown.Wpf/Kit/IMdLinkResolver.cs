@@ -1,11 +1,14 @@
 ﻿namespace Beresta.Markdown.Wpf.Kit;
 
-/// <summary>Что знает приложение о целях связей готовых расширений: есть ли страница, как зовут участника.</summary>
+/// <summary>
+/// What the application knows about the targets of links of ready-made extensions: whether a page
+/// exists, what a person is called.
+/// </summary>
 public interface IMdLinkResolver
 {
-    /// <summary>Есть ли вики-страница с этим именем; по умолчанию — есть.</summary>
+    /// <summary>Whether a wiki page with this name exists; by default it does.</summary>
     bool PageExists(string page) => true;
 
-    /// <summary>Отображаемое имя участника по имени из разметки; <c>null</c> — как написано.</summary>
+    /// <summary>The display name of a person by the name from the markup; <c>null</c> — as written.</summary>
     string? DisplayName(string user) => null;
 }

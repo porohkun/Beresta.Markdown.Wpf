@@ -7,12 +7,12 @@ using Extensions;
 using Selection;
 
 /// <summary>
-/// Контейнер блока во вьюере и во вложенных блоках. Неделимый блок — разделитель, виджет без
-/// текста — подсвечивается им целиком. Отдаёт своему блоку его состояние виджета.
+/// The container of a block in the viewer and in nested blocks. An indivisible block — a rule, a
+/// widget without text — is highlighted by it as a whole. Gives its block its widget state.
 /// </summary>
 public sealed class MdBlockItem : ContentControl
 {
-    /// <summary>Заливка поверх блока; <c>null</c> — блок не залит.</summary>
+    /// <summary>A fill over the block; <c>null</c> — the block is not filled.</summary>
     public static readonly DependencyProperty HighlightProperty =
         DependencyProperty.Register(
             nameof(Highlight),
@@ -20,7 +20,7 @@ public sealed class MdBlockItem : ContentControl
             typeof(MdBlockItem),
             new(null));
 
-    /// <summary>Черта или рамка пометки поверх блока; <c>null</c> — её нет.</summary>
+    /// <summary>A line or frame of a mark over the block; <c>null</c> — none.</summary>
     public static readonly DependencyProperty HighlightBorderBrushProperty =
         DependencyProperty.Register(
             nameof(HighlightBorderBrush),
@@ -28,7 +28,7 @@ public sealed class MdBlockItem : ContentControl
             typeof(MdBlockItem),
             new(null));
 
-    /// <summary>Толщина черты или рамки пометки по краям блока.</summary>
+    /// <summary>The thickness of the line or frame of a mark at the edges of the block.</summary>
     public static readonly DependencyProperty HighlightBorderThicknessProperty =
         DependencyProperty.Register(
             nameof(HighlightBorderThickness),
@@ -51,18 +51,21 @@ public sealed class MdBlockItem : ContentControl
         DefaultStyleKeyProperty.OverrideMetadata(typeof(MdBlockItem), new FrameworkPropertyMetadata(typeof(MdBlockItem)));
     }
 
+    /// <inheritdoc cref="HighlightProperty"/>
     public Brush? Highlight
     {
         get => (Brush?)GetValue(HighlightProperty);
         set => SetValue(HighlightProperty, value);
     }
 
+    /// <inheritdoc cref="HighlightBorderBrushProperty"/>
     public Brush? HighlightBorderBrush
     {
         get => (Brush?)GetValue(HighlightBorderBrushProperty);
         set => SetValue(HighlightBorderBrushProperty, value);
     }
 
+    /// <inheritdoc cref="HighlightBorderThicknessProperty"/>
     public Thickness HighlightBorderThickness
     {
         get => (Thickness)GetValue(HighlightBorderThicknessProperty);
@@ -78,6 +81,7 @@ public sealed class MdBlockItem : ContentControl
                && layer.Map.TryGetRange(content, out range);
     }
 
+    /// <inheritdoc/>
     protected override void OnContentChanged(object oldContent, object newContent)
     {
         base.OnContentChanged(oldContent, newContent);

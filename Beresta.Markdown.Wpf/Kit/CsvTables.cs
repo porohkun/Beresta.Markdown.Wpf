@@ -5,11 +5,12 @@ using Markdig.Syntax;
 using ViewModels;
 
 /// <summary>
-/// Таблицы из CSV: блок кода с языком <c>csv</c> или <c>tsv</c> рисуется таблицей ядра, первая
-/// запись — заголовок. Значения в кавычках — по правилам CSV.
+/// Tables from CSV: a code block with the language <c>csv</c> or <c>tsv</c> is drawn as a table of
+/// the core, the first record is the header. Quoted values follow the rules of CSV.
 /// </summary>
 public sealed class CsvTables : MdExtension
 {
+    /// <inheritdoc/>
     public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
     {
         if (block is not FencedCodeBlock code || DelimiterOf(code.Info) is not { } delimiter)

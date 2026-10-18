@@ -1,14 +1,14 @@
 ﻿namespace Beresta.Markdown.Wpf.ViewModels;
 
-/// <summary>Элемент модели документа с позицией в исходнике.</summary>
+/// <summary>An element of the document model with a position in the source.</summary>
 public abstract record NodeVm
 {
-    /// <summary>Откуда элемент взят в исходном тексте.</summary>
+    /// <summary>Where the element is taken from in the source text.</summary>
     public MdSourceSpan Source { get; init; }
 
     /// <summary>
-    /// Устойчивый идентификатор: переживает новый текст, пока элемент не изменился или изменился
-    /// на своём месте. 0 — у элемента без своего узла разбора.
+    /// A stable identifier: it survives new text while the element has not changed or has changed
+    /// in its place. 0 — for an element without its own parse node.
     /// </summary>
     public long NodeId { get; init; }
 }

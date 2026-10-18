@@ -3,9 +3,10 @@
 using Selection;
 using ViewModels;
 
-/// <summary>Карточка свойств: front matter строками «ключ — значение».</summary>
+/// <summary>The properties card: front matter as «key — value» rows.</summary>
 public sealed record PropertiesVm(IReadOnlyList<PropertyVm> Items) : BlockVm, IMdTextSource
 {
+    /// <inheritdoc/>
     public void WriteText(MdTextWriter writer)
     {
         for (var i = 0; i < Items.Count; i++)

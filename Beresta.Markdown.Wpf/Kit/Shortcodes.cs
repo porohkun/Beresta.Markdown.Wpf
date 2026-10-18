@@ -9,11 +9,12 @@ using Markdig.Syntax.Inlines;
 using ViewModels;
 
 /// <summary>
-/// Шорткоды <c>{%имя аргументы%}</c> и <c>{{&lt; имя аргументы &gt;}}</c> — виджетом по имени из
-/// <see cref="Handlers"/>; шорткод без обработчика остаётся текстом.
+/// Shortcodes <c>{%name arguments%}</c> and <c>{{&lt; name arguments &gt;}}</c> as a widget by the
+/// name from <see cref="Handlers"/>; a shortcode without a handler stays text.
 /// </summary>
 public sealed class Shortcodes : MdExtension
 {
+    /// <summary>Creates the extension with the built-in handlers.</summary>
     public Shortcodes()
     {
         Handlers = new(StringComparer.OrdinalIgnoreCase)
@@ -31,23 +32,28 @@ public sealed class Shortcodes : MdExtension
     }
 
     /// <summary>
-    /// Обработчики по имени шорткода: модель строчного или блочного виджета, <c>null</c> — шорткод остаётся
-    /// текстом. Изначально есть <c>youtube</c>, <c>vimeo</c>, <c>gist</c>, <c>pdf</c> и <c>toc</c>.
+    /// Handlers by the name of a shortcode: the model of an inline or block widget, <c>null</c> —
+    /// the shortcode stays text. <c>youtube</c>, <c>vimeo</c>, <c>gist</c>, <c>pdf</c> and
+    /// <c>toc</c> are there from the start.
     /// </summary>
     public Dictionary<string, Func<MdShortcode, NodeVm?>> Handlers { get; }
 
-    /// <summary>Грузить превью видео из сети; выключено — карточка без превью.</summary>
+    /// <summary>Load video previews from the network; when off, a card has no preview.</summary>
     public bool LoadThumbnails { get; set; } = true;
 
+    /// <inheritdoc/>
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline)
         => pipeline.Extensions.AddIfNotAlready<ShortcodeMarkdigExtension>();
 
+    /// <inheritdoc/>
     public override IReadOnlyList<BlockVm>? ConvertBlocks(Block block, MdConvertContext context)
         => block is ParagraphBlock { Inline: { } inline } && Alone(inline) is { } shortcode && Handle(shortcode) is BlockVm widget ? [widget] : null;
 
+    /// <inheritdoc/>
     public override IReadOnlyList<InlineVm>? ConvertInlines(Inline inline, MdConvertContext context)
         => inline is ShortcodeInline shortcode && Handle(shortcode.Shortcode) is InlineVm widget ? [widget] : null;
 
+    /// <inheritdoc/>
     public override DataTemplate? SelectTemplate(object item, DependencyObject container)
     {
         var key = item switch

@@ -4,7 +4,10 @@ using System.Windows;
 using System.Windows.Media;
 using Selection;
 
-/// <summary>Строки во всю ширину документа от пометок вида <see cref="MdMarkKind.Row"/> — у созданных блоков.</summary>
+/// <summary>
+/// Full-width rows of the document from marks of the kind <see cref="MdMarkKind.Row"/>, at created
+/// blocks.
+/// </summary>
 public sealed class MdRowMarks : FrameworkElement
 {
     private static readonly DependencyProperty LayerProperty =
@@ -12,6 +15,7 @@ public sealed class MdRowMarks : FrameworkElement
             typeof(MdRowMarks),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnLayerChanged));
 
+    /// <summary>Creates an empty layer of rows.</summary>
     public MdRowMarks()
     {
         IsHitTestVisible = false;
@@ -40,6 +44,7 @@ public sealed class MdRowMarks : FrameworkElement
         return rows;
     }
 
+    /// <inheritdoc/>
     protected override void OnRender(DrawingContext drawingContext)
     {
         foreach (var (row, brush) in CollectRows())

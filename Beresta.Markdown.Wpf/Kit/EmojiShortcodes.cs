@@ -3,9 +3,10 @@
 using Extensions;
 using Markdig;
 
-/// <summary>Эмодзи-шорткоды <c>:smile:</c> — знаком эмодзи; смайлики вида <c>:)</c> остаются текстом.</summary>
+/// <summary>Emoji shortcodes <c>:smile:</c> as emoji; smileys like <c>:)</c> stay text.</summary>
 public sealed class EmojiShortcodes : MdExtension
 {
+    /// <inheritdoc/>
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline)
         => pipeline.UseEmojiAndSmiley(enableSmileys: false);
 }

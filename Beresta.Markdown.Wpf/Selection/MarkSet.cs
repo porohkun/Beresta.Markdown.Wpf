@@ -16,6 +16,8 @@ internal sealed class MarkSet
     private readonly TextMark[] _carets;
     private readonly HashSet<MdMarkKind> _kinds;
 
+    /// <param name="layer">Слой, чьи пометки раскладываются.</param>
+    /// <param name="map">Карта, по которой они раскладываются.</param>
     /// <param name="brushOf">Кисть темы по имени оформления для вида пометки.</param>
     public MarkSet(MdMarkLayer layer, MdTextMap map, Func<string, MdMarkKind, Brush?> brushOf)
     {

@@ -1,13 +1,13 @@
 ﻿namespace Beresta.Markdown.Wpf.Selection;
 
-/// <summary>Заголовок документа для оглавления.</summary>
-/// <param name="Level">Уровень от 1 до 6.</param>
-/// <param name="Text">Текст заголовка без разметки.</param>
-/// <param name="Id">Якорь, как у GitHub: по нему ведёт ссылка <c>#id</c>.</param>
-/// <param name="Range">Кусок текстовой карты заголовка.</param>
-/// <param name="SourceLine">Строка исходника, считая с нуля.</param>
+/// <summary>A heading of the document for a table of contents.</summary>
+/// <param name="Level">The level from 1 to 6.</param>
+/// <param name="Text">The text of the heading without markup.</param>
+/// <param name="Id">The anchor, as on GitHub: the link <c>#id</c> leads to it.</param>
+/// <param name="Range">The piece of the text map taken by the heading.</param>
+/// <param name="SourceLine">The source line, counting from zero.</param>
 public sealed record MdHeading(int Level, string Text, string Id, MdTextRange Range, int SourceLine)
 {
-    /// <summary>Ссылка на заголовок: <c>#id</c>.</summary>
+    /// <summary>The link to the heading: <c>#id</c>.</summary>
     public string Href => "#" + Id;
 }

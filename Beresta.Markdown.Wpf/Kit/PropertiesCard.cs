@@ -8,14 +8,16 @@ using Markdig.Syntax;
 using ViewModels;
 
 /// <summary>
-/// Карточка свойств: front matter в начале документа рисуется таблицей «ключ — значение». Разбор —
-/// только для показа; вид — шаблон темы <c>Md.Properties.Template</c>.
+/// The properties card: front matter at the start of the document is drawn as a «key — value»
+/// table. Parsed only for showing; the look is the theme template <c>Md.Properties.Template</c>.
 /// </summary>
 public sealed class PropertiesCard : MdExtension
 {
+    /// <inheritdoc/>
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline)
         => pipeline.UseYamlFrontMatter();
 
+    /// <inheritdoc/>
     public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
     {
         if (block is not YamlFrontMatterBlock yaml)
@@ -32,6 +34,7 @@ public sealed class PropertiesCard : MdExtension
                 .ToList());
     }
 
+    /// <inheritdoc/>
     public override DataTemplate? SelectTemplate(object item, DependencyObject container)
         => item is PropertiesVm && container is FrameworkElement element ? element.TryFindResource("Md.Properties.Template") as DataTemplate : null;
 }

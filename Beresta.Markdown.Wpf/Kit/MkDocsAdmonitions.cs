@@ -6,14 +6,16 @@ using Markdig.Syntax;
 using ViewModels;
 
 /// <summary>
-/// Предупреждения MkDocs: <c>!!! вид "Заголовок"</c> и содержимое с отступом в четыре пробела;
-/// <c>???</c> — свёрнутое, <c>???+</c> — развёрнутое сворачиваемое.
+/// MkDocs admonitions: <c>!!! kind "Title"</c> and content indented by four spaces; <c>???</c> is a
+/// collapsed and <c>???+</c> an expanded collapsible one.
 /// </summary>
 public sealed class MkDocsAdmonitions : MdExtension
 {
+    /// <inheritdoc/>
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline)
         => pipeline.Extensions.AddIfNotAlready<AdmonitionMarkdigExtension>();
 
+    /// <inheritdoc/>
     public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
     {
         if (block is not AdmonitionBlock admonition)

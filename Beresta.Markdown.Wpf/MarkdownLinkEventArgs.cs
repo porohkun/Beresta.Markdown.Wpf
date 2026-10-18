@@ -3,18 +3,17 @@
 using System.Windows;
 
 /// <summary>
-/// Нажатая ссылка. Цель отдаётся дважды: <see cref="Href"/> — как она записана в markdown,
-/// <see cref="Uri"/> — её разбор.
-///
-/// <para>
-/// Разбор годится не всякой ссылке: схема с подчёркиванием (<c>codex_page:...</c>) по RFC 3986
-/// незаконна, и такой адрес становится относительным <see cref="System.Uri"/>. Обработчику
-/// собственных ссылок поэтому нужен именно <see cref="Href"/> — исходная строка, ничем не
-/// нормализованная.
-/// </para>
+/// A clicked link. The target comes twice: <see cref="Href"/> as written in the Markdown,
+/// <see cref="Uri"/> parsed.
 /// </summary>
+/// <remarks>
+/// Not every target parses: a scheme with an underscore, <c>codex_page:...</c>, is illegal by RFC
+/// 3986 and becomes a relative <see cref="System.Uri"/>. A handler of your own links needs
+/// <see cref="Href"/>, the original string.
+/// </remarks>
 public sealed class MarkdownLinkEventArgs : RoutedEventArgs
 {
+    /// <summary>A clicked link with its target as written and parsed.</summary>
     public MarkdownLinkEventArgs(RoutedEvent routedEvent, object source, string href, Uri? uri)
         : base(routedEvent, source)
     {
@@ -22,13 +21,13 @@ public sealed class MarkdownLinkEventArgs : RoutedEventArgs
         Uri = uri;
     }
 
-    /// <summary>Цель ссылки ровно так, как она записана в markdown.</summary>
+    /// <summary>The target of the link exactly as written in the Markdown.</summary>
     public string Href { get; }
 
-    /// <summary>Разбор <see cref="Href"/>; <c>null</c> — не разобралось вовсе.</summary>
+    /// <summary>The parsed <see cref="Href"/>; <c>null</c> — it did not parse at all.</summary>
     public Uri? Uri { get; }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     protected override void InvokeEventHandler(Delegate genericHandler, object genericTarget) =>
         ((MarkdownLinkEventHandler)genericHandler)(genericTarget, this);
 }

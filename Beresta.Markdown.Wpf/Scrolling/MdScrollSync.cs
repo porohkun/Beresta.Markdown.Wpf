@@ -5,9 +5,9 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 /// <summary>
-/// Синхронная прокрутка двух сторон — вьюеров, вьюера и редактора — по соответствию строк. Ведущая —
-/// та, с которой работает пользователь; вторая догоняет её так, чтобы в точке привязки стояли
-/// соответствующие строки.
+/// Scrolling of two sides together — viewers, a viewer and an editor — by a line map. The leading
+/// side is the one the user works with; the other follows so that corresponding lines stand at the
+/// anchor point.
 /// </summary>
 public sealed class MdScrollSync : IDisposable
 {
@@ -19,7 +19,12 @@ public sealed class MdScrollSync : IDisposable
     private ScrollViewer? _rightScroller;
     private IMdScrollSide _leading;
 
-    /// <param name="anchorFraction">Точка привязки — доля высоты видимой области сверху.</param>
+    /// <summary>Scrolling of two sides together.</summary>
+    /// <param name="left">The left side: the left source of the line map.</param>
+    /// <param name="right">The right side: the right source of the line map.</param>
+    /// <param name="map">The line map.</param>
+    /// <param name="anchorFraction">The anchor point: a fraction of the height of the visible area
+    /// from the top.</param>
     public MdScrollSync(IMdScrollSide left, IMdScrollSide right, MdLineMap map, double anchorFraction = 0.38)
     {
         _left = left;
@@ -32,14 +37,18 @@ public sealed class MdScrollSync : IDisposable
         Attach(right);
     }
 
-    /// <summary>Синхронная прокрутка двух вьюеров.</summary>
-    /// <param name="anchorFraction">Точка привязки — доля высоты видимой области сверху.</param>
+    /// <summary>Scrolling of two viewers together.</summary>
+    /// <param name="left">The left viewer: the left source of the line map.</param>
+    /// <param name="right">The right viewer: the right source of the line map.</param>
+    /// <param name="map">The line map.</param>
+    /// <param name="anchorFraction">The anchor point: a fraction of the height of the visible area
+    /// from the top.</param>
     public MdScrollSync(MarkdownViewer left, MarkdownViewer right, MdLineMap map, double anchorFraction = 0.38)
         : this((IMdScrollSide)left, right, map, anchorFraction)
     {
     }
 
-    /// <summary>Соответствие строк; новая карта — например, после нового диффа — сразу подтягивает вторую сторону.</summary>
+    /// <summary>The line map; a new one — for example, after a new diff — moves the other side at once.</summary>
     public MdLineMap Map
     {
         get => _map;
@@ -50,13 +59,14 @@ public sealed class MdScrollSync : IDisposable
         }
     }
 
+    /// <inheritdoc/>
     public void Dispose()
     {
         Detach(_left, ref _leftScroller);
         Detach(_right, ref _rightScroller);
     }
 
-    /// <summary>Подтягивает вторую сторону к ведущей прямо сейчас.</summary>
+    /// <summary>Moves the other side to the leading one right now.</summary>
     public void Sync()
     {
         var follower = ReferenceEquals(_leading, _left) ? _right : _left;

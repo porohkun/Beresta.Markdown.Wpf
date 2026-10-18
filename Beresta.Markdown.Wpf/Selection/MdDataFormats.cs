@@ -1,8 +1,8 @@
 ﻿namespace Beresta.Markdown.Wpf.Selection;
 
-/// <summary>Форматы буфера обмена, которые кладёт вьюер помимо обычного текста.</summary>
+/// <summary>Clipboard formats the viewer puts besides plain text.</summary>
 public static class MdDataFormats
 {
-    /// <summary>Разметка выделенного: байты UTF-8 потоком.</summary>
+    /// <summary>The markup of the selection: UTF-8 bytes in a stream.</summary>
     public const string Markdown = "text/markdown";
 }

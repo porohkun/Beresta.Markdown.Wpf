@@ -2,12 +2,13 @@
 
 using System.Windows.Media;
 
-/// <summary>Откуда вьюер берёт картинки; ставится в <see cref="MarkdownViewer.ImageLoader"/>.</summary>
+/// <summary>Where the viewer takes images from; set in <see cref="MarkdownViewer.ImageLoader"/>.</summary>
 public interface IMdImageLoader
 {
     /// <summary>
-    /// Картинка; <paramref name="url"/> — адрес ровно из разметки, <paramref name="uri"/> — он же,
-    /// разобранный от <see cref="MarkdownViewer.BaseUri"/>. Картинки нет — <c>null</c>.
+    /// An image; <paramref name="url"/> is the address exactly as in the markup,
+    /// <paramref name="uri"/> is the same address resolved against
+    /// <see cref="MarkdownViewer.BaseUri"/>. No image — <c>null</c>.
     /// </summary>
     Task<ImageSource?> LoadAsync(string url, Uri? uri, CancellationToken cancellationToken);
 }

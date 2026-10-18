@@ -6,9 +6,9 @@ using System.Windows.Input;
 using System.Windows.Threading;
 
 /// <summary>
-/// Две панели вровень: расставляет пустые места так, чтобы каждая пара карты строк стояла в обеих
-/// панелях на одной высоте. Вьюеры стоят в общей прокрутке или в двух своих — тогда их смещения
-/// держатся равными.
+/// Two panes level: places empty places so that every pair of the line map stands at one height in
+/// both panes. The viewers stand in a common scrolling or in two of their own — then their offsets
+/// are kept equal.
 /// </summary>
 public sealed class MdPaneAligner : IDisposable
 {
@@ -25,6 +25,7 @@ public sealed class MdPaneAligner : IDisposable
     private bool _syncing;
     private bool _disposed;
 
+    /// <summary>Keeps two viewers level by a line map.</summary>
     public MdPaneAligner(MarkdownViewer left, MarkdownViewer right, MdLineMap map)
     {
         _left = left;
@@ -39,7 +40,7 @@ public sealed class MdPaneAligner : IDisposable
         QueueAlign();
     }
 
-    /// <summary>Соответствие строк; новая карта — например, после нового диффа — расставляет места заново.</summary>
+    /// <summary>The line map; a new one — for example, after a new diff — places the empty places anew.</summary>
     public MdLineMap Map
     {
         get => _map;
@@ -50,7 +51,7 @@ public sealed class MdPaneAligner : IDisposable
         }
     }
 
-    /// <summary>Расставляет пустые места по нынешней раскладке прямо сейчас.</summary>
+    /// <summary>Places the empty places by the current layout right now.</summary>
     public void Align()
     {
         if (_disposed)
@@ -91,7 +92,7 @@ public sealed class MdPaneAligner : IDisposable
         SetGaps(_right, rightGaps);
     }
 
-    /// <summary>Убирает пустые места и отцепляется от вьюеров.</summary>
+    /// <summary>Removes the empty places and lets go of the viewers.</summary>
     public void Dispose()
     {
         _disposed = true;

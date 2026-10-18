@@ -4,15 +4,16 @@ using System.Windows;
 using System.Windows.Controls;
 
 /// <summary>
-/// Прилипание <see cref="ScrollViewer"/> к краю, куда приходят новые данные: пока прилипла, прокрутка
-/// держится у края, как бы ни менялось содержимое. Отлипает, если увести её от края, и прилипает снова у
-/// края; без отлипания держится всегда.
+/// Sticks a <see cref="ScrollViewer"/> to the edge where new data comes: while stuck, the scrolling
+/// stays at the edge however the content changes. It comes unstuck when moved away and sticks again
+/// at the edge; without unsticking it stays always.
 /// </summary>
 public static class StickyScroll
 {
     /// <summary>Расхождение с краем меньше этого считается краем.</summary>
     private const double Tolerance = 1;
 
+    /// <summary>The edge the scrolling sticks to; <see cref="StickyEdge.None"/> — it does not stick.</summary>
     public static readonly DependencyProperty EdgeProperty =
         DependencyProperty.RegisterAttached(
             "Edge",
@@ -20,6 +21,7 @@ public static class StickyScroll
             typeof(StickyScroll),
             new(StickyEdge.None, OnEdgeChanged));
 
+    /// <summary>Whether the scrolling comes unstuck when moved away from its edge.</summary>
     public static readonly DependencyProperty CanUnstickProperty =
         DependencyProperty.RegisterAttached(
             "CanUnstick",
@@ -34,21 +36,26 @@ public static class StickyScroll
             typeof(StickyScroll),
             new(false));
 
-    /// <summary>Прокрутка сейчас прилипла к своему краю.</summary>
+    /// <summary>The scrolling is stuck to its edge now.</summary>
     public static readonly DependencyProperty IsStuckProperty = IsStuckPropertyKey.DependencyProperty;
 
+    /// <inheritdoc cref="EdgeProperty"/>
     public static StickyEdge GetEdge(DependencyObject element)
         => (StickyEdge)element.GetValue(EdgeProperty);
 
+    /// <inheritdoc cref="EdgeProperty"/>
     public static void SetEdge(DependencyObject element, StickyEdge value)
         => element.SetValue(EdgeProperty, value);
 
+    /// <inheritdoc cref="CanUnstickProperty"/>
     public static bool GetCanUnstick(DependencyObject element)
         => (bool)element.GetValue(CanUnstickProperty);
 
+    /// <inheritdoc cref="CanUnstickProperty"/>
     public static void SetCanUnstick(DependencyObject element, bool value)
         => element.SetValue(CanUnstickProperty, value);
 
+    /// <inheritdoc cref="IsStuckProperty"/>
     public static bool GetIsStuck(DependencyObject element)
         => (bool)element.GetValue(IsStuckProperty);
 

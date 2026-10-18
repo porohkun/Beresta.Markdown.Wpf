@@ -1,24 +1,26 @@
 ﻿namespace Beresta.Markdown.Wpf.Selection;
 
 /// <summary>
-/// Пометки одного владельца: поиска, диффа, комментариев приложения. Слои рисуются в порядке
-/// <see cref="MarkdownViewer.MarkLayers"/>, выделение — поверх всех.
+/// Marks of one owner: search, a diff, comments of the application. Layers are drawn in the order
+/// of <see cref="MarkdownViewer.MarkLayers"/>, the selection — over all of them.
 /// </summary>
 public sealed class MdMarkLayer
 {
     private IReadOnlyList<MdMark> _marks = [];
 
+    /// <summary>An empty layer named <paramref name="name"/>.</summary>
     public MdMarkLayer(string name)
     {
         Name = name;
     }
 
-    /// <summary>Пометки слоя сменились: их заменило приложение или передвинул новый текст.</summary>
+    /// <summary>The marks of the layer changed: the application replaced them or new text moved them.</summary>
     public event EventHandler? Changed;
 
+    /// <summary>The name of the layer.</summary>
     public string Name { get; }
 
-    /// <summary>Пометки слоя; заменяются целиком.</summary>
+    /// <summary>The marks of the layer; replaced as a whole.</summary>
     public IReadOnlyList<MdMark> Marks
     {
         get => _marks;
@@ -30,8 +32,8 @@ public sealed class MdMarkLayer
     }
 
     /// <summary>
-    /// Пометки следуют за новым текстом, как выделение; пропавшие убираются. Без этого новый текст
-    /// пометок не трогает — их пересчитывает владелец.
+    /// Marks follow new text, like the selection; the ones that vanished are removed. Without this
+    /// new text does not touch the marks — their owner recomputes them.
     /// </summary>
     public bool FollowsText { get; set; }
 }

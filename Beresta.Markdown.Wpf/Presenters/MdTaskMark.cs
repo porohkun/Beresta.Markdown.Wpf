@@ -5,9 +5,13 @@ using System.Windows.Automation.Peers;
 using System.Windows.Media;
 using Automation;
 
-/// <summary>Картинка флажка задачи: пустой квадрат, залитый с галочкой или со знаком статуса. Не нажимается.</summary>
+/// <summary>
+/// The picture of a task box: an empty square, a filled one with a check mark, or one with a status
+/// sign. Not clickable.
+/// </summary>
 public sealed class MdTaskMark : FrameworkElement
 {
+    /// <summary>The task is done: <c>[x]</c>.</summary>
     public static readonly DependencyProperty IsCheckedProperty =
         DependencyProperty.Register(
             nameof(IsChecked),
@@ -15,6 +19,10 @@ public sealed class MdTaskMark : FrameworkElement
             typeof(MdTaskMark),
             new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender));
 
+    /// <summary>
+    /// The status sign of the task in an empty square, in the coordinates of a 16 by 16 square;
+    /// none — a plain box.
+    /// </summary>
     public static readonly DependencyProperty GlyphProperty =
         DependencyProperty.Register(
             nameof(Glyph),
@@ -22,6 +30,7 @@ public sealed class MdTaskMark : FrameworkElement
             typeof(MdTaskMark),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
 
+    /// <summary>The color of the box: the frame of an empty square, the fill of a done one, the status sign.</summary>
     public static readonly DependencyProperty BrushProperty =
         DependencyProperty.Register(
             nameof(Brush),
@@ -29,6 +38,7 @@ public sealed class MdTaskMark : FrameworkElement
             typeof(MdTaskMark),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
 
+    /// <summary>The check mark on a filled square.</summary>
     public static readonly DependencyProperty MarkBrushProperty =
         DependencyProperty.Register(
             nameof(MarkBrush),
@@ -36,34 +46,35 @@ public sealed class MdTaskMark : FrameworkElement
             typeof(MdTaskMark),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
 
-    /// <summary>Задача выполнена: <c>[x]</c>.</summary>
+    /// <inheritdoc cref="IsCheckedProperty"/>
     public bool IsChecked
     {
         get => (bool)GetValue(IsCheckedProperty);
         set => SetValue(IsCheckedProperty, value);
     }
 
-    /// <summary>Знак статуса задачи в пустом квадрате, в координатах квадрата 16 на 16; нет знака — обычный флажок.</summary>
+    /// <inheritdoc cref="GlyphProperty"/>
     public Geometry? Glyph
     {
         get => (Geometry?)GetValue(GlyphProperty);
         set => SetValue(GlyphProperty, value);
     }
 
-    /// <summary>Цвет флажка: рамка пустого квадрата, заливка выполненного, знак статуса.</summary>
+    /// <inheritdoc cref="BrushProperty"/>
     public Brush? Brush
     {
         get => (Brush?)GetValue(BrushProperty);
         set => SetValue(BrushProperty, value);
     }
 
-    /// <summary>Галочка на залитом квадрате.</summary>
+    /// <inheritdoc cref="MarkBrushProperty"/>
     public Brush? MarkBrush
     {
         get => (Brush?)GetValue(MarkBrushProperty);
         set => SetValue(MarkBrushProperty, value);
     }
 
+    /// <inheritdoc/>
     protected override void OnRender(DrawingContext drawingContext)
     {
         var size = Math.Min(ActualWidth, ActualHeight);
@@ -105,5 +116,6 @@ public sealed class MdTaskMark : FrameworkElement
         drawingContext.DrawGeometry(null, pen, mark);
     }
 
+    /// <inheritdoc/>
     protected override AutomationPeer OnCreateAutomationPeer() => new MdTaskMarkAutomationPeer(this);
 }

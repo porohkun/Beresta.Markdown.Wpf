@@ -1,29 +1,31 @@
 ﻿namespace Beresta.Markdown.Wpf.Scrolling;
 
 /// <summary>
-/// Соответствие строк двух исходников по опорным парам — например, по неизменённым строкам диффа.
-/// Между опорами строки пересчитываются линейно, за крайними — со сдвигом крайней опоры.
+/// A correspondence of the lines of two sources by anchor pairs — for example, by the unchanged
+/// lines of a diff. Between anchors lines are mapped linearly, beyond the outer ones — with the
+/// shift of the outer anchor.
 /// </summary>
 public sealed class MdLineMap
 {
     private readonly (double Left, double Right)[] _anchors;
 
-    /// <param name="anchors">Пары строк, возрастающие в обоих исходниках.</param>
+    /// <summary>A map by anchor pairs.</summary>
+    /// <param name="anchors">Pairs of lines, increasing in both sources.</param>
     public MdLineMap(IEnumerable<(double Left, double Right)> anchors)
     {
         _anchors = anchors.OrderBy(anchor => anchor.Left).ToArray();
     }
 
-    /// <summary>Строки совпадают один к одному.</summary>
+    /// <summary>Lines correspond one to one.</summary>
     public static MdLineMap Identity { get; } = new([]);
 
     /// <summary>Опорные пары по возрастанию; пусто — строки совпадают один к одному.</summary>
     internal IReadOnlyList<(double Left, double Right)> Anchors => _anchors;
 
-    /// <summary>Строка правого исходника для строки левого.</summary>
+    /// <summary>The line of the right source for a line of the left one.</summary>
     public double ToRight(double left) => Map(left, anchor => anchor.Left, anchor => anchor.Right);
 
-    /// <summary>Строка левого исходника для строки правого.</summary>
+    /// <summary>The line of the left source for a line of the right one.</summary>
     public double ToLeft(double right) => Map(right, anchor => anchor.Right, anchor => anchor.Left);
 
     private double Map(double value, Func<(double Left, double Right), double> from, Func<(double Left, double Right), double> to)

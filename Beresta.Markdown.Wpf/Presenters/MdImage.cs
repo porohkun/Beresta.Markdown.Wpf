@@ -10,11 +10,12 @@ using Automation;
 using ViewModels;
 
 /// <summary>
-/// Картинка документа: грузит себя загрузчиком вьюера, пока не загрузилась — показывает alt; не
-/// шире текста, в котором стоит. Картинка внутри ссылки открывается как ссылка.
+/// An image of the document: loads itself with the loader of the viewer and shows the alt text
+/// until it loads; no wider than the text it stands in. An image inside a link opens as a link.
 /// </summary>
 public sealed class MdImage : Control
 {
+    /// <summary>The model of the image.</summary>
     public static readonly DependencyProperty ImageProperty =
         DependencyProperty.Register(
             nameof(Image),
@@ -29,7 +30,7 @@ public sealed class MdImage : Control
             typeof(MdImage),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure));
 
-    /// <summary>Загруженная картинка; пока её нет — <c>null</c>.</summary>
+    /// <summary>The loaded image; until it is there — <c>null</c>.</summary>
     public static readonly DependencyProperty ImageSourceProperty = ImageSourcePropertyKey.DependencyProperty;
 
 
@@ -37,6 +38,7 @@ public sealed class MdImage : Control
     private MdImageCache.Ticket? _waiting;
     private bool _pressed;
 
+    /// <summary>Creates an empty image.</summary>
     public MdImage()
     {
         Loaded += (_, _) =>
@@ -52,14 +54,17 @@ public sealed class MdImage : Control
         };
     }
 
+    /// <inheritdoc cref="ImageProperty"/>
     public ImageVm? Image
     {
         get => (ImageVm?)GetValue(ImageProperty);
         set => SetValue(ImageProperty, value);
     }
 
+    /// <inheritdoc cref="ImageSourceProperty"/>
     public ImageSource? ImageSource => (ImageSource?)GetValue(ImageSourceProperty);
 
+    /// <inheritdoc/>
     protected override Size MeasureOverride(Size constraint)
     {
         if (ImageSource is not { } source || Image is not { } image)
@@ -76,14 +81,17 @@ public sealed class MdImage : Control
         return size;
     }
 
+    /// <inheritdoc/>
     protected override AutomationPeer OnCreateAutomationPeer() => new MdImageAutomationPeer(this);
 
+    /// <inheritdoc/>
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
     {
         base.OnMouseLeftButtonDown(e);
         _pressed = Image?.Href is not null;
     }
 
+    /// <inheritdoc/>
     protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
     {
         base.OnMouseLeftButtonUp(e);
@@ -95,6 +103,7 @@ public sealed class MdImage : Control
         }
     }
 
+    /// <inheritdoc/>
     protected override void OnMouseLeave(MouseEventArgs e)
     {
         base.OnMouseLeave(e);

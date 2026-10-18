@@ -2,13 +2,16 @@
 
 using Extensions;
 
-/// <summary>Набор готовых расширений под одну программу: части в порядке библиотеки, без выключенных в <see cref="Without"/>.</summary>
+/// <summary>
+/// A set of ready-made extensions for one program: parts in the order of the library, without those
+/// turned off in <see cref="Without"/>.
+/// </summary>
 public abstract class KitSet : MdExtensionSet
 {
     private readonly List<(KitParts Part, MdExtension Extension)> _parts = [];
     private KitParts _without;
 
-    /// <summary>Части набора, которые не подключаются.</summary>
+    /// <summary>Parts of the set that are not connected.</summary>
     public KitParts Without
     {
         get => _without;
@@ -19,7 +22,7 @@ public abstract class KitSet : MdExtensionSet
         }
     }
 
-    /// <summary>Добавляет часть в конец набора.</summary>
+    /// <summary>Adds a part at the end of the set.</summary>
     protected T Part<T>(KitParts part, T extension)
         where T : MdExtension
     {

@@ -8,12 +8,12 @@ using Identity;
 using ViewModels;
 
 /// <summary>
-/// Блоки внутри блока или виджета: цитаты, пункта списка, своего контейнера. Рисуются той же
-/// цепочкой шаблонов и виртуализируются той же панелью, что и документ.
+/// Blocks inside a block or a widget: a quote, a list item, your own container. Drawn by the same
+/// chain of templates and virtualized by the same panel as the document.
 /// </summary>
 public class MdBlocksPresenter : ItemsControl
 {
-    /// <summary>Вложенные блоки.</summary>
+    /// <summary>The nested blocks.</summary>
     public static readonly DependencyProperty BlocksProperty =
         DependencyProperty.Register(
             nameof(Blocks),
@@ -28,21 +28,26 @@ public class MdBlocksPresenter : ItemsControl
         DefaultStyleKeyProperty.OverrideMetadata(typeof(MdBlocksPresenter), new FrameworkPropertyMetadata(typeof(MdBlocksPresenter)));
     }
 
+    /// <summary>Creates an empty presenter.</summary>
     public MdBlocksPresenter()
     {
         ItemsSource = _blocks;
     }
 
+    /// <inheritdoc cref="BlocksProperty"/>
     public IReadOnlyList<BlockVm>? Blocks
     {
         get => (IReadOnlyList<BlockVm>?)GetValue(BlocksProperty);
         set => SetValue(BlocksProperty, value);
     }
 
+    /// <inheritdoc/>
     protected override AutomationPeer OnCreateAutomationPeer() => new MdBlocksAutomationPeer(this);
 
+    /// <inheritdoc/>
     protected override DependencyObject GetContainerForItemOverride() => new MdBlockItem();
 
+    /// <inheritdoc/>
     protected override bool IsItemItsOwnContainerOverride(object item) => item is MdBlockItem;
 
     private static void OnBlocksChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

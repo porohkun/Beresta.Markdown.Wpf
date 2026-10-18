@@ -4,26 +4,20 @@ using System.Windows;
 using System.Windows.Input;
 
 /// <summary>
-/// Точка перехвата ссылок разметки. Нужна тем, у кого ссылка ведёт не наружу, а внутрь
-/// приложения: <c>[подпись](своя_схема:идентификатор)</c>.
-///
-/// <para>
-/// Подключиться можно двумя способами, и оба ставятся на любого предка вьюера — событие
-/// всплывает: обработчиком (<c>MarkdownLink.Navigate="..."</c>) либо командой
-/// (<c>MarkdownLink.Command="{Binding ...}"</c>), которая получает
-/// <see cref="MarkdownLinkEventArgs.Href"/> параметром.
-/// </para>
-///
-/// <para>
-/// Необработанная ссылка на якорь документа (<c>#id</c>) прокручивает вьюер к якорю, остальное
-/// получает открыватель <see cref="OpenerProperty"/>. Поэтому команда, отказавшаяся исполняться
-/// (<c>CanExecute</c> вернул <c>false</c>), событие не гасит — «не моя ссылка» и «моя, но сейчас
-/// нельзя» здесь одно и то же, а внешние ссылки в тексте обязаны продолжать работать.
-/// </para>
+/// The place where links of the markup are intercepted: for links that lead into the application,
+/// <c>[caption](your_scheme:id)</c>, rather than out of it.
 /// </summary>
+/// <remarks>
+/// Hook in on any ancestor of the viewer, since the event bubbles: with a handler,
+/// <c>MarkdownLink.Navigate="..."</c>, or with a command, <c>MarkdownLink.Command="{Binding
+/// ...}"</c>, which gets <see cref="MarkdownLinkEventArgs.Href"/> as its parameter. An unhandled
+/// link to an anchor of the document, <c>#id</c>, scrolls the viewer to the anchor; the rest goes
+/// to the opener in <see cref="OpenerProperty"/>. A command that refuses to execute does not stop
+/// the event.
+/// </remarks>
 public static class MarkdownLink
 {
-    /// <summary>Ссылку нажали. Всплывающее: обработчик ставится на любого предка вьюера.</summary>
+    /// <summary>A link was clicked. Bubbles: set a handler on any ancestor of the viewer.</summary>
     public static readonly RoutedEvent NavigateEvent =
         EventManager.RegisterRoutedEvent(
             "Navigate",
@@ -32,8 +26,9 @@ public static class MarkdownLink
             typeof(MarkdownLink));
 
     /// <summary>
-    /// Кто открывает ссылку, которую не обработало приложение; наследуется — ставится на вьюер, на
-    /// окно или стилем. По умолчанию <see cref="MdSystemLinkOpener"/>, <c>null</c> — не открывает никто.
+    /// Who opens a link that the application did not handle; inherited — set it on the viewer, the
+    /// window or in a style. By default <see cref="MdSystemLinkOpener"/>; <c>null</c> — nobody
+    /// opens links.
     /// </summary>
     public static readonly DependencyProperty OpenerProperty =
         DependencyProperty.RegisterAttached(
@@ -43,13 +38,15 @@ public static class MarkdownLink
             new FrameworkPropertyMetadata(MdSystemLinkOpener.Instance, FrameworkPropertyMetadataOptions.Inherits));
 
     /// <summary>
-    /// Нажатие ссылки из шаблона своего виджета, параметр — цель ссылки строкой: тот же путь, что у
-    /// ссылки в тексте. Исполняет вьюер, в котором лежит виджет.
+    /// A click on a link from the template of your widget; the parameter is the target of the link
+    /// as a string. Goes the same way as a link in the text; executed by the viewer that holds the
+    /// widget.
     /// </summary>
     public static readonly RoutedCommand ActivateCommand = new(nameof(ActivateCommand), typeof(MarkdownLink));
 
     /// <summary>
-    /// Команда, которой достаётся нажатая ссылка; параметр — <see cref="MarkdownLinkEventArgs.Href"/>.
+    /// A command that gets a clicked link; the parameter is
+    /// <see cref="MarkdownLinkEventArgs.Href"/>.
     /// </summary>
     public static readonly DependencyProperty CommandProperty =
         DependencyProperty.RegisterAttached(
@@ -58,25 +55,31 @@ public static class MarkdownLink
             typeof(MarkdownLink),
             new(null, OnCommandChanged));
 
+    /// <summary>Adds a handler of <see cref="NavigateEvent"/> to an element.</summary>
     public static void AddNavigateHandler(DependencyObject element, MarkdownLinkEventHandler handler) =>
         (element as UIElement)?.AddHandler(NavigateEvent, handler);
 
+    /// <summary>Removes a handler of <see cref="NavigateEvent"/> from an element.</summary>
     public static void RemoveNavigateHandler(DependencyObject element, MarkdownLinkEventHandler handler) =>
         (element as UIElement)?.RemoveHandler(NavigateEvent, handler);
 
+    /// <inheritdoc cref="CommandProperty"/>
     public static ICommand? GetCommand(DependencyObject element) =>
         (ICommand?)element.GetValue(CommandProperty);
 
+    /// <inheritdoc cref="CommandProperty"/>
     public static void SetCommand(DependencyObject element, ICommand? value) =>
         element.SetValue(CommandProperty, value);
 
+    /// <inheritdoc cref="OpenerProperty"/>
     public static IMdLinkOpener? GetOpener(DependencyObject element) =>
         (IMdLinkOpener?)element.GetValue(OpenerProperty);
 
+    /// <inheritdoc cref="OpenerProperty"/>
     public static void SetOpener(DependencyObject element, IMdLinkOpener? value) =>
         element.SetValue(OpenerProperty, value);
 
-    /// <summary>Нажатие ссылки из своего виджета: тот же путь, что у ссылки в тексте.</summary>
+    /// <summary>A click on a link from your widget: goes the same way as a link in the text.</summary>
     public static void Activate(UIElement source, string href)
         => Activate(source, href, Uri.TryCreate(href, UriKind.RelativeOrAbsolute, out var uri) ? uri : null);
 

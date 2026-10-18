@@ -3,11 +3,13 @@
 using System.ComponentModel;
 using Extensions;
 
-/// <summary>Раскрыт ли спойлер; щелчок по нему раскрывает и прячет.</summary>
+/// <summary>Whether a spoiler is revealed; a click on it reveals and hides it.</summary>
 public sealed class SpoilerState : INotifyPropertyChanged, IMdClickableState
 {
+    /// <inheritdoc/>
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    /// <summary>The spoiler is revealed.</summary>
     public bool IsRevealed
     {
         get;
@@ -23,5 +25,6 @@ public sealed class SpoilerState : INotifyPropertyChanged, IMdClickableState
         }
     }
 
+    /// <inheritdoc/>
     public void OnClick() => IsRevealed = !IsRevealed;
 }

@@ -1,5 +1,5 @@
 ﻿namespace Beresta.Markdown.Wpf.ViewModels;
 
-/// <summary>Фигура <c>^^^</c>: содержимое и подписи <see cref="FigureCaptionVm"/> на своих местах.</summary>
+/// <summary>A <c>^^^</c> figure: the content and the captions <see cref="FigureCaptionVm"/> at their places.</summary>
 public sealed record FigureVm(IReadOnlyList<BlockVm> Blocks)
     : BlockVm;

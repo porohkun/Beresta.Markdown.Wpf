@@ -2,18 +2,21 @@
 
 using System.Windows.Controls;
 
-/// <summary>Сторона синхронной прокрутки: строки исходника в своей прокрутке — вьюер, редактор.</summary>
+/// <summary>A side of scrolling together: source lines in its own scrolling — a viewer, an editor.</summary>
 public interface IMdScrollSide
 {
-    /// <summary>Своя прокрутка стороны; пока её нет — <c>null</c>.</summary>
+    /// <summary>The own scrolling of the side; until it is there — <c>null</c>.</summary>
     ScrollViewer? Scroller { get; }
 
     /// <summary>
-    /// Строка исходника, которая видна в доле <paramref name="viewportFraction"/> высоты своей прокрутки:
-    /// 0 — верхний край, 1 — нижний; дробная часть — доля строки.
+    /// The source line visible at the fraction <paramref name="viewportFraction"/> of the height of
+    /// its scrolling: 0 is the top edge, 1 the bottom one; the fraction is a part of the line.
     /// </summary>
     double? GetVisibleSourceLine(double viewportFraction = 0);
 
-    /// <summary>Прокручивает свою прокрутку так, чтобы строка исходника встала в долю <paramref name="viewportFraction"/> её высоты.</summary>
+    /// <summary>
+    /// Scrolls its scrolling so that a source line stands at the fraction
+    /// <paramref name="viewportFraction"/> of its height.
+    /// </summary>
     bool ScrollToSourceLine(double line, double viewportFraction = 0);
 }

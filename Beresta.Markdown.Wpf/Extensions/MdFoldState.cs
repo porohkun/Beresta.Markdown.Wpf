@@ -2,11 +2,13 @@
 
 using System.ComponentModel;
 
-/// <summary>Развёрнут ли сворачиваемый блок или плашка; состояние виджета вьюера.</summary>
+/// <summary>Whether a collapsible block or a callout is expanded; a widget state of the viewer.</summary>
 public sealed class MdFoldState(bool isExpanded) : INotifyPropertyChanged
 {
+    /// <inheritdoc/>
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    /// <summary>The block is expanded.</summary>
     public bool IsExpanded
     {
         get => isExpanded;

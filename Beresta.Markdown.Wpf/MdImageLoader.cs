@@ -7,8 +7,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 /// <summary>
-/// Загрузчик картинок по умолчанию: http(s), файлы, <c>pack://</c> и <c>data:</c> в base64.
-/// Картинка декодируется вне потока интерфейса и отдаётся замороженной.
+/// The default image loader: http(s), files, <c>pack://</c> and base64 <c>data:</c>. An image is
+/// decoded outside the interface thread and returned frozen.
 /// </summary>
 public sealed class MdImageLoader : IMdImageLoader
 {
@@ -18,8 +18,10 @@ public sealed class MdImageLoader : IMdImageLoader
     {
     }
 
+    /// <summary>The single instance of the loader.</summary>
     public static MdImageLoader Instance { get; } = new();
 
+    /// <inheritdoc/>
     public Task<ImageSource?> LoadAsync(string url, Uri? uri, CancellationToken cancellationToken)
         => LoadAsync(url, uri, 0, cancellationToken);
 

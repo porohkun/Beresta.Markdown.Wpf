@@ -2,26 +2,30 @@
 
 using Selection;
 
-/// <summary>Картинка; <paramref name="Url"/> — адрес ровно из разметки, <paramref name="Alt"/> — её текст.</summary>
+/// <summary>
+/// An image; <paramref name="Url"/> is the address exactly as in the markup, <paramref name="Alt"/>
+/// is its text.
+/// </summary>
 public sealed record ImageVm(string Url, string Alt) : InlineVm, IMdCopyText
 {
-    /// <summary>Заголовок картинки — подсказка; нет — <c>null</c>.</summary>
+    /// <summary>The title of the image — a tooltip; none — <c>null</c>.</summary>
     public string? Title { get; init; }
 
-    /// <summary>Ширина из атрибутов, в пикселях; не задана — <c>null</c>.</summary>
+    /// <summary>The width from the attributes, in pixels; not set — <c>null</c>.</summary>
     public double? Width { get; init; }
 
-    /// <summary>Высота из атрибутов, в пикселях; не задана — <c>null</c>.</summary>
+    /// <summary>The height from the attributes, in pixels; not set — <c>null</c>.</summary>
     public double? Height { get; init; }
 
-    /// <summary>Цель ссылки вокруг картинки; ссылки нет — <c>null</c>.</summary>
+    /// <summary>The target of the link around the image; no link — <c>null</c>.</summary>
     public string? Href { get; init; }
 
-    /// <summary>Разбор <see cref="Href"/>.</summary>
+    /// <summary>The parsed <see cref="Href"/>.</summary>
     public Uri? Hyperlink { get; init; }
 
-    /// <summary>Заголовок ссылки вокруг картинки; нет — <c>null</c>.</summary>
+    /// <summary>The title of the link around the image; none — <c>null</c>.</summary>
     public string? LinkTitle { get; init; }
 
+    /// <inheritdoc/>
     public string CopyText => Alt;
 }

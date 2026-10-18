@@ -7,7 +7,8 @@ using System.Windows.Media.Media3D;
 using ViewModels;
 
 /// <summary>
-/// Шаблон для элемента документа: сначала у расширений вьюера, затем у его провайдера стилей.
+/// The template for an element of the document: first from the extensions of the viewer, then from
+/// its style provider.
 /// </summary>
 public sealed class MarkdownTemplateSelector : DataTemplateSelector
 {
@@ -18,6 +19,7 @@ public sealed class MarkdownTemplateSelector : DataTemplateSelector
             typeof(MarkdownTemplateSelector),
             new(null));
 
+    /// <inheritdoc/>
     public override DataTemplate? SelectTemplate(object? item, DependencyObject container)
     {
         if (item is null)

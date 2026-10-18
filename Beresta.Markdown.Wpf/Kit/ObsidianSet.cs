@@ -1,14 +1,15 @@
 ﻿namespace Beresta.Markdown.Wpf.Kit;
 
 /// <summary>
-/// Набор Obsidian: карточка свойств, плашки Obsidian, комментарии, встраивание картинок, вики-ссылки,
-/// теги, статусы задач.
+/// The Obsidian set: properties card, Obsidian callouts, comments, embedded images, wiki links,
+/// tags, task statuses.
 /// </summary>
 public sealed class ObsidianSet : KitSet
 {
     private readonly WikiEmbeds _embeds;
     private readonly WikiLinks _links;
 
+    /// <summary>Creates the set with all its parts.</summary>
     public ObsidianSet()
     {
         Part(KitParts.PropertiesCard, new PropertiesCard());
@@ -20,7 +21,7 @@ public sealed class ObsidianSet : KitSet
         Part(KitParts.TaskStatuses, new TaskStatuses());
     }
 
-    /// <summary>Знает, какие страницы есть, — для вики-ссылок и встраиваний.</summary>
+    /// <summary>Knows which pages exist, for wiki links and embeds.</summary>
     public IMdLinkResolver? Resolver
     {
         get => _links.Resolver;

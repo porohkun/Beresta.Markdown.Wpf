@@ -2,12 +2,13 @@
 
 using System.Windows;
 
-/// <summary>Состояние виджета, которое живёт дольше его контрола.</summary>
+/// <summary>The state of a widget that lives longer than its control.</summary>
 public static class MdWidget
 {
     /// <summary>
-    /// Состояние виджета от <see cref="MdExtension.CreateState"/>; его видит весь шаблон виджета.
-    /// Вьюер хранит состояние по <c>NodeId</c>, так что оно переживает и виртуализацию, и новый текст.
+    /// The state of a widget from <see cref="MdExtension.CreateState"/>; the whole template of the
+    /// widget sees it. The viewer keeps it by <c>NodeId</c>, so it survives both virtualization and
+    /// a new text.
     /// </summary>
     public static readonly DependencyProperty StateProperty =
         DependencyProperty.RegisterAttached(
@@ -24,6 +25,7 @@ public static class MdWidget
             typeof(MdWidget),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits));
 
+    /// <inheritdoc cref="StateProperty"/>
     public static object? GetState(DependencyObject element) => element.GetValue(StateProperty);
 
     internal static void SetState(DependencyObject element, object? value) => element.SetValue(StateProperty, value);

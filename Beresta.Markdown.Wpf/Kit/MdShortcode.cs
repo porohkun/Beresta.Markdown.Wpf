@@ -1,12 +1,12 @@
 ﻿namespace Beresta.Markdown.Wpf.Kit;
 
-/// <summary>Шорткод <c>{%имя аргументы%}</c> или <c>{{&lt; имя аргументы &gt;}}</c>.</summary>
-/// <param name="Name">Имя.</param>
-/// <param name="Arguments">Аргументы по порядку; кавычки сняты.</param>
-/// <param name="Named">Именованные аргументы <c>ключ=значение</c>.</param>
+/// <summary>A shortcode <c>{%name arguments%}</c> or <c>{{&lt; name arguments &gt;}}</c>.</summary>
+/// <param name="Name">The name.</param>
+/// <param name="Arguments">The arguments in order; quotes removed.</param>
+/// <param name="Named">Named arguments <c>key=value</c>.</param>
 public sealed record MdShortcode(string Name, IReadOnlyList<string> Arguments, IReadOnlyDictionary<string, string> Named)
 {
-    /// <summary>Именованный аргумент, а нет его — аргумент по номеру; нет и его — <c>null</c>.</summary>
+    /// <summary>A named argument, and without it the argument by number; without that too — <c>null</c>.</summary>
     public string? Argument(string name, int index)
         => Named.TryGetValue(name, out var value) ? value : index < Arguments.Count ? Arguments[index] : null;
 }

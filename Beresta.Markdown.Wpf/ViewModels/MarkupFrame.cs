@@ -1,8 +1,11 @@
 ﻿namespace Beresta.Markdown.Wpf.ViewModels;
 
-/// <summary>Обрамление куска текста в разметке выделенного: что пишется до текста и что после.</summary>
+/// <summary>
+/// The framing of a piece of text in the markup of the selection: what is written before the text
+/// and what after it.
+/// </summary>
 public sealed record MarkupFrame(string Open, string Close)
 {
-    /// <summary>Обрамление само записывает ссылку куска: разметка ссылки вокруг него не ставится.</summary>
+    /// <summary>The framing writes the link of the piece itself: no link markup is put around it.</summary>
     public bool ReplacesLink { get; init; }
 }

@@ -1,8 +1,8 @@
 ﻿namespace Beresta.Markdown.Wpf.Selection;
 
 /// <summary>
-/// Кусок текстовой карты, который находит своё место в карте нового текста — по своим блокам и
-/// тексту у концов. Пропадает вместе со своим блоком.
+/// A piece of the text map that finds its place in the map of new text — by its blocks and by the
+/// text at its ends. It vanishes together with its block.
 /// </summary>
 public sealed class MdTrackedRange
 {

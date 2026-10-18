@@ -1,26 +1,26 @@
 ﻿namespace Beresta.Markdown.Wpf.Selection;
 
-/// <summary>Как рисуется пометка.</summary>
+/// <summary>How a mark is drawn.</summary>
 public enum MdMarkKind
 {
-    /// <summary>Заливка текста.</summary>
+    /// <summary>A fill under the text.</summary>
     Fill,
 
-    /// <summary>Черта под текстом.</summary>
+    /// <summary>A line under the text.</summary>
     Underline,
 
-    /// <summary>Рамка вокруг текста, у каждой экранной строки своя.</summary>
+    /// <summary>A frame around the text, its own for every screen line.</summary>
     Frame,
 
-    /// <summary>Строки во всю ширину документа.</summary>
+    /// <summary>Rows across the whole width of the document.</summary>
     Row,
 
-    /// <summary>Полоса на полях у номеров строк.</summary>
+    /// <summary>A bar in the margin by the line numbers.</summary>
     Bar,
 
-    /// <summary>Значок на полях у номера первой строки.</summary>
+    /// <summary>An icon in the margin by the number of the first line.</summary>
     Icon,
 
-    /// <summary>Вертикальная черта в начале куска; у пустого куска — на его месте.</summary>
+    /// <summary>A vertical line at the start of the piece; for an empty piece — at its place.</summary>
     Caret
 }

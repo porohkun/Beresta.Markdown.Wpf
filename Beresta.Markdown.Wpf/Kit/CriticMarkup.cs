@@ -7,15 +7,17 @@ using Markdig.Syntax.Inlines;
 using ViewModels;
 
 /// <summary>
-/// CriticMarkup: <c>{++вставка++}</c>, <c>{--удаление--}</c>, <c>{~~было~&gt;стало~~}</c>,
-/// <c>{==выделение==}</c> — оформленным текстом <c>Critic.Insertion</c>, <c>Critic.Deletion</c>,
-/// <c>Critic.Highlight</c>; <c>{&gt;&gt;комментарий&lt;&lt;}</c> — значком с подсказкой.
+/// CriticMarkup: <c>{++insertion++}</c>, <c>{--deletion--}</c>, <c>{~~before~&gt;after~~}</c>,
+/// <c>{==highlight==}</c> as styled text <c>Critic.Insertion</c>, <c>Critic.Deletion</c>,
+/// <c>Critic.Highlight</c>; <c>{&gt;&gt;comment&lt;&lt;}</c> as an icon with a tooltip.
 /// </summary>
 public sealed class CriticMarkup : MdExtension
 {
+    /// <inheritdoc/>
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline)
         => pipeline.Extensions.AddIfNotAlready<CriticMarkdigExtension>();
 
+    /// <inheritdoc/>
     public override IReadOnlyList<InlineVm>? ConvertInlines(Inline inline, MdConvertContext context)
     {
         if (inline is not CriticInline critic)
@@ -40,6 +42,7 @@ public sealed class CriticMarkup : MdExtension
             => context.CreateRun(text) with { StyleName = style, Markup = new(open, close) };
     }
 
+    /// <inheritdoc/>
     public override DataTemplate? SelectTemplate(object item, DependencyObject container)
         => item is CriticCommentVm && container is FrameworkElement element
             ? element.TryFindResource("Md.Critic.Comment.Template") as DataTemplate

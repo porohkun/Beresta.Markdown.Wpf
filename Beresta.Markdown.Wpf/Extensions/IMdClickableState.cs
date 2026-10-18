@@ -1,8 +1,8 @@
 ﻿namespace Beresta.Markdown.Wpf.Extensions;
 
-/// <summary>Состояние оформленного куска текста, которое меняет щелчок по куску.</summary>
+/// <summary>The state of a styled piece of text that a click on the piece changes.</summary>
 public interface IMdClickableState
 {
-    /// <summary>По куску щёлкнули, не выделяя текста.</summary>
+    /// <summary>The piece was clicked without selecting text.</summary>
     void OnClick();
 }

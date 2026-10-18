@@ -4,8 +4,9 @@ using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using Automation;
 
-/// <summary>Пункты списка определений; для автоматизации — список из их созданного содержимого.</summary>
+/// <summary>The items of a definition list; for UI Automation — a list of their created content.</summary>
 public class MdDefinitionListPresenter : ItemsControl
 {
+    /// <inheritdoc/>
     protected override AutomationPeer OnCreateAutomationPeer() => new MdDefinitionListAutomationPeer(this);
 }

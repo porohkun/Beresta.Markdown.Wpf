@@ -3,10 +3,11 @@
 using Selection;
 using ViewModels;
 
-/// <summary>Ссылка на сноску с её текстом в подсказке.</summary>
-/// <param name="Order">Номер сноски.</param>
-/// <param name="Markdown">Текст сноски — markdown её блоков.</param>
+/// <summary>A link to a footnote with its text in a tooltip.</summary>
+/// <param name="Order">The number of the footnote.</param>
+/// <param name="Markdown">The text of the footnote: the Markdown of its blocks.</param>
 public sealed record FootnoteTipVm(int Order, string Markdown) : InlineVm, IMdCopyText
 {
+    /// <inheritdoc/>
     public string CopyText => $"[{Order}]";
 }

@@ -8,8 +8,9 @@ using Scrolling;
 using Selection;
 
 /// <summary>
-/// Поиск по тексту вьюера: совпадения — своим слоем пометок, текущее — своим оформлением,
-/// «дальше» и «назад» — с прокруткой к нему. Поле ввода и кнопки — у приложения.
+/// Search in the text of a viewer: matches as its own mark layer, the current one with its own
+/// style, «next» and «previous» with scrolling to it. The input field and the buttons belong to the
+/// application.
 /// </summary>
 public sealed class MdSearch : INotifyPropertyChanged, IDisposable
 {
@@ -25,7 +26,7 @@ public sealed class MdSearch : INotifyPropertyChanged, IDisposable
     private IReadOnlyList<MdTextRange> _matches = [];
     private int _current = -1;
 
-    /// <summary>Ставит свой слой пометок поверх слоёв вьюера.</summary>
+    /// <summary>Puts its mark layer over the layers of the viewer.</summary>
     public MdSearch(MarkdownViewer viewer)
     {
         _viewer = viewer;
@@ -33,31 +34,37 @@ public sealed class MdSearch : INotifyPropertyChanged, IDisposable
         viewer.TextMapChanged += OnTextMapChanged;
     }
 
+    /// <inheritdoc/>
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    /// <summary>Слой с совпадениями во вьюере.</summary>
+    /// <summary>The layer with matches in the viewer.</summary>
     public MdMarkLayer Layer { get; } = new("Search");
 
-    /// <summary>Запрос; новый ищется сразу, текущим становится совпадение у прежнего места, и к нему прокручивается.</summary>
+    /// <summary>
+    /// The query; a new one is searched at once, the match at the former place becomes current, and
+    /// it is scrolled to.
+    /// </summary>
     public string Query
     {
         get => _query;
         set => Update(ref _query, value ?? string.Empty);
     }
 
+    /// <summary>Match case.</summary>
     public bool MatchCase
     {
         get => _matchCase;
         set => Update(ref _matchCase, value);
     }
 
+    /// <summary>Match whole words.</summary>
     public bool WholeWord
     {
         get => _wholeWord;
         set => Update(ref _wholeWord, value);
     }
 
-    /// <summary>Кисть совпадений; не задана — оформление темы <c>Found</c>.</summary>
+    /// <summary>The brush of matches; not set — the theme style <c>Found</c>.</summary>
     public Brush? Brush
     {
         get => _brush;
@@ -69,7 +76,7 @@ public sealed class MdSearch : INotifyPropertyChanged, IDisposable
         }
     }
 
-    /// <summary>Кисть текущего совпадения; не задана — оформление темы <c>Current</c>.</summary>
+    /// <summary>The brush of the current match; not set — the theme style <c>Current</c>.</summary>
     public Brush? CurrentBrush
     {
         get => _currentBrush;
@@ -81,23 +88,25 @@ public sealed class MdSearch : INotifyPropertyChanged, IDisposable
         }
     }
 
-    /// <summary>Совпадения в текстовой карте вьюера по порядку.</summary>
+    /// <summary>Matches in the text map of the viewer in order.</summary>
     public IReadOnlyList<MdTextRange> Matches => _matches;
 
+    /// <summary>The number of matches.</summary>
     public int Count => _matches.Count;
 
-    /// <summary>Номер текущего совпадения с нуля; совпадений нет — -1.</summary>
+    /// <summary>The index of the current match from zero; no matches — -1.</summary>
     public int CurrentIndex => _current;
 
+    /// <summary>The current match; no matches — <c>null</c>.</summary>
     public MdTextRange? Current => _current >= 0 ? _matches[_current] : null;
 
-    /// <summary>Делает текущим следующее совпадение, после последнего — первое, и прокручивает к нему.</summary>
+    /// <summary>Makes the next match current, after the last one — the first, and scrolls to it.</summary>
     public bool Next() => Move(1);
 
-    /// <summary>Делает текущим предыдущее совпадение, перед первым — последнее, и прокручивает к нему.</summary>
+    /// <summary>Makes the previous match current, before the first one — the last, and scrolls to it.</summary>
     public bool Previous() => Move(-1);
 
-    /// <summary>Убирает свой слой из вьюера.</summary>
+    /// <summary>Removes its layer from the viewer.</summary>
     public void Dispose()
     {
         _viewer.TextMapChanged -= OnTextMapChanged;

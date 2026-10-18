@@ -1,10 +1,11 @@
 ﻿namespace Beresta.Markdown.Wpf.Kit;
 
-/// <summary>Набор GitLab: оглавление, ссылки на задачи, цветовые чипы, эмодзи.</summary>
+/// <summary>The GitLab set: table of contents, issue links, color chips, emoji.</summary>
 public sealed class GitLabSet : KitSet
 {
     private readonly IssueLinks _issues;
 
+    /// <summary>Creates the set with all its parts.</summary>
     public GitLabSet()
     {
         Part(KitParts.TableOfContents, new TableOfContents());
@@ -13,6 +14,9 @@ public sealed class GitLabSet : KitSet
         Part(KitParts.EmojiShortcodes, new EmojiShortcodes());
     }
 
-    /// <summary>Шаблоны ссылок на задачи: префикс задачи и адрес с <c>{0}</c> на месте номера.</summary>
+    /// <summary>
+    /// Templates of issue links: the prefix of an issue and an address with <c>{0}</c> in place of
+    /// the number.
+    /// </summary>
     public Dictionary<string, string> IssueTemplates => _issues.Templates;
 }

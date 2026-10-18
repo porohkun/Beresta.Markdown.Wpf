@@ -1,4 +1,4 @@
 ﻿namespace Beresta.Markdown.Wpf.ViewModels;
 
-/// <summary>Блок документа; от него же наследуются блочные виджеты расширений.</summary>
+/// <summary>A block of the document; block widgets of extensions derive from it too.</summary>
 public abstract record BlockVm : NodeVm;

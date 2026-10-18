@@ -2,5 +2,5 @@
 
 using System.Windows.Media;
 
-/// <summary>Подсветка куска текстовой карты: найденное, правка диффа и подобное.</summary>
+/// <summary>A highlight of a piece of the text map: a search match, a diff change and the like.</summary>
 public sealed record MdDecoration(MdTextRange Range, Brush Brush);

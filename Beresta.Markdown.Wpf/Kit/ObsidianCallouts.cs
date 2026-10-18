@@ -7,11 +7,12 @@ using Markdig.Syntax;
 using ViewModels;
 
 /// <summary>
-/// Плашки Obsidian: <c>&gt; [!вид] Заголовок</c>; <c>-</c> или <c>+</c> после вида — сворачиваемая
-/// плашка, <c>-</c> — свёрнутая сразу.
+/// Obsidian callouts: <c>&gt; [!kind] Title</c>; <c>-</c> or <c>+</c> after the kind makes a
+/// collapsible callout, <c>-</c> a collapsed one.
 /// </summary>
 public sealed partial class ObsidianCallouts : MdExtension
 {
+    /// <inheritdoc/>
     public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
     {
         switch (block)

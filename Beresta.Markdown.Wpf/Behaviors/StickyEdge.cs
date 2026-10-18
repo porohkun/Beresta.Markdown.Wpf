@@ -1,14 +1,14 @@
 ﻿namespace Beresta.Markdown.Wpf.Behaviors;
 
-/// <summary>Край прокрутки, к которому она прилипает: откуда приходят новые данные.</summary>
+/// <summary>The edge of the scrolling it sticks to: where new data comes.</summary>
 public enum StickyEdge
 {
-    /// <summary>Не прилипает.</summary>
+    /// <summary>Does not stick.</summary>
     None,
 
-    /// <summary>К низу: новое дописывается в конец.</summary>
+    /// <summary>To the bottom: new content is added at the end.</summary>
     Bottom,
 
-    /// <summary>К верху: новое встаёт в начало.</summary>
+    /// <summary>To the top: new content comes at the start.</summary>
     Top
 }

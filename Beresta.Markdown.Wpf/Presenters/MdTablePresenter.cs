@@ -7,12 +7,13 @@ using Scrolling;
 using ViewModels;
 
 /// <summary>
-/// Таблица сеткой: строка таблицы — строка сетки, а пустое место перед строкой — своя строка сетки.
-/// Столбцы укладываются в доступную ширину, как в браузере: не уже самого длинного слова и не шире
-/// текста без переносов.
+/// A table as a grid: a table row is a grid row, and an empty place before a row is a grid row of
+/// its own. Columns fit the available width like in a browser: no narrower than the longest word
+/// and no wider than the text without wrapping.
 /// </summary>
 public sealed class MdTablePresenter : Control
 {
+    /// <summary>The model of the table.</summary>
     public static readonly DependencyProperty TableProperty =
         DependencyProperty.Register(
             nameof(Table),
@@ -20,6 +21,7 @@ public sealed class MdTablePresenter : Control
             typeof(MdTablePresenter),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
+    /// <summary>The template of a body cell.</summary>
     public static readonly DependencyProperty CellTemplateProperty =
         DependencyProperty.Register(
             nameof(CellTemplate),
@@ -27,6 +29,7 @@ public sealed class MdTablePresenter : Control
             typeof(MdTablePresenter),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
+    /// <summary>The template of a header cell.</summary>
     public static readonly DependencyProperty HeaderTemplateProperty =
         DependencyProperty.Register(
             nameof(HeaderTemplate),
@@ -45,23 +48,27 @@ public sealed class MdTablePresenter : Control
     private (double[] Least, double[] Natural)? _columns;
     private double _measuredWidth = double.NaN;
 
+    /// <summary>Creates an empty table.</summary>
     public MdTablePresenter()
     {
         Build();
     }
 
+    /// <inheritdoc cref="TableProperty"/>
     public TableVm? Table
     {
         get => (TableVm?)GetValue(TableProperty);
         set => SetValue(TableProperty, value);
     }
 
+    /// <inheritdoc cref="CellTemplateProperty"/>
     public DataTemplate CellTemplate
     {
         get => (DataTemplate)GetValue(CellTemplateProperty);
         set => SetValue(CellTemplateProperty, value);
     }
 
+    /// <inheritdoc cref="HeaderTemplateProperty"/>
     public DataTemplate HeaderTemplate
     {
         get => (DataTemplate)GetValue(HeaderTemplateProperty);
@@ -110,6 +117,7 @@ public sealed class MdTablePresenter : Control
         }
     }
 
+    /// <inheritdoc/>
     protected override Size MeasureOverride(Size constraint)
     {
         if (_grid is not null && Table is { ColumnCount: > 0 })
@@ -138,6 +146,7 @@ public sealed class MdTablePresenter : Control
         return base.MeasureOverride(constraint);
     }
 
+    /// <inheritdoc/>
     public override void OnApplyTemplate()
     {
         base.OnApplyTemplate();

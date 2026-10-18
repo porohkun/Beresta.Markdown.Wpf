@@ -1,10 +1,11 @@
 ﻿namespace Beresta.Markdown.Wpf.Kit;
 
-/// <summary>Набор чата — Slack, Discord, Telegram: упоминания, спойлеры, эмодзи.</summary>
+/// <summary>The chat set — Slack, Discord, Telegram: mentions, spoilers, emoji.</summary>
 public sealed class ChatSet : KitSet
 {
     private readonly Mentions _mentions;
 
+    /// <summary>Creates the set with all its parts.</summary>
     public ChatSet()
     {
         _mentions = Part(KitParts.Mentions, new Mentions());
@@ -12,7 +13,7 @@ public sealed class ChatSet : KitSet
         Part(KitParts.EmojiShortcodes, new EmojiShortcodes());
     }
 
-    /// <summary>Знает отображаемые имена участников для упоминаний.</summary>
+    /// <summary>Knows the display names of people for mentions.</summary>
     public IMdLinkResolver? Resolver
     {
         get => _mentions.Resolver;

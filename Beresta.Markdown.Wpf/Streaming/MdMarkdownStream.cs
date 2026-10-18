@@ -4,8 +4,9 @@ using System.Text;
 using System.Windows.Threading;
 
 /// <summary>
-/// Текст, который приходит кусками, — ответ модели или сети — во вьюере: куски принимаются из любого
-/// потока, а вьюер получает накопленный текст пачками не чаще раза в <see cref="Interval"/>.
+/// Text that comes in chunks — the answer of a model or of the network — in the viewer: chunks are
+/// taken from any thread, and the viewer gets the accumulated text in batches no more often than
+/// once per <see cref="Interval"/>.
 /// </summary>
 public sealed class MdMarkdownStream
 {
@@ -17,14 +18,16 @@ public sealed class MdMarkdownStream
     private bool _flushQueued;
     private bool _isCompleted;
 
+    /// <summary>A stream of text into a viewer.</summary>
     public MdMarkdownStream(MarkdownViewer viewer)
     {
         _viewer = viewer;
     }
 
     /// <summary>
-    /// Наименьшее время между выдачами текста вьюеру, по умолчанию 100 мс; ноль — как можно скорее.
-    /// Первый кусок после паузы, <see cref="Complete"/> и <see cref="Reset"/> уходят сразу.
+    /// The shortest time between handing text to the viewer, 100 ms by default; zero — as soon as
+    /// possible. The first chunk after a pause, <see cref="Complete"/> and <see cref="Reset"/> go
+    /// at once.
     /// </summary>
     public TimeSpan Interval
     {
@@ -45,7 +48,7 @@ public sealed class MdMarkdownStream
         }
     }
 
-    /// <summary>Весь полученный текст.</summary>
+    /// <summary>All the received text.</summary>
     public string Text
     {
         get
@@ -57,7 +60,7 @@ public sealed class MdMarkdownStream
         }
     }
 
-    /// <summary>Поток завершён: новые куски не принимаются до <see cref="Reset"/>.</summary>
+    /// <summary>The stream is complete: new chunks are not taken until <see cref="Reset"/>.</summary>
     public bool IsCompleted
     {
         get
@@ -69,7 +72,7 @@ public sealed class MdMarkdownStream
         }
     }
 
-    /// <summary>Дописывает кусок текста; зовётся из любого потока.</summary>
+    /// <summary>Appends a chunk of text; called from any thread.</summary>
     public void Append(string chunk)
     {
         lock (_gate)
@@ -88,7 +91,7 @@ public sealed class MdMarkdownStream
         }
     }
 
-    /// <summary>Завершает поток: остаток текста уходит во вьюер сразу.</summary>
+    /// <summary>Completes the stream: the rest of the text goes to the viewer at once.</summary>
     public void Complete()
     {
         lock (_gate)
@@ -99,7 +102,7 @@ public sealed class MdMarkdownStream
         FlushNow();
     }
 
-    /// <summary>Начинает заново: вьюер пустеет, поток снова принимает куски.</summary>
+    /// <summary>Starts over: the viewer empties, the stream takes chunks again.</summary>
     public void Reset()
     {
         lock (_gate)

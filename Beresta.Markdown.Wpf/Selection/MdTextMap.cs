@@ -4,12 +4,12 @@ using System.Text;
 using ViewModels;
 
 /// <summary>
-/// Текстовая карта документа: сквозной текст, где у каждого списка инлайнов и неделимого
-/// элемента есть свой кусок.
+/// The text map of the document: continuous text where every list of inlines and every indivisible
+/// element has its own piece.
 /// </summary>
 public sealed class MdTextMap
 {
-    /// <summary>Знак неделимого элемента в тексте карты; при копировании пропадает.</summary>
+    /// <summary>The character of an indivisible element in the text of the map; it drops out on copying.</summary>
     public const char ObjectMark = '￼';
 
     private readonly Dictionary<object, MdTextRange> _owners;
@@ -30,19 +30,22 @@ public sealed class MdTextMap
         Headings = builder.Headings;
     }
 
+    /// <summary>The map of an empty document.</summary>
     public static MdTextMap Empty { get; } = new(new(), null);
 
-    /// <summary>Сквозной текст; неделимые элементы — знаком <see cref="ObjectMark"/>.</summary>
+    /// <summary>Continuous text; indivisible elements are the character <see cref="ObjectMark"/>.</summary>
     public string Text { get; }
 
+    /// <summary>The length of the text of the map.</summary>
     public int Length => Text.Length;
 
-    /// <summary>Блоки документа, вложенные тоже, с их кусками карты в порядке чтения.</summary>
+    /// <summary>Blocks of the document, nested ones too, with their pieces of the map in reading order.</summary>
     public IReadOnlyList<(BlockVm Block, MdTextRange Range)> Blocks => _blocks;
 
-    /// <summary>Заголовки документа в порядке чтения — для оглавления.</summary>
+    /// <summary>Headings of the document in reading order — for a table of contents.</summary>
     public IReadOnlyList<MdHeading> Headings { get; }
 
+    /// <summary>The map of blocks without the source text.</summary>
     public static MdTextMap Build(IReadOnlyList<BlockVm> blocks)
     {
         var builder = new Builder();
@@ -50,7 +53,10 @@ public sealed class MdTextMap
         return new(builder, null);
     }
 
-    /// <summary>Карта блоков вместе с исходным текстом: отслеживаемые строки узнают себя по тексту строк.</summary>
+    /// <summary>
+    /// The map of blocks together with the source text: tracked lines recognize themselves by the
+    /// text of the lines.
+    /// </summary>
     public static MdTextMap Build(IReadOnlyList<BlockVm> blocks, string source)
     {
         var builder = new Builder();
@@ -59,8 +65,9 @@ public sealed class MdTextMap
     }
 
     /// <summary>
-    /// Якорь заголовка с этим текстом, как у GitHub: строчные буквы, цифры, дефис и подчёркивание,
-    /// пробел — дефисом. Повтор того же заголовка в документе получает номер через дефис.
+    /// The anchor of a heading with this text, as on GitHub: lowercase letters, digits, hyphens and
+    /// underscores, a space becomes a hyphen. A repeat of the same heading in the document gets a
+    /// number after a hyphen.
     /// </summary>
     public static string AnchorOf(string text)
     {
@@ -80,7 +87,10 @@ public sealed class MdTextMap
         return slug.ToString();
     }
 
-    /// <summary>Текст инлайна в карте: кусок текста, перенос строки или знак неделимого.</summary>
+    /// <summary>
+    /// The text of an inline in the map: a piece of text, a line break or the character of an
+    /// indivisible element.
+    /// </summary>
     public static string TextOf(InlineVm inline)
     {
         switch (inline)
@@ -98,16 +108,19 @@ public sealed class MdTextMap
         }
     }
 
-    /// <summary>Кусок карты якоря — заголовка или сноски — по его идентификатору без <c>#</c>.</summary>
+    /// <summary>
+    /// The piece of the map of an anchor — a heading or a footnote — by its identifier without
+    /// <c>#</c>.
+    /// </summary>
     public bool TryGetAnchor(string id, out MdTextRange range) => _anchors.TryGetValue(id, out range);
 
-    /// <summary>Кусок карты списка инлайнов или неделимого элемента.</summary>
+    /// <summary>The piece of the map of a list of inlines or of an indivisible element.</summary>
     public bool TryGetRange(object owner, out MdTextRange range) => _owners.TryGetValue(owner, out range);
 
     /// <summary>
-    /// Кусок карты, который занимают строки исходника с <paramref name="startLine"/> по
-    /// <paramref name="endLine"/> включительно; <c>null</c> — на этих строках ничего не видно.
-    /// Строки текста и кода узнаются точно, неделимое и виджет — целиком.
+    /// The piece of the map taken by source lines from <paramref name="startLine"/> to
+    /// <paramref name="endLine"/> inclusive; <c>null</c> — nothing is visible on these lines. Lines
+    /// of text and code are recognized exactly, an indivisible element and a widget — as a whole.
     /// </summary>
     public MdTextRange? RangeOfSourceLines(int startLine, int endLine)
     {
@@ -231,8 +244,8 @@ public sealed class MdTextMap
     }
 
     /// <summary>
-    /// Строка исходника, на которой стоит позиция карты: по инлайну, в блоке кода — по строке кода;
-    /// <c>null</c> — позиции нет ни в одном блоке или строка неизвестна.
+    /// The source line a position of the map stands on: by the inline, in a code block — by the
+    /// line of code; <c>null</c> — the position is in no block or the line is unknown.
     /// </summary>
     public int? SourceLineOf(int position)
     {
@@ -284,7 +297,7 @@ public sealed class MdTextMap
         return block.Source.IsEmpty ? null : block.Source.StartLine;
     }
 
-    /// <summary>Текст куска для копирования: неделимые — своим текстом для копирования или ничем.</summary>
+    /// <summary>The text of a piece for copying: indivisible elements give their text for copying or nothing.</summary>
     public string GetText(MdTextRange range)
     {
         var start = Math.Clamp(range.Start, 0, Length);
@@ -312,7 +325,7 @@ public sealed class MdTextMap
         return text.ToString();
     }
 
-    /// <summary>Запоминает кусок этой карты так, чтобы его можно было найти в карте нового текста.</summary>
+    /// <summary>Remembers a piece of this map so that it can be found in the map of new text.</summary>
     public MdTrackedRange Track(MdTextRange range)
     {
         var start = Math.Clamp(range.Start, 0, Length);
@@ -321,8 +334,8 @@ public sealed class MdTextMap
     }
 
     /// <summary>
-    /// Место отслеживаемого куска в этой карте; блок, где стоит его конец, удалён — <c>null</c>.
-    /// Текст куска удалён целиком — пустой кусок на его месте.
+    /// The place of a tracked piece in this map; the block where its end stands is deleted —
+    /// <c>null</c>. The text of the piece is deleted entirely — an empty piece at its place.
     /// </summary>
     public MdTextRange? Find(MdTrackedRange tracked)
     {
@@ -337,13 +350,16 @@ public sealed class MdTextMap
         return start <= end ? new MdTextRange(start, end - start) : new MdTextRange(end, 0);
     }
 
-    /// <summary>Запоминает строки исходника с <paramref name="startLine"/> по <paramref name="endLine"/> включительно.</summary>
+    /// <summary>
+    /// Remembers source lines from <paramref name="startLine"/> to <paramref name="endLine"/>
+    /// inclusive.
+    /// </summary>
     public MdTrackedLines TrackSourceLines(int startLine, int endLine)
         => new(LineEndAt(Math.Min(startLine, endLine)), LineEndAt(Math.Max(startLine, endLine)));
 
     /// <summary>
-    /// Строки отслеживаемого диапазона в этом тексте; блок, где стоит его край, удалён — <c>null</c>.
-    /// Удалены строки до конца диапазона — остаётся первая.
+    /// The lines of a tracked range in this text; the block where its edge stands is deleted —
+    /// <c>null</c>. The lines up to the end of the range are deleted — the first one stays.
     /// </summary>
     public (int StartLine, int EndLine)? Find(MdTrackedLines tracked)
     {

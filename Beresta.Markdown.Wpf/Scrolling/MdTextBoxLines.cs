@@ -4,22 +4,25 @@ using System.Windows;
 using System.Windows.Controls;
 
 /// <summary>
-/// Строки исходника в <see cref="TextBox"/> по позициям знаков, так что перенос строк не мешает: где
-/// строка стоит, какая видна, прокрутка к ней. Сторона синхронной прокрутки рядом с вьюером.
+/// Source lines in a <see cref="TextBox"/> by the positions of characters, so wrapping does not get
+/// in the way: where a line stands, which one is visible, scrolling to it. A side of scrolling
+/// together next to a viewer.
 /// </summary>
 public sealed class MdTextBoxLines : IMdScrollSide
 {
     private string? _text;
     private int[] _starts = [0];
 
+    /// <summary>Source lines of an editor.</summary>
     public MdTextBoxLines(TextBox textBox)
     {
         TextBox = textBox;
     }
 
+    /// <summary>The editor.</summary>
     public TextBox TextBox { get; }
 
-    /// <summary>Прокрутка внутри редактора.</summary>
+    /// <summary>The scrolling inside the editor.</summary>
     public ScrollViewer? Scroller
     {
         get
@@ -29,7 +32,10 @@ public sealed class MdTextBoxLines : IMdScrollSide
         }
     }
 
-    /// <summary>Верх строки исходника в координатах редактора; дробная часть — доля строки.</summary>
+    /// <summary>
+    /// The top of a source line in the coordinates of the editor; the fraction is a part of the
+    /// line.
+    /// </summary>
     public double? GetSourceLineOffset(double line)
     {
         var starts = Starts();
@@ -43,6 +49,7 @@ public sealed class MdTextBoxLines : IMdScrollSide
         return part > 0 && Top(whole + 1) is { } next ? top + part * (next - top) : top;
     }
 
+    /// <inheritdoc/>
     public double? GetVisibleSourceLine(double viewportFraction = 0)
     {
         if (Scroller is not { } scroller)
@@ -66,6 +73,7 @@ public sealed class MdTextBoxLines : IMdScrollSide
         return line + Math.Clamp((point.Y - top) / (next - top), 0, 1);
     }
 
+    /// <inheritdoc/>
     public bool ScrollToSourceLine(double line, double viewportFraction = 0)
     {
         if (Scroller is not { } scroller || GetSourceLineOffset(line) is not { } offset)
@@ -79,8 +87,8 @@ public sealed class MdTextBoxLines : IMdScrollSide
     }
 
     /// <summary>
-    /// Строки исходника, которые начинаются в видимой части редактора: верх и высота экранной строки, с
-    /// которой каждая начинается, в координатах элемента.
+    /// Source lines that start in the visible part of the editor: the top and height of the screen
+    /// row each one starts with, in the coordinates of an element.
     /// </summary>
     public IReadOnlyList<(int Line, double Top, double Height)> VisibleRows(UIElement relativeTo)
     {

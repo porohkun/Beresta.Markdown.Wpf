@@ -12,6 +12,8 @@ using ViewModels;
 /// </summary>
 internal static class ScreenRows
 {
+    /// <param name="panel">Панель, чьи созданные блоки обходятся.</param>
+    /// <param name="relativeTo">Элемент, в координатах которого места строк.</param>
     /// <param name="frameHeight">Высота места строки у верха рамки блока без своих строк.</param>
     public static IReadOnlyList<(int Line, double Top, double Height)> Collect(
         MdBlockPanel panel,

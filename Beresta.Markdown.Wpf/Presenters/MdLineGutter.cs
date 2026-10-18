@@ -8,13 +8,13 @@ using Selection;
 using ViewModels;
 
 /// <summary>
-/// Поля с номерами строк исходника — у каждой строки, у которой есть своё место на экране.
-/// Ширина общая на документ — по числу цифр последней строки. Значки пометок стоят слева от
-/// номеров, полосы — справа.
+/// The margin with numbers of source lines — at every line that has its own place on screen. The
+/// width is common to the document, by the digits of the last line. Mark icons stand left of the
+/// numbers, bars right of them.
 /// </summary>
 public sealed class MdLineGutter : Control
 {
-    /// <summary>Ширина полосы пометки вида <see cref="MdMarkKind.Bar"/>.</summary>
+    /// <summary>The width of a mark bar of the kind <see cref="MdMarkKind.Bar"/>.</summary>
     public static readonly DependencyProperty BarWidthProperty =
         DependencyProperty.Register(
             nameof(BarWidth),
@@ -22,7 +22,7 @@ public sealed class MdLineGutter : Control
             typeof(MdLineGutter),
             new FrameworkPropertyMetadata(3.0, FrameworkPropertyMetadataOptions.AffectsMeasure | FrameworkPropertyMetadataOptions.AffectsRender));
 
-    /// <summary>Сторона значка пометки вида <see cref="MdMarkKind.Icon"/>.</summary>
+    /// <summary>The side of a mark icon of the kind <see cref="MdMarkKind.Icon"/>.</summary>
     public static readonly DependencyProperty IconSizeProperty =
         DependencyProperty.Register(
             nameof(IconSize),
@@ -44,12 +44,14 @@ public sealed class MdLineGutter : Control
         DefaultStyleKeyProperty.OverrideMetadata(typeof(MdLineGutter), new FrameworkPropertyMetadata(typeof(MdLineGutter)));
     }
 
+    /// <inheritdoc cref="BarWidthProperty"/>
     public double BarWidth
     {
         get => (double)GetValue(BarWidthProperty);
         set => SetValue(BarWidthProperty, value);
     }
 
+    /// <inheritdoc cref="IconSizeProperty"/>
     public double IconSize
     {
         get => (double)GetValue(IconSizeProperty);
@@ -113,6 +115,7 @@ public sealed class MdLineGutter : Control
         return ScreenRows.Collect(panel, this, line => Label(line).Height);
     }
 
+    /// <inheritdoc/>
     protected override Size MeasureOverride(Size constraint)
     {
         var digits = Math.Max(2, (LastLine() + 1).ToString(CultureInfo.InvariantCulture).Length);
@@ -120,6 +123,7 @@ public sealed class MdLineGutter : Control
         return new(IconColumn + Math.Ceiling(width) + Padding.Left + Padding.Right + BarColumn, 0);
     }
 
+    /// <inheritdoc/>
     protected override void OnRender(DrawingContext drawingContext)
     {
         Renders++;
@@ -152,6 +156,7 @@ public sealed class MdLineGutter : Control
         }
     }
 
+    /// <inheritdoc/>
     protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
@@ -174,6 +179,7 @@ public sealed class MdLineGutter : Control
         }
     }
 
+    /// <inheritdoc/>
     protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
     {
         base.OnDpiChanged(oldDpi, newDpi);

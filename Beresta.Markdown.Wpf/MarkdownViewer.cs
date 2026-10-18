@@ -21,12 +21,12 @@ using Search;
 using Selection;
 using ViewModels;
 
-/// <summary>Контрол, который показывает markdown-текст блоками по шаблонам темы.</summary>
+/// <summary>A control that shows Markdown text as blocks drawn by the templates of the theme.</summary>
 [TemplatePart(Name = GutterPart, Type = typeof(MdLineGutter))]
 [TemplatePart(Name = RowMarksPart, Type = typeof(MdRowMarks))]
 public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 {
-    /// <summary>Текст документа.</summary>
+    /// <summary>The text of the document.</summary>
     public static readonly DependencyProperty MarkdownProperty =
         DependencyProperty.Register(
             nameof(Markdown),
@@ -35,8 +35,9 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.None, OnMarkdownChanged));
 
     /// <summary>
-    /// Готовая настройка разбора Markdig; не задана — расширенная по умолчанию. С расширениями вьюера
-    /// от неё берутся только расширения Markdig, настройки построителя — через <see cref="PipelineSetup"/>.
+    /// A ready Markdig pipeline; not set — the extended default one. With extensions of the viewer
+    /// only its Markdig extensions are used; builder settings go through
+    /// <see cref="PipelineSetup"/>.
     /// </summary>
     public static readonly DependencyProperty MarkdownPipelineProperty =
         DependencyProperty.Register(
@@ -45,7 +46,10 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new FrameworkPropertyMetadata(null, OnPipelineChanged));
 
-    /// <summary>Настройка разбора Markdig на новом построителе, поверх неё — расширения вьюера; задана — вместо <see cref="MarkdownPipeline"/>.</summary>
+    /// <summary>
+    /// A setup of a fresh Markdig builder, with the extensions of the viewer on top of it; when
+    /// set, it is used instead of <see cref="MarkdownPipeline"/>.
+    /// </summary>
     public static readonly DependencyProperty PipelineSetupProperty =
         DependencyProperty.Register(
             nameof(PipelineSetup),
@@ -54,8 +58,8 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             new FrameworkPropertyMetadata(null, OnPipelineChanged));
 
     /// <summary>
-    /// Ключ документа: сменился — текст считается другим документом, и выделение, свёрнутость и другие
-    /// состояния виджетов в него не переходят.
+    /// The key of the document: when it changes, the text is another document, and the selection,
+    /// collapsed blocks and other widget states do not move into it.
     /// </summary>
     public static readonly DependencyProperty DocumentKeyProperty =
         DependencyProperty.Register(
@@ -64,7 +68,10 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(null, OnDocumentKeyChanged));
 
-    /// <summary>Длина текста в знаках, с которой он разбирается вне потока интерфейса; 0 — всегда в нём.</summary>
+    /// <summary>
+    /// The length of a text in characters from which it is parsed outside the interface thread; 0 —
+    /// always on it.
+    /// </summary>
     public static readonly DependencyProperty BackgroundParseThresholdProperty =
         DependencyProperty.Register(
             nameof(BackgroundParseThreshold),
@@ -72,7 +79,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(0));
 
-    /// <summary>Шаблоны встроенных блоков.</summary>
+    /// <summary>The templates of built-in blocks.</summary>
     public static readonly DependencyProperty StyleProviderProperty =
         DependencyProperty.Register(
             nameof(StyleProvider),
@@ -80,7 +87,10 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(null, OnContainersSourceChanged));
 
-    /// <summary>Общие расширения нескольких вьюеров; заданные на окне, панели или в стиле, наследуются вьюерами внутри.</summary>
+    /// <summary>
+    /// Extensions shared by several viewers; set on a window, a panel or in a style, they are
+    /// inherited by the viewers inside.
+    /// </summary>
     public static readonly DependencyProperty SharedExtensionsProperty =
         DependencyProperty.RegisterAttached(
             nameof(SharedExtensions),
@@ -88,7 +98,10 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnSharedExtensionsChanged));
 
-    /// <summary>Подсветки кусков текста под слоями пометок и выделением: найденное, правки диффа.</summary>
+    /// <summary>
+    /// Highlights of pieces of text under the mark layers and the selection: found text, changes of
+    /// a diff.
+    /// </summary>
     public static readonly DependencyProperty DecorationsProperty =
         DependencyProperty.Register(
             nameof(Decorations),
@@ -96,7 +109,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(null, OnDecorationsChanged));
 
-    /// <summary>Пустые места перед строками исходника — например, чтобы две панели диффа стояли вровень.</summary>
+    /// <summary>Empty places before source lines — for example, to keep the two panes of a diff level.</summary>
     public static readonly DependencyProperty GapsProperty =
         DependencyProperty.Register(
             nameof(Gaps),
@@ -104,7 +117,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(null, OnGapsChanged));
 
-    /// <summary>Кисть выделения; рисуется поверх текста и пометок.</summary>
+    /// <summary>The brush of the selection; drawn over the text and the marks.</summary>
     public static readonly DependencyProperty SelectionBrushProperty =
         DependencyProperty.Register(
             nameof(SelectionBrush),
@@ -112,7 +125,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(null, OnSelectionBrushChanged));
 
-    /// <summary>Можно ли выделять текст; выключение снимает выделение.</summary>
+    /// <summary>Whether text can be selected; turning it off clears the selection.</summary>
     public static readonly DependencyProperty IsSelectionEnabledProperty =
         DependencyProperty.Register(
             nameof(IsSelectionEnabled),
@@ -120,7 +133,10 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(true, OnIsSelectionEnabledChanged));
 
-    /// <summary>Берёт ли вьюер Ctrl+C сам; выключенный отдаёт команду копирования приложению.</summary>
+    /// <summary>
+    /// Whether the viewer handles Ctrl+C itself; when off, it leaves the copy command to the
+    /// application.
+    /// </summary>
     public static readonly DependencyProperty IsCopyEnabledProperty =
         DependencyProperty.Register(
             nameof(IsCopyEnabled),
@@ -128,7 +144,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(true, (_, _) => CommandManager.InvalidateRequerySuggested()));
 
-    /// <summary>Откуда берутся картинки; по умолчанию <see cref="MdImageLoader"/>.</summary>
+    /// <summary>Where images come from; by default <see cref="MdImageLoader"/>.</summary>
     public static readonly DependencyProperty ImageLoaderProperty =
         DependencyProperty.Register(
             nameof(ImageLoader),
@@ -136,7 +152,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(MdImageLoader.Instance, OnContainersSourceChanged));
 
-    /// <summary>Какие картинки загружать; наследуется. По умолчанию — <see cref="MdImagePolicy.Default"/>.</summary>
+    /// <summary>Which images to load; inherited. By default <see cref="MdImagePolicy.Default"/>.</summary>
     public static readonly DependencyProperty ImagePolicyProperty =
         DependencyProperty.RegisterAttached(
             nameof(ImagePolicy),
@@ -144,7 +160,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new FrameworkPropertyMetadata(MdImagePolicy.Default, FrameworkPropertyMetadataOptions.Inherits, OnImagePolicyChanged));
 
-    /// <summary>Адрес документа: от него разбираются относительные адреса картинок.</summary>
+    /// <summary>The address of the document: relative addresses of images are resolved against it.</summary>
     public static readonly DependencyProperty BaseUriProperty =
         DependencyProperty.Register(
             nameof(BaseUri),
@@ -152,7 +168,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(null, OnContainersSourceChanged));
 
-    /// <summary>Кнопка копирования в блоках кода, видна при наведении; наследуется блоками кода.</summary>
+    /// <summary>The copy button of code blocks, shown on hover; inherited by code blocks.</summary>
     public static readonly DependencyProperty ShowCodeCopyButtonProperty =
         DependencyProperty.RegisterAttached(
             nameof(ShowCodeCopyButton),
@@ -160,7 +176,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.Inherits));
 
-    /// <summary>Копировать как markdown: разметка выделенного обычным текстом; Ctrl+Shift+C.</summary>
+    /// <summary>Copy as Markdown: the markup of the selection as plain text; Ctrl+Shift+C.</summary>
     public static readonly RoutedUICommand CopyMarkdownCommand =
         new(
             "Copy as Markdown",
@@ -168,7 +184,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new() { new KeyGesture(Key.C, ModifierKeys.Control | ModifierKeys.Shift) });
 
-    /// <summary>Номера строк исходника на полях слева.</summary>
+    /// <summary>Numbers of source lines in the left margin.</summary>
     public static readonly DependencyProperty ShowSourceLineNumbersProperty =
         DependencyProperty.Register(
             nameof(ShowSourceLineNumbers),
@@ -176,7 +192,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(false));
 
-    /// <summary>Номера строк внутри блоков кода; наследуется блоками кода.</summary>
+    /// <summary>Line numbers inside code blocks; inherited by code blocks.</summary>
     public static readonly DependencyProperty ShowCodeLineNumbersProperty =
         DependencyProperty.RegisterAttached(
             nameof(ShowCodeLineNumbers),
@@ -191,7 +207,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(0));
 
-    /// <summary>Начало выделения в текстовой карте.</summary>
+    /// <summary>The start of the selection in the text map.</summary>
     public static readonly DependencyProperty SelectionStartProperty = SelectionStartPropertyKey.DependencyProperty;
 
     private static readonly DependencyPropertyKey SelectionLengthPropertyKey =
@@ -201,7 +217,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(0));
 
-    /// <summary>Длина выделения в текстовой карте.</summary>
+    /// <summary>The length of the selection in the text map.</summary>
     public static readonly DependencyProperty SelectionLengthProperty = SelectionLengthPropertyKey.DependencyProperty;
 
     private static readonly DependencyPropertyKey TextMapPropertyKey =
@@ -211,7 +227,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(MdTextMap.Empty));
 
-    /// <summary>Текстовая карта показанного документа; меняется с каждым новым текстом.</summary>
+    /// <summary>The text map of the shown document; changes with every new text.</summary>
     public static readonly DependencyProperty TextMapProperty = TextMapPropertyKey.DependencyProperty;
 
     private static readonly DependencyPropertyKey FrontMatterPropertyKey =
@@ -221,7 +237,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new(null));
 
-    /// <summary>Текст front matter документа без разбора; нет его — <c>null</c>.</summary>
+    /// <summary>The text of the front matter of the document, unparsed; none — <c>null</c>.</summary>
     public static readonly DependencyProperty FrontMatterProperty = FrontMatterPropertyKey.DependencyProperty;
 
 
@@ -292,6 +308,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
                 (sender, e) => e.CanExecute = e.Parameter is string { Length: > 0 }));
     }
 
+    /// <summary>Creates an empty viewer.</summary>
     public MarkdownViewer()
     {
         _states = new(() => ActiveExtensions);
@@ -315,145 +332,170 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler((_, _) => OnViewportMaybeChanged()));
     }
 
-    /// <summary>Выделение изменилось.</summary>
+    /// <summary>The selection changed.</summary>
     public event EventHandler? SelectionChanged;
 
-    /// <summary>Раскладка видимой части могла смениться: прокрутка снаружи и внутри блоков, уточнились высоты, новый текст.</summary>
+    /// <summary>
+    /// The layout of the visible part may have changed: scrolling outside and inside blocks,
+    /// refined heights, a new text.
+    /// </summary>
     public event EventHandler? ViewportChanged;
 
     /// <summary>Новый текст лёг в документ: прежняя карта и новая.</summary>
     internal event Action<MdTextMap, MdTextMap>? TextMapChanged;
 
+    /// <inheritdoc cref="MarkdownProperty"/>
     public string? Markdown
     {
         get => (string)GetValue(MarkdownProperty);
         set => SetValue(MarkdownProperty, value);
     }
 
+    /// <inheritdoc cref="MarkdownPipelineProperty"/>
     public MarkdownPipeline? MarkdownPipeline
     {
         get => (MarkdownPipeline?)GetValue(MarkdownPipelineProperty);
         set => SetValue(MarkdownPipelineProperty, value);
     }
 
+    /// <inheritdoc cref="PipelineSetupProperty"/>
     public Action<MarkdownPipelineBuilder>? PipelineSetup
     {
         get => (Action<MarkdownPipelineBuilder>?)GetValue(PipelineSetupProperty);
         set => SetValue(PipelineSetupProperty, value);
     }
 
+    /// <inheritdoc cref="BackgroundParseThresholdProperty"/>
     public int BackgroundParseThreshold
     {
         get => (int)GetValue(BackgroundParseThresholdProperty);
         set => SetValue(BackgroundParseThresholdProperty, value);
     }
 
+    /// <inheritdoc cref="DocumentKeyProperty"/>
     public object? DocumentKey
     {
         get => GetValue(DocumentKeyProperty);
         set => SetValue(DocumentKeyProperty, value);
     }
 
+    /// <inheritdoc cref="StyleProviderProperty"/>
     public IMdStyleProvider? StyleProvider
     {
         get => (IMdStyleProvider?)GetValue(StyleProviderProperty);
         set => SetValue(StyleProviderProperty, value);
     }
 
-    /// <summary>Свои расширения вьюера; опрашиваются раньше общих.</summary>
+    /// <summary>The own extensions of the viewer; asked before the shared ones.</summary>
     public MdExtensionCollection Extensions { get; } = [];
 
+    /// <inheritdoc cref="SharedExtensionsProperty"/>
     public MdExtensionCollection? SharedExtensions
     {
         get => (MdExtensionCollection?)GetValue(SharedExtensionsProperty);
         set => SetValue(SharedExtensionsProperty, value);
     }
 
+    /// <inheritdoc cref="DecorationsProperty"/>
     public IReadOnlyList<MdDecoration>? Decorations
     {
         get => (IReadOnlyList<MdDecoration>?)GetValue(DecorationsProperty);
         set => SetValue(DecorationsProperty, value);
     }
 
-    /// <summary>Слои пометок в порядке рисования: над декорациями, под выделением.</summary>
+    /// <summary>Mark layers in drawing order: over the decorations, under the selection.</summary>
     public ObservableCollection<MdMarkLayer> MarkLayers { get; } = [];
 
+    /// <inheritdoc cref="GapsProperty"/>
     public IReadOnlyList<MdGap>? Gaps
     {
         get => (IReadOnlyList<MdGap>?)GetValue(GapsProperty);
         set => SetValue(GapsProperty, value);
     }
 
+    /// <inheritdoc cref="SelectionBrushProperty"/>
     public Brush? SelectionBrush
     {
         get => (Brush?)GetValue(SelectionBrushProperty);
         set => SetValue(SelectionBrushProperty, value);
     }
 
+    /// <inheritdoc cref="IsSelectionEnabledProperty"/>
     public bool IsSelectionEnabled
     {
         get => (bool)GetValue(IsSelectionEnabledProperty);
         set => SetValue(IsSelectionEnabledProperty, value);
     }
 
+    /// <inheritdoc cref="IsCopyEnabledProperty"/>
     public bool IsCopyEnabled
     {
         get => (bool)GetValue(IsCopyEnabledProperty);
         set => SetValue(IsCopyEnabledProperty, value);
     }
 
+    /// <inheritdoc cref="ImageLoaderProperty"/>
     public IMdImageLoader? ImageLoader
     {
         get => (IMdImageLoader?)GetValue(ImageLoaderProperty);
         set => SetValue(ImageLoaderProperty, value);
     }
 
+    /// <inheritdoc cref="ImagePolicyProperty"/>
     public MdImagePolicy ImagePolicy
     {
         get => (MdImagePolicy)GetValue(ImagePolicyProperty);
         set => SetValue(ImagePolicyProperty, value);
     }
 
+    /// <inheritdoc cref="BaseUriProperty"/>
     public Uri? BaseUri
     {
         get => (Uri?)GetValue(BaseUriProperty);
         set => SetValue(BaseUriProperty, value);
     }
 
+    /// <inheritdoc cref="ShowSourceLineNumbersProperty"/>
     public bool ShowSourceLineNumbers
     {
         get => (bool)GetValue(ShowSourceLineNumbersProperty);
         set => SetValue(ShowSourceLineNumbersProperty, value);
     }
 
+    /// <inheritdoc cref="ShowCodeLineNumbersProperty"/>
     public bool ShowCodeLineNumbers
     {
         get => (bool)GetValue(ShowCodeLineNumbersProperty);
         set => SetValue(ShowCodeLineNumbersProperty, value);
     }
 
+    /// <inheritdoc cref="ShowCodeCopyButtonProperty"/>
     public bool ShowCodeCopyButton
     {
         get => (bool)GetValue(ShowCodeCopyButtonProperty);
         set => SetValue(ShowCodeCopyButtonProperty, value);
     }
 
+    /// <inheritdoc cref="TextMapProperty"/>
     public MdTextMap TextMap
     {
         get => (MdTextMap)GetValue(TextMapProperty);
         private set => SetValue(TextMapPropertyKey, value);
     }
 
+    /// <inheritdoc cref="FrontMatterProperty"/>
     public string? FrontMatter => (string?)GetValue(FrontMatterProperty);
 
+    /// <inheritdoc cref="SelectionStartProperty"/>
     public int SelectionStart => (int)GetValue(SelectionStartProperty);
 
+    /// <inheritdoc cref="SelectionLengthProperty"/>
     public int SelectionLength => (int)GetValue(SelectionLengthProperty);
 
-    /// <summary>Выделенный текст для копирования; считается по запросу.</summary>
+    /// <summary>The selected text for copying; computed on request.</summary>
     public string SelectedText => TextMap.GetText(Selection.Range);
 
-    /// <summary>Выделенное, записанное markdown со своим оформлением; считается по запросу.</summary>
+    /// <summary>The selection written as Markdown with its own formatting; computed on request.</summary>
     public string SelectedMarkdown => MdMarkdownWriter.Write(_blocks, TextMap, Source, Selection.Range);
 
     /// <summary>Свои расширения, следом общие — в порядке опроса.</summary>
@@ -471,44 +513,56 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     internal MdRowMarks? RowMarks { get; private set; }
 
     // BYDESIGN: кисти пометок — логические потомки вьюера: иначе смена темы до них не доходит.
+    /// <inheritdoc/>
     protected override IEnumerator LogicalChildren => WithThemeBrushes(base.LogicalChildren, _themeBrushes.All);
 
+    /// <inheritdoc cref="ImagePolicyProperty"/>
     public static MdImagePolicy GetImagePolicy(DependencyObject element)
         => (MdImagePolicy)element.GetValue(ImagePolicyProperty);
 
+    /// <inheritdoc cref="ImagePolicyProperty"/>
     public static void SetImagePolicy(DependencyObject element, MdImagePolicy value)
         => element.SetValue(ImagePolicyProperty, value);
 
+    /// <inheritdoc cref="SharedExtensionsProperty"/>
     public static MdExtensionCollection? GetSharedExtensions(DependencyObject element)
         => (MdExtensionCollection?)element.GetValue(SharedExtensionsProperty);
 
+    /// <inheritdoc cref="SharedExtensionsProperty"/>
     public static void SetSharedExtensions(DependencyObject element, MdExtensionCollection? value)
         => element.SetValue(SharedExtensionsProperty, value);
 
+    /// <inheritdoc cref="ShowCodeCopyButtonProperty"/>
     public static bool GetShowCodeCopyButton(DependencyObject element)
         => (bool)element.GetValue(ShowCodeCopyButtonProperty);
 
+    /// <inheritdoc cref="ShowCodeCopyButtonProperty"/>
     public static void SetShowCodeCopyButton(DependencyObject element, bool value)
         => element.SetValue(ShowCodeCopyButtonProperty, value);
 
+    /// <inheritdoc cref="ShowCodeLineNumbersProperty"/>
     public static bool GetShowCodeLineNumbers(DependencyObject element)
         => (bool)element.GetValue(ShowCodeLineNumbersProperty);
 
+    /// <inheritdoc cref="ShowCodeLineNumbersProperty"/>
     public static void SetShowCodeLineNumbers(DependencyObject element, bool value)
         => element.SetValue(ShowCodeLineNumbersProperty, value);
 
-    /// <summary>Позиция строки исходника в координатах вьюера; дробная часть — доля строки.</summary>
+    /// <summary>
+    /// The position of a source line in the coordinates of the viewer; the fraction is a part of
+    /// the line.
+    /// </summary>
     public double? GetSourceLineOffset(double line) => _positions.OffsetOf(line);
 
-    /// <summary>Строка исходника в позиции вьюера; дробная часть — доля строки.</summary>
+    /// <summary>The source line at a position of the viewer; the fraction is a part of the line.</summary>
     public double? GetSourceLineAt(double offset) => _positions.LineAt(offset);
 
     /// <summary>Где в координатах вьюера стояли бы пустые места строк, не будь у вьюера мест; строки — по возрастанию.</summary>
     internal double?[] GetGapOffsets(IReadOnlyList<int> lines) => _positions.GapOffsetsOf(lines);
 
     /// <summary>
-    /// Строка исходника, которая видна в доле <paramref name="viewportFraction"/> высоты прокрутки,
-    /// в которой стоит вьюер: 0 — верхний край, 1 — нижний.
+    /// The source line visible at the fraction <paramref name="viewportFraction"/> of the height of
+    /// the scrolling that holds the viewer: 0 is the top edge, 1 the bottom one.
     /// </summary>
     public double? GetVisibleSourceLine(double viewportFraction = 0)
     {
@@ -522,8 +576,8 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     }
 
     /// <summary>
-    /// Прокручивает прокрутку, в которой стоит вьюер, так, чтобы строка исходника встала в долю
-    /// <paramref name="viewportFraction"/> её высоты. Прокрутка должна быть попиксельной.
+    /// Scrolls the scrolling that holds the viewer so that a source line stands at the fraction
+    /// <paramref name="viewportFraction"/> of its height. The scrolling must be by pixels.
     /// </summary>
     public bool ScrollToSourceLine(double line, double viewportFraction = 0)
         => StartScroll(() => ScrollToSourceLineOnce(line, viewportFraction));
@@ -532,27 +586,31 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     ScrollViewer? IMdScrollSide.Scroller => Scrollers.Nearest(this);
 
     /// <summary>
-    /// Прокручивает прокрутку, в которой стоит вьюер, так, чтобы начало куска текстовой карты встало
-    /// в долю <paramref name="viewportFraction"/> её высоты; кусок может лежать и в несозданных блоках.
+    /// Scrolls the scrolling that holds the viewer so that the start of a piece of the text map
+    /// stands at the fraction <paramref name="viewportFraction"/> of its height; the piece may lie
+    /// in blocks not created yet.
     /// </summary>
     public bool ScrollToRange(MdTextRange range, double viewportFraction = 0)
         => StartScroll(() => ScrollToRangeOnce(range, viewportFraction));
 
     /// <summary>
-    /// Прокручивает к якорю документа — заголовку или сноске — так же, как <see cref="ScrollToRange"/>;
-    /// якоря нет — <c>false</c>.
+    /// Scrolls to an anchor of the document — a heading or a footnote — the same way as
+    /// <see cref="ScrollToRange"/>; no such anchor — <c>false</c>.
     /// </summary>
     public bool ScrollToAnchor(string id, double viewportFraction = 0)
         => (TextMap.TryGetAnchor(id, out var range) || TextMap.TryGetAnchor(Uri.UnescapeDataString(id), out range))
            && ScrollToRange(range, viewportFraction);
 
     /// <summary>
-    /// Позиция в текстовой карте для точки в координатах вьюера; с <paramref name="snapToText"/> —
-    /// у ближайшего текста, без него вне текста — <c>null</c>.
+    /// The position in the text map for a point in the coordinates of the viewer; with
+    /// <paramref name="snapToText"/> — at the nearest text, without it outside text — <c>null</c>.
     /// </summary>
     public int? GetPositionFromPoint(Point point, bool snapToText) => Selection.FindOffset(point, snapToText);
 
-    /// <summary>Прямоугольники куска текстовой карты в координатах вьюера; есть только у созданных блоков.</summary>
+    /// <summary>
+    /// Rectangles of a piece of the text map in the coordinates of the viewer; only created blocks
+    /// have them.
+    /// </summary>
     public IReadOnlyList<Rect> GetRangeRects(MdTextRange range)
     {
         var rects = new List<Rect>();
@@ -579,15 +637,21 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         return rects;
     }
 
-    /// <summary>Рамка куска текстовой карты в координатах вьюера; <see cref="Rect.Empty"/> — кусок не на созданных блоках.</summary>
+    /// <summary>
+    /// The bounds of a piece of the text map in the coordinates of the viewer;
+    /// <see cref="Rect.Empty"/> — the piece is not on created blocks.
+    /// </summary>
     public Rect GetRangeBounds(MdTextRange range) => GetRangeRects(range).Aggregate(Rect.Empty, Rect.Union);
 
-    /// <summary>Геометрия документа сразу в координатах элемента: куски текста, строки исходника, точки.</summary>
+    /// <summary>
+    /// The geometry of the document right in the coordinates of an element: pieces of text, source
+    /// lines, points.
+    /// </summary>
     public MdCoordinates GetCoordinates(UIElement relativeTo) => new(this, relativeTo);
 
     /// <summary>
-    /// Пометки под точкой вьюера в порядке рисования: над текстом — пометки текста под ней и строки
-    /// во всю ширину на её строке, на полях — полосы и значки её строки.
+    /// Marks under a point of the viewer in drawing order: over text — marks of text under it and
+    /// full-width rows of its line; in the margin — bars and icons of its line.
     /// </summary>
     public IReadOnlyList<(MdMarkLayer Layer, MdMark Mark)> GetMarksAt(Point point)
     {
@@ -618,7 +682,10 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         return hits;
     }
 
-    /// <summary>Пометки в позиции текстовой карты в порядке рисования: куски текста, где она стоит, и строки её строки исходника.</summary>
+    /// <summary>
+    /// Marks at a position of the text map in drawing order: pieces of text where it stands and
+    /// rows of its source line.
+    /// </summary>
     public IReadOnlyList<(MdMarkLayer Layer, MdMark Mark)> GetMarksAt(int position)
     {
         var hits = new List<(MdMarkLayer Layer, MdMark Mark)>();
@@ -638,8 +705,8 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     }
 
     /// <summary>
-    /// Собирает документ заново из того же текста: расширения снова спрашивают приложение — резолвер,
-    /// шаблоны ссылок, обработчики. Выделение и состояния виджетов остаются.
+    /// Builds the document anew from the same text: the extensions ask the application again —
+    /// resolvers, link templates, handlers. The selection and widget states stay.
     /// </summary>
     public void Refresh()
     {
@@ -647,14 +714,19 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         Rebuild(discardRunning: true);
     }
 
-    /// <summary>Выделяет кусок текстовой карты.</summary>
+    /// <summary>Selects a piece of the text map.</summary>
     public void Select(int start, int length) => Selection.Select(start, length);
 
+    /// <summary>Selects the whole document.</summary>
     public void SelectAll() => Selection.Select(0, TextMap.Length);
 
+    /// <summary>Removes the selection, leaving an empty one at its start.</summary>
     public void ClearSelection() => Selection.Select(Selection.Range.Start, 0);
 
-    /// <summary>Кладёт выделенное в буфер обмена голым текстом и разметкой; перед этим поднимает <see cref="DataObject.CopyingEvent"/>.</summary>
+    /// <summary>
+    /// Puts the selection on the clipboard as plain text, Markdown and HTML; raises
+    /// <see cref="DataObject.CopyingEvent"/> first.
+    /// </summary>
     public void Copy()
     {
         if (CreateCopyData() is { } data)
@@ -663,7 +735,10 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         }
     }
 
-    /// <summary>Кладёт разметку выделенного обычным текстом — её можно вставить куда угодно; тоже через <see cref="DataObject.CopyingEvent"/>.</summary>
+    /// <summary>
+    /// Puts the markup of the selection on the clipboard as plain text, to be pasted anywhere; also
+    /// through <see cref="DataObject.CopyingEvent"/>.
+    /// </summary>
     public void CopyMarkdown()
     {
         if (CreateCopyData(markdownAsText: true) is { } data)
@@ -672,6 +747,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         }
     }
 
+    /// <inheritdoc/>
     public override void OnApplyTemplate()
     {
         base.OnApplyTemplate();
@@ -766,12 +842,16 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         return MdClipboard.Approve(this, data) ? data : null;
     }
 
+    /// <inheritdoc/>
     protected override AutomationPeer OnCreateAutomationPeer() => new MdDocumentAutomationPeer(this);
 
+    /// <inheritdoc/>
     protected override DependencyObject GetContainerForItemOverride() => new MdBlockItem();
 
+    /// <inheritdoc/>
     protected override bool IsItemItsOwnContainerOverride(object item) => item is MdBlockItem;
 
+    /// <inheritdoc/>
     protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
     {
         base.OnPreviewMouseLeftButtonDown(e);
@@ -795,6 +875,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         }
     }
 
+    /// <inheritdoc/>
     protected override void OnPreviewMouseMove(MouseEventArgs e)
     {
         base.OnPreviewMouseMove(e);
@@ -805,7 +886,10 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         }
     }
 
-    /// <summary>Вьюер потерял мышь посреди протаскивания — переключение окна, всплывшее окно: протаскивание и автопрокрутка кончаются.</summary>
+    /// <summary>
+    /// The viewer lost the mouse in the middle of dragging — a window switch, a popup: dragging and
+    /// auto-scrolling end.
+    /// </summary>
     protected override void OnLostMouseCapture(MouseEventArgs e)
     {
         base.OnLostMouseCapture(e);
@@ -818,6 +902,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         }
     }
 
+    /// <inheritdoc/>
     protected override void OnPreviewMouseLeftButtonUp(MouseButtonEventArgs e)
     {
         base.OnPreviewMouseLeftButtonUp(e);

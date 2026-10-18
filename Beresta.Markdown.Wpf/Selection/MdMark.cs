@@ -2,43 +2,57 @@
 
 using System.Windows.Media;
 
-/// <summary>Пометка куска текстовой карты или строк исходника: вид, оформление и данные приложения.</summary>
+/// <summary>
+/// A mark on a piece of the text map or on source lines: the kind, the look and data of the
+/// application.
+/// </summary>
 public sealed record MdMark
 {
-    /// <summary>Пометка куска текстовой карты.</summary>
+    /// <summary>A mark on a piece of the text map.</summary>
     public MdMark(MdTextRange range, MdMarkKind kind = MdMarkKind.Fill)
     {
         Range = range;
         Kind = kind;
     }
 
-    /// <summary>Пометка строк исходника с <paramref name="startLine"/> по <paramref name="endLine"/> включительно.</summary>
+    /// <summary>
+    /// A mark on source lines from <paramref name="startLine"/> to <paramref name="endLine"/>
+    /// inclusive.
+    /// </summary>
     public MdMark(int startLine, int endLine, MdMarkKind kind = MdMarkKind.Row)
     {
         Lines = (Math.Min(startLine, endLine), Math.Max(startLine, endLine));
         Kind = kind;
     }
 
-    /// <summary>Кусок текстовой карты; у пометки строк — <c>null</c>.</summary>
+    /// <summary>The piece of the text map; a mark on lines has <c>null</c>.</summary>
     public MdTextRange? Range { get; init; }
 
-    /// <summary>Строки исходника включительно; у пометки куска — <c>null</c>.</summary>
+    /// <summary>Source lines, inclusive; a mark on a piece has <c>null</c>.</summary>
     public (int Start, int End)? Lines { get; init; }
 
+    /// <summary>How the mark is drawn.</summary>
     public MdMarkKind Kind { get; init; }
 
-    /// <summary>Кисть; не задана — кисть темы по имени <see cref="Style"/>.</summary>
+    /// <summary>The brush; not set — the theme brush by the name <see cref="Style"/>.</summary>
     public Brush? Brush { get; init; }
 
     /// <summary>
-    /// Имя оформления в теме: заливка и строки берут кисть из ключа <c>Md.Mark.{Style}.Brush</c>,
-    /// черта, рамка и поля — из <c>Md.Mark.{Style}.LineBrush</c>.
+    /// The name of a look in the theme: a fill and rows take the brush from the key
+    /// <c>Md.Mark.{Style}.Brush</c>; a line, a frame and the margin — from
+    /// <c>Md.Mark.{Style}.LineBrush</c>.
     /// </summary>
     public string? Style { get; init; }
 
-    /// <summary>Значок вида <see cref="MdMarkKind.Icon"/> — фигура, залитая кистью пометки.</summary>
+    /// <summary>
+    /// The icon of the kind <see cref="MdMarkKind.Icon"/> — a shape filled with the brush of the
+    /// mark.
+    /// </summary>
     public Geometry? Icon { get; init; }
 
-    /// <summary>Данные приложения; приходят вместе с пометкой из <see cref="MarkdownViewer.GetMarksAt(System.Windows.Point)"/>.</summary>
+    /// <summary>
+    /// Data of the application; comes back with the mark from
+    /// <see cref="MarkdownViewer.GetMarksAt(System.Windows.Point)"/>.
+    /// </summary>
     public object? Tag { get; init; }
 }

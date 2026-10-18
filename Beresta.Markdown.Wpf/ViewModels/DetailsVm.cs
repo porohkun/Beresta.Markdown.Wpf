@@ -1,10 +1,11 @@
 ﻿namespace Beresta.Markdown.Wpf.ViewModels;
 
-/// <summary>Сворачиваемый блок: заголовок и вложенные блоки.</summary>
-/// <param name="Summary">Заголовок; пусто — заголовок из подписей темы.</param>
+/// <summary>A collapsible block: a summary and nested blocks.</summary>
+/// <param name="Summary">The summary; empty — the summary from the captions of the theme.</param>
+/// <param name="Blocks">Nested blocks.</param>
 public sealed record DetailsVm(IReadOnlyList<InlineVm> Summary, IReadOnlyList<BlockVm> Blocks)
     : BlockVm
 {
-    /// <summary>Развёрнут, пока его не свернут.</summary>
+    /// <summary>Expanded until it is collapsed.</summary>
     public bool IsOpen { get; init; }
 }

@@ -1,27 +1,36 @@
 ﻿namespace Beresta.Markdown.Wpf;
 
-/// <summary>Какие картинки вьюер вообще отдаёт загрузчику: схемы адресов, хосты веба, файлы на других компьютерах.</summary>
+/// <summary>
+/// Which images the viewer passes to the loader at all: address schemes, hosts of the web, files on
+/// other computers.
+/// </summary>
 public sealed class MdImagePolicy
 {
-    /// <summary>Всё, что умеет загрузчик, кроме файлов на других компьютерах.</summary>
+    /// <summary>Everything the loader can, except files on other computers.</summary>
     public static MdImagePolicy Default { get; } = new();
 
-    /// <summary>Без сети: свои файлы, ресурсы приложения и картинки внутри документа.</summary>
+    /// <summary>No network: own files, application resources and images inside the document.</summary>
     public static MdImagePolicy Offline { get; } = new() { Schemes = ["file", "pack", "data"] };
 
-    /// <summary>Для чужого текста — чата, ответа модели: только ресурсы приложения и картинки внутри документа.</summary>
+    /// <summary>
+    /// For text from others — a chat, the answer of a model: only application resources and images
+    /// inside the document.
+    /// </summary>
     public static MdImagePolicy Untrusted { get; } = new() { Schemes = ["pack", "data"] };
 
-    /// <summary>Разрешённые схемы адресов; <c>null</c> — любые.</summary>
+    /// <summary>Allowed address schemes; <c>null</c> — any.</summary>
     public IReadOnlyCollection<string>? Schemes { get; init; }
 
-    /// <summary>Разрешённые хосты адресов <c>http</c> и <c>https</c>; <c>null</c> — любые.</summary>
+    /// <summary>Allowed hosts of <c>http</c> and <c>https</c> addresses; <c>null</c> — any.</summary>
     public IReadOnlyCollection<string>? Hosts { get; init; }
 
-    /// <summary>Можно ли файлы на других компьютерах: <c>file://сервер/…</c> и пути UNC.</summary>
+    /// <summary>Whether files on other computers are allowed: <c>file://server/…</c> and UNC paths.</summary>
     public bool AllowNetworkFiles { get; init; }
 
-    /// <summary>Отдать ли загрузчику картинку: адрес из разметки и он же, разобранный от адреса документа.</summary>
+    /// <summary>
+    /// Whether to pass an image to the loader: the address from the markup and the same address
+    /// resolved against the address of the document.
+    /// </summary>
     public bool Allows(string url, Uri? uri)
     {
         var scheme = url.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ? "data"

@@ -6,14 +6,16 @@ using Markdig.Syntax.Inlines;
 using ViewModels;
 
 /// <summary>
-/// Карточки видео: картинка-ссылка на YouTube, Vimeo, RuTube и картинка с адресом видео становятся
-/// карточкой — превью, название из alt, значок воспроизведения. Вид — шаблон темы <c>Md.VideoCard.Template</c>.
+/// Video cards: an image link to YouTube, Vimeo, RuTube and an image with a video address become a
+/// card — a preview, a title from the alt text, a play icon. The look is the theme template
+/// <c>Md.VideoCard.Template</c>.
 /// </summary>
 public sealed class VideoCards : MdExtension
 {
-    /// <summary>Грузить превью из сети; выключено — карточка без превью, если оно не локальное.</summary>
+    /// <summary>Load previews from the network; when off, a card has no preview unless it is local.</summary>
     public bool LoadThumbnails { get; set; } = true;
 
+    /// <inheritdoc/>
     public override InlineVm? ConvertInline(Inline inline, MdConvertContext context)
     {
         switch (inline)
@@ -29,6 +31,7 @@ public sealed class VideoCards : MdExtension
         }
     }
 
+    /// <inheritdoc/>
     public override DataTemplate? SelectTemplate(object item, DependencyObject container)
         => item is VideoCardVm && container is FrameworkElement element ? element.TryFindResource("Md.VideoCard.Template") as DataTemplate : null;
 

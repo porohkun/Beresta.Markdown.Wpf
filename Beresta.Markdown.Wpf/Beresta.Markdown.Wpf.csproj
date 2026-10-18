@@ -4,6 +4,12 @@
 		<RootNamespace>Beresta.Markdown.Wpf</RootNamespace>
 	</PropertyGroup>
 
+	<!-- Documentation -->
+	<PropertyGroup>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
+	</PropertyGroup>
+
 	<!-- Package -->
 	<PropertyGroup>
 		<IsPackable>true</IsPackable>
@@ -40,5 +46,7 @@
 	<ItemGroup>
 		<InternalsVisibleTo Include="Beresta.Markdown.Wpf.Tests" />
 	</ItemGroup>
+
+	<Import Project="Docs\Documentation.targets" />
 
 </Project>

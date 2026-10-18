@@ -3,10 +3,11 @@
 using Selection;
 using ViewModels;
 
-/// <summary>Код в строке, который целиком — цвет: код и кружок этого цвета.</summary>
-/// <param name="Code">Код как написан.</param>
-/// <param name="Color">Цвет в записи WPF <c>#AARRGGBB</c>.</param>
+/// <summary>Inline code that is a color as a whole: the code and a dot of that color.</summary>
+/// <param name="Code">The code as written.</param>
+/// <param name="Color">The color in WPF notation <c>#AARRGGBB</c>.</param>
 public sealed record ColorCodeVm(string Code, string Color) : InlineVm, IMdCopyText
 {
+    /// <inheritdoc/>
     public string CopyText => Code;
 }

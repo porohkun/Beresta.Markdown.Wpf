@@ -2,11 +2,12 @@
 
 using ViewModels;
 
-/// <summary>Набор HackMD: контейнеры <c>:::вид</c>, оглавление, шорткоды <c>{%youtube id %}</c>.</summary>
+/// <summary>The HackMD set: containers <c>:::kind</c>, table of contents, shortcodes <c>{%youtube id %}</c>.</summary>
 public sealed class HackMDSet : KitSet
 {
     private readonly Shortcodes _shortcodes;
 
+    /// <summary>Creates the set with all its parts.</summary>
     public HackMDSet()
     {
         Part(KitParts.CalloutContainers, new CalloutContainers());
@@ -14,10 +15,10 @@ public sealed class HackMDSet : KitSet
         _shortcodes = Part(KitParts.Shortcodes, new Shortcodes());
     }
 
-    /// <summary>Обработчики шорткодов по имени; свои имена приложение добавляет сюда.</summary>
+    /// <summary>Shortcode handlers by name; the application adds its own names here.</summary>
     public Dictionary<string, Func<MdShortcode, NodeVm?>> ShortcodeHandlers => _shortcodes.Handlers;
 
-    /// <summary>Грузить превью видео из сети; выключено — карточка без превью.</summary>
+    /// <summary>Load video previews from the network; when off, a card has no preview.</summary>
     public bool LoadThumbnails
     {
         get => _shortcodes.LoadThumbnails;

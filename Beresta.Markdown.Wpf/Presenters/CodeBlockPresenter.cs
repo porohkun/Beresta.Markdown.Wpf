@@ -11,7 +11,10 @@ using Scrolling;
 using Selection;
 using ViewModels;
 
-/// <summary>Блок кода: рамка с шапкой языка, прокруткой вбок вокруг текста кода и кнопкой копирования.</summary>
+/// <summary>
+/// A code block: a frame with a language header, sideways scrolling around the code and a copy
+/// button.
+/// </summary>
 [TemplatePart(Name = HeaderPart, Type = typeof(FrameworkElement))]
 [TemplatePart(Name = CodePart, Type = typeof(MdTextBlock))]
 [TemplatePart(Name = CopyPart, Type = typeof(ButtonBase))]
@@ -25,16 +28,17 @@ public class CodeBlockPresenter : Control
             typeof(CodeBlockPresenter),
             new(false));
 
-    /// <summary>Код только что скопирован кнопкой — на миг после нажатия.</summary>
+    /// <summary>The code has just been copied with the button — for a moment after the click.</summary>
     public static readonly DependencyProperty IsCopiedProperty = IsCopiedPropertyKey.DependencyProperty;
 
-    /// <summary>Код одним куском текста — тот же список, что у вьюмодели, ради выделения.</summary>
+    /// <summary>The code as one piece of text — the same list as the view model has, for the selection.</summary>
     public static readonly DependencyProperty RunsProperty =
         DependencyProperty.Register(
             nameof(Runs),
             typeof(IReadOnlyList<InlineVm>),
             typeof(CodeBlockPresenter));
 
+    /// <summary>The text of the code.</summary>
     public static readonly DependencyProperty CodeProperty =
         DependencyProperty.Register(
             nameof(Code),
@@ -49,22 +53,24 @@ public class CodeBlockPresenter : Control
             typeof(CodeBlockPresenter),
             new(string.Empty));
 
-    /// <summary>Номера строк кода столбцом, с единицы.</summary>
+    /// <summary>Line numbers of the code as a column, starting from one.</summary>
     public static readonly DependencyProperty LineNumbersProperty = LineNumbersPropertyKey.DependencyProperty;
 
+    /// <summary>The language of the code from the info string; none — <c>null</c>.</summary>
     public static readonly DependencyProperty SyntaxProperty =
         DependencyProperty.Register(
             nameof(Syntax),
             typeof(string),
             typeof(CodeBlockPresenter));
 
+    /// <summary>The info string after the opening fence as written.</summary>
     public static readonly DependencyProperty InfoStringProperty =
         DependencyProperty.Register(
             nameof(InfoString),
             typeof(string),
             typeof(CodeBlockPresenter));
 
-    /// <summary>Код в ограждении: у блока есть шапка — экранная строка открывающего ограждения.</summary>
+    /// <summary>Fenced code: the block has a header — the screen row of the opening fence.</summary>
     public static readonly DependencyProperty IsFencedProperty =
         DependencyProperty.Register(
             nameof(IsFenced),
@@ -88,40 +94,48 @@ public class CodeBlockPresenter : Control
     private ButtonBase? _copy;
     private DispatcherTimer? _copied;
 
+    /// <inheritdoc cref="RunsProperty"/>
     public IReadOnlyList<InlineVm>? Runs
     {
         get => (IReadOnlyList<InlineVm>?)GetValue(RunsProperty);
         set => SetValue(RunsProperty, value);
     }
 
+    /// <inheritdoc cref="CodeProperty"/>
     public string? Code
     {
         get => (string?)GetValue(CodeProperty);
         set => SetValue(CodeProperty, value);
     }
 
+    /// <inheritdoc cref="LineNumbersProperty"/>
     public string LineNumbers => (string)GetValue(LineNumbersProperty);
 
+    /// <inheritdoc cref="SyntaxProperty"/>
     public string? Syntax
     {
         get => (string?)GetValue(SyntaxProperty);
         set => SetValue(SyntaxProperty, value);
     }
 
+    /// <inheritdoc cref="InfoStringProperty"/>
     public string? InfoString
     {
         get => (string?)GetValue(InfoStringProperty);
         set => SetValue(InfoStringProperty, value);
     }
 
+    /// <inheritdoc cref="IsFencedProperty"/>
     public bool IsFenced
     {
         get => (bool)GetValue(IsFencedProperty);
         set => SetValue(IsFencedProperty, value);
     }
 
+    /// <inheritdoc cref="IsCopiedProperty"/>
     public bool IsCopied => (bool)GetValue(IsCopiedProperty);
 
+    /// <inheritdoc/>
     public override void OnApplyTemplate()
     {
         if (_copy is not null)
@@ -140,7 +154,10 @@ public class CodeBlockPresenter : Control
         UpdateNumbers();
     }
 
-    /// <summary>Кладёт код в буфер обмена: текстом, блоком кода markdown и HTML; через <see cref="DataObject.CopyingEvent"/>.</summary>
+    /// <summary>
+    /// Puts the code on the clipboard as text, as a Markdown code block and as HTML; through
+    /// <see cref="DataObject.CopyingEvent"/>.
+    /// </summary>
     public void Copy()
     {
         if (CreateCopyData() is not { } data)

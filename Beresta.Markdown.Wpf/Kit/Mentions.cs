@@ -7,17 +7,20 @@ using Markdig.Syntax.Inlines;
 using ViewModels;
 
 /// <summary>
-/// Упоминания <c>@имя</c> — чипом со ссылкой <c>mention:имя</c>; вид — шаблон темы <c>Md.Mention.Template</c>.
-/// Отображаемое имя даёт <see cref="Resolver"/>. <c>@</c> внутри ссылки — текст ссылки.
+/// Mentions <c>@name</c> as a chip with the link <c>mention:name</c>; the look is the theme
+/// template <c>Md.Mention.Template</c>. The display name comes from <see cref="Resolver"/>.
+/// <c>@</c> inside a link is the text of the link.
 /// </summary>
 public sealed class Mentions : MdExtension
 {
-    /// <summary>Знает отображаемые имена участников; нет — имя как написано.</summary>
+    /// <summary>Knows the display names of people; none — the name as written.</summary>
     public IMdLinkResolver? Resolver { get; set; }
 
+    /// <inheritdoc/>
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline)
         => pipeline.Extensions.AddIfNotAlready<MentionMarkdigExtension>();
 
+    /// <inheritdoc/>
     public override IReadOnlyList<InlineVm>? ConvertInlines(Inline inline, MdConvertContext context)
     {
         if (inline is not MentionInline mention)
@@ -31,6 +34,7 @@ public sealed class Mentions : MdExtension
             : [new MentionVm(mention.Name, Resolver?.DisplayName(mention.Name) ?? mention.Name)];
     }
 
+    /// <inheritdoc/>
     public override DataTemplate? SelectTemplate(object item, DependencyObject container)
         => item is MentionVm && container is FrameworkElement element ? element.TryFindResource("Md.Mention.Template") as DataTemplate : null;
 }

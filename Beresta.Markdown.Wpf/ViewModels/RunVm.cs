@@ -1,16 +1,23 @@
 ﻿namespace Beresta.Markdown.Wpf.ViewModels;
 
-/// <summary>Кусок текста с одним набором начертаний.</summary>
-/// <param name="Hyperlink">Разбор <paramref name="Href"/>; ссылки нет — <c>null</c>.</param>
-/// <param name="Href">Цель ссылки; ссылки нет — <c>null</c>.</param>
-/// <param name="LinkTitle">Заголовок ссылки (<c>[текст](адрес "заголовок")</c>); нет — <c>null</c>.</param>
-/// <param name="Kbd">Клавиша, <c>&lt;kbd&gt;</c>.</param>
-/// <param name="Subscript">Нижний индекс, <c>~текст~</c> или <c>&lt;sub&gt;</c>.</param>
-/// <param name="Superscript">Верхний индекс, <c>^текст^</c> или <c>&lt;sup&gt;</c>.</param>
-/// <param name="Marked">Выделение маркером, <c>==текст==</c> или <c>&lt;mark&gt;</c>.</param>
-/// <param name="Inserted">Вставка, <c>++текст++</c>, <c>&lt;ins&gt;</c> или <c>&lt;u&gt;</c>.</param>
-/// <param name="Cite">Название произведения, <c>""текст""</c> или <c>&lt;cite&gt;</c>.</param>
-/// <param name="Abbreviation">Расшифровка сокращения из <c>*[метка]: расшифровка</c>; нет — <c>null</c>.</param>
+/// <summary>A piece of text with one set of styles.</summary>
+/// <param name="Text">The text of the piece.</param>
+/// <param name="Bold">Bold, <c>**text**</c>, <c>&lt;b&gt;</c> or <c>&lt;strong&gt;</c>.</param>
+/// <param name="Italic">Italic, <c>*text*</c>, <c>&lt;i&gt;</c> or <c>&lt;em&gt;</c>.</param>
+/// <param name="Strike">Strikethrough, <c>~~text~~</c>, <c>&lt;s&gt;</c>, <c>&lt;del&gt;</c> or
+/// <c>&lt;strike&gt;</c>.</param>
+/// <param name="Code">Inline code, <c>`code`</c> or <c>&lt;code&gt;</c>.</param>
+/// <param name="Hyperlink">The parsed <paramref name="Href"/>; no link — <c>null</c>.</param>
+/// <param name="Href">The target of the link; no link — <c>null</c>.</param>
+/// <param name="LinkTitle">The title of the link (<c>[text](address "title")</c>); none — <c>null</c>.</param>
+/// <param name="Kbd">A key, <c>&lt;kbd&gt;</c>.</param>
+/// <param name="Subscript">Subscript, <c>~text~</c> or <c>&lt;sub&gt;</c>.</param>
+/// <param name="Superscript">Superscript, <c>^text^</c> or <c>&lt;sup&gt;</c>.</param>
+/// <param name="Marked">Highlighted with a marker, <c>==text==</c> or <c>&lt;mark&gt;</c>.</param>
+/// <param name="Inserted">Inserted text, <c>++text++</c>, <c>&lt;ins&gt;</c> or <c>&lt;u&gt;</c>.</param>
+/// <param name="Cite">The title of a work, <c>""text""</c> or <c>&lt;cite&gt;</c>.</param>
+/// <param name="Abbreviation">The expansion of an abbreviation from <c>*[label]: expansion</c>;
+/// none — <c>null</c>.</param>
 public sealed record RunVm(
     string Text,
     bool Bold = false,
@@ -29,9 +36,15 @@ public sealed record RunVm(
     string? Abbreviation = null)
     : InlineVm
 {
-    /// <summary>Имя оформления: кусок рисуется стилем <c>Span</c> с ключом темы <c>Md.&lt;имя&gt;.Style</c>; нет — <c>null</c>.</summary>
+    /// <summary>
+    /// The name of a look: the piece is drawn with the <c>Span</c> style under the theme key
+    /// <c>Md.&lt;name&gt;.Style</c>; none — <c>null</c>.
+    /// </summary>
     public string? StyleName { get; init; }
 
-    /// <summary>Обрамление куска в разметке выделенного; нет — кусок пишется без обрамления.</summary>
+    /// <summary>
+    /// The framing of the piece in the markup of the selection; none — the piece is written without
+    /// framing.
+    /// </summary>
     public MarkupFrame? Markup { get; init; }
 }

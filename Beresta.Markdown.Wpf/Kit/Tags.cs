@@ -6,14 +6,16 @@ using Markdig.Syntax.Inlines;
 using ViewModels;
 
 /// <summary>
-/// Теги <c>#тег</c> и <c>#тег/вложенный</c> — чипом с оформлением <c>Tag</c> и ссылкой <c>tag:тег</c>.
-/// Решётка внутри ссылки — текст ссылки.
+/// Tags <c>#tag</c> and <c>#tag/nested</c> as a chip with the style <c>Tag</c> and the link
+/// <c>tag:tag</c>. A hash inside a link is the text of the link.
 /// </summary>
 public sealed class Tags : MdExtension
 {
+    /// <inheritdoc/>
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline)
         => pipeline.Extensions.AddIfNotAlready<TagMarkdigExtension>();
 
+    /// <inheritdoc/>
     public override IReadOnlyList<InlineVm>? ConvertInlines(Inline inline, MdConvertContext context)
     {
         if (inline is not TagInline tag)

@@ -3,8 +3,9 @@
 using Selection;
 using ViewModels;
 
-/// <summary>Комментарий CriticMarkup — значок с подсказкой; в скопированный текст не попадает.</summary>
+/// <summary>A CriticMarkup comment: an icon with a tooltip; not included in copied text.</summary>
 public sealed record CriticCommentVm(string Text) : InlineVm, IMdCopyText
 {
+    /// <inheritdoc/>
     public string CopyText => string.Empty;
 }

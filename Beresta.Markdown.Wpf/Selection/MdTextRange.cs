@@ -1,18 +1,19 @@
 ﻿namespace Beresta.Markdown.Wpf.Selection;
 
-/// <summary>Кусок текстовой карты: <see cref="Length"/> символов с <see cref="Start"/>.</summary>
+/// <summary>A piece of the text map: <see cref="Length"/> characters from <see cref="Start"/>.</summary>
 public readonly record struct MdTextRange(int Start, int Length)
 {
-    /// <summary>Позиция сразу за куском.</summary>
+    /// <summary>The position right after the piece.</summary>
     public int End => Start + Length;
 
+    /// <summary>The piece has no characters.</summary>
     public bool IsEmpty => Length <= 0;
 
-    /// <summary>Кусок от <paramref name="start"/> до <paramref name="end"/> в любом порядке.</summary>
+    /// <summary>The piece from <paramref name="start"/> to <paramref name="end"/> in any order.</summary>
     public static MdTextRange Between(int start, int end)
         => new(Math.Min(start, end), Math.Abs(end - start));
 
-    /// <summary>Общая часть двух кусков; не пересекаются — пустой кусок.</summary>
+    /// <summary>The common part of two pieces; they do not intersect — an empty piece.</summary>
     public MdTextRange Intersect(MdTextRange other)
     {
         var start = Math.Max(Start, other.Start);

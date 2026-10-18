@@ -14,9 +14,13 @@ using Selection;
 using Styling;
 using ViewModels;
 
-/// <summary>Текст блока из инлайнов: начертания, ссылки, код посреди строки, строчные виджеты.</summary>
+/// <summary>
+/// The text of a block from inlines: formatting, links, code in the middle of a line, inline
+/// widgets.
+/// </summary>
 public class MdTextBlock : TextBlock
 {
+    /// <summary>The inlines of the text.</summary>
     public static readonly DependencyProperty RunsProperty =
         DependencyProperty.Register(
             nameof(Runs),
@@ -24,6 +28,7 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
+    /// <summary>The color of links.</summary>
     public static readonly DependencyProperty LinkForegroundProperty =
         DependencyProperty.Register(
             nameof(LinkForeground),
@@ -31,6 +36,7 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(Brushes.Blue, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
+    /// <summary>The style of code in the middle of a line (<see cref="InlineCodePresenter"/>).</summary>
     public static readonly DependencyProperty InlineCodeStyleProperty =
         DependencyProperty.Register(
             nameof(InlineCodeStyle),
@@ -38,7 +44,10 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
-    /// <summary>Стиль клавиши <c>&lt;kbd&gt;</c> — того же <see cref="InlineCodePresenter"/>, что и код посреди строки.</summary>
+    /// <summary>
+    /// The style of a key <c>&lt;kbd&gt;</c> — the same <see cref="InlineCodePresenter"/> as code
+    /// in the middle of a line.
+    /// </summary>
     public static readonly DependencyProperty KbdStyleProperty =
         DependencyProperty.Register(
             nameof(KbdStyle),
@@ -46,7 +55,7 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
-    /// <summary>Стиль жирного (<c>Span</c>).</summary>
+    /// <summary>The style of bold text (<c>Span</c>).</summary>
     public static readonly DependencyProperty StrongStyleProperty =
         DependencyProperty.Register(
             nameof(StrongStyle),
@@ -54,7 +63,7 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
-    /// <summary>Стиль курсива (<c>Span</c>).</summary>
+    /// <summary>The style of italic text (<c>Span</c>).</summary>
     public static readonly DependencyProperty EmphasisStyleProperty =
         DependencyProperty.Register(
             nameof(EmphasisStyle),
@@ -62,7 +71,7 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
-    /// <summary>Стиль зачёркнутого (<c>Span</c>).</summary>
+    /// <summary>The style of struck-through text (<c>Span</c>).</summary>
     public static readonly DependencyProperty StrikeStyleProperty =
         DependencyProperty.Register(
             nameof(StrikeStyle),
@@ -70,7 +79,7 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
-    /// <summary>Стиль ссылки (<c>Hyperlink</c>); цвет задаёт <see cref="LinkForeground"/>.</summary>
+    /// <summary>The style of a link (<c>Hyperlink</c>); its color comes from <see cref="LinkForeground"/>.</summary>
     public static readonly DependencyProperty LinkStyleProperty =
         DependencyProperty.Register(
             nameof(LinkStyle),
@@ -78,7 +87,7 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
-    /// <summary>Стиль выделения маркером (<c>Span</c>).</summary>
+    /// <summary>The style of marked text (<c>Span</c>).</summary>
     public static readonly DependencyProperty MarkedStyleProperty =
         DependencyProperty.Register(
             nameof(MarkedStyle),
@@ -86,7 +95,7 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
-    /// <summary>Стиль вставки (<c>Span</c>).</summary>
+    /// <summary>The style of inserted text (<c>Span</c>).</summary>
     public static readonly DependencyProperty InsertedStyleProperty =
         DependencyProperty.Register(
             nameof(InsertedStyle),
@@ -94,7 +103,7 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
-    /// <summary>Стиль названия произведения (<c>Span</c>).</summary>
+    /// <summary>The style of the title of a work (<c>Span</c>).</summary>
     public static readonly DependencyProperty CiteStyleProperty =
         DependencyProperty.Register(
             nameof(CiteStyle),
@@ -102,7 +111,7 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
-    /// <summary>Стиль сокращения с расшифровкой в подсказке (<c>Span</c>).</summary>
+    /// <summary>The style of an abbreviation with its expansion in a tooltip (<c>Span</c>).</summary>
     public static readonly DependencyProperty AbbreviationStyleProperty =
         DependencyProperty.Register(
             nameof(AbbreviationStyle),
@@ -110,7 +119,10 @@ public class MdTextBlock : TextBlock
             typeof(MdTextBlock),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, OnAnyPropertyChanged));
 
-    /// <summary>Кисть пунктира под сокращением, если стиль сокращения не задаёт свои линии.</summary>
+    /// <summary>
+    /// The brush of the dotted line under an abbreviation, when the abbreviation style sets no
+    /// lines of its own.
+    /// </summary>
     public static readonly DependencyProperty AbbreviationUnderlineBrushProperty =
         DependencyProperty.Register(
             nameof(AbbreviationUnderlineBrush),
@@ -147,6 +159,7 @@ public class MdTextBlock : TextBlock
     private AdornerLayer? _adornerLayer;
     private MdHighlightAdorner? _adorner;
 
+    /// <summary>Creates an empty text.</summary>
     public MdTextBlock()
     {
         Rebuild();
@@ -159,78 +172,91 @@ public class MdTextBlock : TextBlock
         };
     }
 
+    /// <inheritdoc cref="RunsProperty"/>
     public IEnumerable<InlineVm>? Runs
     {
         get => (IEnumerable<InlineVm>?)GetValue(RunsProperty);
         set => SetValue(RunsProperty, value);
     }
 
+    /// <inheritdoc cref="LinkForegroundProperty"/>
     public Brush LinkForeground
     {
         get => (Brush)GetValue(LinkForegroundProperty);
         set => SetValue(LinkForegroundProperty, value);
     }
 
+    /// <inheritdoc cref="InlineCodeStyleProperty"/>
     public Style InlineCodeStyle
     {
         get => (Style)GetValue(InlineCodeStyleProperty);
         set => SetValue(InlineCodeStyleProperty, value);
     }
 
+    /// <inheritdoc cref="KbdStyleProperty"/>
     public Style? KbdStyle
     {
         get => (Style?)GetValue(KbdStyleProperty);
         set => SetValue(KbdStyleProperty, value);
     }
 
+    /// <inheritdoc cref="StrongStyleProperty"/>
     public Style? StrongStyle
     {
         get => (Style?)GetValue(StrongStyleProperty);
         set => SetValue(StrongStyleProperty, value);
     }
 
+    /// <inheritdoc cref="EmphasisStyleProperty"/>
     public Style? EmphasisStyle
     {
         get => (Style?)GetValue(EmphasisStyleProperty);
         set => SetValue(EmphasisStyleProperty, value);
     }
 
+    /// <inheritdoc cref="StrikeStyleProperty"/>
     public Style? StrikeStyle
     {
         get => (Style?)GetValue(StrikeStyleProperty);
         set => SetValue(StrikeStyleProperty, value);
     }
 
+    /// <inheritdoc cref="LinkStyleProperty"/>
     public Style? LinkStyle
     {
         get => (Style?)GetValue(LinkStyleProperty);
         set => SetValue(LinkStyleProperty, value);
     }
 
+    /// <inheritdoc cref="MarkedStyleProperty"/>
     public Style? MarkedStyle
     {
         get => (Style?)GetValue(MarkedStyleProperty);
         set => SetValue(MarkedStyleProperty, value);
     }
 
+    /// <inheritdoc cref="InsertedStyleProperty"/>
     public Style? InsertedStyle
     {
         get => (Style?)GetValue(InsertedStyleProperty);
         set => SetValue(InsertedStyleProperty, value);
     }
 
+    /// <inheritdoc cref="CiteStyleProperty"/>
     public Style? CiteStyle
     {
         get => (Style?)GetValue(CiteStyleProperty);
         set => SetValue(CiteStyleProperty, value);
     }
 
+    /// <inheritdoc cref="AbbreviationStyleProperty"/>
     public Style? AbbreviationStyle
     {
         get => (Style?)GetValue(AbbreviationStyleProperty);
         set => SetValue(AbbreviationStyleProperty, value);
     }
 
+    /// <inheritdoc cref="AbbreviationUnderlineBrushProperty"/>
     public Brush? AbbreviationUnderlineBrush
     {
         get => (Brush?)GetValue(AbbreviationUnderlineBrushProperty);
@@ -356,7 +382,10 @@ public class MdTextBlock : TextBlock
         }
     }
 
-    /// <summary>Над текстом, пока выделение включено, — текстовый курсор; ссылки и виджеты ставят свой.</summary>
+    /// <summary>
+    /// Over text, while selection is on, the cursor is a text cursor; links and widgets set their
+    /// own.
+    /// </summary>
     protected override void OnQueryCursor(QueryCursorEventArgs e)
     {
         base.OnQueryCursor(e);
@@ -423,6 +452,7 @@ public class MdTextBlock : TextBlock
         return Math.Max(widest, formatted.MinWidth);
     }
 
+    /// <inheritdoc/>
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
     {
         base.OnRenderSizeChanged(sizeInfo);
