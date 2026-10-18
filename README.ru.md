@@ -5,7 +5,7 @@
 Контрол WPF, который показывает Markdown. Текст разбирает [Markdig](https://github.com/xoofx/markdig), а
 рисует вьюер — контролами и шаблонами WPF.
 
-![Вьюер в теме витрины](https://raw.githubusercontent.com/wiki/porohkun/Markdig.Wpf.Viewer/images/overview.png)
+![Вьюер в теме витрины](https://raw.githubusercontent.com/wiki/porohkun/Markdig.Wpf.Viewer/images/overview-ru.png)
 
 ## Чем он хорош
 
