@@ -69,18 +69,20 @@ public sealed class StreamTests
         {
             var viewer = new MarkdownViewer();
             var window = WpfHost.Show(viewer);
-            var stream = new MdMarkdownStream(viewer) { Interval = TimeSpan.FromMilliseconds(300) };
+            var interval = TimeSpan.FromMilliseconds(300);
+            var stream = new MdMarkdownStream(viewer) { Interval = interval };
+            var watch = Stopwatch.StartNew();
 
             stream.Append("first ");
-            Pump(TimeSpan.FromMilliseconds(100));
+            WpfHost.Settle(window);
             viewer.Markdown.Should().Be("first ", "первый кусок после паузы уходит сразу");
 
             stream.Append("second");
-            Pump(TimeSpan.FromMilliseconds(100));
-            viewer.Markdown.Should().Be("first ", "до конца интервала текст ждёт");
+            PumpUntil(() => viewer.Markdown == "first second");
 
-            Pump(TimeSpan.FromMilliseconds(400));
             viewer.Markdown.Should().Be("first second");
+            // BYDESIGN: запас — шаг системного таймера: интервал отмеряется по Environment.TickCount64.
+            watch.Elapsed.Should().BeGreaterThan(interval - TimeSpan.FromMilliseconds(50), "до конца интервала текст ждёт");
             window.Close();
         });
     }
@@ -210,10 +212,25 @@ public sealed class StreamTests
         var watch = Stopwatch.StartNew();
         while (watch.Elapsed < duration)
         {
-            var frame = new DispatcherFrame();
-            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background, () => frame.Continue = false);
-            Dispatcher.PushFrame(frame);
-            Thread.Sleep(5);
+            PumpOnce();
         }
+    }
+
+    /// <summary>Прогоняет очередь потока интерфейса, пока условие не выполнится, но не дольше десяти секунд.</summary>
+    private static void PumpUntil(Func<bool> condition)
+    {
+        var watch = Stopwatch.StartNew();
+        while (!condition() && watch.Elapsed < TimeSpan.FromSeconds(10))
+        {
+            PumpOnce();
+        }
+    }
+
+    private static void PumpOnce()
+    {
+        var frame = new DispatcherFrame();
+        Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background, () => frame.Continue = false);
+        Dispatcher.PushFrame(frame);
+        Thread.Sleep(5);
     }
 }
