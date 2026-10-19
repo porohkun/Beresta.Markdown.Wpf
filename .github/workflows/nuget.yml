@@ -120,8 +120,17 @@ jobs:
         with:
           user: ${{ secrets.NUGET_USER }}
 
+      # BYDESIGN: пакеты перечисляет PowerShell: dotnet nuget push из SDK 10 маску в пути не раскрывает.
       - name: Публикация в NuGet
-        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: |
+          foreach ($package in Get-ChildItem artifacts -Filter *.nupkg) {
+            dotnet nuget push $package.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+            if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+            }
+          }
 
       - name: Релиз на GitHub
         if: github.event_name == 'push'
