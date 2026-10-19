@@ -1192,6 +1192,12 @@
         <member name="E:Beresta.Markdown.Wpf.MarkdownViewer.ViewportChanged">
             <summary>Раскладка видимой части могла смениться: прокрутка снаружи и внутри блоков, уточнились высоты, новый текст.</summary>
         </member>
+        <member name="E:Beresta.Markdown.Wpf.MarkdownViewer.RenderFailed">
+            <summary>
+            Markdig или расширение бросили исключение, пока вьюер собирал или рисовал документ; вьюер его
+            поймал и показал, что смог.
+            </summary>
+        </member>
         <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.Markdown">
             <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.MarkdownProperty"/>
         </member>
@@ -1431,6 +1437,27 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.MdImagePolicy.Allows(System.String,System.Uri)">
             <summary>Отдать ли загрузчику картинку: адрес из разметки и он же, разобранный от адреса документа.</summary>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.MdRenderFailedEventArgs">
+            <summary>Исключение, которое вьюер поймал, пока собирал или рисовал свой документ.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MdRenderFailedEventArgs.#ctor(System.Exception,Beresta.Markdown.Wpf.Extensions.MdExtension,System.Boolean)">
+            <summary>Пойманное исключение, расширение, чей код его бросил, и где оно брошено.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.MdRenderFailedEventArgs.Exception">
+            <summary>Пойманное исключение.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.MdRenderFailedEventArgs.Extension">
+            <summary>
+            Расширение, чей метод или виджет бросил исключение; набор, если оно брошено внутри набора.
+            <c>null</c> — бросил Markdig.
+            </summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.MdRenderFailedEventArgs.IsBackground">
+            <summary>
+            Исключение бросил фоновый разбор; тот же текст, разобранный в потоке интерфейса, не упал и
+            показан.
+            </summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.MdSystemLinkOpener">
             <summary>

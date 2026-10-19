@@ -269,6 +269,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     private readonly MdMarkLayer _feedLayer = new("Feed search");
     private bool _updatingMarks;
     private IReadOnlyList<MdExtension> _activeExtensions = [];
+    private IReadOnlyDictionary<object, MdExtension> _owners = new Dictionary<object, MdExtension>();
     private MarkdownPipeline? _pipeline;
     private Task<ParsedDocument>? _parsing;
     private bool _rebuildQueued;
@@ -311,7 +312,10 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     /// <summary>Creates an empty viewer.</summary>
     public MarkdownViewer()
     {
-        _states = new(() => ActiveExtensions);
+        Guard = new(
+            (exception, extension) => Dispatcher.BeginInvoke(() => RenderFailed?.Invoke(this, new(exception, extension, isBackground: false))),
+            widget => _owners.GetValueOrDefault(widget));
+        _states = new(() => ActiveExtensions, Guard);
         SetValue(MdWidget.StatesProperty, _states);
 
         _themeBrushes = new(AddLogicalChild);
@@ -340,6 +344,12 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     /// refined heights, a new text.
     /// </summary>
     public event EventHandler? ViewportChanged;
+
+    /// <summary>
+    /// Markdig or an extension threw while the viewer built or drew the document; the viewer caught the
+    /// exception and showed what it could.
+    /// </summary>
+    public event EventHandler<MdRenderFailedEventArgs>? RenderFailed;
 
     /// <summary>Новый текст лёг в документ: прежняя карта и новая.</summary>
     internal event Action<MdTextMap, MdTextMap>? TextMapChanged;
@@ -496,10 +506,13 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     public string SelectedText => TextMap.GetText(Selection.Range);
 
     /// <summary>The selection written as Markdown with its own formatting; computed on request.</summary>
-    public string SelectedMarkdown => MdMarkdownWriter.Write(_blocks, TextMap, Source, Selection.Range);
+    public string SelectedMarkdown => MdMarkdownWriter.Write(_blocks, TextMap, Source, Selection.Range, Guard);
 
     /// <summary>Свои расширения, следом общие — в порядке опроса.</summary>
     internal IReadOnlyList<MdExtension> ActiveExtensions => _activeExtensions;
+
+    /// <summary>Обёртка кода расширений, который вьюер зовёт в потоке интерфейса; сбой уходит в <see cref="RenderFailed"/>.</summary>
+    internal ExtensionGuard Guard { get; }
 
     /// <summary>Текст показанного документа: из него собраны блоки и карта; текст, который ещё разбирается, сюда не попадает.</summary>
     internal string Source { get; private set; } = string.Empty;
@@ -838,7 +851,8 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         }
 
         var markdown = SelectedMarkdown;
-        var data = MdClipboard.Data(markdownAsText ? markdown : SelectedText, markdown, MdClipboard.Html(markdown, GetPipeline()));
+        var html = Guard.Call(null, () => MdClipboard.Html(markdown, GetPipeline()), null);
+        var data = MdClipboard.Data(markdownAsText ? markdown : SelectedText, markdown, html);
         return MdClipboard.Approve(this, data) ? data : null;
     }
 
@@ -1241,10 +1255,15 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 
         foreach (var extension in extensions)
         {
-            extension.SetupPipeline(builder);
+            var before = builder.Extensions.ToList();
+            if (!Guard.Call(extension, () => extension.SetupPipeline(builder)))
+            {
+                builder.Extensions.Clear();
+                builder.Extensions.AddRange(before);
+            }
         }
 
-        return _pipeline = builder.Build();
+        return _pipeline = Guard.Call(null, builder.Build, null) ?? MarkdownPipeline ?? ModelBuilder.DefaultPipeline;
     }
 
     /// <summary>
@@ -1302,7 +1321,8 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 
     /// <summary>
     /// Фоновый разбор кончился: ложится, если не устарел целиком, а потом разбирается последний текст,
-    /// если он пришёл. Разбор упал в фоне — тот же текст разбирается в потоке интерфейса.
+    /// если он пришёл. Разбор упал в фоне — тот же текст разбирается в потоке интерфейса; если там он
+    /// не упал, в <see cref="RenderFailed"/> уходят сбои фонового.
     /// </summary>
     private void FinishParse(Task<ParsedDocument> parsing)
     {
@@ -1312,13 +1332,25 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         _rebuildQueued = false;
         _discardRunning = false;
 
-        if (!parsing.IsCompletedSuccessfully && !queued)
+        IReadOnlyList<(Exception Exception, MdExtension? Extension)> failures = parsing.Exception?.GetBaseException() is { } error
+            ? [(error, null)]
+            : parsing.IsCompletedSuccessfully ? parsing.Result.Failures : [];
+        var failed = !parsing.IsCompletedSuccessfully || failures.Count > 0;
+
+        if (failed && !queued)
         {
-            ParseHere(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions);
+            var document = Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions);
+            _identity.Commit();
+            Apply(document);
+            if (document.Failures.Count == 0)
+            {
+                RaiseRenderFailed(failures, isBackground: true);
+            }
+
             return;
         }
 
-        if (parsing.IsCompletedSuccessfully && !discard)
+        if (!failed && !discard)
         {
             _identity.Commit();
             Apply(parsing.Result);
@@ -1330,16 +1362,38 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         }
     }
 
+    /// <summary>Разбирает текст; упавший код расширения отдаёт узел встроенному разбору, упавший Markdig — запасному документу из строк исходника.</summary>
     private ParsedDocument Parse(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions)
     {
-        var blocks = ModelBuilder.Parse(markdown, pipeline, extensions, _identity, out var frontMatter, commit: false);
-        return new(blocks, frontMatter, MdTextMap.Build(blocks, markdown), markdown);
+        var failures = new List<(Exception Exception, MdExtension? Extension)>();
+        var owners = new Dictionary<object, MdExtension>(ReferenceEqualityComparer.Instance);
+        var guard = new ExtensionGuard((exception, extension) => failures.Add((exception, extension)), owners.GetValueOrDefault);
+        try
+        {
+            var blocks = ModelBuilder.Parse(markdown, pipeline, extensions, _identity, out var frontMatter, commit: false, guard, owners);
+            return new(blocks, frontMatter, MdTextMap.Build(blocks, markdown, guard), markdown) { Failures = failures, Owners = owners };
+        }
+        catch (Exception exception)
+        {
+            failures.Add((exception, null));
+            var blocks = ModelBuilder.SourceDocument(markdown);
+            return new(blocks, null, MdTextMap.Build(blocks, markdown), markdown) { Failures = failures };
+        }
+    }
+
+    private void RaiseRenderFailed(IReadOnlyList<(Exception Exception, MdExtension? Extension)> failures, bool isBackground)
+    {
+        foreach (var (exception, extension) in failures)
+        {
+            RenderFailed?.Invoke(this, new(exception, extension, isBackground));
+        }
     }
 
     /// <summary>
     /// Разобранный текст ложится правками: блок с прежним идентификатором остаётся в своём контейнере.
     /// Сменились шаблоны — контейнеры создаются заново. Выделение находит своё место в новом тексте,
-    /// как отслеживаемый кусок; его блок или текст исчез — выделение снимается.
+    /// как отслеживаемый кусок; его блок или текст исчез — выделение снимается. Сбои разбора уходят в
+    /// <see cref="RenderFailed"/>, когда документ лёг.
     /// </summary>
     private void Apply(ParsedDocument document)
     {
@@ -1350,6 +1404,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         var following = TrackFollowingMarks();
 
         Source = document.Markdown;
+        _owners = document.Owners;
         TextMap = document.TextMap;
         SetValue(FrontMatterPropertyKey, document.FrontMatter);
         _states.Retain(_identity.Contains);
@@ -1390,8 +1445,14 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         RebuildMarks();
         Gutter?.InvalidateVisual();
         RowMarks?.InvalidateVisual();
+        RaiseRenderFailed(document.Failures, isBackground: false);
     }
 
-    /// <summary>Разобранный текст: блоки, front matter и текстовая карта.</summary>
-    private sealed record ParsedDocument(IReadOnlyList<BlockVm> Blocks, string? FrontMatter, MdTextMap TextMap, string Markdown);
+    /// <summary>Разобранный текст: блоки, front matter, текстовая карта, сбои разбора и какое расширение создало какую вьюмодель.</summary>
+    private sealed record ParsedDocument(IReadOnlyList<BlockVm> Blocks, string? FrontMatter, MdTextMap TextMap, string Markdown)
+    {
+        public IReadOnlyList<(Exception Exception, MdExtension? Extension)> Failures { get; init; } = [];
+
+        public IReadOnlyDictionary<object, MdExtension> Owners { get; init; } = new Dictionary<object, MdExtension>();
+    }
 }

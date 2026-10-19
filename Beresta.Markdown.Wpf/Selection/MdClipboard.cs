@@ -14,13 +14,17 @@ internal static class MdClipboard
     private const string Prefix = "<html><body>\r\n<!--StartFragment-->";
     private const string Suffix = "<!--EndFragment-->\r\n</body>\r\n</html>";
 
-    /// <summary>Данные из трёх видов: обычный текст, разметка и HTML.</summary>
-    public static DataObject Data(string text, string markdown, string html)
+    /// <summary>Данные из трёх видов: обычный текст, разметка и HTML; без HTML — из двух.</summary>
+    public static DataObject Data(string text, string markdown, string? html)
     {
         var data = new DataObject();
         data.SetText(text);
         data.SetData(MdDataFormats.Markdown, new MemoryStream(Encoding.UTF8.GetBytes(markdown)));
-        data.SetData(DataFormats.Html, HtmlFormat(html));
+        if (html is not null)
+        {
+            data.SetData(DataFormats.Html, HtmlFormat(html));
+        }
+
         return data;
     }
 

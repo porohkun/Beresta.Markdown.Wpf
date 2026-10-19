@@ -1,6 +1,7 @@
 ﻿namespace Beresta.Markdown.Wpf.Selection;
 
 using System.Text;
+using Extensions;
 using ViewModels;
 
 /// <summary>
@@ -31,7 +32,7 @@ public sealed class MdTextMap
     }
 
     /// <summary>The map of an empty document.</summary>
-    public static MdTextMap Empty { get; } = new(new(), null);
+    public static MdTextMap Empty { get; } = new(new(ExtensionGuard.Silent), null);
 
     /// <summary>Continuous text; indivisible elements are the character <see cref="ObjectMark"/>.</summary>
     public string Text { get; }
@@ -48,7 +49,7 @@ public sealed class MdTextMap
     /// <summary>The map of blocks without the source text.</summary>
     public static MdTextMap Build(IReadOnlyList<BlockVm> blocks)
     {
-        var builder = new Builder();
+        var builder = new Builder(ExtensionGuard.Silent);
         builder.AppendBlocks(blocks);
         return new(builder, null);
     }
@@ -57,9 +58,12 @@ public sealed class MdTextMap
     /// The map of blocks together with the source text: tracked lines recognize themselves by the
     /// text of the lines.
     /// </summary>
-    public static MdTextMap Build(IReadOnlyList<BlockVm> blocks, string source)
+    public static MdTextMap Build(IReadOnlyList<BlockVm> blocks, string source) => Build(blocks, source, ExtensionGuard.Silent);
+
+    /// <summary>Карта блоков с текстом исходника; код виджетов идёт через <paramref name="guard"/>.</summary>
+    internal static MdTextMap Build(IReadOnlyList<BlockVm> blocks, string source, ExtensionGuard guard)
     {
-        var builder = new Builder();
+        var builder = new Builder(guard);
         builder.AppendBlocks(blocks);
         return new(builder, source);
     }
@@ -91,7 +95,10 @@ public sealed class MdTextMap
     /// The text of an inline in the map: a piece of text, a line break or the character of an
     /// indivisible element.
     /// </summary>
-    public static string TextOf(InlineVm inline)
+    public static string TextOf(InlineVm inline) => TextOf(inline, ExtensionGuard.Silent);
+
+    /// <summary>Текст инлайна в карте; код виджета идёт через <paramref name="guard"/>, упал — виджет неделимый.</summary>
+    internal static string TextOf(InlineVm inline, ExtensionGuard guard)
     {
         switch (inline)
         {
@@ -100,9 +107,10 @@ public sealed class MdTextMap
             case LineBreakVm:
                 return "\n";
             case IMdTextSource source:
-                var builder = new Builder();
-                source.WriteText(new(builder));
-                return builder.Text.ToString();
+                var builder = new Builder(guard);
+                return guard.CallWidget(inline, () => source.WriteText(new(builder)))
+                    ? builder.Text.ToString()
+                    : ObjectMark.ToString();
             default:
                 return ObjectMark.ToString();
         }
@@ -550,7 +558,7 @@ public sealed class MdTextMap
         return best;
     }
 
-    internal sealed class Builder
+    internal sealed class Builder(ExtensionGuard guard)
     {
         private readonly Dictionary<string, int> _slugs = [];
 
@@ -574,10 +582,10 @@ public sealed class MdTextMap
             var start = Text.Length;
             foreach (var inline in inlines)
             {
-                var text = TextOf(inline);
-                if (inline is IMdCopyText copy && text is [ObjectMark])
+                var text = TextOf(inline, guard);
+                if (inline is IMdCopyText && text is [ObjectMark])
                 {
-                    Copies[Text.Length] = copy.CopyText;
+                    AddCopy(inline);
                 }
 
                 if (inline is FootnoteLinkVm { IsBack: false } reference)
@@ -717,21 +725,50 @@ public sealed class MdTextMap
                     break;
 
                 case IMdTextSource source:
-                    source.WriteText(new(this));
+                    var writes = new List<Action>();
+                    var writer = new MdTextWriter(
+                        text => writes.Add(() => Append(text)),
+                        inlines => writes.Add(() => AppendInlines(inlines)),
+                        blocks => writes.Add(() => AppendBlocks(blocks)));
+
+                    if (guard.CallWidget(block, () => source.WriteText(writer)))
+                    {
+                        writes.ForEach(write => write());
+                    }
+                    else
+                    {
+                        AppendIndivisible(block);
+                    }
+
                     break;
 
                 default:
-                    if (block is IMdCopyText copy)
-                    {
-                        Copies[Text.Length] = copy.CopyText;
-                    }
-
-                    Owners[block] = new(Text.Length, 1);
-                    Text.Append(ObjectMark);
+                    AppendIndivisible(block);
                     break;
             }
 
             BlockRanges[index] = (block, new(start, Text.Length - start));
+        }
+
+        /// <summary>Неделимый блок — одним знаком <see cref="ObjectMark"/>.</summary>
+        private void AppendIndivisible(BlockVm block)
+        {
+            if (block is IMdCopyText)
+            {
+                AddCopy(block);
+            }
+
+            Owners[block] = new(Text.Length, 1);
+            Text.Append(ObjectMark);
+        }
+
+        /// <summary>Текст для копирования неделимого, чей знак встаёт следующим.</summary>
+        private void AddCopy(object widget)
+        {
+            if (guard.CallWidget(widget, () => ((IMdCopyText)widget).CopyText, null) is { } copy)
+            {
+                Copies[Text.Length] = copy;
+            }
         }
 
         /// <summary>Заголовок блока, если он есть, строкой перед вложенными блоками.</summary>

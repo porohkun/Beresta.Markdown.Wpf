@@ -26,14 +26,16 @@ public sealed class MarkdownTemplateSelector : DataTemplateSelector
             return null;
 
         var viewer = GetOrFindViewer(container);
+        if (viewer is null)
+            return null;
 
-        foreach (var extension in viewer?.ActiveExtensions ?? [])
+        foreach (var extension in viewer.ActiveExtensions)
         {
-            if (extension.SelectTemplate(item, container) is { } template)
+            if (viewer.Guard.Call(extension, () => extension.SelectTemplate(item, container), null) is { } template)
                 return template;
         }
 
-        var provider = viewer?.StyleProvider;
+        var provider = viewer.StyleProvider;
         if (provider is null)
             return null;
 

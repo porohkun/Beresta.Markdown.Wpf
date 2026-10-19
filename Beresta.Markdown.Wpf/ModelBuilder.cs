@@ -52,6 +52,8 @@ internal sealed partial class ModelBuilder
     private readonly ModelIdentity _identity;
     private readonly IReadOnlyDictionary<SmartyPantType, string>? _smartyPants;
     private readonly Dictionary<HtmlBlock, int> _htmlParts = new(ReferenceEqualityComparer.Instance);
+    private readonly ExtensionGuard _guard;
+    private readonly IDictionary<object, MdExtension>? _owners;
 
     private int _depth;
     private int _inlineDepth;
@@ -60,13 +62,17 @@ internal sealed partial class ModelBuilder
         string source,
         IReadOnlyList<MdExtension> extensions,
         ModelIdentity identity,
-        IReadOnlyDictionary<SmartyPantType, string>? smartyPants)
+        IReadOnlyDictionary<SmartyPantType, string>? smartyPants,
+        ExtensionGuard guard,
+        IDictionary<object, MdExtension>? owners)
     {
         _source = source;
         _lineStarts = FindLineStarts(source);
         _extensions = extensions;
         _identity = identity;
         _smartyPants = smartyPants;
+        _guard = guard;
+        _owners = owners;
     }
 
     /// <summary>
@@ -84,6 +90,8 @@ internal sealed partial class ModelBuilder
     /// Разбирает документ, как <see cref="Parse(string, MarkdownPipeline?, IReadOnlyList{MdExtension}?, ModelIdentity?)"/>,
     /// и отдаёт текст front matter без разбора; нет его — <c>null</c>. Без <paramref name="commit"/> память
     /// разборов запоминает этот разбор, только когда её <see cref="ModelIdentity.Commit"/> вызовут отдельно.
+    /// Код расширений идёт через <paramref name="guard"/>; <paramref name="owners"/> получает, какое
+    /// расширение создало каждую его вьюмодель.
     /// </summary>
     public static IReadOnlyList<BlockVm> Parse(
         string markdown,
@@ -91,7 +99,9 @@ internal sealed partial class ModelBuilder
         IReadOnlyList<MdExtension>? extensions,
         ModelIdentity? identity,
         out string? frontMatter,
-        bool commit = true)
+        bool commit = true,
+        ExtensionGuard? guard = null,
+        IDictionary<object, MdExtension>? owners = null)
     {
         markdown ??= string.Empty;
         identity ??= new();
@@ -102,7 +112,8 @@ internal sealed partial class ModelBuilder
         frontMatter = document is [YamlFrontMatterBlock yaml, ..] ? yaml.Lines.ToString() : null;
 
         var smartyPants = pipeline.Extensions.Find<SmartyPantsExtension>()?.Options.Mapping;
-        var blocks = new ModelBuilder(markdown, extensions ?? [], identity, smartyPants).ConvertBlocks(document, listDepth: 0);
+        var builder = new ModelBuilder(markdown, extensions ?? [], identity, smartyPants, guard ?? ExtensionGuard.Silent, owners);
+        var blocks = builder.ConvertBlocks(document, listDepth: 0);
         if (commit)
         {
             identity.Commit();
@@ -110,6 +121,10 @@ internal sealed partial class ModelBuilder
 
         return blocks;
     }
+
+    /// <summary>Документ из строк исходника без разбора: непустые строки подряд — абзацем, пустые — отступами.</summary>
+    public static IReadOnlyList<BlockVm> SourceDocument(string markdown)
+        => new ModelBuilder(markdown ?? string.Empty, [], new(), null, ExtensionGuard.Silent, null).SourceLines();
 
     /// <summary>
     /// Блоки контейнера с отступами на месте пустых строк. Определения сносок, которые Markdig
@@ -492,6 +507,49 @@ internal sealed partial class ModelBuilder
         return inlines;
     }
 
+    /// <summary>Непустые строки исходника подряд — абзацем по строке текста на строку, пустые между ними — отступами.</summary>
+    private List<BlockVm> SourceLines()
+    {
+        var blocks = new List<BlockVm>();
+        var lastText = -1;
+        for (var line = 0; line < _lineStarts.Count; line++)
+        {
+            if (IsWhiteSpaceLine(line))
+            {
+                continue;
+            }
+
+            var first = line;
+            while (line + 1 < _lineStarts.Count && !IsWhiteSpaceLine(line + 1))
+            {
+                line++;
+            }
+
+            for (var blank = lastText + 1; lastText >= 0 && blank < first; blank++)
+            {
+                blocks.Add(new BlankLineVm { Source = GetLineSpan(blank) });
+            }
+
+            var inlines = new List<InlineVm>();
+            for (var row = first; row <= line; row++)
+            {
+                if (row > first)
+                {
+                    inlines.Add(new LineBreakVm());
+                }
+
+                var start = _lineStarts[row];
+                var end = LineEnd(row);
+                inlines.Add(new RunVm(_source[start..end]) { Source = new(start, end - start, row, row) });
+            }
+
+            blocks.Add(new ParagraphVm(inlines) { Source = new(_lineStarts[first], LineEnd(line) - _lineStarts[first], first, line) });
+            lastText = line;
+        }
+
+        return blocks;
+    }
+
     /// <summary>Контейнер глубже предела вложенности — абзацем его исходника.</summary>
     private List<BlockVm> BlockSource(Block block)
     {
@@ -570,13 +628,32 @@ internal sealed partial class ModelBuilder
     {
         foreach (var extension in _extensions)
         {
-            if (extension.ConvertBlocks(block, new(this, listDepth)) is { } custom)
+            var converted = _guard.Call(
+                extension,
+                () => extension
+                    .ConvertBlocks(block, new(this, listDepth))
+                    ?.Select((part, index) => (BlockVm)Owned(StampPart(part, block, index), extension))
+                    .ToList(),
+                null);
+
+            if (converted is not null)
             {
-                return custom.Select((part, index) => (BlockVm)StampPart(part, block, index)).ToList();
+                return converted;
             }
         }
 
         return null;
+    }
+
+    /// <summary>Запоминает, какое расширение создало вьюмодель.</summary>
+    private NodeVm Owned(NodeVm node, MdExtension extension)
+    {
+        if (_owners is not null)
+        {
+            _owners[node] = extension;
+        }
+
+        return node;
     }
 
     /// <summary><paramref name="index"/>-я часть узла: первая — с идентификатором узла, следующие — с производными.</summary>
@@ -1327,17 +1404,19 @@ internal sealed partial class ModelBuilder
         var context = new MdConvertContext(this, listDepth: 0, text => Run(text, state));
         foreach (var extension in _extensions)
         {
-            if (extension.ConvertInlines(node, context) is not { } custom)
-            {
-                continue;
-            }
+            var converted = _guard.Call(
+                extension,
+                () => extension
+                    .ConvertInlines(node, context)
+                    ?.Select((part, index) => (InlineVm)Owned(StampPart(part, node, index), extension))
+                    .ToList(),
+                null);
 
-            for (var i = 0; i < custom.Count; i++)
+            if (converted is not null)
             {
-                output.Add((InlineVm)StampPart(custom[i], node, i));
+                output.AddRange(converted);
+                return true;
             }
-
-            return true;
         }
 
         return false;
@@ -1418,6 +1497,9 @@ internal sealed partial class ModelBuilder
         var end = line + 1 < _lineStarts.Count ? _lineStarts[line + 1] : _source.Length;
         return new(start, end - start, line, line);
     }
+
+    /// <summary>Строка из одних пробелов или пустая.</summary>
+    private bool IsWhiteSpaceLine(int line) => _source.AsSpan(_lineStarts[line], LineEnd(line) - _lineStarts[line]).IsWhiteSpace();
 
     /// <summary>Конец строки без перевода строки.</summary>
     private int LineEnd(int line)
