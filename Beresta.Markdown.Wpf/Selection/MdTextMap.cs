@@ -430,6 +430,17 @@ public sealed class MdTextMap
         return null;
     }
 
+    /// <summary>Кусок карты блока; блока в карте нет — <c>null</c>.</summary>
+    internal MdTextRange? RangeOf(BlockVm block)
+    {
+        if (block.NodeId != 0 && BlockOf(block.NodeId) is { } known && ReferenceEquals(known.Block, block))
+        {
+            return known.Range;
+        }
+
+        return _blocks.FirstOrDefault(entry => ReferenceEquals(entry.Block, block)) is { Block: not null } entry ? entry.Range : null;
+    }
+
     private (BlockVm Block, MdTextRange Range)? BlockOf(long nodeId)
     {
         if (_byId is null)

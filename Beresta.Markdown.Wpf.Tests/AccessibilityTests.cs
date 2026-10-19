@@ -1,11 +1,14 @@
 ﻿namespace Beresta.Markdown.Wpf.Tests;
 
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
+using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Presenters;
@@ -13,6 +16,9 @@ using Presenters;
 /// <summary>Дерево автоматизации и клавиатура.</summary>
 public sealed class AccessibilityTests
 {
+    private const int WmGetObject = 0x003D;
+    private const int UiaRootObjectId = -25;
+
     [Fact]
     public void Вьюер_для_автоматизации_документ_без_строк_вьюмоделей()
     {
@@ -106,8 +112,64 @@ public sealed class AccessibilityTests
         });
     }
 
+    [Fact]
+    public void Узел_документа_знает_все_блоки_и_создаёт_несозданный()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = string.Join("\n\n", Enumerable.Range(0, 200).Select(i => $"Paragraph {i}")) };
+            var window = WpfHost.Show(new ScrollViewer { Content = viewer }, height: 200);
+            var children = UIElementAutomationPeer.CreatePeerForElement(viewer).GetChildren();
+            var last = children[^1];
+
+            children.Should().HaveCount(viewer.Items.Count);
+            viewer.BlockPanel!.RealizedRange!.Value.Last.Should().BeLessThan(viewer.Items.Count - 1);
+            last.GetName().Should().Be("Paragraph 199");
+
+            ((IVirtualizedItemProvider)last.GetPattern(PatternInterface.VirtualizedItem)).Realize();
+
+            viewer.BlockPanel.RealizedRange!.Value.Last.Should().Be(viewer.Items.Count - 1);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Таблица_для_автоматизации_сетка_с_заголовками_столбцов()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "| Name | Size |\n|---|---|\n| alpha | 1 |\n| beta | 2 |" };
+            var window = WpfHost.Show(viewer);
+            Connect(window);
+            var table = UIElementAutomationPeer.CreatePeerForElement(Visuals.Descendants<MdTablePresenter>(viewer).Single());
+            var grid = (IGridProvider)table.GetPattern(PatternInterface.Grid);
+            var cell = grid.GetItem(1, 1);
+            var place = (IGridItemProvider)cell.GetPatternProvider(GridItemPatternIdentifiers.Pattern.Id);
+
+            table.GetAutomationControlType().Should().Be(AutomationControlType.Table);
+            (grid.RowCount, grid.ColumnCount).Should().Be((3, 2));
+            NameOf(cell).Should().Be("1");
+            (place.Row, place.Column).Should().Be((1, 1));
+            ((ITableProvider)table.GetPattern(PatternInterface.Table)).GetColumnHeaders().Select(NameOf).Should().Equal("Name", "Size");
+            window.Close();
+        });
+    }
+
     private static IEnumerable<AutomationPeer> Descendants(AutomationPeer peer)
         => (peer.GetChildren() ?? []).SelectMany(child => Descendants(child).Prepend(child));
+
+    /// <summary>Подключает дерево автоматизации окна, как клиент UI Automation: запросом корня и обходом.</summary>
+    private static void Connect(Window window)
+    {
+        SendMessage(new WindowInteropHelper(window).Handle, WmGetObject, 0, UiaRootObjectId);
+        _ = Descendants(UIElementAutomationPeer.CreatePeerForElement(window)).Count();
+    }
+
+    private static string NameOf(IRawElementProviderSimple provider)
+        => (string)provider.GetPropertyValue(AutomationElementIdentifiers.NameProperty.Id);
+
+    [DllImport("user32.dll")]
+    private static extern nint SendMessage(nint window, int message, nint wParam, nint lParam);
 
     private sealed class OnePixel : IMdImageLoader
     {

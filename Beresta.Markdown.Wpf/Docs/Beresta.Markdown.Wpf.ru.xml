@@ -143,10 +143,22 @@
             <inheritdoc/>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Automation.MdDocumentAutomationPeer">
-            <summary>Вьюер для автоматизации — документ: его дети — созданные блоки, а не вьюмодели.</summary>
+            <summary>
+            Вьюер для UI Automation — документ: его дети — все его блоки, созданные и нет, с именем из их
+            текста.
+            </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Automation.MdDocumentAutomationPeer.#ctor(Beresta.Markdown.Wpf.MarkdownViewer)">
-            <summary>Вьюер для автоматизации — документ: его дети — созданные блоки, а не вьюмодели.</summary>
+            <summary>
+            Вьюер для UI Automation — документ: его дети — все его блоки, созданные и нет, с именем из их
+            текста.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Automation.MdDocumentAutomationPeer.GetChildrenCore">
+            <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Automation.MdDocumentAutomationPeer.CreateItemAutomationPeer(System.Object)">
+            <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Automation.MdDocumentAutomationPeer.GetAutomationControlTypeCore">
             <inheritdoc/>
@@ -1953,6 +1965,9 @@
             <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Presenters.MdTablePresenter.OnApplyTemplate">
+            <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Presenters.MdTablePresenter.OnCreateAutomationPeer">
             <inheritdoc/>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Presenters.MdTaskMark">

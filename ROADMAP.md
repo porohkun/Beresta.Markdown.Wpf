@@ -49,43 +49,6 @@
 - **Восстановление пакетов** в этом окружении для нового проекта идёт минутами: недоступный
   частный NuGet-источник даёт `NU1900`. Сборку под другую платформу делать на копии и ждать в фоне.
 
-## Этап 14. Экранный диктор: весь документ и таблицы (п. 16)
-
-**Что сделать.**
-1. `MdDocumentAutomationPeer` наследует `ItemsControlAutomationPeer`. `CreateItemAutomationPeer`
-   отдаёт свой `MdBlockAutomationPeer : ItemAutomationPeer`:
-   - `GetNameCore` — текст блока из текстовой карты (`TextMap.Blocks` и `GetText`), а не `ToString()`
-     вьюмодели;
-   - вид узла — по вьюмодели: заголовок — `Text` с уровнем, список — `List`, таблица — `Table`,
-     остальное — `Text` или `Group`;
-   - паттерн `VirtualizedItem`: `Realize()` вызывает `MdBlockPanel.BringIndexIntoView` (уже
-     реализован) и доводит раскладку. Созданный блок отдаёт детей своего контейнера — обёрткой WPF.
-
-   Вложенные `MdBlocksPresenter` и `MdListPresenter` оставить «только созданное»: их текст и так есть
-   в имени узла верхнего блока.
-2. `MdTablePresenter.OnCreateAutomationPeer` отдаёт `MdTableAutomationPeer` с `IGridProvider` и
-   `ITableProvider`:
-   - строки и столбцы — по модели (`TableVm.Rows`, `ColumnCount`); строки сетки с пустыми местами
-     пропускать через `_gridRows`;
-   - заголовки столбцов — ячейки строк с `IsHeader`, `RowOrColumnMajor = RowMajor`;
-   - ячейки — `MdTableCellAutomationPeer` с `IGridItemProvider` и `ITableItemProvider`: `Row`,
-     `Column`, `ColumnSpan`, `RowSpan = 1`, имя — текст ячейки.
-3. `AGENTS.md` библиотеки, раздел «У `ItemsControl` вьюера — свой узел автоматизации»: узел документа
-   — `ItemsControlAutomationPeer` с узлами блоков, имя узла блока — текст из карты.
-4. Ручная проверка: Экранный диктор и Accessibility Insights на витрине — «прочитать всё» доходит до
-   конца длинного документа, таблица читается по ячейкам.
-
-**Тесты** — `AccessibilityTests`:
-- у узла документа столько детей, сколько блоков, включая несозданные (вьюер в узком
-  `ScrollViewer`);
-- имя узла несозданного блока — его текст;
-- `Realize()` создаёт блок — он попадает в `RealizedRange`;
-- у таблицы верные `RowCount` и `ColumnCount`, `GetItem(1, 1)` — текст ячейки, заголовки столбцов —
-  из строки заголовка.
-
-**Документация.** Accessibility, оба языка: убрать раздел «Limitation: only created blocks are
-visible», описать узлы всех блоков и таблицу, добавить строку про таблицу в «What screen readers get».
-
 ## Этап 15. Замеры производительности (п. 23–26)
 
 Замеры разрешены только для этих четырёх пунктов. Делаются пробой в scratchpad со сборкой
