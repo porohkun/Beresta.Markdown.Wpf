@@ -25,9 +25,12 @@ public sealed class MdBlockPanel : VirtualizingPanel
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnGapsChanged));
 
     private readonly Dictionary<HeightKey, double> _heights = [];
+    private readonly Dictionary<Type, int> _kindOf = [];
+    private readonly List<(double Sum, int Count)> _kindHeights = [];
     private readonly List<ScrollViewer> _watched = [];
     private readonly List<(UIElement Child, Rect Rect)> _arranged = [];
     private HeightKey[] _keys = [];
+    private int[] _kinds = [];
     private double[] _before = [];
     private double[] _after = [];
     private double[] _inside = [];
@@ -36,7 +39,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
     private double[] _tops = [];
     private double _measuredSum;
     private int _measuredCount;
-    private double _estimate = double.NaN;
+    private double[] _estimates = [];
     private int _changedFrom;
     private bool _keysChanged = true;
     private bool _hasGaps;
@@ -398,16 +401,39 @@ public sealed class MdBlockPanel : VirtualizingPanel
 
         if (double.IsNaN(old))
         {
-            _measuredCount++;
-            _measuredSum += height;
+            AddMeasured(index, height, 1);
         }
         else
         {
-            _measuredSum += height - old;
+            AddMeasured(index, height - old, 0);
         }
 
         _measured[index] = height;
         _changedFrom = Math.Min(_changedFrom, index);
+    }
+
+    /// <summary>Добавляет к суммам высот — общей и вида блока — высоту и число измеренных блоков.</summary>
+    private void AddMeasured(int index, double height, int count)
+    {
+        _measuredSum += height;
+        _measuredCount += count;
+
+        var (sum, total) = _kindHeights[_kinds[index]];
+        _kindHeights[_kinds[index]] = (sum + height, total + count);
+    }
+
+    /// <summary>Номер вида блока — типа его вьюмодели.</summary>
+    private int KindOf(object item)
+    {
+        var type = item.GetType();
+        if (!_kindOf.TryGetValue(type, out var kind))
+        {
+            kind = _kindHeights.Count;
+            _kindOf[type] = kind;
+            _kindHeights.Add(default);
+        }
+
+        return kind;
     }
 
     private void CleanUp(int first, int last)
@@ -441,6 +467,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
         if (_keys.Length != count)
         {
             _keys = new HeightKey[count];
+            _kinds = new int[count];
             _before = new double[count];
             _after = new double[count];
             _inside = new double[count];
@@ -451,10 +478,16 @@ public sealed class MdBlockPanel : VirtualizingPanel
         _hasGaps = false;
         _measuredSum = 0;
         _measuredCount = 0;
+        for (var kind = 0; kind < _kindHeights.Count; kind++)
+        {
+            _kindHeights[kind] = default;
+        }
+
         for (var i = 0; i < count; i++)
         {
             var item = owner!.Items[i];
             _keys[i] = HeightKey.Of(item);
+            _kinds[i] = KindOf(item);
             _before[i] = gaps.Before(item);
             _after[i] = gaps.After(item);
             _inside[i] = gaps.Inside(item);
@@ -463,8 +496,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
             if (_heights.TryGetValue(_keys[i], out var height))
             {
                 _measured[i] = height;
-                _measuredSum += height;
-                _measuredCount++;
+                AddMeasured(i, height, 1);
             }
             else
             {
@@ -472,7 +504,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
             }
         }
 
-        _estimate = double.NaN;
+        _estimates = [];
 
         if (_heights.Count > 2 * count + 64)
         {
@@ -494,20 +526,34 @@ public sealed class MdBlockPanel : VirtualizingPanel
         {
             _offsets = new double[_keys.Length + 1];
             _tops = new double[_keys.Length];
-            _estimate = double.NaN;
+            _estimates = [];
         }
 
-        var estimate = _measuredCount > 0 ? _measuredSum / _measuredCount : DefaultHeight;
-        var from = estimate == _estimate ? _changedFrom : 0;
-        _estimate = estimate;
+        var estimates = Estimates();
+        var from = estimates.AsSpan().SequenceEqual(_estimates) ? _changedFrom : 0;
+        _estimates = estimates;
         _changedFrom = int.MaxValue;
 
         for (var i = from; i < _keys.Length; i++)
         {
-            var height = (double.IsNaN(_measured[i]) ? estimate : _measured[i]) + _inside[i];
+            var height = (double.IsNaN(_measured[i]) ? estimates[_kinds[i]] : _measured[i]) + _inside[i];
             _tops[i] = _offsets[i] + _before[i];
             _offsets[i + 1] = _tops[i] + height + _after[i];
         }
+    }
+
+    /// <summary>Оценки высоты неизмеренных блоков по видам: среднее измеренных того же вида, а без них — всех.</summary>
+    private double[] Estimates()
+    {
+        var overall = _measuredCount > 0 ? _measuredSum / _measuredCount : DefaultHeight;
+        var estimates = new double[_kindHeights.Count];
+        for (var kind = 0; kind < estimates.Length; kind++)
+        {
+            var (sum, count) = _kindHeights[kind];
+            estimates[kind] = count > 0 ? sum / count : overall;
+        }
+
+        return estimates;
     }
 
     private static void OnGapsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

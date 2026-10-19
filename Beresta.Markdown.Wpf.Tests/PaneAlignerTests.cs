@@ -145,6 +145,8 @@ public sealed class PaneAlignerTests
 
             second.Should().BeApproximately(first, 1);
             first.Should().BeLessThan(item * 3);
+            leftViewer.Gaps.Should().ContainSingle("одинаковый хвост мест не даёт").Which.Line.Should().Be(1);
+            rightViewer.Gaps.Should().BeNullOrEmpty();
             leftViewer.GetSourceLineOffset(1).Should().BeApproximately(rightViewer.GetSourceLineOffset(2)!.Value, 0.5);
             window.Close();
         });

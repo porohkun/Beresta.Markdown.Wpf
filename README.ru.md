@@ -1,9 +1,17 @@
-﻿# Beresta.Markdown.Wpf v0.8.0
+# Beresta.Markdown.Wpf v0.8.0
+
+[![NuGet](https://img.shields.io/nuget/v/Beresta.Markdown.Wpf)](https://www.nuget.org/packages/Beresta.Markdown.Wpf)
+[![Загрузки](https://img.shields.io/nuget/dt/Beresta.Markdown.Wpf)](https://www.nuget.org/packages/Beresta.Markdown.Wpf)
+[![Публикация](https://img.shields.io/github/actions/workflow/status/porohkun/Beresta.Markdown.Wpf/nuget.yml?branch=main&label=publish)](https://github.com/porohkun/Beresta.Markdown.Wpf/actions/workflows/nuget.yml)
+![.NET 7, 8, 9, 10](https://img.shields.io/badge/.NET-7%20%7C%208%20%7C%209%20%7C%2010-512BD4)
+[![Лицензия](https://img.shields.io/github/license/porohkun/Beresta.Markdown.Wpf)](https://github.com/porohkun/Beresta.Markdown.Wpf/blob/main/LICENSE)
 
 [English](https://github.com/porohkun/Beresta.Markdown.Wpf/blob/main/README.md) | **Русский**
 
-Контрол WPF, который показывает Markdown. Текст разбирает [Markdig](https://github.com/xoofx/markdig), а
-рисует вьюер — контролами и шаблонами WPF.
+Быстрый нативный вьюер Markdown для WPF — без браузера и без FlowDocument внутри: документ рисуется
+настоящими контролами и шаблонами WPF. Огромные документы виртуализируются, предпросмотр и потоковые
+ответы чата обновляются на лету, текст выделяется сквозь блоки, а оформление и синтаксис полностью
+настраиваются и расширяются. Текст разбирает [Markdig](https://github.com/xoofx/markdig).
 
 ![Вьюер в теме витрины](https://raw.githubusercontent.com/wiki/porohkun/Beresta.Markdown.Wpf/images/overview-ru.png)
 

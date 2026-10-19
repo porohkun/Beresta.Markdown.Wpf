@@ -1,9 +1,17 @@
 ﻿# Beresta.Markdown.Wpf v0.8.0
 
+[![NuGet](https://img.shields.io/nuget/v/Beresta.Markdown.Wpf)](https://www.nuget.org/packages/Beresta.Markdown.Wpf)
+[![Downloads](https://img.shields.io/nuget/dt/Beresta.Markdown.Wpf)](https://www.nuget.org/packages/Beresta.Markdown.Wpf)
+[![Publish](https://img.shields.io/github/actions/workflow/status/porohkun/Beresta.Markdown.Wpf/nuget.yml?branch=main&label=publish)](https://github.com/porohkun/Beresta.Markdown.Wpf/actions/workflows/nuget.yml)
+![.NET 7, 8, 9, 10](https://img.shields.io/badge/.NET-7%20%7C%208%20%7C%209%20%7C%2010-512BD4)
+[![License](https://img.shields.io/github/license/porohkun/Beresta.Markdown.Wpf)](https://github.com/porohkun/Beresta.Markdown.Wpf/blob/main/LICENSE)
+
 **English** | [Русский](https://github.com/porohkun/Beresta.Markdown.Wpf/blob/main/README.ru.md)
 
-A WPF control that shows Markdown. [Markdig](https://github.com/xoofx/markdig) parses the text, and
-the viewer draws it with WPF controls and templates.
+A fast native Markdown viewer for WPF, with no browser and no FlowDocument inside: documents are drawn
+with real WPF controls and templates. It virtualizes huge documents, updates live for previews and
+streamed chat answers, lets you select text across blocks, and is fully themeable and extensible.
+[Markdig](https://github.com/xoofx/markdig) parses the text.
 
 ![The viewer in the showcase theme](https://raw.githubusercontent.com/wiki/porohkun/Beresta.Markdown.Wpf/images/overview.png)
 
