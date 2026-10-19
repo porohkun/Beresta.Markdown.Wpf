@@ -342,8 +342,9 @@ public sealed class MdTextMap
     }
 
     /// <summary>
-    /// The place of a tracked piece in this map; the block where its end stands is deleted —
-    /// <c>null</c>. The text of the piece is deleted entirely — an empty piece at its place.
+    /// The place of a tracked piece in this map. Both ends found — the piece between them; one found —
+    /// an empty piece at its place; none found or the block of an end is deleted — <c>null</c>: the text
+    /// of the piece is gone.
     /// </summary>
     public MdTextRange? Find(MdTrackedRange tracked)
     {
@@ -355,7 +356,13 @@ public sealed class MdTextMap
 
         var start = startBlock.Range.Start + TextTracking.Place(Text, startBlock.Range, first);
         var end = endBlock.Range.Start + TextTracking.Place(Text, endBlock.Range, last);
-        return start <= end ? new MdTextRange(start, end - start) : new MdTextRange(end, 0);
+        return (start, end) switch
+        {
+            ({ } from, { } to) => from <= to ? new MdTextRange(from, to - from) : new MdTextRange(to, 0),
+            ({ } from, null) => new MdTextRange(from, 0),
+            (null, { } to) => new MdTextRange(to, 0),
+            _ => null
+        };
     }
 
     /// <summary>

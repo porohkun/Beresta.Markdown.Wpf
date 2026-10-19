@@ -56,6 +56,40 @@ public sealed class TrackingTests
     }
 
     [Fact]
+    public void Кусок_переписанного_абзаца_пропадает()
+    {
+        var (before, after) = Maps("Alpha beta gamma delta", "Completely different message");
+        var tracked = before.Track(RangeOf(before, "beta"));
+
+        after.Find(tracked).Should().BeNull();
+    }
+
+    [Fact]
+    public void Кусок_с_одним_найденным_концом_становится_пустым_на_его_месте()
+    {
+        var (before, after) = Maps("Alpha beta gamma delta", "Alpha beta zzz");
+        var tracked = before.Track(RangeOf(before, "beta gamma"));
+
+        after.Find(tracked).Should().Be(new MdTextRange(6, 0));
+    }
+
+    [Fact]
+    public void Выделение_переписанного_абзаца_снимается()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "Alpha beta gamma delta" };
+            var window = WpfHost.Show(viewer);
+            viewer.Select(6, 4);
+
+            viewer.Markdown = "Completely different message";
+
+            viewer.SelectionLength.Should().Be(0);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Кусок_пропадает_вместе_со_своим_блоком()
     {
         var (before, after) = Maps("first\n\nsecond\n\nthird", "first\n\nthird");

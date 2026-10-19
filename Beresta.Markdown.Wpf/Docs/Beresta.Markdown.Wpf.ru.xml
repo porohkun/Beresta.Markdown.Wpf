@@ -2492,8 +2492,8 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.Selection.MdTextMap.Find(Beresta.Markdown.Wpf.Selection.MdTrackedRange)">
             <summary>
-            Место отслеживаемого куска в этой карте; блок, где стоит его конец, удалён — <c>null</c>.
-            Текст куска удалён целиком — пустой кусок на его месте.
+            Место отслеживаемого куска в этой карте. Нашлись оба конца — кусок между ними; один — пустой
+            кусок на его месте; ни одного или блок конца удалён — <c>null</c>: текста куска больше нет.
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Selection.MdTextMap.TrackSourceLines(System.Int32,System.Int32)">
