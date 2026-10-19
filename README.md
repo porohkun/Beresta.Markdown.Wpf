@@ -62,10 +62,10 @@ The viewer has no scroll bars of its own: put it into a `ScrollViewer`.
 <Window x:Class="YourApp.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mdv="clr-namespace:Beresta.Markdown.Wpf;assembly=Beresta.Markdown.Wpf"
+        xmlns:md="https://github.com/porohkun/Beresta.Markdown.Wpf"
         Title="Markdown" Width="800" Height="600">
     <ScrollViewer>
-        <mdv:MarkdownViewer Markdown="{Binding Text}" Margin="24,16" />
+        <md:MarkdownViewer Markdown="{Binding Text}" Margin="24,16" />
     </ScrollViewer>
 </Window>
 ```
@@ -77,15 +77,15 @@ The font and the text color come from your application.
 Ready-made extensions draw the syntax of GitHub, GitLab, Obsidian, MkDocs, Docusaurus, HackMD and
 chats. They are off by default; a set connects the syntax of one program.
 
-`MainWindow.xaml` (`xmlns:kit="clr-namespace:Beresta.Markdown.Wpf.Kit;assembly=Beresta.Markdown.Wpf"` on the
+`MainWindow.xaml` (`xmlns:md="https://github.com/porohkun/Beresta.Markdown.Wpf"` on the
 root element):
 
 ```xml
-<mdv:MarkdownViewer Markdown="{Binding Text}">
-    <mdv:MarkdownViewer.Extensions>
-        <kit:ObsidianSet />
-    </mdv:MarkdownViewer.Extensions>
-</mdv:MarkdownViewer>
+<md:MarkdownViewer Markdown="{Binding Text}">
+    <md:MarkdownViewer.Extensions>
+        <md:ObsidianSet />
+    </md:MarkdownViewer.Extensions>
+</md:MarkdownViewer>
 ```
 
 ## Documentation
