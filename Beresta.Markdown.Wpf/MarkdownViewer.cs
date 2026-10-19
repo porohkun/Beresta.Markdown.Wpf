@@ -997,11 +997,25 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         }
     }
 
+    /// <summary>
+    /// Новый документ: память разборов забывается при следующем разборе. Текст, пришедший следом,
+    /// разбирается сразу; без нового текста прежний разбирается заново до раскладки.
+    /// </summary>
     private static void OnDocumentKeyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var viewer = (MarkdownViewer)d;
         viewer._forgetQueued = true;
-        viewer.Rebuild(discardRunning: true);
+        viewer._discardRunning |= viewer._parsing is not null;
+        viewer.Dispatcher.BeginInvoke(DispatcherPriority.DataBind, viewer.ParseForgotten);
+    }
+
+    /// <summary>Ключ сменился, а нового разбора с тех пор не было — текст разбирается с чистой памятью разборов.</summary>
+    private void ParseForgotten()
+    {
+        if (_forgetQueued && _parsing is null)
+        {
+            StartParse();
+        }
     }
 
     /// <summary>Сменилось то, что контейнеры берут при создании: провайдер стилей, загрузчик картинок, адрес документа.</summary>

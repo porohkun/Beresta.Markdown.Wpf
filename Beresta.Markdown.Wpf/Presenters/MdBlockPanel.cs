@@ -31,10 +31,16 @@ public sealed class MdBlockPanel : VirtualizingPanel
     private double[] _before = [];
     private double[] _after = [];
     private double[] _inside = [];
+    private double[] _measured = [];
     private double[] _offsets = [0];
     private double[] _tops = [];
+    private double _measuredSum;
+    private int _measuredCount;
+    private double _estimate = double.NaN;
+    private int _changedFrom;
+    private bool _keysChanged = true;
     private bool _hasGaps;
-    private (HeightKey Key, double Top, double ViewportTop)? _anchor;
+    private (HeightKey Key, int Index, double Top, double ViewportTop)? _anchor;
 
     /// <summary>Creates an empty panel.</summary>
     public MdBlockPanel()
@@ -208,6 +214,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
     protected override void OnIsItemsHostChanged(bool oldIsItemsHost, bool newIsItemsHost)
     {
         base.OnIsItemsHostChanged(oldIsItemsHost, newIsItemsHost);
+        _keysChanged = true;
 
         if (newIsItemsHost && ItemsControl.GetItemsOwner(this) is MarkdownViewer viewer)
         {
@@ -244,6 +251,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
     protected override void OnItemsChanged(object sender, ItemsChangedEventArgs args)
     {
         base.OnItemsChanged(sender, args);
+        _keysChanged = true;
 
         var position = args.Action switch
         {
@@ -271,14 +279,14 @@ public sealed class MdBlockPanel : VirtualizingPanel
             return 0;
         }
 
-        var index = Array.IndexOf(_keys, anchor.Key);
+        var index = anchor.Index < _keys.Length && _keys[anchor.Index] == anchor.Key ? anchor.Index : Array.IndexOf(_keys, anchor.Key);
         return index >= 0 ? _tops[index] - anchor.Top : 0;
     }
 
     private void RememberAnchor(Viewport viewport)
     {
         var index = viewport.PhysicalScroller is not null && viewport.Top > 0 ? IndexAt(viewport.Top) : -1;
-        _anchor = index >= 0 ? (_keys[index], _tops[index], viewport.Top) : null;
+        _anchor = index >= 0 ? (_keys[index], index, _tops[index], viewport.Top) : null;
     }
 
     private (int First, int Last) RealizeVisible(Viewport viewport, Size constraint, out double shift)
@@ -372,9 +380,34 @@ public sealed class MdBlockPanel : VirtualizingPanel
                 }
 
                 child.Measure(constraint);
-                _heights[_keys[index]] = child.DesiredSize.Height - _inside[index];
+                Remember(index, child.DesiredSize.Height - _inside[index]);
             }
         }
+    }
+
+    /// <summary>Запоминает измеренную высоту блока; смещения пересчитываются с него.</summary>
+    private void Remember(int index, double height)
+    {
+        _heights[_keys[index]] = height;
+
+        var old = _measured[index];
+        if (old == height)
+        {
+            return;
+        }
+
+        if (double.IsNaN(old))
+        {
+            _measuredCount++;
+            _measuredSum += height;
+        }
+        else
+        {
+            _measuredSum += height - old;
+        }
+
+        _measured[index] = height;
+        _changedFrom = Math.Min(_changedFrom, index);
     }
 
     private void CleanUp(int first, int last)
@@ -395,19 +428,29 @@ public sealed class MdBlockPanel : VirtualizingPanel
         }
     }
 
+    /// <summary>Ключи, пустые места и известные высоты блоков — после изменения коллекции или пустых мест.</summary>
     private void UpdateKeys(ItemsControl? owner)
     {
         var count = owner?.Items.Count ?? 0;
+        if (!_keysChanged && _keys.Length == count)
+        {
+            return;
+        }
+
+        _keysChanged = false;
         if (_keys.Length != count)
         {
             _keys = new HeightKey[count];
             _before = new double[count];
             _after = new double[count];
             _inside = new double[count];
+            _measured = new double[count];
         }
 
         var gaps = GetValue(GapsProperty) as GapLayout ?? GapLayout.Empty;
         _hasGaps = false;
+        _measuredSum = 0;
+        _measuredCount = 0;
         for (var i = 0; i < count; i++)
         {
             var item = owner!.Items[i];
@@ -416,7 +459,20 @@ public sealed class MdBlockPanel : VirtualizingPanel
             _after[i] = gaps.After(item);
             _inside[i] = gaps.Inside(item);
             _hasGaps |= _before[i] > 0 || _after[i] > 0;
+
+            if (_heights.TryGetValue(_keys[i], out var height))
+            {
+                _measured[i] = height;
+                _measuredSum += height;
+                _measuredCount++;
+            }
+            else
+            {
+                _measured[i] = double.NaN;
+            }
         }
+
+        _estimate = double.NaN;
 
         if (_heights.Count > 2 * count + 64)
         {
@@ -428,26 +484,27 @@ public sealed class MdBlockPanel : VirtualizingPanel
         }
     }
 
+    /// <summary>
+    /// Смещения блоков: с первого блока, чья высота изменилась, а при новой оценке высоты
+    /// неизмеренных — с начала.
+    /// </summary>
     private void UpdateOffsets()
     {
-        var known = 0;
-        var total = 0.0;
-        foreach (var key in _keys)
+        if (_tops.Length != _keys.Length)
         {
-            if (_heights.TryGetValue(key, out var height))
-            {
-                known++;
-                total += height;
-            }
+            _offsets = new double[_keys.Length + 1];
+            _tops = new double[_keys.Length];
+            _estimate = double.NaN;
         }
 
-        var estimate = known > 0 ? total / known : DefaultHeight;
+        var estimate = _measuredCount > 0 ? _measuredSum / _measuredCount : DefaultHeight;
+        var from = estimate == _estimate ? _changedFrom : 0;
+        _estimate = estimate;
+        _changedFrom = int.MaxValue;
 
-        _offsets = new double[_keys.Length + 1];
-        _tops = new double[_keys.Length];
-        for (var i = 0; i < _keys.Length; i++)
+        for (var i = from; i < _keys.Length; i++)
         {
-            var height = (_heights.TryGetValue(_keys[i], out var measured) ? measured : estimate) + _inside[i];
+            var height = (double.IsNaN(_measured[i]) ? estimate : _measured[i]) + _inside[i];
             _tops[i] = _offsets[i] + _before[i];
             _offsets[i + 1] = _tops[i] + height + _after[i];
         }
@@ -456,21 +513,16 @@ public sealed class MdBlockPanel : VirtualizingPanel
     private static void OnGapsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var panel = (MdBlockPanel)d;
+        panel._keysChanged = true;
         panel.InvalidateMeasure();
         panel.InvalidateVisual();
     }
 
+    /// <summary>Первый блок, чей низ ниже <paramref name="y"/>; такого нет — -1.</summary>
     private int IndexAt(double y)
     {
-        for (var i = 0; i < _keys.Length; i++)
-        {
-            if (_offsets[i + 1] > y)
-            {
-                return i;
-            }
-        }
-
-        return -1;
+        var index = FirstOffsetAbove(y, 1);
+        return index < _offsets.Length ? index - 1 : -1;
     }
 
     private (int First, int Last) RangeFor(double top, double bottom)
@@ -481,13 +533,50 @@ public sealed class MdBlockPanel : VirtualizingPanel
             return (0, -1);
         }
 
-        var last = first;
-        while (last + 1 < _keys.Length && _offsets[last + 1] < bottom)
+        var last = Math.Min(FirstOffsetAtOrAbove(bottom, first + 1), _keys.Length) - 1;
+        return (first, last);
+    }
+
+    /// <summary>Первый номер смещения не меньше <paramref name="start"/>, где смещение больше <paramref name="y"/>.</summary>
+    private int FirstOffsetAbove(double y, int start)
+    {
+        var low = start;
+        var high = _offsets.Length;
+        while (low < high)
         {
-            last++;
+            var middle = low + ((high - low) / 2);
+            if (_offsets[middle] > y)
+            {
+                high = middle;
+            }
+            else
+            {
+                low = middle + 1;
+            }
         }
 
-        return (first, last);
+        return low;
+    }
+
+    /// <summary>Первый номер смещения не меньше <paramref name="start"/>, где смещение не меньше <paramref name="y"/>.</summary>
+    private int FirstOffsetAtOrAbove(double y, int start)
+    {
+        var low = start;
+        var high = _offsets.Length;
+        while (low < high)
+        {
+            var middle = low + ((high - low) / 2);
+            if (_offsets[middle] >= y)
+            {
+                high = middle;
+            }
+            else
+            {
+                low = middle + 1;
+            }
+        }
+
+        return low;
     }
 
     private Viewport? FindViewport()

@@ -19,6 +19,7 @@ public sealed class PresenterTests
                 FontSize = 14,
                 Runs = [new RunVm("text"), new RunVm("link", Hyperlink: new("https://example.com"))]
             };
+            var window = WpfHost.Show(block);
 
             block.FontSize = 28;
             block.FontFamily = new("Consolas");
@@ -30,6 +31,54 @@ public sealed class PresenterTests
                 run.FontSize.Should().Be(28);
                 run.FontFamily.Source.Should().Be("Consolas");
             });
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Контейнер_абзаца_собирает_текст_один_раз()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "Text with [a link](https://example.com), `code` and **bold**." };
+            var window = WpfHost.Show(viewer);
+
+            Visuals.Descendants<MdTextBlock>(viewer).Single().Rebuilds.Should().Be(1);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Свойства_до_инициализации_ложатся_одной_пересборкой()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var block = new MdTextBlock
+            {
+                Runs = [new RunVm("link", Hyperlink: new("https://example.com"))],
+                LinkForeground = Brushes.Red,
+                LinkStyle = new Style(typeof(Hyperlink))
+            };
+            var window = WpfHost.Show(block);
+
+            block.Rebuilds.Should().Be(1);
+            block.Inlines.OfType<Hyperlink>().Single().Foreground.Should().Be(Brushes.Red);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void После_инициализации_свойство_сразу_пересобирает_текст()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var block = new MdTextBlock { Runs = [new RunVm("link", Hyperlink: new("https://example.com"))] };
+            var window = WpfHost.Show(block);
+
+            block.LinkForeground = Brushes.Red;
+
+            block.Inlines.OfType<Hyperlink>().Single().Foreground.Should().Be(Brushes.Red);
+            window.Close();
         });
     }
 

@@ -38,6 +38,9 @@ public sealed class LineMapTests
     [InlineData("```\nx\ny\nz\n```", 2, 2, "y")]
     [InlineData("| a | b |\n|---|---|\n| 1 | 2 |", 2, 2, "1\t2")]
     [InlineData("- one\n- two", 1, 1, "two")]
+    [InlineData("text[^1]\n\n[^1]: note\n\nafter", 2, 2, "note")]
+    [InlineData("text[^1]\n\n[^1]: note\n\nafter", 4, 4, "after")]
+    [InlineData("> one\n>\n> - two\n>   three\n\nfour", 2, 3, "two\nthree")]
     public void Строки_исходника_дают_свой_кусок_карты(string markdown, int startLine, int endLine, string expected)
     {
         var map = MdTextMap.Build(ModelBuilder.Parse(markdown));
@@ -54,5 +57,14 @@ public sealed class LineMapTests
         var map = MdTextMap.Build(ModelBuilder.Parse("a\n\n[d]: https://example.com\n\nb"));
 
         map.RangeOfSourceLines(2, 2).Should().BeNull();
+    }
+
+    [Fact]
+    public void Сноска_в_конце_карты_знает_свою_строку_исходника()
+    {
+        var map = MdTextMap.Build(ModelBuilder.Parse("text[^1]\n\n[^1]: note\n\nafter"));
+
+        map.SourceLineOf(map.Text.IndexOf("note", StringComparison.Ordinal)).Should().Be(2);
+        map.SourceLineOf(map.Text.IndexOf("after", StringComparison.Ordinal)).Should().Be(4);
     }
 }

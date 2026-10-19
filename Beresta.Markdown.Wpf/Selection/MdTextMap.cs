@@ -19,6 +19,7 @@ public sealed class MdTextMap
     private readonly Dictionary<string, MdTextRange> _anchors;
     private readonly SourceLines? _lines;
     private Dictionary<long, (BlockVm Block, MdTextRange Range)>? _byId;
+    private LinesIndex? _byLine;
 
     private MdTextMap(Builder builder, string? source)
     {
@@ -171,8 +172,11 @@ public sealed class MdTextMap
             }
         }
 
-        foreach (var (block, range) in _blocks)
+        var index = _byLine ??= LinesIndex.Of(_blocks);
+        var to = FirstWhere(index.Starts.Length, k => index.Starts[k] > endLine);
+        for (var k = FirstWhere(to, k => index.Reach[k] >= startLine); k < to; k++)
         {
+            var (block, range) = _blocks[index.Order[k]];
             if (!Intersects(block.Source))
             {
                 continue;
@@ -395,16 +399,37 @@ public sealed class MdTextMap
     /// </summary>
     private (BlockVm Block, MdTextRange Range)? Innermost(int position, Func<BlockVm, bool> suits)
     {
-        for (var i = _blocks.Count - 1; i >= 0; i--)
+        for (var i = FirstWhere(_blocks.Count, i => _blocks[i].Range.Start > position) - 1; i >= 0; i--)
         {
             var (block, range) = _blocks[i];
-            if (!range.IsEmpty && range.Start <= position && position <= range.End && suits(block))
+            if (!range.IsEmpty && position <= range.End && suits(block))
             {
                 return (block, range);
             }
         }
 
         return null;
+    }
+
+    /// <summary>Первый номер до <paramref name="count"/>, с которого условие выполняется для всех следующих; такого нет — <paramref name="count"/>.</summary>
+    private static int FirstWhere(int count, Func<int, bool> holds)
+    {
+        var low = 0;
+        var high = count;
+        while (low < high)
+        {
+            var middle = low + ((high - low) / 2);
+            if (holds(middle))
+            {
+                high = middle;
+            }
+            else
+            {
+                low = middle + 1;
+            }
+        }
+
+        return low;
     }
 
     /// <summary>Строка исходника инлайна, на котором стоит позиция; позиция вне этих инлайнов — <c>null</c>.</summary>
@@ -574,6 +599,30 @@ public sealed class MdTextMap
         }
 
         return best;
+    }
+
+    /// <summary>
+    /// Блоки с местом в исходнике по первой строке и самая дальняя последняя строка среди них до каждого:
+    /// блоки на строках находятся бинарным поиском.
+    /// </summary>
+    private sealed record LinesIndex(int[] Order, int[] Starts, int[] Reach)
+    {
+        public static LinesIndex Of(List<(BlockVm Block, MdTextRange Range)> blocks)
+        {
+            var order = Enumerable.Range(0, blocks.Count)
+                .Where(i => !blocks[i].Block.Source.IsEmpty)
+                .OrderBy(i => blocks[i].Block.Source.StartLine)
+                .ToArray();
+            var reach = new int[order.Length];
+            var farthest = int.MinValue;
+            for (var k = 0; k < order.Length; k++)
+            {
+                farthest = Math.Max(farthest, blocks[order[k]].Block.Source.EndLine);
+                reach[k] = farthest;
+            }
+
+            return new(order, order.Select(i => blocks[i].Block.Source.StartLine).ToArray(), reach);
+        }
     }
 
     internal sealed class Builder(ExtensionGuard guard)

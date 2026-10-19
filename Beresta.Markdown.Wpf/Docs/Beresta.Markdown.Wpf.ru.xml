@@ -2093,6 +2093,9 @@
         <member name="M:Beresta.Markdown.Wpf.Presenters.MdTextBlock.OnQueryCursor(System.Windows.Input.QueryCursorEventArgs)">
             <summary>Над текстом, пока выделение включено, — текстовый курсор; ссылки и виджеты ставят свой.</summary>
         </member>
+        <member name="M:Beresta.Markdown.Wpf.Presenters.MdTextBlock.OnInitialized(System.EventArgs)">
+            <inheritdoc/>
+        </member>
         <member name="M:Beresta.Markdown.Wpf.Presenters.MdTextBlock.OnRenderSizeChanged(System.Windows.SizeChangedInfo)">
             <inheritdoc/>
         </member>
