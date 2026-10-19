@@ -2,7 +2,7 @@
 
 WPF-контрол, который показывает markdown: текст разбирает Markdig, рисуют шаблоны WPF. Выходит
 NuGet-пакетом `Beresta.Markdown.Wpf` и подключается сабмодулем — так им пользуется Storaxis. Стек:
-WPF и Markdig; библиотека и тесты собираются под .NET 8 и .NET 10 (`net8.0-windows`,
+WPF и Markdig; библиотека и тесты собираются под .NET 7, 8, 9 и 10 (`net7.0-windows` —
 `net10.0-windows`), витрина — под .NET 10.
 
 Термины — в [`GLOSSARY.md`](GLOSSARY.md), и только там.
@@ -30,6 +30,13 @@ WPF и Markdig; библиотека и тесты собираются под .
 | Витрина | `dotnet run --project Beresta.Markdown.Wpf.Showcase` |
 | Витрина для проверок агентом | `dotnet run tools/ShowcaseProbe.cs -- <шаги через запятую> [папка снимков]` |
 | Снимки для вики | `dotnet run tools/WikiShots.cs -- [картинки через запятую] [--lang en\|ru] [--out папка]` |
+
+## Публикация
+
+Пакет на nuget.org публикует `.github/workflows/nuget.yml`: пуш в `main` с ещё не выпущенной
+`VersionPrefix` — релиз с тегом `vX.Y.Z` и релизом на GitHub, запуск вручную на ветке — превью
+`X.Y.Z-preview.N`. Выпущенная версия не публикуется повторно ни релизом, ни превью: версия
+поднимается в ветке до первой публикации.
 
 ## Соглашения
 

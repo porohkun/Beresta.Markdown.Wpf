@@ -156,13 +156,14 @@ public class MdTextBlock : TextBlock
     private List<Highlight> _highlights = [];
     private IReadOnlyList<(int Offset, double Height)> _gaps = [];
     private List<(int Line, Rect Row)>? _sourceRows;
+    private Run? _lastEmptyRow;
     private AdornerLayer? _adornerLayer;
     private MdHighlightAdorner? _adorner;
+    private bool _rebuildPending;
 
     /// <summary>Creates an empty text.</summary>
     public MdTextBlock()
     {
-        Rebuild();
         Loaded += (_, _) => SyncAdorner();
         Unloaded += (_, _) =>
         {
@@ -268,7 +269,14 @@ public class MdTextBlock : TextBlock
         => _highlights.Select(highlight => (highlight.Start, highlight.End, highlight.Kind, highlight.Brush));
 
     /// <summary>Строки исходника, которые начинаются в этом тексте, и экранные строки, где они начинаются.</summary>
-    internal IReadOnlyList<(int Line, Rect Row)> SourceRows => _sourceRows ??= FindSourceRows();
+    internal IReadOnlyList<(int Line, Rect Row)> SourceRows
+    {
+        get
+        {
+            BuildPending();
+            return _sourceRows ??= FindSourceRows();
+        }
+    }
 
     /// <summary>Пустые места между строками своего текста во всю его ширину, в своих координатах.</summary>
     internal IEnumerable<Rect> GapRects
@@ -279,6 +287,7 @@ public class MdTextBlock : TextBlock
     /// <summary>Экранная строка знака своего текста; такого знака нет — <c>null</c>.</summary>
     internal Rect? RowAt(int offset)
     {
+        BuildPending();
         foreach (var segment in _segments)
         {
             if (segment.Element is Run run && offset >= segment.Start && offset < segment.End
@@ -288,8 +297,13 @@ public class MdTextBlock : TextBlock
             }
         }
 
-        return null;
+        return _lastEmptyRow is not null && offset == _segments[^1].End
+            ? _lastEmptyRow.ContentStart.GetCharacterRect(LogicalDirection.Forward)
+            : null;
     }
+
+    /// <summary>Сколько раз текст пересобирался.</summary>
+    internal int Rebuilds { get; private set; }
 
     /// <summary>Кусок текстовой карты, который рисует этот блок.</summary>
     internal bool TryGetMapRange(out MdTextRange range)
@@ -303,6 +317,7 @@ public class MdTextBlock : TextBlock
     /// <summary>Смещение в своём куске карты для точки в своих координатах.</summary>
     internal int HitTestLocal(Point point)
     {
+        BuildPending();
         var length = _segments.Count == 0 ? 0 : _segments[^1].End;
         if (point.Y < 0)
         {
@@ -363,6 +378,7 @@ public class MdTextBlock : TextBlock
     /// <summary>Прямоугольники своего куска в своих координатах: строки текста и неделимые куски целиком.</summary>
     internal IEnumerable<Rect> GetBounds(int start, int end)
     {
+        BuildPending();
         foreach (var segment in _segments.Where(segment => segment.End > start && segment.Start < end))
         {
             if (segment.Overlay is { } overlay)
@@ -404,6 +420,7 @@ public class MdTextBlock : TextBlock
     /// </summary>
     internal double LongestWordWidth()
     {
+        BuildPending();
         var text = new StringBuilder();
         var runs = new List<(Run Run, int Start)>();
         var widest = 0.0;
@@ -453,6 +470,13 @@ public class MdTextBlock : TextBlock
     }
 
     /// <inheritdoc/>
+    protected override void OnInitialized(EventArgs e)
+    {
+        BuildPending();
+        base.OnInitialized(e);
+    }
+
+    /// <inheritdoc/>
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
     {
         base.OnRenderSizeChanged(sizeInfo);
@@ -460,7 +484,7 @@ public class MdTextBlock : TextBlock
     }
 
     private static void OnAnyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        => ((MdTextBlock)d).Rebuild();
+        => ((MdTextBlock)d).RequestRebuild();
 
     private static Span Wrap(Inline inner, Style? style, Action<Span> fallback)
     {
@@ -488,7 +512,7 @@ public class MdTextBlock : TextBlock
         var text = (MdTextBlock)d;
         if (!text.GapsOfRuns().SequenceEqual(text._gaps))
         {
-            text.Rebuild();
+            text.RequestRebuild();
         }
     }
 
@@ -577,6 +601,11 @@ public class MdTextBlock : TextBlock
 
     private void UpdateHighlights()
     {
+        if (_rebuildPending)
+        {
+            return;
+        }
+
         var highlights = new List<Highlight>();
         if (TryGetMapRange(out var range) && GetValue(LayerProperty) is MdDecorationLayer layer)
         {
@@ -627,13 +656,38 @@ public class MdTextBlock : TextBlock
         _adorner.InvalidateVisual();
     }
 
+    /// <summary>Пересобирает текст; до инициализации только помечает: пересборка пройдёт один раз, в её конце.</summary>
+    private void RequestRebuild()
+    {
+        if (IsInitialized)
+        {
+            Rebuild();
+        }
+        else
+        {
+            _rebuildPending = true;
+        }
+    }
+
+    /// <summary>Доводит отложенную пересборку текста.</summary>
+    private void BuildPending()
+    {
+        if (_rebuildPending)
+        {
+            Rebuild();
+        }
+    }
+
     private void Rebuild()
     {
+        _rebuildPending = false;
+        Rebuilds++;
         Inlines.Clear();
         _segments.Clear();
         _styled.Clear();
         _gapRows.Clear();
         _sourceRows = null;
+        _lastEmptyRow = null;
         _gaps = GapsOfRuns();
         var nextGap = 0;
 
@@ -687,6 +741,16 @@ public class MdTextBlock : TextBlock
                     _segments.Add(new(inline, start, length, host, cover, widget));
                     break;
             }
+        }
+
+        if (_segments is [.., { Inline: RunVm { Text: [.., '\n'] } } last])
+        {
+            AddGapRows(last.End, ref nextGap);
+
+            // BYDESIGN: перевод строки в самом конце текста WPF новой строкой не рисует — пустую
+            // последнюю строку держит невидимый знак, которого в карте нет.
+            _lastEmptyRow = new Run("​");
+            Inlines.Add(_lastEmptyRow);
         }
 
         AddGapRows(int.MaxValue, ref nextGap);
@@ -765,6 +829,11 @@ public class MdTextBlock : TextBlock
 
     private void UpdateWidgetStates()
     {
+        if (_rebuildPending)
+        {
+            return;
+        }
+
         var states = GetValue(StatesProperty) as WidgetStates;
         foreach (var segment in _segments)
         {

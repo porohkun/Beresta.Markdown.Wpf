@@ -22,6 +22,10 @@ internal sealed class LambdaExtension : MdExtension
 
     public Func<NodeVm, object?>? State { get; init; }
 
+    public bool Background { get; init; } = true;
+
+    public override bool AllowsBackgroundParse => Background;
+
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline) => Setup?.Invoke(pipeline);
 
     public override BlockVm? ConvertBlock(Block block, MdConvertContext context) => Block?.Invoke(block, context);

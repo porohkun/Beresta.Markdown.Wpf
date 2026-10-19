@@ -1,6 +1,7 @@
 ﻿namespace Beresta.Markdown.Wpf.Selection;
 
 using System.Text;
+using Extensions;
 using ViewModels;
 
 /// <summary>
@@ -18,6 +19,7 @@ public sealed class MdTextMap
     private readonly Dictionary<string, MdTextRange> _anchors;
     private readonly SourceLines? _lines;
     private Dictionary<long, (BlockVm Block, MdTextRange Range)>? _byId;
+    private LinesIndex? _byLine;
 
     private MdTextMap(Builder builder, string? source)
     {
@@ -31,7 +33,7 @@ public sealed class MdTextMap
     }
 
     /// <summary>The map of an empty document.</summary>
-    public static MdTextMap Empty { get; } = new(new(), null);
+    public static MdTextMap Empty { get; } = new(new(ExtensionGuard.Silent), null);
 
     /// <summary>Continuous text; indivisible elements are the character <see cref="ObjectMark"/>.</summary>
     public string Text { get; }
@@ -48,7 +50,7 @@ public sealed class MdTextMap
     /// <summary>The map of blocks without the source text.</summary>
     public static MdTextMap Build(IReadOnlyList<BlockVm> blocks)
     {
-        var builder = new Builder();
+        var builder = new Builder(ExtensionGuard.Silent);
         builder.AppendBlocks(blocks);
         return new(builder, null);
     }
@@ -57,9 +59,12 @@ public sealed class MdTextMap
     /// The map of blocks together with the source text: tracked lines recognize themselves by the
     /// text of the lines.
     /// </summary>
-    public static MdTextMap Build(IReadOnlyList<BlockVm> blocks, string source)
+    public static MdTextMap Build(IReadOnlyList<BlockVm> blocks, string source) => Build(blocks, source, ExtensionGuard.Silent);
+
+    /// <summary>Карта блоков с текстом исходника; код виджетов идёт через <paramref name="guard"/>.</summary>
+    internal static MdTextMap Build(IReadOnlyList<BlockVm> blocks, string source, ExtensionGuard guard)
     {
-        var builder = new Builder();
+        var builder = new Builder(guard);
         builder.AppendBlocks(blocks);
         return new(builder, source);
     }
@@ -91,7 +96,10 @@ public sealed class MdTextMap
     /// The text of an inline in the map: a piece of text, a line break or the character of an
     /// indivisible element.
     /// </summary>
-    public static string TextOf(InlineVm inline)
+    public static string TextOf(InlineVm inline) => TextOf(inline, ExtensionGuard.Silent);
+
+    /// <summary>Текст инлайна в карте; код виджета идёт через <paramref name="guard"/>, упал — виджет неделимый.</summary>
+    internal static string TextOf(InlineVm inline, ExtensionGuard guard)
     {
         switch (inline)
         {
@@ -100,9 +108,10 @@ public sealed class MdTextMap
             case LineBreakVm:
                 return "\n";
             case IMdTextSource source:
-                var builder = new Builder();
-                source.WriteText(new(builder));
-                return builder.Text.ToString();
+                var builder = new Builder(guard);
+                return guard.CallWidget(inline, () => source.WriteText(new(builder)))
+                    ? builder.Text.ToString()
+                    : ObjectMark.ToString();
             default:
                 return ObjectMark.ToString();
         }
@@ -163,8 +172,11 @@ public sealed class MdTextMap
             }
         }
 
-        foreach (var (block, range) in _blocks)
+        var index = _byLine ??= LinesIndex.Of(_blocks);
+        var to = FirstWhere(index.Starts.Length, k => index.Starts[k] > endLine);
+        for (var k = FirstWhere(to, k => index.Reach[k] >= startLine); k < to; k++)
         {
+            var (block, range) = _blocks[index.Order[k]];
             if (!Intersects(block.Source))
             {
                 continue;
@@ -277,7 +289,7 @@ public sealed class MdTextMap
 
             case CodeBlockVm code when TryGetRange(code.Runs, out var codeRange):
                 var before = Math.Clamp(position - codeRange.Start, 0, code.Code.Length);
-                return code.CodeFirstLine + code.Code.AsSpan(0, before).Count('\n');
+                return code.CodeFirstLine + CharCount.In(code.Code.AsSpan(0, before), '\n');
 
             case TableVm table:
                 foreach (var row in table.Rows)
@@ -334,8 +346,9 @@ public sealed class MdTextMap
     }
 
     /// <summary>
-    /// The place of a tracked piece in this map; the block where its end stands is deleted —
-    /// <c>null</c>. The text of the piece is deleted entirely — an empty piece at its place.
+    /// The place of a tracked piece in this map. Both ends found — the piece between them; one found —
+    /// an empty piece at its place; none found or the block of an end is deleted — <c>null</c>: the text
+    /// of the piece is gone.
     /// </summary>
     public MdTextRange? Find(MdTrackedRange tracked)
     {
@@ -347,7 +360,13 @@ public sealed class MdTextMap
 
         var start = startBlock.Range.Start + TextTracking.Place(Text, startBlock.Range, first);
         var end = endBlock.Range.Start + TextTracking.Place(Text, endBlock.Range, last);
-        return start <= end ? new MdTextRange(start, end - start) : new MdTextRange(end, 0);
+        return (start, end) switch
+        {
+            ({ } from, { } to) => from <= to ? new MdTextRange(from, to - from) : new MdTextRange(to, 0),
+            ({ } from, null) => new MdTextRange(from, 0),
+            (null, { } to) => new MdTextRange(to, 0),
+            _ => null
+        };
     }
 
     /// <summary>
@@ -380,16 +399,37 @@ public sealed class MdTextMap
     /// </summary>
     private (BlockVm Block, MdTextRange Range)? Innermost(int position, Func<BlockVm, bool> suits)
     {
-        for (var i = _blocks.Count - 1; i >= 0; i--)
+        for (var i = FirstWhere(_blocks.Count, i => _blocks[i].Range.Start > position) - 1; i >= 0; i--)
         {
             var (block, range) = _blocks[i];
-            if (!range.IsEmpty && range.Start <= position && position <= range.End && suits(block))
+            if (!range.IsEmpty && position <= range.End && suits(block))
             {
                 return (block, range);
             }
         }
 
         return null;
+    }
+
+    /// <summary>Первый номер до <paramref name="count"/>, с которого условие выполняется для всех следующих; такого нет — <paramref name="count"/>.</summary>
+    private static int FirstWhere(int count, Func<int, bool> holds)
+    {
+        var low = 0;
+        var high = count;
+        while (low < high)
+        {
+            var middle = low + ((high - low) / 2);
+            if (holds(middle))
+            {
+                high = middle;
+            }
+            else
+            {
+                low = middle + 1;
+            }
+        }
+
+        return low;
     }
 
     /// <summary>Строка исходника инлайна, на котором стоит позиция; позиция вне этих инлайнов — <c>null</c>.</summary>
@@ -413,6 +453,17 @@ public sealed class MdTextMap
         }
 
         return null;
+    }
+
+    /// <summary>Кусок карты блока; блока в карте нет — <c>null</c>.</summary>
+    internal MdTextRange? RangeOf(BlockVm block)
+    {
+        if (block.NodeId != 0 && BlockOf(block.NodeId) is { } known && ReferenceEquals(known.Block, block))
+        {
+            return known.Range;
+        }
+
+        return _blocks.FirstOrDefault(entry => ReferenceEquals(entry.Block, block)) is { Block: not null } entry ? entry.Range : null;
     }
 
     private (BlockVm Block, MdTextRange Range)? BlockOf(long nodeId)
@@ -550,7 +601,31 @@ public sealed class MdTextMap
         return best;
     }
 
-    internal sealed class Builder
+    /// <summary>
+    /// Блоки с местом в исходнике по первой строке и самая дальняя последняя строка среди них до каждого:
+    /// блоки на строках находятся бинарным поиском.
+    /// </summary>
+    private sealed record LinesIndex(int[] Order, int[] Starts, int[] Reach)
+    {
+        public static LinesIndex Of(List<(BlockVm Block, MdTextRange Range)> blocks)
+        {
+            var order = Enumerable.Range(0, blocks.Count)
+                .Where(i => !blocks[i].Block.Source.IsEmpty)
+                .OrderBy(i => blocks[i].Block.Source.StartLine)
+                .ToArray();
+            var reach = new int[order.Length];
+            var farthest = int.MinValue;
+            for (var k = 0; k < order.Length; k++)
+            {
+                farthest = Math.Max(farthest, blocks[order[k]].Block.Source.EndLine);
+                reach[k] = farthest;
+            }
+
+            return new(order, order.Select(i => blocks[i].Block.Source.StartLine).ToArray(), reach);
+        }
+    }
+
+    internal sealed class Builder(ExtensionGuard guard)
     {
         private readonly Dictionary<string, int> _slugs = [];
 
@@ -574,10 +649,10 @@ public sealed class MdTextMap
             var start = Text.Length;
             foreach (var inline in inlines)
             {
-                var text = TextOf(inline);
-                if (inline is IMdCopyText copy && text is [ObjectMark])
+                var text = TextOf(inline, guard);
+                if (inline is IMdCopyText && text is [ObjectMark])
                 {
-                    Copies[Text.Length] = copy.CopyText;
+                    AddCopy(inline);
                 }
 
                 if (inline is FootnoteLinkVm { IsBack: false } reference)
@@ -717,21 +792,50 @@ public sealed class MdTextMap
                     break;
 
                 case IMdTextSource source:
-                    source.WriteText(new(this));
+                    var writes = new List<Action>();
+                    var writer = new MdTextWriter(
+                        text => writes.Add(() => Append(text)),
+                        inlines => writes.Add(() => AppendInlines(inlines)),
+                        blocks => writes.Add(() => AppendBlocks(blocks)));
+
+                    if (guard.CallWidget(block, () => source.WriteText(writer)))
+                    {
+                        writes.ForEach(write => write());
+                    }
+                    else
+                    {
+                        AppendIndivisible(block);
+                    }
+
                     break;
 
                 default:
-                    if (block is IMdCopyText copy)
-                    {
-                        Copies[Text.Length] = copy.CopyText;
-                    }
-
-                    Owners[block] = new(Text.Length, 1);
-                    Text.Append(ObjectMark);
+                    AppendIndivisible(block);
                     break;
             }
 
             BlockRanges[index] = (block, new(start, Text.Length - start));
+        }
+
+        /// <summary>Неделимый блок — одним знаком <see cref="ObjectMark"/>.</summary>
+        private void AppendIndivisible(BlockVm block)
+        {
+            if (block is IMdCopyText)
+            {
+                AddCopy(block);
+            }
+
+            Owners[block] = new(Text.Length, 1);
+            Text.Append(ObjectMark);
+        }
+
+        /// <summary>Текст для копирования неделимого, чей знак встаёт следующим.</summary>
+        private void AddCopy(object widget)
+        {
+            if (guard.CallWidget(widget, () => ((IMdCopyText)widget).CopyText, null) is { } copy)
+            {
+                Copies[Text.Length] = copy;
+            }
         }
 
         /// <summary>Заголовок блока, если он есть, строкой перед вложенными блоками.</summary>

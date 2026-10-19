@@ -220,6 +220,54 @@ public sealed class IncrementalTests
         });
     }
 
+    [Fact]
+    public void Новый_ключ_и_текст_подряд_разбирают_только_новый_текст()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var parsed = new List<string>();
+            var counting = new LambdaExtension
+            {
+                Block = (block, _) =>
+                {
+                    if (block is ParagraphBlock { Inline.FirstChild: { } first })
+                    {
+                        parsed.Add(first.ToString()!);
+                    }
+
+                    return null;
+                }
+            };
+            var viewer = new MarkdownViewer { Extensions = { counting }, DocumentKey = "a", Markdown = "first" };
+            var window = WpfHost.Show(viewer);
+            parsed.Clear();
+
+            viewer.DocumentKey = "b";
+            viewer.Markdown = "second";
+            WpfHost.Settle(window);
+
+            parsed.Should().Equal("second");
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Новый_ключ_без_текста_разбирает_прежний_текст_заново()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { DocumentKey = "a", Markdown = "first" };
+            var window = WpfHost.Show(viewer);
+            var before = viewer.Items.OfType<ParagraphVm>().Single();
+
+            viewer.DocumentKey = "b";
+            WpfHost.Settle(window);
+
+            viewer.Items.OfType<ParagraphVm>().Single().NodeId.Should().NotBe(before.NodeId);
+            window.Close();
+        });
+    }
+
     private static ParagraphVm Paragraph(IEnumerable<BlockVm> blocks, string text)
         => blocks.OfType<ParagraphVm>().Single(paragraph => TextOf(paragraph) == text);
 

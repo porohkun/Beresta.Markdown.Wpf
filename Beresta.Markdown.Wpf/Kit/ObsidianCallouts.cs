@@ -46,8 +46,8 @@ public sealed partial class ObsidianCallouts : MdExtension
         var rest = Skip(first.Inlines, title);
         var lineEnd = rest.FindIndex(inline => inline is LineBreakVm);
 
-        var heading = Trim(lineEnd < 0 ? rest : rest[..lineEnd]);
-        var body = lineEnd < 0 ? [] : rest[(lineEnd + 1)..];
+        var heading = Trim(lineEnd < 0 ? rest : rest.GetRange(0, lineEnd));
+        var body = lineEnd < 0 ? [] : rest.GetRange(lineEnd + 1, rest.Count - lineEnd - 1);
         if (body.Count > 0)
         {
             blocks[0] = first with { Inlines = body };

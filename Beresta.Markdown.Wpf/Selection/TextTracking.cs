@@ -8,10 +8,10 @@ internal static class TextTracking
 
     /// <summary>
     /// Позиция конца в тексте блока — от его начала: по тексту с обеих сторон, затем по своему тексту
-    /// куска, затем по соседнему; ничего не нашлось — прежнее смещение. Из нескольких вхождений
-    /// берётся ближайшее к прежнему месту.
+    /// куска, затем по соседнему; ничего не нашлось — <c>null</c>. Из нескольких вхождений берётся
+    /// ближайшее к прежнему месту.
     /// </summary>
-    public static int Place(string text, MdTextRange block, TrackedEnd end)
+    public static int? Place(string text, MdTextRange block, TrackedEnd end)
     {
         var (own, ownShift, other, otherShift) = end.IsStart
             ? (end.After, 0, end.Before, end.Before.Length)
@@ -19,8 +19,7 @@ internal static class TextTracking
 
         return Nearest(text, block, end.Before + end.After, end.Before.Length, end.Offset)
                ?? Nearest(text, block, own, ownShift, end.Offset)
-               ?? Nearest(text, block, other, otherShift, end.Offset)
-               ?? Math.Clamp(end.Offset, 0, block.Length);
+               ?? Nearest(text, block, other, otherShift, end.Offset);
     }
 
     /// <summary>Вхождение <paramref name="needle"/> в блоке, позиция которого со сдвигом ближе всех к <paramref name="near"/>.</summary>

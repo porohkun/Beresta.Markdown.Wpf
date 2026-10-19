@@ -35,7 +35,8 @@ public sealed class MdImage : Control
 
 
     private MdTextBlock? _text;
-    private MdImageCache.Ticket? _waiting;
+    private ImageLoads.Ticket? _waiting;
+    private string? _key;
     private bool _pressed;
 
     /// <summary>Creates an empty image.</summary>
@@ -44,12 +45,15 @@ public sealed class MdImage : Control
         Loaded += (_, _) =>
         {
             Watch(FindText());
+            MdImageCache.Invalidated -= OnInvalidated;
+            MdImageCache.Invalidated += OnInvalidated;
             Load();
             InvalidateMeasure();
         };
         Unloaded += (_, _) =>
         {
             Watch(null);
+            MdImageCache.Invalidated -= OnInvalidated;
             StopWaiting();
         };
     }
@@ -139,27 +143,6 @@ public sealed class MdImage : Control
         };
     }
 
-    /// <summary>Адрес из разметки, разобранный от адреса документа.</summary>
-    private static Uri? Resolve(string url, Uri? baseUri)
-    {
-        if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
-
-        if (Uri.TryCreate(url, UriKind.Absolute, out var absolute))
-        {
-            return absolute;
-        }
-
-        if (baseUri is { IsAbsoluteUri: true } && Uri.TryCreate(baseUri, url, out var combined))
-        {
-            return combined;
-        }
-
-        return Uri.TryCreate(url, UriKind.Relative, out var relative) ? relative : null;
-    }
-
     private MdTextBlock? FindText()
     {
         for (var node = VisualTreeHelper.GetParent(this); node is not null; node = VisualTreeHelper.GetParent(node))
@@ -206,19 +189,16 @@ public sealed class MdImage : Control
             return;
         }
 
-        var uri = Resolve(image.Url, viewer.BaseUri);
+        var uri = ImageAddress.Resolve(image.Url, viewer.BaseUri);
         if (!viewer.ImagePolicy.Allows(image.Url, uri))
         {
             SetValue(ImageSourcePropertyKey, null);
             return;
         }
 
-        var width = loader is MdImageLoader ? DecodeWidth(image) : 0;
-        var ticket = MdImageCache.Shared.Request(
-            loader,
-            uri?.ToString() ?? image.Url,
-            width,
-            token => loader is MdImageLoader standard ? standard.LoadAsync(image.Url, uri, width, token) : loader.LoadAsync(image.Url, uri, token));
+        var width = DecodeWidth(image);
+        _key = uri?.ToString() ?? image.Url;
+        var ticket = ImageLoads.Shared.Request(loader, _key, width, token => loader.LoadAsync(image.Url, uri, width, token));
 
         if (ticket.Loading.IsCompleted)
         {
@@ -240,7 +220,17 @@ public sealed class MdImage : Control
         return (int)Math.Ceiling(pixels / 256) * 256;
     }
 
-    private void Arrived(MdImageCache.Ticket ticket)
+    /// <summary>Картинку сбросили из кэша: показанная загружается заново.</summary>
+    private void OnInvalidated(string? key)
+        => Dispatcher.BeginInvoke(() =>
+        {
+            if (IsLoaded && (key is null || key == _key))
+            {
+                Load();
+            }
+        });
+
+    private void Arrived(ImageLoads.Ticket ticket)
     {
         if (ReferenceEquals(_waiting, ticket))
         {

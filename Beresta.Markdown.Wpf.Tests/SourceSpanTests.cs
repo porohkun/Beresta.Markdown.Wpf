@@ -1,5 +1,6 @@
 ﻿namespace Beresta.Markdown.Wpf.Tests;
 
+using Selection;
 using ViewModels;
 
 /// <summary>У каждого элемента модели — его позиция в исходнике.</summary>
@@ -22,6 +23,46 @@ public sealed class SourceSpanTests
 
         code.Source.StartLine.Should().Be(0);
         code.Source.EndLine.Should().Be(2);
+    }
+
+    [Fact]
+    public void Код_с_отступом_занимает_только_свои_строки()
+    {
+        const string text = "para\n\n    code1\n    code2\n\n\n\npara2";
+        var blocks = ModelBuilder.Parse(text);
+        var code = blocks.OfType<CodeBlockVm>().Single();
+        var map = MdTextMap.Build(blocks, text);
+
+        code.IsFenced.Should().BeFalse();
+        code.Source.StartLine.Should().Be(2);
+        code.Source.EndLine.Should().Be(3);
+        ModelDump.Of(blocks).Should().Be("P(para) _ C(code1\ncode2) _ _ _ P(para2)");
+        map.SourceLineOf(map.Text.IndexOf("code1", StringComparison.Ordinal)).Should().Be(2);
+    }
+
+    [Fact]
+    public void Пустые_строки_перед_оградой_остаются_в_коде()
+    {
+        const string text = "```\ncode\n\n\n```";
+        var blocks = ModelBuilder.Parse(text);
+        var code = (CodeBlockVm)blocks[0];
+        var map = MdTextMap.Build(blocks, text);
+
+        code.Code.Should().Be("code\n\n");
+        code.IsFenced.Should().BeTrue();
+        code.Source.EndLine.Should().Be(4);
+        map.SourceLineOf(map.Text.Length).Should().Be(3);
+    }
+
+    [Fact]
+    public void Незакрытая_ограда_кончается_последней_строкой_кода()
+    {
+        var code = ModelBuilder.Parse("text\n\n```\ncode\n\n\n").OfType<CodeBlockVm>().Single();
+
+        code.Code.Should().Be("code");
+        code.IsFenced.Should().BeTrue();
+        code.Source.StartLine.Should().Be(2);
+        code.Source.EndLine.Should().Be(3);
     }
 
     [Fact]

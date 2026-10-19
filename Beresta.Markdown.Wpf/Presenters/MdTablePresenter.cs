@@ -1,8 +1,10 @@
 ﻿namespace Beresta.Markdown.Wpf.Presenters;
 
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Automation;
 using Scrolling;
 using ViewModels;
 
@@ -43,7 +45,7 @@ public sealed class MdTablePresenter : Control
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnAnyPropertyChanged));
 
     private readonly List<int> _gridRows = [];
-    private readonly List<(ContentPresenter Cell, int Column, int Span)> _cells = [];
+    private readonly List<MdTableCell> _cells = [];
     private Grid? _grid;
     private (double[] Least, double[] Natural)? _columns;
     private double _measuredWidth = double.NaN;
@@ -146,6 +148,9 @@ public sealed class MdTablePresenter : Control
         return base.MeasureOverride(constraint);
     }
 
+    /// <summary>Ячейки на экране по строкам модели и столбцам.</summary>
+    internal IReadOnlyList<MdTableCell> Cells => _cells;
+
     /// <inheritdoc/>
     public override void OnApplyTemplate()
     {
@@ -155,6 +160,9 @@ public sealed class MdTablePresenter : Control
 
         Build();
     }
+
+    /// <inheritdoc/>
+    protected override AutomationPeer OnCreateAutomationPeer() => new MdTableAutomationPeer(this);
 
     private static void OnAnyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MdTablePresenter)d).Build();
@@ -230,8 +238,9 @@ public sealed class MdTablePresenter : Control
         var natural = new double[count];
         var spanned = new List<(int Column, int Span, double Least, double Natural)>();
 
-        foreach (var (cell, column, span) in _cells)
+        foreach (var cell in _cells)
         {
+            var (column, span) = (cell.Column, cell.Span);
             // BYDESIGN: пиксель запаса — округление раскладки срезает желаемую ширину текста и вниз,
             // и текст ровно по ней переносит последнее слово.
             cell.Measure(new(double.PositiveInfinity, double.PositiveInfinity));
@@ -329,20 +338,20 @@ public sealed class MdTablePresenter : Control
             foreach (var cell in row.Cells.TakeWhile(_ => column < Table.ColumnCount))
             {
                 var span = Math.Clamp(cell.ColumnSpan, 1, Table.ColumnCount - column);
-                AddCell(cell, row.IsHeader, gridRow, column, span);
+                AddCell(cell, row.IsHeader, r, gridRow, column, span);
                 column += span;
             }
 
             for (; column < Table.ColumnCount; column++)
             {
-                AddCell(new([]), row.IsHeader, gridRow, column, 1);
+                AddCell(new([]), row.IsHeader, r, gridRow, column, 1);
             }
         }
     }
 
-    private void AddCell(TableCellVm cell, bool isHeader, int gridRow, int column, int span)
+    private void AddCell(TableCellVm cell, bool isHeader, int row, int gridRow, int column, int span)
     {
-        var presenter = new ContentPresenter
+        var presenter = new MdTableCell(this, row, column, span, isHeader)
         {
             Content = cell,
             ContentTemplate = isHeader ? HeaderTemplate : CellTemplate
@@ -363,6 +372,6 @@ public sealed class MdTablePresenter : Control
         Grid.SetColumn(presenter, column);
         Grid.SetColumnSpan(presenter, span);
         _grid!.Children.Add(presenter);
-        _cells.Add((presenter, column, span));
+        _cells.Add(presenter);
     }
 }

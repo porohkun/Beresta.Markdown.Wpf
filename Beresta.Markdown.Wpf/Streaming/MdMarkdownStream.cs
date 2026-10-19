@@ -41,7 +41,11 @@ public sealed class MdMarkdownStream
         }
         set
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(value, TimeSpan.Zero);
+            if (value < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The interval must not be negative.");
+            }
+
             lock (_gate)
             {
                 _interval = value;

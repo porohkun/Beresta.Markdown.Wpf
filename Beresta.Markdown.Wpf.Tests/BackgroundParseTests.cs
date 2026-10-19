@@ -3,6 +3,9 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
+using Extensions;
+using Kit;
 using Markdig.Syntax;
 using Scrolling;
 using Streaming;
@@ -73,15 +76,120 @@ public sealed class BackgroundParseTests
     {
         WpfHost.Invoke(() =>
         {
-            var viewer = new MarkdownViewer { BackgroundParseThreshold = 1, Extensions = { InterfaceThreadOnly() } };
+            var extension = InterfaceThreadOnly();
+            var viewer = new MarkdownViewer { BackgroundParseThreshold = 1, Extensions = { extension } };
+            var failures = new List<MdRenderFailedEventArgs>();
+            viewer.RenderFailed += (_, e) => failures.Add(e);
             var window = WpfHost.Show(viewer);
 
             viewer.Markdown = "needs the interface thread";
             WaitFor(window, () => viewer.TextMap.Text.Length > 0);
 
             viewer.TextMap.Text.Should().Be("needs the interface thread");
+            failures.Should().ContainSingle().Which.Should().Match<MdRenderFailedEventArgs>(failure =>
+                failure.Extension == extension && failure.IsBackground);
             window.Close();
         });
+    }
+
+    [Fact]
+    public void Расширение_упавшее_и_в_фоне_и_в_потоке_интерфейса_даёт_одно_событие()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var failing = new LambdaExtension { Block = (block, _) => block is ParagraphBlock ? throw new InvalidOperationException("block") : null };
+            var viewer = new MarkdownViewer { BackgroundParseThreshold = 1, Extensions = { failing } };
+            var failures = new List<MdRenderFailedEventArgs>();
+            viewer.RenderFailed += (_, e) => failures.Add(e);
+            var unhandled = new List<Exception>();
+            DispatcherUnhandledExceptionEventHandler handler = (_, e) =>
+            {
+                unhandled.Add(e.Exception);
+                e.Handled = true;
+            };
+            viewer.Dispatcher.UnhandledException += handler;
+            var window = WpfHost.Show(viewer);
+
+            viewer.Markdown = "text **bold**";
+            WaitFor(window, () => viewer.TextMap.Text.Length > 0);
+
+            viewer.Dispatcher.UnhandledException -= handler;
+            viewer.TextMap.Text.Should().Be("text bold");
+            failures.Should().ContainSingle().Which.Should().Match<MdRenderFailedEventArgs>(failure =>
+                failure.Extension == failing && !failure.IsBackground);
+            unhandled.Should().BeEmpty();
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Вложенность_которую_Markdig_не_разбирает_в_фоне_показывается_строками_исходника()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var line = string.Concat(Enumerable.Repeat("- ", 150)) + "deep";
+            var viewer = new MarkdownViewer { BackgroundParseThreshold = 1 };
+            var failures = new List<MdRenderFailedEventArgs>();
+            viewer.RenderFailed += (_, e) => failures.Add(e);
+            var window = WpfHost.Show(viewer);
+
+            viewer.Markdown = line;
+            WaitFor(window, () => viewer.TextMap.Text.Length > 0);
+
+            viewer.TextMap.Text.Should().Be(line);
+            failures.Should().ContainSingle().Which.Should().Match<MdRenderFailedEventArgs>(failure =>
+                failure.Exception is ArgumentException && failure.Extension == null && !failure.IsBackground);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Расширение_без_фонового_разбора_держит_разбор_в_потоке_интерфейса()
+    {
+        var threads = new List<int>();
+
+        var shown = ParsedAt(new LambdaExtension { Block = Recording(threads).Block, Background = false });
+
+        shown.Should().BeTrue();
+        threads.Should().NotBeEmpty().And.OnlyContain(id => id == WpfHost.ThreadId);
+    }
+
+    [Fact]
+    public void Вики_ссылки_с_простым_резолвером_разбираются_в_потоке_интерфейса()
+    {
+        var threads = new List<int>();
+
+        ParsedAt(new WikiLinks { Resolver = new PlainResolver() }, Recording(threads)).Should().BeTrue();
+        threads.Should().OnlyContain(id => id == WpfHost.ThreadId);
+    }
+
+    [Fact]
+    public void Вики_ссылки_с_безопасным_резолвером_разбираются_в_фоне()
+    {
+        var threads = new List<int>();
+
+        ParsedAt(new WikiLinks { Resolver = new SafeResolver() }, Recording(threads)).Should().BeFalse();
+        threads.Should().NotBeEmpty().And.NotContain(WpfHost.ThreadId);
+    }
+
+    [Fact]
+    public void Шорткоды_со_своим_обработчиком_разбираются_в_потоке_интерфейса()
+    {
+        var threads = new List<int>();
+        var shortcodes = new Shortcodes();
+        shortcodes.Handlers["note"] = _ => null;
+
+        ParsedAt(shortcodes, Recording(threads)).Should().BeTrue();
+        threads.Should().OnlyContain(id => id == WpfHost.ThreadId);
+    }
+
+    [Fact]
+    public void Шорткоды_только_со_встроенными_обработчиками_разбираются_в_фоне()
+    {
+        var threads = new List<int>();
+
+        ParsedAt(new Shortcodes(), Recording(threads)).Should().BeFalse();
+        threads.Should().NotBeEmpty().And.NotContain(WpfHost.ThreadId);
     }
 
     [Fact]
@@ -158,6 +266,29 @@ public sealed class BackgroundParseTests
         }
     }
 
+    /// <summary>Показывает длинный текст во вьюере с расширениями; <c>true</c> — текст лёг сразу, в потоке интерфейса.</summary>
+    private static bool ParsedAt(params MdExtension[] extensions)
+    {
+        var immediately = false;
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { BackgroundParseThreshold = 1 };
+            foreach (var extension in extensions)
+            {
+                viewer.Extensions.Add(extension);
+            }
+
+            var window = WpfHost.Show(viewer);
+
+            viewer.Markdown = "long enough text";
+            immediately = viewer.TextMap.Text.Length > 0;
+            WaitFor(window, () => viewer.TextMap.Text.Length > 0);
+            window.Close();
+        });
+
+        return immediately;
+    }
+
     /// <summary>Расширение, которое запоминает потоки, где разбирались абзацы.</summary>
     private static LambdaExtension Recording(List<int> threads) => new()
     {
@@ -199,4 +330,10 @@ public sealed class BackgroundParseTests
             ? null
             : throw new InvalidOperationException("Not the interface thread.")
     };
+
+    /// <summary>Резолвер, который можно звать только из потока интерфейса.</summary>
+    private sealed class PlainResolver : IMdLinkResolver;
+
+    /// <summary>Резолвер, который можно звать из фонового потока.</summary>
+    private sealed class SafeResolver : IMdLinkResolver, IMdBackgroundSafe;
 }

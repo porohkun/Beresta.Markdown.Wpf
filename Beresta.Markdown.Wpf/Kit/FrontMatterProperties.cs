@@ -33,7 +33,7 @@ internal static partial class FrontMatterProperties
                 last = lines[index].Trim().Length > 0 ? index : last;
             }
 
-            nested = nested[..(last - first)];
+            nested = nested.GetRange(0, last - first);
             properties.Add(Property().Match(line) is { Success: true } match
                 ? (Unquote(match.Groups["key"].Value), Value(match.Groups["value"].Value, nested), first, last)
                 : (string.Empty, string.Join("\n", [line.Trim(), .. Dedent(nested)]), first, last));

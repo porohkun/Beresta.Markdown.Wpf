@@ -1,0 +1,130 @@
+name: NuGet
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nuget-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Версия
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.version.outputs.publish }}
+      version: ${{ steps.version.outputs.version }}
+      suffix: ${{ steps.version.outputs.suffix }}
+      notes: ${{ steps.version.outputs.notes }}
+    steps:
+      - name: Код
+        uses: actions/checkout@v7
+
+      - name: Версия пакета
+        id: version
+        shell: pwsh
+        run: |
+          $prefix = (Select-Xml -Path Beresta.Markdown.Wpf/Beresta.Markdown.Wpf.csproj -XPath '//VersionPrefix').Node.InnerText.Trim()
+          $released = [bool](git ls-remote --tags origin "refs/tags/v$prefix")
+          $release = '${{ github.event_name }}' -eq 'push'
+
+          if ($release -and $released) {
+            "::notice::Версия $prefix уже выпущена, публиковать нечего"
+            'publish=false' >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+
+          if ($released) {
+            "::error::Версия $prefix уже выпущена: для превью подними VersionPrefix в ветке"
+            exit 1
+          }
+
+          foreach ($readme in 'README.md', 'README.ru.md') {
+            if ((Get-Content $readme -TotalCount 1) -notmatch " v$([regex]::Escape($prefix))$") {
+              "::error file=$readme::Версия в заголовке не совпадает с VersionPrefix $prefix"
+              exit 1
+            }
+          }
+
+          $repository = '${{ github.server_url }}/${{ github.repository }}'
+          if ($release) {
+            $suffix = ''
+            $version = $prefix
+            $notes = "$repository/releases/tag/v$prefix"
+          }
+          else {
+            $suffix = 'preview.${{ github.run_number }}'
+            $version = "$prefix-$suffix"
+            $notes = "$repository/commit/${{ github.sha }}"
+          }
+
+          "::notice::Публикуется $version"
+          'publish=true' >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "suffix=$suffix" >> $env:GITHUB_OUTPUT
+          "notes=$notes" >> $env:GITHUB_OUTPUT
+
+  publish:
+    name: ${{ github.event_name == 'push' && 'Релиз' || 'Превью' }} ${{ needs.version.outputs.version }}
+    needs: version
+    if: needs.version.outputs.publish == 'true'
+    runs-on: windows-latest
+    environment:
+      name: nuget
+      url: https://www.nuget.org/packages/Beresta.Markdown.Wpf/${{ needs.version.outputs.version }}
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      SUFFIX: ${{ needs.version.outputs.suffix }}
+      NOTES: ${{ needs.version.outputs.notes }}
+    steps:
+      - name: Код
+        uses: actions/checkout@v7
+
+      - name: .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            7.0.x
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Сборка
+        run: dotnet build Beresta.Markdown.Wpf.slnx -c Release "-p:VersionSuffix=$env:SUFFIX" -p:ContinuousIntegrationBuild=true
+
+      - name: Тесты
+        run: dotnet test Beresta.Markdown.Wpf.Tests -c Release --no-build
+
+      - name: Пакет
+        run: >-
+          dotnet pack Beresta.Markdown.Wpf/Beresta.Markdown.Wpf.csproj -c Release --no-build -o artifacts
+          "-p:VersionSuffix=$env:SUFFIX" -p:ContinuousIntegrationBuild=true "-p:PackageReleaseNotes=$env:NOTES"
+
+      - name: Пакет в артефакты
+        uses: actions/upload-artifact@v7
+        with:
+          name: Beresta.Markdown.Wpf.${{ env.VERSION }}
+          path: artifacts/
+
+      - name: Вход в NuGet
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Публикация в NuGet
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Релиз на GitHub
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v$env:VERSION" (Get-ChildItem artifacts/*.nupkg).FullName --target ${{ github.sha }} --title "v$env:VERSION" --generate-notes

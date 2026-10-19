@@ -110,6 +110,7 @@ public sealed class GapTests
     [InlineData("first\nsecond", 1)]
     [InlineData("```\na\nb\nc\n```", 2)]
     [InlineData("```\na\nb\n```\n\nafter", 3)]
+    [InlineData("```\na\n\n\n```", 3)]
     [InlineData("| a |\n|---|\n| 1 |\n| 2 |", 3)]
     [InlineData("- one\n- two", 1)]
     [InlineData("> a\n>\n> b", 2)]

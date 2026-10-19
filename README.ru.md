@@ -1,4 +1,4 @@
-﻿# Beresta.Markdown.Wpf v0.7.0
+﻿# Beresta.Markdown.Wpf v0.8.0
 
 [English](https://github.com/porohkun/Beresta.Markdown.Wpf/blob/main/README.md) | **Русский**
 
@@ -30,14 +30,15 @@
 dotnet add package Beresta.Markdown.Wpf
 ```
 
-Нужны .NET 8 или новее (`net8.0-windows`) и WPF.
+Нужны .NET 7 или новее (`net7.0-windows`) и WPF.
 
 Документация IntelliSense — на английском и русском: Visual Studio с русским интерфейсом показывает
 русскую.
 
 ## Подключение темы
 
-Тему вьюера один раз вливают в ресурсы приложения — без неё вьюер пуст.
+Тему вьюера один раз вливают в ресурсы приложения — без неё вьюер вместо документа показывает
+подсказку с этим адресом.
 
 `App.xaml`:
 
@@ -61,10 +62,10 @@ dotnet add package Beresta.Markdown.Wpf
 <Window x:Class="YourApp.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mdv="clr-namespace:Beresta.Markdown.Wpf;assembly=Beresta.Markdown.Wpf"
+        xmlns:md="https://github.com/porohkun/Beresta.Markdown.Wpf"
         Title="Markdown" Width="800" Height="600">
     <ScrollViewer>
-        <mdv:MarkdownViewer Markdown="{Binding Text}" Margin="24,16" />
+        <md:MarkdownViewer Markdown="{Binding Text}" Margin="24,16" />
     </ScrollViewer>
 </Window>
 ```
@@ -76,15 +77,15 @@ dotnet add package Beresta.Markdown.Wpf
 Готовые расширения рисуют синтаксис GitHub, GitLab, Obsidian, MkDocs, Docusaurus, HackMD и чатов. По
 умолчанию они выключены; набор подключает синтаксис одной программы.
 
-`MainWindow.xaml` (`xmlns:kit="clr-namespace:Beresta.Markdown.Wpf.Kit;assembly=Beresta.Markdown.Wpf"` на
+`MainWindow.xaml` (`xmlns:md="https://github.com/porohkun/Beresta.Markdown.Wpf"` на
 корневом элементе):
 
 ```xml
-<mdv:MarkdownViewer Markdown="{Binding Text}">
-    <mdv:MarkdownViewer.Extensions>
-        <kit:ObsidianSet />
-    </mdv:MarkdownViewer.Extensions>
-</mdv:MarkdownViewer>
+<md:MarkdownViewer Markdown="{Binding Text}">
+    <md:MarkdownViewer.Extensions>
+        <md:ObsidianSet />
+    </md:MarkdownViewer.Extensions>
+</md:MarkdownViewer>
 ```
 
 ## Документация

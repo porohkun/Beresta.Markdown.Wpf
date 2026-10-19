@@ -6,11 +6,13 @@ using ViewModels;
 internal sealed class WidgetStates
 {
     private readonly Func<IReadOnlyList<MdExtension>> _extensions;
+    private readonly ExtensionGuard _guard;
     private readonly Dictionary<long, (Type Kind, object State)> _states = [];
 
-    public WidgetStates(Func<IReadOnlyList<MdExtension>> extensions)
+    public WidgetStates(Func<IReadOnlyList<MdExtension>> extensions, ExtensionGuard guard)
     {
         _extensions = extensions;
+        _guard = guard;
     }
 
     /// <summary>Состояние виджета; первый раз его создаёт расширение. <c>null</c> — состояния нет.</summary>
@@ -28,7 +30,7 @@ internal sealed class WidgetStates
 
         foreach (var extension in _extensions())
         {
-            if (extension.CreateState(node) is { } state)
+            if (_guard.Call(extension, () => extension.CreateState(node), null) is { } state)
             {
                 _states[node.NodeId] = (node.GetType(), state);
                 return state;

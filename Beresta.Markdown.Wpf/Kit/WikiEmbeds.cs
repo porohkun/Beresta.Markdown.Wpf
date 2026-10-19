@@ -24,6 +24,9 @@ public sealed partial class WikiEmbeds : MdExtension
     public IMdLinkResolver? Resolver { get; set; }
 
     /// <inheritdoc/>
+    public override bool AllowsBackgroundParse => Resolver is null or IMdBackgroundSafe;
+
+    /// <inheritdoc/>
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline)
         => pipeline.Extensions.AddIfNotAlready<WikiMarkdigExtension>();
 

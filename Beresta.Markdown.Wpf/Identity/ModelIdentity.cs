@@ -14,6 +14,9 @@ internal sealed class ModelIdentity
     /// <summary>Больше клеток сравнение двух последовательностей не тратит: сверх — только по местам.</summary>
     private const long MaxDiffCells = 250_000;
 
+    /// <summary>Глубина дерева, глубже которой узлы не сопоставляются и идентификатора не получают.</summary>
+    private const int MaxDepth = 256;
+
     private static readonly Entry[] NoEntries = [];
 
     private readonly Dictionary<MarkdownObject, long> _ids = new(ReferenceEqualityComparer.Instance);
@@ -39,7 +42,7 @@ internal sealed class ModelIdentity
         _nextBlankLines = [];
         _nextParts = [];
         _nextModels = [];
-        _nextRoots = MatchSequence(ChildrenOf(document), _roots, source);
+        _nextRoots = MatchSequence(ChildrenOf(document), _roots, source, depth: 1);
     }
 
     /// <summary>Делает новый разбор прошлым для следующего.</summary>
@@ -233,7 +236,7 @@ internal sealed class ModelIdentity
         return id;
     }
 
-    private Entry[] MatchSequence(IReadOnlyList<MarkdownObject> nodes, Entry[] old, string source)
+    private Entry[] MatchSequence(IReadOnlyList<MarkdownObject> nodes, Entry[] old, string source, int depth)
     {
         if (nodes.Count == 0)
         {
@@ -255,11 +258,11 @@ internal sealed class ModelIdentity
             _ids[nodes[i]] = id;
             entries[i] = new(keys[i], id);
 
-            var children = ChildrenOf(nodes[i]);
+            var children = depth < MaxDepth ? ChildrenOf(nodes[i]) : [];
             if (children.Count > 0)
             {
                 var oldChildren = matched[i] != 0 && _children.TryGetValue(matched[i], out var known) ? known : NoEntries;
-                _nextChildren[id] = MatchSequence(children, oldChildren, source);
+                _nextChildren[id] = MatchSequence(children, oldChildren, source, depth + 1);
             }
         }
 

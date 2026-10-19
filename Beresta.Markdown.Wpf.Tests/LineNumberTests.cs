@@ -48,6 +48,9 @@ public sealed class LineNumberTests
     [Theory]
     [InlineData("a\n\n---\n\nb", new[] { 0, 1, 2, 3, 4 })]
     [InlineData("<section>\nhello\n</section>", new[] { 0, 1, 2 })]
+    [InlineData("```\ncode\n\n\n```", new[] { 0, 1, 2, 3 })]
+    [InlineData("text\n\n```\ncode\n\n\n", new[] { 0, 1, 2, 3 })]
+    [InlineData("para\n\n    code1\n    code2\n\n\n\npara2", new[] { 0, 1, 2, 3, 4, 5, 6, 7 })]
     public void Строка_со_своим_местом_на_экране_получает_номер(string markdown, int[] expected)
     {
         WpfHost.Invoke(() =>
@@ -56,6 +59,26 @@ public sealed class LineNumberTests
             var window = WpfHost.Show(viewer);
 
             viewer.Gutter!.CollectNumbers().Select(number => number.Line).Should().Equal(expected);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Пустые_строки_в_конце_кода_стоят_каждая_на_своей_строке()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "```\ncode\n\n\n```", ShowSourceLineNumbers = true, ShowCodeLineNumbers = true };
+            var window = WpfHost.Show(viewer);
+            var presenter = Visuals.Descendants<CodeBlockPresenter>(viewer).Single();
+            var code = (FrameworkElement)presenter.Template.FindName("PART_Code", presenter);
+            var column = (FrameworkElement)presenter.Template.FindName("LineNumbers", presenter);
+
+            var numbers = viewer.Gutter!.CollectNumbers();
+
+            numbers.Select(number => number.Line).Should().Equal(0, 1, 2, 3);
+            ShouldNotOverlap(numbers);
+            code.ActualHeight.Should().BeApproximately(column.ActualHeight, 0.5);
             window.Close();
         });
     }

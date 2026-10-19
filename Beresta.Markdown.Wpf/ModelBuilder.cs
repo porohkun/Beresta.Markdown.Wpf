@@ -24,6 +24,12 @@ using ViewModels;
 
 internal sealed partial class ModelBuilder
 {
+    /// <summary>Сколько контейнеров друг в друге разворачивается; более глубокий — исходным текстом.</summary>
+    public const int MaxDepth = 32;
+
+    /// <summary>Сколько строчных узлов друг в друге обходится; более глубокий — исходным текстом.</summary>
+    public const int MaxInlineDepth = 64;
+
     public static readonly MarkdownPipeline DefaultPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .UseYamlFrontMatter()
@@ -46,18 +52,30 @@ internal sealed partial class ModelBuilder
     private readonly ModelIdentity _identity;
     private readonly IReadOnlyDictionary<SmartyPantType, string>? _smartyPants;
     private readonly Dictionary<HtmlBlock, int> _htmlParts = new(ReferenceEqualityComparer.Instance);
+    private readonly ExtensionGuard _guard;
+    private readonly IDictionary<object, MdExtension>? _owners;
+    private readonly bool _joinSoftLineBreaks;
+
+    private int _depth;
+    private int _inlineDepth;
 
     private ModelBuilder(
         string source,
         IReadOnlyList<MdExtension> extensions,
         ModelIdentity identity,
-        IReadOnlyDictionary<SmartyPantType, string>? smartyPants)
+        IReadOnlyDictionary<SmartyPantType, string>? smartyPants,
+        ExtensionGuard guard,
+        IDictionary<object, MdExtension>? owners,
+        bool joinSoftLineBreaks = false)
     {
         _source = source;
         _lineStarts = FindLineStarts(source);
         _extensions = extensions;
         _identity = identity;
         _smartyPants = smartyPants;
+        _guard = guard;
+        _owners = owners;
+        _joinSoftLineBreaks = joinSoftLineBreaks;
     }
 
     /// <summary>
@@ -75,6 +93,9 @@ internal sealed partial class ModelBuilder
     /// Разбирает документ, как <see cref="Parse(string, MarkdownPipeline?, IReadOnlyList{MdExtension}?, ModelIdentity?)"/>,
     /// и отдаёт текст front matter без разбора; нет его — <c>null</c>. Без <paramref name="commit"/> память
     /// разборов запоминает этот разбор, только когда её <see cref="ModelIdentity.Commit"/> вызовут отдельно.
+    /// Код расширений идёт через <paramref name="guard"/>; <paramref name="owners"/> получает, какое
+    /// расширение создало каждую его вьюмодель. С <paramref name="joinSoftLineBreaks"/> мягкий перенос
+    /// строки становится пробелом.
     /// </summary>
     public static IReadOnlyList<BlockVm> Parse(
         string markdown,
@@ -82,7 +103,10 @@ internal sealed partial class ModelBuilder
         IReadOnlyList<MdExtension>? extensions,
         ModelIdentity? identity,
         out string? frontMatter,
-        bool commit = true)
+        bool commit = true,
+        ExtensionGuard? guard = null,
+        IDictionary<object, MdExtension>? owners = null,
+        bool joinSoftLineBreaks = false)
     {
         markdown ??= string.Empty;
         identity ??= new();
@@ -93,7 +117,8 @@ internal sealed partial class ModelBuilder
         frontMatter = document is [YamlFrontMatterBlock yaml, ..] ? yaml.Lines.ToString() : null;
 
         var smartyPants = pipeline.Extensions.Find<SmartyPantsExtension>()?.Options.Mapping;
-        var blocks = new ModelBuilder(markdown, extensions ?? [], identity, smartyPants).ConvertBlocks(document, listDepth: 0);
+        var builder = new ModelBuilder(markdown, extensions ?? [], identity, smartyPants, guard ?? ExtensionGuard.Silent, owners, joinSoftLineBreaks);
+        var blocks = builder.ConvertBlocks(document, listDepth: 0);
         if (commit)
         {
             identity.Commit();
@@ -101,6 +126,10 @@ internal sealed partial class ModelBuilder
 
         return blocks;
     }
+
+    /// <summary>Документ из строк исходника без разбора: непустые строки подряд — абзацем, пустые — отступами.</summary>
+    public static IReadOnlyList<BlockVm> SourceDocument(string markdown)
+        => new ModelBuilder(markdown ?? string.Empty, [], new(), null, ExtensionGuard.Silent, null).SourceLines();
 
     /// <summary>
     /// Блоки контейнера с отступами на месте пустых строк. Определения сносок, которые Markdig
@@ -114,14 +143,22 @@ internal sealed partial class ModelBuilder
         int listDepth,
         bool gapsAreBlank = false)
     {
-        var pieces = container
-            .SelectMany(child => child is FootnoteGroup group ? group.AsEnumerable() : new[] { child })
-            .OrderBy(child => child.Line)
-            .SelectMany(child => PiecesOf(child, listDepth))
-            .ToList();
+        _depth++;
+        try
+        {
+            var pieces = container
+                .SelectMany(child => child is FootnoteGroup group ? group.AsEnumerable() : new[] { child })
+                .OrderBy(child => child.Line)
+                .SelectMany(child => PiecesOf(child, listDepth))
+                .ToList();
 
-        var index = 0;
-        return ConvertPieces(pieces, ref index, [], listDepth, gapsAreBlank);
+            var index = 0;
+            return ConvertPieces(pieces, ref index, [], listDepth, gapsAreBlank);
+        }
+        finally
+        {
+            _depth--;
+        }
     }
 
     internal IReadOnlyList<InlineVm> ConvertInlines(ContainerInline? container)
@@ -139,23 +176,24 @@ internal sealed partial class ModelBuilder
         }
 
         var start = node.Span.Start;
-        var end = Math.Min(node.Span.End, _source.Length - 1);
-        var (startLine, endLine) = node is Block block
-            ? GetLines(block)
-            : (GetLineAt(start), GetLineAt(end));
+        var block = node as Block;
+        var end = Math.Min(block is null ? node.Span.End : EndOf(block), _source.Length - 1);
+        var (startLine, endLine) = block is null
+            ? (GetLineAt(start), GetLineAt(end))
+            : GetLines(block);
 
         return new(start, end - start + 1, startLine, endLine);
     }
 
     internal string GetSource(MarkdownObject node)
     {
-        return GetSourceText(node.Span);
+        return GetSourceText(node is Block block ? new(node.Span.Start, EndOf(block)) : node.Span);
     }
 
     private static CodeBlockVm ConvertCodeBlock(CodeBlock block)
     {
         var info = (block as FencedCodeBlock)?.Info;
-        return new(info, ParseLanguage(info), GetLeafText(block));
+        return new(info, ParseLanguage(info), CodeOf(block)) { IsFenced = block is FencedCodeBlock };
     }
 
     private static InlineState ApplyEmphasis(InlineState state, EmphasisInline emphasis)
@@ -220,10 +258,42 @@ internal sealed partial class ModelBuilder
         return string.IsNullOrWhiteSpace(firstToken) ? null : firstToken;
     }
 
-    /// <summary>Строки блока через <c>\n</c>, какими бы ни были переводы строк исходника.</summary>
-    private static string GetLeafText(LeafBlock block)
+    /// <summary>
+    /// Строки кода через <c>\n</c>, какими бы ни были переводы строк исходника. Пустые строки в конце
+    /// остаются только перед закрывающей оградой.
+    /// </summary>
+    private static string CodeOf(CodeBlock block)
     {
-        return block.Lines.ToString().Replace("\r\n", "\n").Replace('\r', '\n').TrimEnd('\n');
+        var code = block.Lines.ToString().Replace("\r\n", "\n").Replace('\r', '\n');
+        return block is FencedCodeBlock { ClosingFencedCharCount: > 0 } ? code : code.TrimEnd('\n');
+    }
+
+    /// <summary>
+    /// Последний знак блока в исходнике. Код с отступом и код без закрывающей ограды кончаются своей
+    /// последней непустой строкой, контейнер — не раньше своего последнего блока.
+    /// </summary>
+    private static int EndOf(Block block)
+    {
+        switch (block)
+        {
+            case ContainerBlock { LastChild: { } last }:
+                return Math.Max(block.Span.End, EndOf(last));
+
+            case CodeBlock code when code.GetType() == typeof(CodeBlock) || code is FencedCodeBlock { ClosingFencedCharCount: 0 }:
+                for (var i = code.Lines.Count - 1; i >= 0; i--)
+                {
+                    var slice = code.Lines.Lines[i].Slice;
+                    if (!slice.IsEmptyOrWhitespace())
+                    {
+                        return slice.End;
+                    }
+                }
+
+                return block.Span.End;
+
+            default:
+                return block.Span.End;
+        }
     }
 
     private static Uri? TryCreateUri(string? value)
@@ -347,11 +417,22 @@ internal sealed partial class ModelBuilder
     }
 
     /// <summary>Текст инлайнов без разметки — alt картинки.</summary>
-    private static string PlainText(Inline? first)
+    internal static string PlainText(Inline? first)
     {
         var text = new StringBuilder();
-        for (var node = first; node is not null; node = node.NextSibling)
+        var next = new Stack<Inline>();
+        if (first is not null)
         {
+            next.Push(first);
+        }
+
+        while (next.TryPop(out var node))
+        {
+            if (node.NextSibling is { } sibling)
+            {
+                next.Push(sibling);
+            }
+
             switch (node)
             {
                 case LiteralInline literal:
@@ -360,8 +441,8 @@ internal sealed partial class ModelBuilder
                 case CodeInline code:
                     text.Append(code.Content);
                     break;
-                case ContainerInline container:
-                    text.Append(PlainText(container.FirstChild));
+                case ContainerInline { FirstChild: { } child }:
+                    next.Push(child);
                     break;
             }
         }
@@ -464,10 +545,113 @@ internal sealed partial class ModelBuilder
         return inlines;
     }
 
+    /// <summary>Непустые строки исходника подряд — абзацем по строке текста на строку, пустые между ними — отступами.</summary>
+    private List<BlockVm> SourceLines()
+    {
+        var blocks = new List<BlockVm>();
+        var lastText = -1;
+        for (var line = 0; line < _lineStarts.Count; line++)
+        {
+            if (IsWhiteSpaceLine(line))
+            {
+                continue;
+            }
+
+            var first = line;
+            while (line + 1 < _lineStarts.Count && !IsWhiteSpaceLine(line + 1))
+            {
+                line++;
+            }
+
+            for (var blank = lastText + 1; lastText >= 0 && blank < first; blank++)
+            {
+                blocks.Add(new BlankLineVm { Source = GetLineSpan(blank) });
+            }
+
+            var inlines = new List<InlineVm>();
+            for (var row = first; row <= line; row++)
+            {
+                if (row > first)
+                {
+                    inlines.Add(new LineBreakVm());
+                }
+
+                var start = _lineStarts[row];
+                var end = LineEnd(row);
+                inlines.Add(new RunVm(_source[start..end]) { Source = new(start, end - start, row, row) });
+            }
+
+            blocks.Add(new ParagraphVm(inlines) { Source = new(_lineStarts[first], LineEnd(line) - _lineStarts[first], first, line) });
+            lastText = line;
+        }
+
+        return blocks;
+    }
+
+    /// <summary>Контейнер глубже предела вложенности — абзацем его исходника.</summary>
+    private List<BlockVm> BlockSource(Block block)
+    {
+        return block.Span.Start >= 0 && SourceParagraph(block.Span.Start, EndOf(block) + 1) is { } paragraph
+            ? [Stamp(paragraph, block)]
+            : [];
+    }
+
+    /// <summary>
+    /// Абзац из куска исходника — строкой текста на строку. Строки после первой теряют префикс
+    /// контейнеров вокруг: пробелы и <c>&gt;</c> до столбца, с которого начинается кусок.
+    /// </summary>
+    private ParagraphVm? SourceParagraph(int start, int end)
+    {
+        end = Math.Min(end, _source.Length);
+        while (start < end && char.IsWhiteSpace(_source[start]))
+        {
+            start++;
+        }
+
+        while (end > start && char.IsWhiteSpace(_source[end - 1]))
+        {
+            end--;
+        }
+
+        if (start == end)
+        {
+            return null;
+        }
+
+        var firstLine = GetLineAt(start);
+        var lastLine = GetLineAt(end - 1);
+        var column = start - _lineStarts[firstLine];
+        var inlines = new List<InlineVm>();
+        for (var line = firstLine; line <= lastLine; line++)
+        {
+            var from = start;
+            if (line > firstLine)
+            {
+                inlines.Add(new LineBreakVm());
+                from = _lineStarts[line];
+                var prefixEnd = Math.Min(from + column, end);
+                while (from < prefixEnd && _source[from] is ' ' or '\t' or '>')
+                {
+                    from++;
+                }
+            }
+
+            var to = line == lastLine ? end : LineEnd(line);
+            if (to > from)
+            {
+                inlines.Add(new RunVm(_source[from..to]) { Source = new(from, to - from, line, line) });
+            }
+        }
+
+        return new(inlines) { Source = new(start, end - start, firstLine, lastLine) };
+    }
+
     private IReadOnlyList<BlockVm> ConvertBlock(
         Block block,
         int listDepth)
-        => ConvertByExtension(block, listDepth) ?? ConvertBuiltInBlock(block, listDepth);
+        => block is ContainerBlock and not LinkReferenceDefinitionGroup && _depth > MaxDepth
+            ? BlockSource(block)
+            : ConvertByExtension(block, listDepth) ?? ConvertBuiltInBlock(block, listDepth);
 
     /// <summary>Блоки расширения из узла; первый берёт идентификатор узла, следующие — производные от него.</summary>
     private IReadOnlyList<BlockVm>? ConvertByExtension(
@@ -476,13 +660,32 @@ internal sealed partial class ModelBuilder
     {
         foreach (var extension in _extensions)
         {
-            if (extension.ConvertBlocks(block, new(this, listDepth)) is { } custom)
+            var converted = _guard.Call(
+                extension,
+                () => extension
+                    .ConvertBlocks(block, new(this, listDepth))
+                    ?.Select((part, index) => (BlockVm)Owned(StampPart(part, block, index), extension))
+                    .ToList(),
+                null);
+
+            if (converted is not null)
             {
-                return custom.Select((part, index) => (BlockVm)StampPart(part, block, index)).ToList();
+                return converted;
             }
         }
 
         return null;
+    }
+
+    /// <summary>Запоминает, какое расширение создало вьюмодель.</summary>
+    private NodeVm Owned(NodeVm node, MdExtension extension)
+    {
+        if (_owners is not null)
+        {
+            _owners[node] = extension;
+        }
+
+        return node;
     }
 
     /// <summary><paramref name="index"/>-я часть узла: первая — с идентификатором узла, следующие — с производными.</summary>
@@ -588,8 +791,9 @@ internal sealed partial class ModelBuilder
     }
 
     /// <summary>
-    /// Вьюмодель из HTML от куска <paramref name="first"/> до куска <paramref name="last"/>. Первая
-    /// вьюмодель HTML-блока берёт его идентификатор, следующие — производные от него.
+    /// Вьюмодель из HTML от куска <paramref name="first"/> до куска <paramref name="last"/>, если
+    /// позиции у неё ещё нет. Первая вьюмодель HTML-блока берёт его идентификатор, следующие —
+    /// производные от него.
     /// </summary>
     private T StampHtml<T>(T node, Piece first, Piece last)
         where T : NodeVm
@@ -602,7 +806,7 @@ internal sealed partial class ModelBuilder
         NodeVm stamped = node;
         stamped = stamped with
         {
-            Source = new(first.Start, last.End - first.Start, first.StartLine, last.EndLine),
+            Source = stamped.Source.IsEmpty ? new(first.Start, last.End - first.Start, first.StartLine, last.EndLine) : stamped.Source,
             NodeId = part == 0 ? id : _identity.PartId(id, part)
         };
 
@@ -613,7 +817,7 @@ internal sealed partial class ModelBuilder
     private IEnumerable<Piece> PiecesOf(Block block, int listDepth)
     {
         var (startLine, endLine) = GetLines(block);
-        var whole = new Piece(block.Span.Start, block.Span.End + 1, startLine, endLine) { Block = block };
+        var whole = new Piece(block.Span.Start, EndOf(block) + 1, startLine, endLine) { Block = block };
         if (block is not HtmlBlock html || html.Type == HtmlBlockType.Comment)
         {
             return [whole];
@@ -738,6 +942,9 @@ internal sealed partial class ModelBuilder
         var first = pieces[index];
         switch (first.Tag)
         {
+            case { Name: "details" or "div" or "p" or "center" or "summary" } when _depth > MaxDepth:
+                return ElementSource(pieces, ref index, open);
+
             case { Name: "details" } details:
                 index++;
                 var summary = ConvertSummary(pieces, ref index);
@@ -790,16 +997,63 @@ internal sealed partial class ModelBuilder
         string name,
         int listDepth)
     {
-        open.Add(name);
-        var blocks = ConvertPieces(pieces, ref index, open, listDepth, gapsAreBlank: false);
-        open.RemoveAt(open.Count - 1);
-
-        if (index < pieces.Count && pieces[index].Tag is { IsClosing: true } closing && closing.Name == name)
+        _depth++;
+        try
         {
-            index++;
+            open.Add(name);
+            var blocks = ConvertPieces(pieces, ref index, open, listDepth, gapsAreBlank: false);
+            open.RemoveAt(open.Count - 1);
+
+            if (index < pieces.Count && pieces[index].Tag is { IsClosing: true } closing && closing.Name == name)
+            {
+                index++;
+            }
+
+            return blocks;
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    /// <summary>
+    /// Элемент HTML глубже предела вложенности, который начинается с куска <paramref name="index"/>, —
+    /// абзацем его исходника вместе с закрывающим тегом.
+    /// </summary>
+    private List<BlockVm> ElementSource(
+        List<Piece> pieces,
+        ref int index,
+        List<string> open)
+    {
+        var first = pieces[index];
+        var nested = new List<string>();
+        for (; index < pieces.Count; index++)
+        {
+            var tag = pieces[index].Tag;
+            if (tag is { IsClosing: true } && nested.LastIndexOf(tag.Name) is var level and >= 0)
+            {
+                nested.RemoveRange(level, nested.Count - level);
+                if (nested.Count == 0)
+                {
+                    index++;
+                    break;
+                }
+            }
+            else if (tag is { IsClosing: true } && open.Contains(tag.Name))
+            {
+                break;
+            }
+            else if (tag is { IsClosing: false, Name: "details" or "div" or "p" or "center" or "summary" })
+            {
+                nested.Add(tag.Name);
+            }
         }
 
-        return blocks;
+        var last = pieces[index - 1];
+        return SourceParagraph(first.Start, last.End) is { } paragraph
+            ? [StampHtml(paragraph, first, last)]
+            : [];
     }
 
     /// <summary>Заголовок <c>&lt;summary&gt;</c> в начале <c>&lt;details&gt;</c>; нет его — пусто.</summary>
@@ -1024,84 +1278,100 @@ internal sealed partial class ModelBuilder
     {
         var openTags = new List<(string Name, InlineState Before)>();
 
-        for (var node = current; node is not null; node = node.NextSibling)
+        _inlineDepth++;
+        try
         {
-            if (TryConvertByExtension(node, state, output))
+            for (var node = current; node is not null; node = node.NextSibling)
             {
-                continue;
+                if (TryConvertByExtension(node, state, output))
+                {
+                    continue;
+                }
+
+                switch (node)
+                {
+                    case LiteralInline literal:
+                        AddText(literal.Content.ToString(), state, output, node);
+                        break;
+
+                    case LineBreakInline { IsHard: false } when _joinSoftLineBreaks:
+                        AddText(" ", state, output, node);
+                        break;
+
+                    case LineBreakInline lineBreak:
+                        output.Add(Stamp(new LineBreakVm(lineBreak.IsHard), node));
+                        break;
+
+                    case CodeInline code:
+                        AddText(code.Content ?? string.Empty, state with { Code = true }, output, node);
+                        break;
+
+                    case AutolinkInline autolink:
+                        AddText(autolink.Url, Linked(state, autolink.IsEmail ? $"mailto:{autolink.Url}" : autolink.Url, null), output, node);
+                        break;
+
+                    case HtmlInline html:
+                        state = ApplyHtml(html, state, openTags, output);
+                        break;
+
+                    case HtmlEntityInline entity:
+                        AddText(entity.Transcoded.ToString(), state, output, node);
+                        break;
+
+                    case TaskList task:
+                        output.Add(Stamp(new TaskVm(task.Checked), node));
+                        break;
+
+                    case FootnoteLink footnoteLink:
+                        output.Add(Stamp(new FootnoteLinkVm(footnoteLink.Footnote.Order, footnoteLink.Index, footnoteLink.IsBackLink), node));
+                        break;
+
+                    case AbbreviationInline abbreviation:
+                        AddText(
+                            abbreviation.Abbreviation.Label ?? GetSourceText(node.Span),
+                            state with { Abbreviation = abbreviation.Abbreviation.Text.ToString() },
+                            output,
+                            node);
+                        break;
+
+                    case SmartyPant smartyPant:
+                        AddText(SmartyPantText(smartyPant), state, output, node);
+                        break;
+
+                    case LinkInline { IsImage: true } image:
+                        AddImage(image, state, output);
+                        break;
+
+                    case ContainerInline when _inlineDepth > MaxInlineDepth:
+                        AddText(GetSourceText(node.Span), state, output, node);
+                        break;
+
+                    case LinkInline link:
+                        AddLink(link.GetDynamicUrl?.Invoke() ?? link.Url, link.Title, link.FirstChild, state, output, node);
+                        break;
+
+                    case EmphasisInline emphasis:
+                        WalkInline(emphasis.FirstChild, ApplyEmphasis(state, emphasis), output);
+                        break;
+
+                    case DelimiterInline delimiter:
+                        AddText(delimiter.ToLiteral(), state, output, node);
+                        WalkInline(delimiter.FirstChild, state, output);
+                        break;
+
+                    case ContainerInline container:
+                        WalkInline(container.FirstChild, state, output);
+                        break;
+
+                    default:
+                        AddText(GetSourceText(node.Span), state, output, node);
+                        break;
+                }
             }
-
-            switch (node)
-            {
-                case LiteralInline literal:
-                    AddText(literal.Content.ToString(), state, output, node);
-                    break;
-
-                case LineBreakInline lineBreak:
-                    output.Add(Stamp(new LineBreakVm(lineBreak.IsHard), node));
-                    break;
-
-                case CodeInline code:
-                    AddText(code.Content ?? string.Empty, state with { Code = true }, output, node);
-                    break;
-
-                case AutolinkInline autolink:
-                    AddText(autolink.Url, Linked(state, autolink.IsEmail ? $"mailto:{autolink.Url}" : autolink.Url, null), output, node);
-                    break;
-
-                case HtmlInline html:
-                    state = ApplyHtml(html, state, openTags, output);
-                    break;
-
-                case HtmlEntityInline entity:
-                    AddText(entity.Transcoded.ToString(), state, output, node);
-                    break;
-
-                case TaskList task:
-                    output.Add(Stamp(new TaskVm(task.Checked), node));
-                    break;
-
-                case FootnoteLink footnoteLink:
-                    output.Add(Stamp(new FootnoteLinkVm(footnoteLink.Footnote.Order, footnoteLink.Index, footnoteLink.IsBackLink), node));
-                    break;
-
-                case AbbreviationInline abbreviation:
-                    AddText(
-                        abbreviation.Abbreviation.Label ?? GetSourceText(node.Span),
-                        state with { Abbreviation = abbreviation.Abbreviation.Text.ToString() },
-                        output,
-                        node);
-                    break;
-
-                case SmartyPant smartyPant:
-                    AddText(SmartyPantText(smartyPant), state, output, node);
-                    break;
-
-                case LinkInline { IsImage: true } image:
-                    AddImage(image, state, output);
-                    break;
-
-                case LinkInline link:
-                    AddLink(link.GetDynamicUrl?.Invoke() ?? link.Url, link.Title, link.FirstChild, state, output, node);
-                    break;
-
-                case EmphasisInline emphasis:
-                    WalkInline(emphasis.FirstChild, ApplyEmphasis(state, emphasis), output);
-                    break;
-
-                case DelimiterInline delimiter:
-                    AddText(delimiter.ToLiteral(), state, output, node);
-                    WalkInline(delimiter.FirstChild, state, output);
-                    break;
-
-                case ContainerInline container:
-                    WalkInline(container.FirstChild, state, output);
-                    break;
-
-                default:
-                    AddText(GetSourceText(node.Span), state, output, node);
-                    break;
-            }
+        }
+        finally
+        {
+            _inlineDepth--;
         }
     }
 
@@ -1170,17 +1440,19 @@ internal sealed partial class ModelBuilder
         var context = new MdConvertContext(this, listDepth: 0, text => Run(text, state));
         foreach (var extension in _extensions)
         {
-            if (extension.ConvertInlines(node, context) is not { } custom)
-            {
-                continue;
-            }
+            var converted = _guard.Call(
+                extension,
+                () => extension
+                    .ConvertInlines(node, context)
+                    ?.Select((part, index) => (InlineVm)Owned(StampPart(part, node, index), extension))
+                    .ToList(),
+                null);
 
-            for (var i = 0; i < custom.Count; i++)
+            if (converted is not null)
             {
-                output.Add((InlineVm)StampPart(custom[i], node, i));
+                output.AddRange(converted);
+                return true;
             }
-
-            return true;
         }
 
         return false;
@@ -1250,7 +1522,7 @@ internal sealed partial class ModelBuilder
     {
         var end = block is ContainerBlock { LastChild: { } last }
             ? GetLines(last).End
-            : GetLineAt(block.Span.End);
+            : GetLineAt(EndOf(block));
 
         return (block.Line, Math.Max(block.Line, end));
     }
@@ -1260,6 +1532,21 @@ internal sealed partial class ModelBuilder
         var start = _lineStarts[line];
         var end = line + 1 < _lineStarts.Count ? _lineStarts[line + 1] : _source.Length;
         return new(start, end - start, line, line);
+    }
+
+    /// <summary>Строка из одних пробелов или пустая.</summary>
+    private bool IsWhiteSpaceLine(int line) => _source.AsSpan(_lineStarts[line], LineEnd(line) - _lineStarts[line]).IsWhiteSpace();
+
+    /// <summary>Конец строки без перевода строки.</summary>
+    private int LineEnd(int line)
+    {
+        var end = line + 1 < _lineStarts.Count ? _lineStarts[line + 1] : _source.Length;
+        while (end > _lineStarts[line] && _source[end - 1] is '\r' or '\n')
+        {
+            end--;
+        }
+
+        return end;
     }
 
     private bool IsBlankLine(int line)

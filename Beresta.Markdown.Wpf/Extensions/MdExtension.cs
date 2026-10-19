@@ -13,6 +13,12 @@ using ViewModels;
 /// </summary>
 public abstract class MdExtension
 {
+    /// <summary>
+    /// The extension may be called from a background thread when a long text is parsed there;
+    /// <c>false</c> — while it is connected, the viewer parses every text on the interface thread.
+    /// </summary>
+    public virtual bool AllowsBackgroundParse => true;
+
     /// <summary>Adds your Markdig extensions to parsing.</summary>
     public virtual void SetupPipeline(MarkdownPipelineBuilder pipeline)
     {

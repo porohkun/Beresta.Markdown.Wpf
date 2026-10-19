@@ -1,5 +1,6 @@
 ﻿namespace Beresta.Markdown.Wpf.Tests;
 
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -402,7 +403,33 @@ public sealed class MarkTests
         });
     }
 
+    [Fact]
+    public void Вьюер_подписан_на_каждый_свой_слой_ровно_один_раз()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer();
+            var layer = new MdMarkLayer("Layer");
+            viewer.MarkLayers.Add(layer);
+
+            viewer.MarkLayers.Clear();
+            SubscribersOf(layer).Should().Be(0);
+
+            viewer.MarkLayers.Add(layer);
+            viewer.MarkLayers.Add(layer);
+            SubscribersOf(layer).Should().Be(1);
+
+            viewer.MarkLayers.RemoveAt(0);
+            SubscribersOf(layer).Should().Be(1);
+        });
+    }
+
     /// <summary>Рамка элемента в координатах другого.</summary>
     private static Rect BoundsIn(FrameworkElement element, Visual target)
         => element.TransformToVisual(target).TransformBounds(new Rect(element.RenderSize));
+
+    /// <summary>Сколько обработчиков подписано на изменения слоя.</summary>
+    private static int SubscribersOf(MdMarkLayer layer)
+        => (typeof(MdMarkLayer).GetField(nameof(MdMarkLayer.Changed), BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(layer) as Delegate)
+            ?.GetInvocationList().Length ?? 0;
 }

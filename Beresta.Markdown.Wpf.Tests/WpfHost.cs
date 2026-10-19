@@ -12,6 +12,9 @@ internal static class WpfHost
 
     public static void Invoke(Action action) => Host.Value.Invoke(action);
 
+    /// <summary>Поток WPF, где живут все окна тестов.</summary>
+    public static int ThreadId => Host.Value.Thread.ManagedThreadId;
+
     /// <summary>Показывает содержимое в окне за пределами экрана и доводит раскладку до конца.</summary>
     public static Window Show(UIElement content, double height = 400)
     {

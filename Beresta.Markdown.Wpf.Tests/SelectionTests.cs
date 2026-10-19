@@ -151,6 +151,29 @@ public sealed class SelectionTests
     }
 
     [Fact]
+    public void При_выключенном_выделении_команда_выделить_всё_уходит_приложению()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = ThreeParagraphs, IsSelectionEnabled = false };
+            var host = new Border { Child = viewer };
+            var executed = 0;
+            host.CommandBindings.Add(new(ApplicationCommands.SelectAll, (_, _) => executed++));
+            var window = WpfHost.Show(host);
+
+            ApplicationCommands.SelectAll.Execute(null, viewer);
+            executed.Should().Be(1);
+            viewer.SelectionLength.Should().Be(0);
+
+            viewer.IsSelectionEnabled = true;
+            ApplicationCommands.SelectAll.Execute(null, viewer);
+            executed.Should().Be(1);
+            viewer.SelectedText.Should().NotBeEmpty();
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Копируются_разом_текст_и_разметка()
     {
         WpfHost.Invoke(() =>

@@ -3,6 +3,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using Extensions;
 using ViewModels;
 
 /// <summary>
@@ -22,17 +23,19 @@ internal sealed partial class MdMarkdownWriter
     private readonly MdTextMap _map;
     private readonly string _source;
     private readonly MdTextRange _selection;
+    private readonly ExtensionGuard _guard;
     private readonly Dictionary<BlockVm, MdTextRange> _ranges = new(ReferenceEqualityComparer.Instance);
     private readonly List<IReadOnlyList<InlineVm>> _texts = [];
     private readonly HashSet<IReadOnlyList<InlineVm>> _cells = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<IReadOnlyList<InlineVm>, CodeBlockVm> _codes = new(ReferenceEqualityComparer.Instance);
     private bool _other;
 
-    private MdMarkdownWriter(MdTextMap map, string source, MdTextRange selection)
+    private MdMarkdownWriter(MdTextMap map, string source, MdTextRange selection, ExtensionGuard guard)
     {
         _map = map;
         _source = source;
         _selection = selection;
+        _guard = guard;
 
         foreach (var (block, range) in map.Blocks)
         {
@@ -40,14 +43,15 @@ internal sealed partial class MdMarkdownWriter
         }
     }
 
-    public static string Write(IReadOnlyList<BlockVm> blocks, MdTextMap map, string source, MdTextRange selection)
+    /// <summary>Разметка выделенного; код виджетов идёт через <paramref name="guard"/>, упал — пишется исходник узла.</summary>
+    public static string Write(IReadOnlyList<BlockVm> blocks, MdTextMap map, string source, MdTextRange selection, ExtensionGuard? guard = null)
     {
         if (selection.IsEmpty)
         {
             return string.Empty;
         }
 
-        var writer = new MdMarkdownWriter(map, source, selection);
+        var writer = new MdMarkdownWriter(map, source, selection, guard ?? ExtensionGuard.Silent);
         var lines = writer.Blocks(blocks);
 
         if (writer._texts is [var only] && !writer._other && (writer._cells.Contains(only) || !writer.Covers(only)))
@@ -267,9 +271,17 @@ internal sealed partial class MdMarkdownWriter
 
             default:
                 _other = true;
-                return (SourceOf(block) ?? (block as IMdCopyText)?.CopyText ?? string.Empty).Split('\n');
+                return (SourceOf(block) ?? CopyTextOf(block) ?? string.Empty).Split('\n');
         }
     }
+
+    /// <summary>Текст неделимого виджета для копирования; нет его или код виджета упал — <c>null</c>.</summary>
+    private string? CopyTextOf(object widget)
+        => widget is IMdCopyText copy ? _guard.CallWidget(widget, () => copy.CopyText, null) : null;
+
+    /// <summary>Свой текст строчного виджета для разметки; нет его или код виджета упал — <c>null</c>.</summary>
+    private string? MarkdownTextOf(InlineVm inline)
+        => inline is IMdMarkdownText text ? _guard.CallWidget(inline, () => text.MarkdownText, null) : null;
 
     private List<string> Code(CodeBlockVm code)
     {
@@ -465,33 +477,41 @@ internal sealed partial class MdMarkdownWriter
 
         var markdown = new StringBuilder();
         var position = range.Start;
-        widget.WriteText(new(
-            text =>
-            {
-                if (Selected(text, new(position, text.Length)) is { Length: > 0 } part)
+        var written = _guard.CallWidget(
+            block,
+            () => widget.WriteText(new(
+                text =>
                 {
-                    _other = true;
-                    markdown.Append(new InlineMarkdown(this).Plain(part));
-                }
+                    if (Selected(text, new(position, text.Length)) is { Length: > 0 } part)
+                    {
+                        _other = true;
+                        markdown.Append(new InlineMarkdown(this).Plain(part));
+                    }
 
-                position += text.Length;
-            },
-            inlines =>
-            {
-                markdown.Append(Inlines(inlines));
-                if (_map.TryGetRange(inlines, out var written))
+                    position += text.Length;
+                },
+                inlines =>
                 {
-                    position = written.End;
-                }
-            },
-            blocks =>
-            {
-                markdown.Append(string.Join("\n", Blocks(blocks)));
-                if (blocks.Count > 0 && _ranges.TryGetValue(blocks[^1], out var last))
+                    markdown.Append(Inlines(inlines));
+                    if (_map.TryGetRange(inlines, out var piece))
+                    {
+                        position = piece.End;
+                    }
+                },
+                blocks =>
                 {
-                    position = last.End;
-                }
-            }));
+                    markdown.Append(string.Join("\n", Blocks(blocks)));
+                    if (blocks.Count > 0 && _ranges.TryGetValue(blocks[^1], out var last))
+                    {
+                        position = last.End;
+                    }
+                })));
+
+        if (!written)
+        {
+            _other = true;
+            return (SourceOf(block) ?? string.Empty).Split('\n');
+        }
 
         return markdown.ToString().Split('\n');
     }
@@ -605,7 +625,7 @@ internal sealed partial class MdMarkdownWriter
 
                 default:
                     Open(_open.Where(marker => !marker.IsFrame).ToList(), string.Empty);
-                    Append((inline as IMdMarkdownText)?.MarkdownText ?? writer.SourceOf(inline) ?? (inline as IMdCopyText)?.CopyText ?? string.Empty);
+                    Append(writer.MarkdownTextOf(inline) ?? writer.SourceOf(inline) ?? writer.CopyTextOf(inline) ?? string.Empty);
                     break;
             }
         }
