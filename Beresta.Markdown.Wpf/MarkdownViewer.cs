@@ -266,6 +266,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     private readonly MdMarkLayer _decorationLayer = new("Decorations");
     private readonly ThemeBrushes _themeBrushes;
     private IReadOnlyList<MarkSet> _markSets = [];
+    private List<MdMarkLayer> _subscribedLayers = [];
     private readonly MdMarkLayer _feedLayer = new("Feed search");
     private bool _updatingMarks;
     private IReadOnlyList<MdExtension> _activeExtensions = [];
@@ -299,7 +300,10 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 
         CommandManager.RegisterClassCommandBinding(
             typeof(MarkdownViewer),
-            new(ApplicationCommands.SelectAll, (sender, _) => ((MarkdownViewer)sender).SelectAll()));
+            new(
+                ApplicationCommands.SelectAll,
+                (sender, _) => ((MarkdownViewer)sender).SelectAll(),
+                (sender, e) => e.CanExecute = sender is MarkdownViewer { IsSelectionEnabled: true }));
 
         CommandManager.RegisterClassCommandBinding(
             typeof(MarkdownViewer),
@@ -988,7 +992,10 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     }
 
     private static void OnIsSelectionEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        => ((MarkdownViewer)d).ClearSelection();
+    {
+        ((MarkdownViewer)d).ClearSelection();
+        CommandManager.InvalidateRequerySuggested();
+    }
 
     /// <summary>Ближайший к источнику команды элемент интерфейса: у куска текста — его текстовый блок.</summary>
     private static UIElement? ElementOf(object source)
@@ -1028,14 +1035,16 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     private void OnExtensionsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         => ResetPipeline();
 
+    /// <summary>Подписка — ровно на слои <see cref="MarkLayers"/>, каждый по разу, при любом изменении списка.</summary>
     private void OnMarkLayersChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        foreach (var layer in e.OldItems?.OfType<MdMarkLayer>() ?? [])
+        foreach (var layer in _subscribedLayers)
         {
             layer.Changed -= OnMarkLayerChanged;
         }
 
-        foreach (var layer in e.NewItems?.OfType<MdMarkLayer>() ?? [])
+        _subscribedLayers = MarkLayers.Distinct().ToList();
+        foreach (var layer in _subscribedLayers)
         {
             layer.Changed += OnMarkLayerChanged;
         }

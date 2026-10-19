@@ -46,8 +46,6 @@
   перезаписью разметки.
 - **Выделение** `beta` в `Alpha beta gamma delta` после текста `Completely different message`
   становится `tely`: абзац сопоставлен «на месте», концы встают на прежние смещения.
-- `MarkLayers.Clear()` оставляет подписку на слой; повторный `Add` — две.
-- `ApplicationCommands.SelectAll.CanExecute` при `IsSelectionEnabled = False` — `true`.
 - **Литералы оформления в `Themes/Generic.xaml`:** 10 цветов в 6 стилях, 31 размер и отступ в
   шаблонах, 8 начертаний. Запасные значения в коде (`MdTextBlock`, `MarkLook`, `MdLineGutter`)
   срабатывают только без темы.
@@ -62,21 +60,6 @@
   экспериментальной (`WPF0001`).
 - **Восстановление пакетов** в этом окружении для нового проекта идёт минутами: недоступный
   частный NuGet-источник даёт `NU1900`. Сборку под другую платформу делать на копии и ждать в фоне.
-
-## Этап 5. Подписки и команды вьюера (п. 5, 9)
-
-**Что сделать.**
-1. `MarkdownViewer`: свой список слоёв, на которые вьюер подписан. `OnMarkLayersChanged` отписывается
-   от всех слоёв списка, подписывается на текущие `MarkLayers` (каждый по разу), обновляет список и
-   зовёт `RebuildMarks()`. Так `Reset` от `Clear()` обрабатывается, как остальные действия.
-2. Команда `SelectAll`: `CanExecute = sender is MarkdownViewer { IsSelectionEnabled: true }`; в
-   `OnIsSelectionEnabledChanged` — `CommandManager.InvalidateRequerySuggested()`, как у копирования.
-
-**Тесты.** Слои: после `Clear` у слоя нет подписчиков (поле события — отражением), после `Clear` и
-`Add` подписчик ровно один. Выделение: при `IsSelectionEnabled = False` `CanExecute` для
-`SelectAll` — `false`.
-
-**Документация.** Selection, оба языка, раздел про выключенное выделение: Ctrl+A уходит приложению.
 
 ## Этап 6. Выделение не переезжает в чужой текст (п. 8)
 
