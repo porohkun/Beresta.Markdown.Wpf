@@ -17,6 +17,12 @@
     <sys:Double x:Key="Md.Paragraph.FontSize">14</sys:Double>
     <Brush x:Key="Md.Paragraph.LinkForeground">#0969DA</Brush>
 
+    <!-- ======== Общее для блоков: подписи, заголовки-подписи, значки ======== -->
+    <FontWeight x:Key="Md.Title.FontWeight">SemiBold</FontWeight>
+    <FontStyle x:Key="Md.Caption.FontStyle">Italic</FontStyle>
+    <sys:Double x:Key="Md.Icon.Size">16</sys:Double>
+    <Thickness x:Key="Md.Icon.Margin">0,0,8,0</Thickness>
+
     <!-- ======== Начертания ======== -->
     <Style x:Key="Md.Strong.Style" TargetType="{x:Type Span}">
         <Setter Property="FontWeight" Value="SemiBold" />
@@ -88,7 +94,8 @@
     <Thickness x:Key="Md.Callout.Margin">0,0,0,4</Thickness>
     <CornerRadius x:Key="Md.Callout.CornerRadius">0</CornerRadius>
     <Brush x:Key="Md.Callout.Background">Transparent</Brush>
-    <Geometry x:Key="Md.Callout.ChevronIcon">M2,5 L8,11 L14,5 L12.6,3.6 L8,8.2 L3.4,3.6 Z</Geometry>
+    <Thickness x:Key="Md.Callout.ChevronMargin">8,0,0,0</Thickness>
+    <Thickness x:Key="Md.Callout.ContentMargin">0,4,0,0</Thickness>
 
     <SolidColorBrush x:Key="Md.Callout.Note.Brush" Color="#0969DA" />
     <sys:String x:Key="Md.Callout.Note.Title">Note</sys:String>
@@ -157,6 +164,8 @@
     <Thickness x:Key="Md.Details.ContentMargin">16,4,0,0</Thickness>
     <Brush x:Key="Md.Details.MarkerForeground">Gray</Brush>
     <Geometry x:Key="Md.Details.MarkerIcon">M2,5 L8,11 L14,5 L12.6,3.6 L8,8.2 L3.4,3.6 Z</Geometry>
+    <sys:Double x:Key="Md.Details.MarkerSize">10</sys:Double>
+    <Thickness x:Key="Md.Details.MarkerMargin">0,0,6,0</Thickness>
 
     <!-- ======== Md.DefinitionList ======== -->
     <Thickness x:Key="Md.DefinitionList.Margin">0,0,0,0</Thickness>
@@ -207,6 +216,9 @@
     <Thickness x:Key="Md.CodeBlock.HeaderMargin">0,0,0,8</Thickness>
     <sys:String x:Key="Md.CodeBlock.CopyToolTip">Copy</sys:String>
     <Geometry x:Key="Md.CodeBlock.CopyIcon">M16,1H4C2.9,1 2,1.9 2,3v14h2V3h12V1z M19,5H8C6.9,5 6,5.9 6,7v14c0,1.1 0.9,2 2,2h11c1.1,0 2,-0.9 2,-2V7C21,5.9 20.1,5 19,5z M19,21H8V7h11V21z</Geometry>
+    <Thickness x:Key="Md.CodeBlock.CopyButtonPadding">5</Thickness>
+    <Thickness x:Key="Md.CodeBlock.CopyButtonMargin">0,-6,-6,0</Thickness>
+    <sys:Double x:Key="Md.CodeBlock.CopyIconSize">14</sys:Double>
     <Geometry x:Key="Md.CodeBlock.CopiedIcon">M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41,-1.41z</Geometry>
 
     <!-- ======== Md.ContextMenu: меню вьюера по умолчанию ======== -->
@@ -339,7 +351,7 @@
                                    Visibility="Collapsed"
                                    Text="{Binding Image.Alt, RelativeSource={RelativeSource TemplatedParent}}"
                                    Foreground="{DynamicResource Md.Image.AltForeground}"
-                                   FontStyle="Italic" />
+                                   FontStyle="{DynamicResource Md.Caption.FontStyle}" />
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="ImageSource" Value="{x:Null}">
@@ -441,7 +453,7 @@
            BasedOn="{StaticResource Md.Paragraph.Style}">
         <Setter Property="FontSize" Value="{DynamicResource Md.Figure.CaptionFontSize}" />
         <Setter Property="Foreground" Value="{DynamicResource Md.Figure.CaptionForeground}" />
-        <Setter Property="FontStyle" Value="Italic" />
+        <Setter Property="FontStyle" Value="{DynamicResource Md.Caption.FontStyle}" />
     </Style>
 
     <Style x:Key="Md.Heading.Style" TargetType="{x:Type p:MdHeadingBlock}">
@@ -519,14 +531,14 @@
                     <Border x:Name="Frame"
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="4"
-                            Padding="5">
+                            BorderThickness="{DynamicResource Md.CodeBlock.BorderThickness}"
+                            CornerRadius="{DynamicResource Md.CodeBlock.CornerRadius}"
+                            Padding="{DynamicResource Md.CodeBlock.CopyButtonPadding}">
                         <Path x:Name="Icon"
                               Data="{DynamicResource Md.CodeBlock.CopyIcon}"
                               Fill="{TemplateBinding Foreground}"
-                              Width="14"
-                              Height="14"
+                              Width="{DynamicResource Md.CodeBlock.CopyIconSize}"
+                              Height="{DynamicResource Md.CodeBlock.CopyIconSize}"
                               Stretch="Uniform" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -600,7 +612,7 @@
                                     Grid.RowSpan="2"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Top"
-                                    Margin="0,-6,-6,0"
+                                    Margin="{DynamicResource Md.CodeBlock.CopyButtonMargin}"
                                     Visibility="Collapsed"
                                     Style="{DynamicResource Md.CodeBlock.CopyButtonStyle}" />
                         </Grid>
@@ -643,7 +655,7 @@
 
     <Style x:Key="Md.Callout.TitleStyle" TargetType="{x:Type p:MdTextBlock}"
            BasedOn="{StaticResource Md.Paragraph.Style}">
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontWeight" Value="{DynamicResource Md.Title.FontWeight}" />
         <Setter Property="Foreground"
                 Value="{Binding Accent, RelativeSource={RelativeSource AncestorType={x:Type p:MdCalloutPresenter}}}" />
     </Style>
@@ -651,7 +663,7 @@
     <Style x:Key="Md.Callout.DefaultTitleStyle" TargetType="{x:Type TextBlock}">
         <Setter Property="FontFamily" Value="{DynamicResource Md.Paragraph.FontFamily}" />
         <Setter Property="FontSize" Value="{DynamicResource Md.Paragraph.FontSize}" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontWeight" Value="{DynamicResource Md.Title.FontWeight}" />
         <Setter Property="Foreground"
                 Value="{Binding Accent, RelativeSource={RelativeSource AncestorType={x:Type p:MdCalloutPresenter}}}" />
     </Style>
@@ -692,20 +704,20 @@
                                     <Path DockPanel.Dock="Left"
                                           Data="{TemplateBinding Icon}"
                                           Fill="{TemplateBinding Accent}"
-                                          Width="16"
-                                          Height="16"
+                                          Width="{DynamicResource Md.Icon.Size}"
+                                          Height="{DynamicResource Md.Icon.Size}"
                                           Stretch="Uniform"
-                                          Margin="0,0,8,0"
+                                          Margin="{DynamicResource Md.Icon.Margin}"
                                           VerticalAlignment="Center" />
                                     <Path x:Name="Chevron"
                                           DockPanel.Dock="Right"
                                           Visibility="Collapsed"
-                                          Data="{DynamicResource Md.Callout.ChevronIcon}"
+                                          Data="{DynamicResource Md.Details.MarkerIcon}"
                                           Fill="{TemplateBinding Accent}"
-                                          Width="10"
-                                          Height="10"
+                                          Width="{DynamicResource Md.Details.MarkerSize}"
+                                          Height="{DynamicResource Md.Details.MarkerSize}"
                                           Stretch="Uniform"
-                                          Margin="8,0,0,0"
+                                          Margin="{DynamicResource Md.Callout.ChevronMargin}"
                                           VerticalAlignment="Center"
                                           RenderTransformOrigin="0.5,0.5" />
                                     <Grid VerticalAlignment="Center">
@@ -719,7 +731,7 @@
                                     </Grid>
                                 </DockPanel>
                             </ToggleButton>
-                            <p:MdBlocksPresenter x:Name="Body" Blocks="{TemplateBinding Blocks}" Margin="0,4,0,0" />
+                            <p:MdBlocksPresenter x:Name="Body" Blocks="{TemplateBinding Blocks}" Margin="{DynamicResource Md.Callout.ContentMargin}" />
                         </StackPanel>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -747,13 +759,13 @@
 
     <Style x:Key="Md.Details.SummaryStyle" TargetType="{x:Type p:MdTextBlock}"
            BasedOn="{StaticResource Md.Paragraph.Style}">
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontWeight" Value="{DynamicResource Md.Title.FontWeight}" />
     </Style>
 
     <Style x:Key="Md.Details.DefaultSummaryStyle" TargetType="{x:Type TextBlock}">
         <Setter Property="FontFamily" Value="{DynamicResource Md.Paragraph.FontFamily}" />
         <Setter Property="FontSize" Value="{DynamicResource Md.Paragraph.FontSize}" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontWeight" Value="{DynamicResource Md.Title.FontWeight}" />
     </Style>
 
     <Style x:Key="Md.Details.HeaderStyle" TargetType="{x:Type ToggleButton}"
@@ -773,10 +785,10 @@
                                 <Path x:Name="Marker"
                                       Data="{DynamicResource Md.Details.MarkerIcon}"
                                       Fill="{DynamicResource Md.Details.MarkerForeground}"
-                                      Width="10"
-                                      Height="10"
+                                      Width="{DynamicResource Md.Details.MarkerSize}"
+                                      Height="{DynamicResource Md.Details.MarkerSize}"
                                       Stretch="Uniform"
-                                      Margin="0,0,6,0"
+                                      Margin="{DynamicResource Md.Details.MarkerMargin}"
                                       VerticalAlignment="Center"
                                       RenderTransformOrigin="0.5,0.5">
                                     <Path.RenderTransform>
@@ -817,7 +829,7 @@
 
     <Style x:Key="Md.DefinitionList.TermStyle" TargetType="{x:Type p:MdTextBlock}"
            BasedOn="{StaticResource Md.Paragraph.Style}">
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontWeight" Value="{DynamicResource Md.Title.FontWeight}" />
     </Style>
 
     <Style x:Key="Md.DefinitionList.Style" TargetType="{x:Type ItemsControl}">
@@ -1130,7 +1142,7 @@
     <!-- ======== Готовые расширения: связи ======== -->
     <Style x:Key="Md.WikiLink.Style" TargetType="{x:Type Span}" />
     <Style x:Key="Md.WikiLink.Missing.Style" TargetType="{x:Type Span}">
-        <Setter Property="Foreground" Value="#CF222E" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Callout.Danger.Brush}" />
     </Style>
 
     <!-- Тег — ссылка с фоном упоминания; цвет текста у него от ссылки -->
@@ -1209,29 +1221,34 @@
     </DataTemplate>
 
     <!-- ======== Готовые расширения: чипы и работа над текстом ======== -->
+    <Brush x:Key="Md.Chip.Background">#3357606A</Brush>
+    <Brush x:Key="Md.Chip.Success.Background">#DAFBE1</Brush>
+    <Brush x:Key="Md.Chip.Warning.Background">#FFF8C5</Brush>
+    <Brush x:Key="Md.Chip.Danger.Background">#FFEBE9</Brush>
     <Style x:Key="Md.Chip.Style" TargetType="{x:Type Span}">
-        <Setter Property="Background" Value="#3357606A" />
+        <Setter Property="Background" Value="{DynamicResource Md.Chip.Background}" />
     </Style>
     <Style x:Key="Md.Chip.Info.Style" TargetType="{x:Type Span}">
-        <Setter Property="Background" Value="#DDF4FF" />
-        <Setter Property="Foreground" Value="#0969DA" />
+        <Setter Property="Background" Value="{DynamicResource Md.Mention.Background}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Callout.Info.Brush}" />
     </Style>
     <Style x:Key="Md.Chip.Success.Style" TargetType="{x:Type Span}">
-        <Setter Property="Background" Value="#DAFBE1" />
-        <Setter Property="Foreground" Value="#1A7F37" />
+        <Setter Property="Background" Value="{DynamicResource Md.Chip.Success.Background}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Callout.Success.Brush}" />
     </Style>
     <Style x:Key="Md.Chip.Warning.Style" TargetType="{x:Type Span}">
-        <Setter Property="Background" Value="#FFF8C5" />
-        <Setter Property="Foreground" Value="#9A6700" />
+        <Setter Property="Background" Value="{DynamicResource Md.Chip.Warning.Background}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Callout.Warning.Brush}" />
     </Style>
     <Style x:Key="Md.Chip.Danger.Style" TargetType="{x:Type Span}">
-        <Setter Property="Background" Value="#FFEBE9" />
-        <Setter Property="Foreground" Value="#CF222E" />
+        <Setter Property="Background" Value="{DynamicResource Md.Chip.Danger.Background}" />
+        <Setter Property="Foreground" Value="{DynamicResource Md.Callout.Danger.Brush}" />
     </Style>
 
     <sys:Double x:Key="Md.ColorCode.SwatchSize">10</sys:Double>
     <Thickness x:Key="Md.ColorCode.SwatchMargin">0,0,4,0</Thickness>
     <Brush x:Key="Md.ColorCode.SwatchBorder">#33000000</Brush>
+    <sys:Double x:Key="Md.ColorCode.SwatchBorderThickness">1</sys:Double>
     <DataTemplate x:Key="Md.ColorCode.Template" DataType="{x:Type kit:ColorCodeVm}">
         <StackPanel Orientation="Horizontal">
             <Ellipse Width="{DynamicResource Md.ColorCode.SwatchSize}"
@@ -1239,7 +1256,7 @@
                      Margin="{DynamicResource Md.ColorCode.SwatchMargin}"
                      Fill="{Binding Color}"
                      Stroke="{DynamicResource Md.ColorCode.SwatchBorder}"
-                     StrokeThickness="1"
+                     StrokeThickness="{DynamicResource Md.ColorCode.SwatchBorderThickness}"
                      VerticalAlignment="Center" />
             <p:InlineCodePresenter Text="{Binding Code}" Style="{DynamicResource Md.Paragraph.InlineCodeStyle}" />
         </StackPanel>
@@ -1258,22 +1275,22 @@
         <Setter Property="Background" Value="{DynamicResource Md.Marked.Background}" />
     </Style>
 
+    <Thickness x:Key="Md.Critic.CommentPadding">2,0</Thickness>
     <Geometry x:Key="Md.Critic.CommentIcon">M1,2 L15,2 L15,11 L6.5,11 L3.5,14 L3.5,11 L1,11 Z</Geometry>
     <DataTemplate x:Key="Md.Critic.Comment.Template" DataType="{x:Type kit:CriticCommentVm}">
-        <Border Background="Transparent" Padding="2,0" Cursor="Help" ToolTip="{Binding Text}">
+        <Border Background="Transparent" Padding="{DynamicResource Md.Critic.CommentPadding}" Cursor="Help" ToolTip="{Binding Text}">
             <Path Data="{DynamicResource Md.Critic.CommentIcon}"
                   Fill="{DynamicResource Md.Mark.Comment.LineBrush}"
-                  Width="12"
-                  Height="12"
+                  Width="{DynamicResource Md.Mark.IconSize}"
+                  Height="{DynamicResource Md.Mark.IconSize}"
                   Stretch="Uniform" />
         </Border>
     </DataTemplate>
 
     <!-- Спойлер закрашен, пока его состояние не раскрыто -->
     <Brush x:Key="Md.Spoiler.Cover">#57606A</Brush>
-    <Brush x:Key="Md.Spoiler.RevealedBackground">#3357606A</Brush>
     <Style x:Key="Md.Spoiler.Style" TargetType="{x:Type Span}">
-        <Setter Property="Background" Value="{DynamicResource Md.Spoiler.RevealedBackground}" />
+        <Setter Property="Background" Value="{DynamicResource Md.Chip.Background}" />
         <Style.Triggers>
             <DataTrigger Binding="{Binding Path=(mdx:MdWidget.State).IsRevealed, RelativeSource={RelativeSource Self}}"
                          Value="False">
@@ -1334,7 +1351,10 @@
     <Brush x:Key="Md.VideoCard.PreviewBackground">#24292F</Brush>
     <Brush x:Key="Md.VideoCard.PlayBackground">#CC000000</Brush>
     <Brush x:Key="Md.VideoCard.PlayForeground">White</Brush>
-    <Geometry x:Key="Md.VideoCard.PlayIcon">M0,0 L10,6 L0,12 Z</Geometry>
+    <sys:Double x:Key="Md.VideoCard.PlaySize">48</sys:Double>
+    <sys:Double x:Key="Md.VideoCard.PlayIconSize">20</sys:Double>
+    <!-- BYDESIGN: точки в углах задают квадрат значка 20 на 20, в нём треугольник сдвинут вправо к оптическому центру -->
+    <Geometry x:Key="Md.VideoCard.PlayIcon">M0,0 L0,0 M20,20 L20,20 M4,1 L20,10 L4,19 Z</Geometry>
     <!-- Превью заполняет место целиком и обрезается по центру -->
     <Style x:Key="Md.VideoCard.PreviewStyle" TargetType="{x:Type p:MdImage}">
         <Setter Property="Template">
@@ -1374,21 +1394,19 @@
                                            Width="{DynamicResource Md.VideoCard.Width}"
                                            Height="{DynamicResource Md.VideoCard.PreviewHeight}"
                                            Style="{DynamicResource Md.VideoCard.PreviewStyle}" />
-                                <Border Width="48"
-                                        Height="48"
-                                        CornerRadius="24"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Background="{DynamicResource Md.VideoCard.PlayBackground}">
+                                <Grid Width="{DynamicResource Md.VideoCard.PlaySize}"
+                                      Height="{DynamicResource Md.VideoCard.PlaySize}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center">
+                                    <Ellipse Fill="{DynamicResource Md.VideoCard.PlayBackground}" />
                                     <Path Data="{DynamicResource Md.VideoCard.PlayIcon}"
                                           Fill="{DynamicResource Md.VideoCard.PlayForeground}"
-                                          Width="16"
-                                          Height="18"
-                                          Margin="4,0,0,0"
-                                          Stretch="Fill"
+                                          Width="{DynamicResource Md.VideoCard.PlayIconSize}"
+                                          Height="{DynamicResource Md.VideoCard.PlayIconSize}"
+                                          Stretch="Uniform"
                                           HorizontalAlignment="Center"
                                           VerticalAlignment="Center" />
-                                </Border>
+                                </Grid>
                             </Grid>
                             <TextBlock Text="{Binding Title}"
                                        Padding="{DynamicResource Md.VideoCard.TitlePadding}"
@@ -1402,6 +1420,7 @@
 
     <!-- Адрес карточки-ссылки — видом подписи фигуры -->
     <Thickness x:Key="Md.LinkCard.Padding">10,6</Thickness>
+    <sys:Double x:Key="Md.LinkCard.IconStrokeThickness">1.5</sys:Double>
     <Geometry x:Key="Md.LinkCard.Icon">M6,2 L2,2 L2,14 L14,14 L14,10 M9,2 L14,2 L14,7 M14,2 L7,9</Geometry>
     <DataTemplate x:Key="Md.LinkCard.Template" DataType="{x:Type kit:LinkCardVm}">
         <Button Style="{x:Null}"
@@ -1425,10 +1444,10 @@
                             </Grid.ColumnDefinitions>
                             <Path Data="{DynamicResource Md.LinkCard.Icon}"
                                   Stroke="{DynamicResource Md.Paragraph.LinkForeground}"
-                                  StrokeThickness="1.5"
-                                  Width="16"
-                                  Height="16"
-                                  Margin="0,0,8,0"
+                                  StrokeThickness="{DynamicResource Md.LinkCard.IconStrokeThickness}"
+                                  Width="{DynamicResource Md.Icon.Size}"
+                                  Height="{DynamicResource Md.Icon.Size}"
+                                  Margin="{DynamicResource Md.Icon.Margin}"
                                   Stretch="Uniform"
                                   VerticalAlignment="Center" />
                             <StackPanel Grid.Column="1">
@@ -1449,7 +1468,7 @@
 
     <Style x:Key="Md.Properties.KeyStyle" TargetType="{x:Type p:MdTextBlock}"
            BasedOn="{StaticResource Md.Paragraph.Style}">
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontWeight" Value="{DynamicResource Md.Title.FontWeight}" />
     </Style>
     <DataTemplate x:Key="Md.Properties.Template" DataType="{x:Type kit:PropertiesVm}">
         <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"

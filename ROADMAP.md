@@ -41,9 +41,6 @@
   чужой неявный стиль без `BasedOn` их не ломает. Строковые ключи (`DynamicResource Md.*`) WPF в
   словаре темы не ищет — только ключи-типы и `ComponentResourceKey`. Со словарём, влитым в ресурсы,
   ключи находятся.
-- **Литералы оформления в `Themes/Generic.xaml`:** 10 цветов в 6 стилях, 31 размер и отступ в
-  шаблонах, 8 начертаний. Запасные значения в коде (`MdTextBlock`, `MarkLook`, `MdLineGutter`)
-  срабатывают только без темы.
 - **XAML в документации:** объявления `clr-namespace:Beresta…` — в `README.md`, `README.ru.md` и на
   18 страницах вики на каждом языке; префиксы в примерах английских страниц — `mdv:` 136 раз,
   `kit:` 78, `p:` 10, `mdx:` 4, `s:` 4, на 29 страницах; русские страницы — так же.
@@ -55,74 +52,6 @@
   экспериментальной (`WPF0001`).
 - **Восстановление пакетов** в этом окружении для нового проекта идёт минутами: недоступный
   частный NuGet-источник даёт `NU1900`. Сборку под другую платформу делать на копии и ждать в фоне.
-
-## Этап 9. Литералы темы — в ключи (п. 12)
-
-**Принцип.** Берётся существующий ключ, если по смыслу это то же самое — обычно и значение то же.
-Новый ключ — только если не подходит ни один. Запасные значения в коде (`MdTextBlock`, `MarkLook`,
-`MdLineGutter`) не трогать: они работают только без темы.
-
-**Цвета** — 10 значений в 6 стилях:
-
-| Где | Сейчас | Ключ |
-|---|---|---|
-| `Md.WikiLink.Missing.Style`, `Foreground` | `#CF222E` | `Md.Callout.Danger.Brush` — тот же цвет, смысл «ошибка» |
-| `Md.Chip.Style`, `Background` | `#3357606A` | `Md.Spoiler.RevealedBackground` переименовать в `Md.Chip.Background` и брать в обоих местах — тот же цвет, смысл «нейтральная подложка текста» |
-| `Md.Chip.Info.Style`, `Background` | `#DDF4FF` | `Md.Mention.Background` — тот же цвет: голубая подложка, как у упоминаний и тегов |
-| `Md.Chip.Info.Style`, `Foreground` | `#0969DA` | `Md.Callout.Info.Brush` |
-| `Md.Chip.Success.Style`, `Foreground` | `#1A7F37` | `Md.Callout.Success.Brush` |
-| `Md.Chip.Warning.Style`, `Foreground` | `#9A6700` | `Md.Callout.Warning.Brush` |
-| `Md.Chip.Danger.Style`, `Foreground` | `#CF222E` | `Md.Callout.Danger.Brush` |
-| `Md.Chip.Success.Style`, `Background` | `#DAFBE1` | новый `Md.Chip.Success.Background` |
-| `Md.Chip.Warning.Style`, `Background` | `#FFF8C5` | новый `Md.Chip.Warning.Background` |
-| `Md.Chip.Danger.Style`, `Background` | `#FFEBE9` | новый `Md.Chip.Danger.Background` |
-
-**Размеры и отступы** — 31 место в шаблонах:
-
-| Где | Сейчас | Ключ |
-|---|---|---|
-| кнопка копирования кода, рамка | `BorderThickness="1"` | `Md.CodeBlock.BorderThickness` — рамка того же блока |
-| кнопка копирования кода, скругление | `CornerRadius="4"` | `Md.CodeBlock.CornerRadius` |
-| кнопка копирования кода, поля | `Padding="5"` | новый `Md.CodeBlock.CopyButtonPadding` |
-| значок кнопки копирования | 14×14 | новый `Md.CodeBlock.CopyIconSize` |
-| сдвиг кнопки за угол блока | `Margin="0,-6,-6,0"` | новый `Md.CodeBlock.CopyButtonMargin` |
-| значок плашки; значок карточки-ссылки | 16×16, оба | новый `Md.Icon.Size` — общий |
-| отступ значка плашки; отступ значка карточки-ссылки | `0,0,8,0`, оба | новый `Md.Icon.Margin` — общий |
-| стрелка сворачивания плашки; маркер `<details>` | 10×10, оба | новый `Md.Details.MarkerSize` — одна стрелка, один размер |
-| отступ стрелки плашки (справа от заголовка) | `Margin="8,0,0,0"` | новый `Md.Callout.ChevronMargin` |
-| отступ маркера `<details>` (слева от заголовка) | `Margin="0,0,6,0"` | новый `Md.Details.MarkerMargin` |
-| отступ содержимого плашки | `Margin="0,4,0,0"` | новый `Md.Callout.ContentMargin` — пара к `Md.Details.ContentMargin` |
-| кружок цвета, обводка | `StrokeThickness="1"` | новый `Md.ColorCode.SwatchBorderThickness` |
-| значок комментария CriticMarkup | 12×12 | `Md.Mark.IconSize` — комментарий рисуется как пометка-комментарий, тем же `Md.Mark.Comment.LineBrush` |
-| поля значка комментария CriticMarkup | `Padding="2,0"` | новый `Md.Critic.CommentPadding` |
-| круг «play» карточки видео | 48×48, скругление 24 | новый `Md.VideoCard.PlaySize`; круг — `Ellipse` вместо `Border` со скруглением, второй ключ не нужен |
-| треугольник «play» | 16×18, `Margin="4,0,0,0"` | пропорции и оптический сдвиг — в саму геометрию `Md.VideoCard.PlayIcon`, размер — новый `Md.VideoCard.PlayIconSize` |
-| линия значка карточки-ссылки | `StrokeThickness="1.5"` | новый `Md.LinkCard.IconStrokeThickness` |
-
-**Начертания** — 8 мест:
-
-| Где | Сейчас | Ключ |
-|---|---|---|
-| `Md.Callout.TitleStyle`, `Md.Callout.DefaultTitleStyle`, `Md.Details.SummaryStyle`, `Md.Details.DefaultSummaryStyle`, `Md.DefinitionList.TermStyle`, `Md.Properties.KeyStyle` | `FontWeight="SemiBold"` | новый `Md.Title.FontWeight` — вес заголовка-подписи |
-| alt-текст картинки (`Md.Image.Style`), `Md.Figure.CaptionStyle` | `FontStyle="Italic"` | новый `Md.Caption.FontStyle` — начертание подписи |
-
-**Заодно.** `Md.Callout.ChevronIcon` и `Md.Details.MarkerIcon` — одна и та же стрелка сворачивания
-(геометрия совпадает): оставить `Md.Details.MarkerIcon`, а `Md.Callout.ChevronIcon` убрать.
-
-Итого: переиспользуется 9 ключей, один переименовывается, один убирается, новых — 19.
-
-**Тесты.** В `ThemeTests` — разбор `Generic.xaml`: в атрибутах шаблонов и сеттерах стилей нет
-литералов цвета, размера, отступа и начертания вне определений ресурсов; исключения —
-`Transparent` и углы поворота стрелок (`RotateTransform`). Снимки вики прогнать
-(`tools/WikiShots.cs -- --out <scratchpad>`) и сравнить с `docs/wiki/images`: значения те же,
-картинки не должны измениться.
-
-**Документация.** Theming, оба языка, таблица «All keys» — новые ключи, `Md.Chip.Background` вместо
-`Md.Spoiler.RevealedBackground`, без `Md.Callout.ChevronIcon`. Страницы Kit с их ключами, оба
-языка: Kit-Text (чипы, спойлер, CriticMarkup), Kit-Media (карточки, кружок цвета), Kit-Links
-(отсутствующая вики-страница), Kit-Callouts (плашки и `<details>`). `AGENTS.md` библиотеки, раздел
-«Тема» — правило: «Новый ключ — только если по смыслу не подходит существующий; одинаковые по смыслу
-значения — одним ключом».
 
 ## Этап 10. Единое XML-пространство для XAML (п. 11)
 

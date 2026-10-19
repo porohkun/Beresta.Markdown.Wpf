@@ -25,6 +25,10 @@
 			Include="..\Beresta.Markdown.Wpf\Docs\Beresta.Markdown.Wpf.ru.xml"
 			Link="Docs\Beresta.Markdown.Wpf.ru.xml"
 			CopyToOutputDirectory="PreserveNewest" />
+		<None
+			Include="..\Beresta.Markdown.Wpf\Themes\Generic.xaml"
+			Link="Themes\Generic.xaml"
+			CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 	<ItemGroup>

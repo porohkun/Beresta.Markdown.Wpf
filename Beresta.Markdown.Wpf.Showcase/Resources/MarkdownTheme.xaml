@@ -59,4 +59,9 @@
     <SolidColorBrush x:Key="Md.Callout.Quote.Brush" Color="{DynamicResource SecondaryTextColor}" />
     <SolidColorBrush x:Key="Md.Details.MarkerForeground" Color="{DynamicResource SecondaryTextColor}" />
 
+    <!-- Чипы: подложка — цвет плашки того же смысла -->
+    <SolidColorBrush x:Key="Md.Chip.Success.Background" Color="{DynamicResource SuccessColor}" Opacity="0.16" />
+    <SolidColorBrush x:Key="Md.Chip.Warning.Background" Color="{DynamicResource WarningColor}" Opacity="0.16" />
+    <SolidColorBrush x:Key="Md.Chip.Danger.Background" Color="{DynamicResource DangerColor}" Opacity="0.16" />
+
 </ResourceDictionary>
