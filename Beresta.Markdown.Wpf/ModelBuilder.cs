@@ -24,6 +24,12 @@ using ViewModels;
 
 internal sealed partial class ModelBuilder
 {
+    /// <summary>Сколько контейнеров друг в друге разворачивается; более глубокий — исходным текстом.</summary>
+    public const int MaxDepth = 32;
+
+    /// <summary>Сколько строчных узлов друг в друге обходится; более глубокий — исходным текстом.</summary>
+    public const int MaxInlineDepth = 64;
+
     public static readonly MarkdownPipeline DefaultPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .UseYamlFrontMatter()
@@ -46,6 +52,9 @@ internal sealed partial class ModelBuilder
     private readonly ModelIdentity _identity;
     private readonly IReadOnlyDictionary<SmartyPantType, string>? _smartyPants;
     private readonly Dictionary<HtmlBlock, int> _htmlParts = new(ReferenceEqualityComparer.Instance);
+
+    private int _depth;
+    private int _inlineDepth;
 
     private ModelBuilder(
         string source,
@@ -114,14 +123,22 @@ internal sealed partial class ModelBuilder
         int listDepth,
         bool gapsAreBlank = false)
     {
-        var pieces = container
-            .SelectMany(child => child is FootnoteGroup group ? group.AsEnumerable() : new[] { child })
-            .OrderBy(child => child.Line)
-            .SelectMany(child => PiecesOf(child, listDepth))
-            .ToList();
+        _depth++;
+        try
+        {
+            var pieces = container
+                .SelectMany(child => child is FootnoteGroup group ? group.AsEnumerable() : new[] { child })
+                .OrderBy(child => child.Line)
+                .SelectMany(child => PiecesOf(child, listDepth))
+                .ToList();
 
-        var index = 0;
-        return ConvertPieces(pieces, ref index, [], listDepth, gapsAreBlank);
+            var index = 0;
+            return ConvertPieces(pieces, ref index, [], listDepth, gapsAreBlank);
+        }
+        finally
+        {
+            _depth--;
+        }
     }
 
     internal IReadOnlyList<InlineVm> ConvertInlines(ContainerInline? container)
@@ -350,8 +367,19 @@ internal sealed partial class ModelBuilder
     private static string PlainText(Inline? first)
     {
         var text = new StringBuilder();
-        for (var node = first; node is not null; node = node.NextSibling)
+        var next = new Stack<Inline>();
+        if (first is not null)
         {
+            next.Push(first);
+        }
+
+        while (next.TryPop(out var node))
+        {
+            if (node.NextSibling is { } sibling)
+            {
+                next.Push(sibling);
+            }
+
             switch (node)
             {
                 case LiteralInline literal:
@@ -360,8 +388,8 @@ internal sealed partial class ModelBuilder
                 case CodeInline code:
                     text.Append(code.Content);
                     break;
-                case ContainerInline container:
-                    text.Append(PlainText(container.FirstChild));
+                case ContainerInline { FirstChild: { } child }:
+                    next.Push(child);
                     break;
             }
         }
@@ -464,10 +492,76 @@ internal sealed partial class ModelBuilder
         return inlines;
     }
 
+    /// <summary>Контейнер глубже предела вложенности — абзацем его исходника.</summary>
+    private List<BlockVm> BlockSource(Block block)
+    {
+        var end = block.Span.End;
+        for (var node = block; node is ContainerBlock { LastChild: { } last }; node = last)
+        {
+            end = Math.Max(end, last.Span.End);
+        }
+
+        return block.Span.Start >= 0 && SourceParagraph(block.Span.Start, end + 1) is { } paragraph
+            ? [Stamp(paragraph, block)]
+            : [];
+    }
+
+    /// <summary>
+    /// Абзац из куска исходника — строкой текста на строку. Строки после первой теряют префикс
+    /// контейнеров вокруг: пробелы и <c>&gt;</c> до столбца, с которого начинается кусок.
+    /// </summary>
+    private ParagraphVm? SourceParagraph(int start, int end)
+    {
+        end = Math.Min(end, _source.Length);
+        while (start < end && char.IsWhiteSpace(_source[start]))
+        {
+            start++;
+        }
+
+        while (end > start && char.IsWhiteSpace(_source[end - 1]))
+        {
+            end--;
+        }
+
+        if (start == end)
+        {
+            return null;
+        }
+
+        var firstLine = GetLineAt(start);
+        var lastLine = GetLineAt(end - 1);
+        var column = start - _lineStarts[firstLine];
+        var inlines = new List<InlineVm>();
+        for (var line = firstLine; line <= lastLine; line++)
+        {
+            var from = start;
+            if (line > firstLine)
+            {
+                inlines.Add(new LineBreakVm());
+                from = _lineStarts[line];
+                var prefixEnd = Math.Min(from + column, end);
+                while (from < prefixEnd && _source[from] is ' ' or '\t' or '>')
+                {
+                    from++;
+                }
+            }
+
+            var to = line == lastLine ? end : LineEnd(line);
+            if (to > from)
+            {
+                inlines.Add(new RunVm(_source[from..to]) { Source = new(from, to - from, line, line) });
+            }
+        }
+
+        return new(inlines) { Source = new(start, end - start, firstLine, lastLine) };
+    }
+
     private IReadOnlyList<BlockVm> ConvertBlock(
         Block block,
         int listDepth)
-        => ConvertByExtension(block, listDepth) ?? ConvertBuiltInBlock(block, listDepth);
+        => block is ContainerBlock and not LinkReferenceDefinitionGroup && _depth > MaxDepth
+            ? BlockSource(block)
+            : ConvertByExtension(block, listDepth) ?? ConvertBuiltInBlock(block, listDepth);
 
     /// <summary>Блоки расширения из узла; первый берёт идентификатор узла, следующие — производные от него.</summary>
     private IReadOnlyList<BlockVm>? ConvertByExtension(
@@ -588,8 +682,9 @@ internal sealed partial class ModelBuilder
     }
 
     /// <summary>
-    /// Вьюмодель из HTML от куска <paramref name="first"/> до куска <paramref name="last"/>. Первая
-    /// вьюмодель HTML-блока берёт его идентификатор, следующие — производные от него.
+    /// Вьюмодель из HTML от куска <paramref name="first"/> до куска <paramref name="last"/>, если
+    /// позиции у неё ещё нет. Первая вьюмодель HTML-блока берёт его идентификатор, следующие —
+    /// производные от него.
     /// </summary>
     private T StampHtml<T>(T node, Piece first, Piece last)
         where T : NodeVm
@@ -602,7 +697,7 @@ internal sealed partial class ModelBuilder
         NodeVm stamped = node;
         stamped = stamped with
         {
-            Source = new(first.Start, last.End - first.Start, first.StartLine, last.EndLine),
+            Source = stamped.Source.IsEmpty ? new(first.Start, last.End - first.Start, first.StartLine, last.EndLine) : stamped.Source,
             NodeId = part == 0 ? id : _identity.PartId(id, part)
         };
 
@@ -738,6 +833,9 @@ internal sealed partial class ModelBuilder
         var first = pieces[index];
         switch (first.Tag)
         {
+            case { Name: "details" or "div" or "p" or "center" or "summary" } when _depth > MaxDepth:
+                return ElementSource(pieces, ref index, open);
+
             case { Name: "details" } details:
                 index++;
                 var summary = ConvertSummary(pieces, ref index);
@@ -790,16 +888,63 @@ internal sealed partial class ModelBuilder
         string name,
         int listDepth)
     {
-        open.Add(name);
-        var blocks = ConvertPieces(pieces, ref index, open, listDepth, gapsAreBlank: false);
-        open.RemoveAt(open.Count - 1);
-
-        if (index < pieces.Count && pieces[index].Tag is { IsClosing: true } closing && closing.Name == name)
+        _depth++;
+        try
         {
-            index++;
+            open.Add(name);
+            var blocks = ConvertPieces(pieces, ref index, open, listDepth, gapsAreBlank: false);
+            open.RemoveAt(open.Count - 1);
+
+            if (index < pieces.Count && pieces[index].Tag is { IsClosing: true } closing && closing.Name == name)
+            {
+                index++;
+            }
+
+            return blocks;
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    /// <summary>
+    /// Элемент HTML глубже предела вложенности, который начинается с куска <paramref name="index"/>, —
+    /// абзацем его исходника вместе с закрывающим тегом.
+    /// </summary>
+    private List<BlockVm> ElementSource(
+        List<Piece> pieces,
+        ref int index,
+        List<string> open)
+    {
+        var first = pieces[index];
+        var nested = new List<string>();
+        for (; index < pieces.Count; index++)
+        {
+            var tag = pieces[index].Tag;
+            if (tag is { IsClosing: true } && nested.LastIndexOf(tag.Name) is var level and >= 0)
+            {
+                nested.RemoveRange(level, nested.Count - level);
+                if (nested.Count == 0)
+                {
+                    index++;
+                    break;
+                }
+            }
+            else if (tag is { IsClosing: true } && open.Contains(tag.Name))
+            {
+                break;
+            }
+            else if (tag is { IsClosing: false, Name: "details" or "div" or "p" or "center" or "summary" })
+            {
+                nested.Add(tag.Name);
+            }
         }
 
-        return blocks;
+        var last = pieces[index - 1];
+        return SourceParagraph(first.Start, last.End) is { } paragraph
+            ? [StampHtml(paragraph, first, last)]
+            : [];
     }
 
     /// <summary>Заголовок <c>&lt;summary&gt;</c> в начале <c>&lt;details&gt;</c>; нет его — пусто.</summary>
@@ -1024,84 +1169,96 @@ internal sealed partial class ModelBuilder
     {
         var openTags = new List<(string Name, InlineState Before)>();
 
-        for (var node = current; node is not null; node = node.NextSibling)
+        _inlineDepth++;
+        try
         {
-            if (TryConvertByExtension(node, state, output))
+            for (var node = current; node is not null; node = node.NextSibling)
             {
-                continue;
+                if (TryConvertByExtension(node, state, output))
+                {
+                    continue;
+                }
+
+                switch (node)
+                {
+                    case LiteralInline literal:
+                        AddText(literal.Content.ToString(), state, output, node);
+                        break;
+
+                    case LineBreakInline lineBreak:
+                        output.Add(Stamp(new LineBreakVm(lineBreak.IsHard), node));
+                        break;
+
+                    case CodeInline code:
+                        AddText(code.Content ?? string.Empty, state with { Code = true }, output, node);
+                        break;
+
+                    case AutolinkInline autolink:
+                        AddText(autolink.Url, Linked(state, autolink.IsEmail ? $"mailto:{autolink.Url}" : autolink.Url, null), output, node);
+                        break;
+
+                    case HtmlInline html:
+                        state = ApplyHtml(html, state, openTags, output);
+                        break;
+
+                    case HtmlEntityInline entity:
+                        AddText(entity.Transcoded.ToString(), state, output, node);
+                        break;
+
+                    case TaskList task:
+                        output.Add(Stamp(new TaskVm(task.Checked), node));
+                        break;
+
+                    case FootnoteLink footnoteLink:
+                        output.Add(Stamp(new FootnoteLinkVm(footnoteLink.Footnote.Order, footnoteLink.Index, footnoteLink.IsBackLink), node));
+                        break;
+
+                    case AbbreviationInline abbreviation:
+                        AddText(
+                            abbreviation.Abbreviation.Label ?? GetSourceText(node.Span),
+                            state with { Abbreviation = abbreviation.Abbreviation.Text.ToString() },
+                            output,
+                            node);
+                        break;
+
+                    case SmartyPant smartyPant:
+                        AddText(SmartyPantText(smartyPant), state, output, node);
+                        break;
+
+                    case LinkInline { IsImage: true } image:
+                        AddImage(image, state, output);
+                        break;
+
+                    case ContainerInline when _inlineDepth > MaxInlineDepth:
+                        AddText(GetSourceText(node.Span), state, output, node);
+                        break;
+
+                    case LinkInline link:
+                        AddLink(link.GetDynamicUrl?.Invoke() ?? link.Url, link.Title, link.FirstChild, state, output, node);
+                        break;
+
+                    case EmphasisInline emphasis:
+                        WalkInline(emphasis.FirstChild, ApplyEmphasis(state, emphasis), output);
+                        break;
+
+                    case DelimiterInline delimiter:
+                        AddText(delimiter.ToLiteral(), state, output, node);
+                        WalkInline(delimiter.FirstChild, state, output);
+                        break;
+
+                    case ContainerInline container:
+                        WalkInline(container.FirstChild, state, output);
+                        break;
+
+                    default:
+                        AddText(GetSourceText(node.Span), state, output, node);
+                        break;
+                }
             }
-
-            switch (node)
-            {
-                case LiteralInline literal:
-                    AddText(literal.Content.ToString(), state, output, node);
-                    break;
-
-                case LineBreakInline lineBreak:
-                    output.Add(Stamp(new LineBreakVm(lineBreak.IsHard), node));
-                    break;
-
-                case CodeInline code:
-                    AddText(code.Content ?? string.Empty, state with { Code = true }, output, node);
-                    break;
-
-                case AutolinkInline autolink:
-                    AddText(autolink.Url, Linked(state, autolink.IsEmail ? $"mailto:{autolink.Url}" : autolink.Url, null), output, node);
-                    break;
-
-                case HtmlInline html:
-                    state = ApplyHtml(html, state, openTags, output);
-                    break;
-
-                case HtmlEntityInline entity:
-                    AddText(entity.Transcoded.ToString(), state, output, node);
-                    break;
-
-                case TaskList task:
-                    output.Add(Stamp(new TaskVm(task.Checked), node));
-                    break;
-
-                case FootnoteLink footnoteLink:
-                    output.Add(Stamp(new FootnoteLinkVm(footnoteLink.Footnote.Order, footnoteLink.Index, footnoteLink.IsBackLink), node));
-                    break;
-
-                case AbbreviationInline abbreviation:
-                    AddText(
-                        abbreviation.Abbreviation.Label ?? GetSourceText(node.Span),
-                        state with { Abbreviation = abbreviation.Abbreviation.Text.ToString() },
-                        output,
-                        node);
-                    break;
-
-                case SmartyPant smartyPant:
-                    AddText(SmartyPantText(smartyPant), state, output, node);
-                    break;
-
-                case LinkInline { IsImage: true } image:
-                    AddImage(image, state, output);
-                    break;
-
-                case LinkInline link:
-                    AddLink(link.GetDynamicUrl?.Invoke() ?? link.Url, link.Title, link.FirstChild, state, output, node);
-                    break;
-
-                case EmphasisInline emphasis:
-                    WalkInline(emphasis.FirstChild, ApplyEmphasis(state, emphasis), output);
-                    break;
-
-                case DelimiterInline delimiter:
-                    AddText(delimiter.ToLiteral(), state, output, node);
-                    WalkInline(delimiter.FirstChild, state, output);
-                    break;
-
-                case ContainerInline container:
-                    WalkInline(container.FirstChild, state, output);
-                    break;
-
-                default:
-                    AddText(GetSourceText(node.Span), state, output, node);
-                    break;
-            }
+        }
+        finally
+        {
+            _inlineDepth--;
         }
     }
 
@@ -1260,6 +1417,18 @@ internal sealed partial class ModelBuilder
         var start = _lineStarts[line];
         var end = line + 1 < _lineStarts.Count ? _lineStarts[line + 1] : _source.Length;
         return new(start, end - start, line, line);
+    }
+
+    /// <summary>Конец строки без перевода строки.</summary>
+    private int LineEnd(int line)
+    {
+        var end = line + 1 < _lineStarts.Count ? _lineStarts[line + 1] : _source.Length;
+        while (end > _lineStarts[line] && _source[end - 1] is '\r' or '\n')
+        {
+            end--;
+        }
+
+        return end;
     }
 
     private bool IsBlankLine(int line)
