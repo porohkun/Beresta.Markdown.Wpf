@@ -1,8 +1,9 @@
-﻿<Solution>
+<Solution>
   <Folder Name="/Solution Items/">
     <File Path=".gitignore" />
     <File Path="AGENTS.md" />
     <File Path="BACKLOG.md" />
+    <File Path="DECISIONS.md" />
     <File Path="Directory.Build.props" />
     <File Path="GLOSSARY.md" />
     <File Path="LICENSE" />

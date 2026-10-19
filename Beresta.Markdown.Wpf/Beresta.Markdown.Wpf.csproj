@@ -15,10 +15,10 @@
 	<PropertyGroup>
 		<IsPackable>true</IsPackable>
 		<PackageId>Beresta.Markdown.Wpf</PackageId>
-		<Version>0.7.0</Version>
-		<AssemblyVersion>0.7.0.0</AssemblyVersion>
-		<FileVersion>0.7.0.0</FileVersion>
-		<InformationalVersion>0.7.0</InformationalVersion>
+		<Version>0.8.0</Version>
+		<AssemblyVersion>0.8.0.0</AssemblyVersion>
+		<FileVersion>0.8.0.0</FileVersion>
+		<InformationalVersion>0.8.0</InformationalVersion>
 		<Title>Beresta.Markdown.Wpf</Title>
 		<Authors>Porohkun</Authors>
 		<Description>A WPF control that shows Markdown with native WPF elements: virtualized, selectable across blocks, themed through resource keys, with ready-made extensions for the syntax of GitHub, Obsidian, MkDocs and other programs. Markdig parses the text.</Description>
