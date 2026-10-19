@@ -412,7 +412,7 @@ internal sealed partial class ModelBuilder
     }
 
     /// <summary>Текст инлайнов без разметки — alt картинки.</summary>
-    private static string PlainText(Inline? first)
+    internal static string PlainText(Inline? first)
     {
         var text = new StringBuilder();
         var next = new Stack<Inline>();

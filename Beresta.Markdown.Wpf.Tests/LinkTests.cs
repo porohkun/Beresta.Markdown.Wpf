@@ -9,6 +9,19 @@ using Presenters;
 /// <summary>Нажатие ссылок: приложение, якоря документа, открыватель; оглавление и подсказки.</summary>
 public sealed class LinkTests
 {
+    [Theory]
+    [InlineData("www.example.com", "http://www.example.com/")]
+    [InlineData("https://example.com/a b\"c", "https://example.com/a%20b%22c")]
+    [InlineData("mailto:a@b.com?subject=x&attach=c:/secret.txt&BCC=d@e.com", "mailto:a@b.com?subject=x&BCC=d@e.com")]
+    [InlineData("mailto:a@b.com?attach=c", "mailto:a@b.com")]
+    [InlineData("file:///C:/Windows/notepad.exe", null)]
+    [InlineData("javascript:alert(1)", null)]
+    [InlineData("docs/page.md", null)]
+    public void Стандартный_открыватель_отдаёт_системе_нормализованный_адрес(string href, string? expected)
+    {
+        MdSystemLinkOpener.TargetOf(href).Should().Be(expected);
+    }
+
     [Fact]
     public void Необработанную_ссылку_открывает_открыватель()
     {

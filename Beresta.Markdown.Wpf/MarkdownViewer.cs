@@ -855,8 +855,11 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         }
 
         var markdown = SelectedMarkdown;
-        var html = Guard.Call(null, () => MdClipboard.Html(markdown, GetPipeline()), null);
-        var data = MdClipboard.Data(markdownAsText ? markdown : SelectedText, markdown, html);
+        var html = Guard.Call(
+            null,
+            () => MdClipboard.Html(markdown, GetPipeline(), BaseUri, (url, resolved) => ImageLoader is not null && ImagePolicy.Allows(url, resolved)),
+            null);
+        var data = MdClipboard.Data(markdownAsText ? markdown : SelectedText, markdown, html, BaseUri);
         return MdClipboard.Approve(this, data) ? data : null;
     }
 

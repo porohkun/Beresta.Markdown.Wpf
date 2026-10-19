@@ -133,6 +133,42 @@ public sealed partial class BehaviorTests
     }
 
     [Fact]
+    public void Картинка_которую_не_пустила_политика_идёт_в_HTML_своим_alt()
+    {
+        var html = CopiedHtml("![shared plan](file://server/share/plan.png)", viewer => viewer.ImagePolicy = MdImagePolicy.Untrusted);
+
+        html.Should().NotContain("<img").And.NotContain("server").And.Contain("shared plan");
+    }
+
+    [Fact]
+    public void Картинка_идёт_в_HTML_с_абсолютным_адресом()
+    {
+        var html = CopiedHtml("![logo](images/logo.png)", viewer => viewer.BaseUri = new("file:///C:/docs/readme.md"));
+
+        html.Should().Contain("<img src=\"file:///C:/docs/images/logo.png\"");
+    }
+
+    [Fact]
+    public void Без_загрузчика_картинки_идут_в_HTML_своим_alt()
+    {
+        var html = CopiedHtml("![logo](https://example.com/logo.png)", viewer => viewer.ImageLoader = null);
+
+        html.Should().NotContain("<img").And.Contain("logo");
+    }
+
+    [Fact]
+    public void С_абсолютным_адресом_документа_HTML_знает_свой_источник()
+    {
+        var html = CopiedHtml("[guide](guide.md)", viewer => viewer.BaseUri = new("https://example.com/docs/readme.md"));
+
+        html.Should().Contain("SourceURL:https://example.com/docs/readme.md\r\n");
+        var bytes = Encoding.UTF8.GetBytes(html);
+        var start = int.Parse(Offset().Match(html).Groups["start"].Value);
+        var end = int.Parse(Offset().Match(html).Groups["end"].Value);
+        Encoding.UTF8.GetString(bytes, start, end - start).Should().Be("<p><a href=\"guide.md\">guide</a></p>\n");
+    }
+
+    [Fact]
     public void Синтаксис_без_своего_HTML_идёт_в_HTML_исходным_текстом()
     {
         WpfHost.Invoke(() =>
@@ -198,4 +234,23 @@ public sealed partial class BehaviorTests
 
     [GeneratedRegex(@"StartFragment:(?<start>\d+)\r\nEndFragment:(?<end>\d+)")]
     private static partial Regex Offset();
+
+    /// <summary>HTML, который вьюер положил бы в буфер, выделив весь текст.</summary>
+    private static string CopiedHtml(string markdown, Action<MarkdownViewer> setup)
+    {
+        var html = string.Empty;
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer();
+            setup(viewer);
+            viewer.Markdown = markdown;
+            var window = WpfHost.Show(viewer);
+            viewer.SelectAll();
+
+            html = viewer.CreateCopyData()!.GetData(DataFormats.Html).Should().BeOfType<string>().Subject;
+            window.Close();
+        });
+
+        return html;
+    }
 }

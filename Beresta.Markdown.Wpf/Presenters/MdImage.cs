@@ -139,27 +139,6 @@ public sealed class MdImage : Control
         };
     }
 
-    /// <summary>Адрес из разметки, разобранный от адреса документа.</summary>
-    private static Uri? Resolve(string url, Uri? baseUri)
-    {
-        if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
-
-        if (Uri.TryCreate(url, UriKind.Absolute, out var absolute))
-        {
-            return absolute;
-        }
-
-        if (baseUri is { IsAbsoluteUri: true } && Uri.TryCreate(baseUri, url, out var combined))
-        {
-            return combined;
-        }
-
-        return Uri.TryCreate(url, UriKind.Relative, out var relative) ? relative : null;
-    }
-
     private MdTextBlock? FindText()
     {
         for (var node = VisualTreeHelper.GetParent(this); node is not null; node = VisualTreeHelper.GetParent(node))
@@ -206,7 +185,7 @@ public sealed class MdImage : Control
             return;
         }
 
-        var uri = Resolve(image.Url, viewer.BaseUri);
+        var uri = ImageAddress.Resolve(image.Url, viewer.BaseUri);
         if (!viewer.ImagePolicy.Allows(image.Url, uri))
         {
             SetValue(ImageSourcePropertyKey, null);
