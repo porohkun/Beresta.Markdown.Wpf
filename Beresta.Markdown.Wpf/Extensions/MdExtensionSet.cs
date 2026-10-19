@@ -19,6 +19,9 @@ public class MdExtensionSet : MdExtension
     public MdExtensionCollection Extensions { get; } = [];
 
     /// <inheritdoc/>
+    public override bool AllowsBackgroundParse => Extensions.All(extension => extension.AllowsBackgroundParse);
+
+    /// <inheritdoc/>
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline)
     {
         foreach (var extension in Extensions)

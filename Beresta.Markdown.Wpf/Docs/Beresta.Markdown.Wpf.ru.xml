@@ -298,6 +298,12 @@
         <member name="M:Beresta.Markdown.Wpf.Behaviors.StickyScroll.GetIsStuck(System.Windows.DependencyObject)">
             <inheritdoc cref="F:Beresta.Markdown.Wpf.Behaviors.StickyScroll.IsStuckProperty"/>
         </member>
+        <member name="T:Beresta.Markdown.Wpf.Extensions.IMdBackgroundSafe">
+            <summary>
+            Резолвер или обработчик приложения, которого можно звать из фонового потока; у обработчика —
+            объект, которому принадлежит его метод.
+            </summary>
+        </member>
         <member name="T:Beresta.Markdown.Wpf.Extensions.IMdClickableState">
             <summary>Состояние оформленного куска текста, которое меняет щелчок по куску.</summary>
         </member>
@@ -330,6 +336,12 @@
             Расширение вьюера под свой синтаксис: настройка разбора, превращение своих узлов Markdig в
             виджеты и шаблоны для них. Подключается через <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.Extensions"/> или
             <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.SharedExtensions"/>.
+            </summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Extensions.MdExtension.AllowsBackgroundParse">
+            <summary>
+            Расширение можно звать из фонового потока, когда там разбирается длинный текст; <c>false</c> —
+            пока оно подключено, вьюер разбирает любой текст в потоке интерфейса.
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Extensions.MdExtension.SetupPipeline(Markdig.MarkdownPipelineBuilder)">
@@ -373,6 +385,9 @@
         </member>
         <member name="P:Beresta.Markdown.Wpf.Extensions.MdExtensionSet.Extensions">
             <summary>Расширения набора; порядок — порядок опроса.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Extensions.MdExtensionSet.AllowsBackgroundParse">
+            <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Extensions.MdExtensionSet.SetupPipeline(Markdig.MarkdownPipelineBuilder)">
             <inheritdoc/>
@@ -754,6 +769,9 @@
         <member name="P:Beresta.Markdown.Wpf.Kit.Mentions.Resolver">
             <summary>Знает отображаемые имена участников; нет — имя как написано.</summary>
         </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.Mentions.AllowsBackgroundParse">
+            <inheritdoc/>
+        </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.Mentions.SetupPipeline(Markdig.MarkdownPipelineBuilder)">
             <inheritdoc/>
         </member>
@@ -871,6 +889,9 @@
         </member>
         <member name="P:Beresta.Markdown.Wpf.Kit.Shortcodes.LoadThumbnails">
             <summary>Грузить превью видео из сети; выключено — карточка без превью.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.Shortcodes.AllowsBackgroundParse">
+            <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.Shortcodes.SetupPipeline(Markdig.MarkdownPipelineBuilder)">
             <inheritdoc/>
@@ -1001,6 +1022,9 @@
         <member name="P:Beresta.Markdown.Wpf.Kit.WikiEmbeds.Resolver">
             <summary>Знает, какие страницы есть, — для встраивания не картинки.</summary>
         </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.WikiEmbeds.AllowsBackgroundParse">
+            <inheritdoc/>
+        </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.WikiEmbeds.SetupPipeline(Markdig.MarkdownPipelineBuilder)">
             <inheritdoc/>
         </member>
@@ -1016,6 +1040,9 @@
         </member>
         <member name="P:Beresta.Markdown.Wpf.Kit.WikiLinks.Resolver">
             <summary>Знает, какие страницы есть; нет — есть все.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.WikiLinks.AllowsBackgroundParse">
+            <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.WikiLinks.SetupPipeline(Markdig.MarkdownPipelineBuilder)">
             <inheritdoc/>

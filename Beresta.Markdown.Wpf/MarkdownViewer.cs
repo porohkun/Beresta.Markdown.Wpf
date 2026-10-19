@@ -1369,7 +1369,9 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         var pipeline = GetPipeline();
         var extensions = ActiveExtensions;
         var joinSoftLineBreaks = JoinSoftLineBreaks;
-        if (BackgroundParseThreshold <= 0 || markdown.Length < BackgroundParseThreshold)
+        if (BackgroundParseThreshold <= 0
+            || markdown.Length < BackgroundParseThreshold
+            || !extensions.All(extension => Guard.Call(extension, () => extension.AllowsBackgroundParse, false)))
         {
             ParseHere(markdown, pipeline, extensions, joinSoftLineBreaks);
             return;

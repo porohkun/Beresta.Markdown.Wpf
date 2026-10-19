@@ -14,6 +14,8 @@ using ViewModels;
 /// </summary>
 public sealed class Shortcodes : MdExtension
 {
+    private readonly HashSet<Func<MdShortcode, NodeVm?>> _builtIn;
+
     /// <summary>Creates the extension with the built-in handlers.</summary>
     public Shortcodes()
     {
@@ -29,6 +31,7 @@ public sealed class Shortcodes : MdExtension
             ["pdf"] = shortcode => shortcode.Argument("src", 0) is { } url ? new LinkCardVm(url, Path.GetFileName(url.Split('?', '#')[0])) : null,
             ["toc"] = _ => new TocVm()
         };
+        _builtIn = new(Handlers.Values, ReferenceEqualityComparer.Instance);
     }
 
     /// <summary>
@@ -40,6 +43,9 @@ public sealed class Shortcodes : MdExtension
 
     /// <summary>Load video previews from the network; when off, a card has no preview.</summary>
     public bool LoadThumbnails { get; set; } = true;
+
+    /// <inheritdoc/>
+    public override bool AllowsBackgroundParse => Handlers.Values.All(handler => _builtIn.Contains(handler) || handler.Target is IMdBackgroundSafe);
 
     /// <inheritdoc/>
     public override void SetupPipeline(MarkdownPipelineBuilder pipeline)
