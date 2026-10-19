@@ -294,6 +294,9 @@ public class MdTextBlock : TextBlock
             : null;
     }
 
+    /// <summary>Сколько раз текст пересобирался.</summary>
+    internal int Rebuilds { get; private set; }
+
     /// <summary>Кусок текстовой карты, который рисует этот блок.</summary>
     internal bool TryGetMapRange(out MdTextRange range)
     {
@@ -632,6 +635,7 @@ public class MdTextBlock : TextBlock
 
     private void Rebuild()
     {
+        Rebuilds++;
         Inlines.Clear();
         _segments.Clear();
         _styled.Clear();
