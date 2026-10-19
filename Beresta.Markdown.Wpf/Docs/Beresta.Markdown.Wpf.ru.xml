@@ -437,10 +437,12 @@
         <member name="T:Beresta.Markdown.Wpf.IMdImageLoader">
             <summary>Откуда вьюер берёт картинки; ставится в <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.ImageLoader"/>.</summary>
         </member>
-        <member name="M:Beresta.Markdown.Wpf.IMdImageLoader.LoadAsync(System.String,System.Uri,System.Threading.CancellationToken)">
+        <member name="M:Beresta.Markdown.Wpf.IMdImageLoader.LoadAsync(System.String,System.Uri,System.Int32,System.Threading.CancellationToken)">
             <summary>
             Картинка; <paramref name="url"/> — адрес ровно из разметки, <paramref name="uri"/> — он же,
-            разобранный от <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.BaseUri"/>. Картинки нет — <c>null</c>.
+            разобранный от <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.BaseUri"/>,
+            <paramref name="decodeWidth"/> — ширина в пикселях, шире которой картинку не декодируют, 0 — в полный
+            размер. Картинки нет — <c>null</c>.
             </summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.IMdLinkOpener">
@@ -1444,6 +1446,27 @@
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.OnPreviewMouseLeftButtonUp(System.Windows.Input.MouseButtonEventArgs)">
             <inheritdoc/>
         </member>
+        <member name="T:Beresta.Markdown.Wpf.MdImageCache">
+            <summary>
+            Загруженные картинки, общие для всех вьюеров: бюджет памяти и сброс картинок, чтобы показывающие
+            их вьюеры загрузили их заново.
+            </summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.MdImageCache.Budget">
+            <summary>
+            Бюджет памяти в байтах; когда загруженные картинки занимают больше, давно не нужные сбрасываются.
+            По умолчанию 128 МБ.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MdImageCache.Clear">
+            <summary>Сбрасывает все картинки: вьюеры загружают показанные картинки заново.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MdImageCache.Invalidate(System.Uri)">
+            <summary>
+            Сбрасывает картинку адреса — такого, каким его разобрал вьюер от
+            <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.BaseUri"/>: показывающие её вьюеры загружают её заново.
+            </summary>
+        </member>
         <member name="T:Beresta.Markdown.Wpf.MdImageLoader">
             <summary>
             Загрузчик картинок по умолчанию: http(s), файлы, <c>pack://</c> и <c>data:</c> в base64.
@@ -1453,8 +1476,21 @@
         <member name="P:Beresta.Markdown.Wpf.MdImageLoader.Instance">
             <summary>Единственный экземпляр загрузчика.</summary>
         </member>
-        <member name="M:Beresta.Markdown.Wpf.MdImageLoader.LoadAsync(System.String,System.Uri,System.Threading.CancellationToken)">
+        <member name="P:Beresta.Markdown.Wpf.MdImageLoader.MaxDownloadBytes">
+            <summary>
+            Самая большая картинка в байтах, которую загрузчик читает из сети, файла или <c>data:</c>; больше —
+            показывается alt. По умолчанию 20 МБ.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MdImageLoader.LoadAsync(System.String,System.Uri,System.Int32,System.Threading.CancellationToken)">
             <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MdImageLoader.Decode(System.Byte[],System.Int32)">
+            <summary>
+            Картинка, декодированная из байтов не шире <paramref name="decodeWidth"/> пикселей — 0 значит в
+            полный размер — и замороженная; формат, который WPF не декодирует, даёт <c>null</c>. Для своих
+            загрузчиков.
+            </summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.MdImagePolicy">
             <summary>Какие картинки вьюер вообще отдаёт загрузчику: схемы адресов, хосты веба, файлы на других компьютерах.</summary>

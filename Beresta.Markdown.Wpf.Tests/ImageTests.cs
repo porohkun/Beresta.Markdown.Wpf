@@ -51,7 +51,7 @@ public sealed class ImageTests
     [Fact]
     public void Кэш_вытесняет_давние_картинки_сверх_бюджета_памяти()
     {
-        var cache = new MdImageCache(budget: 3 * 1000 * 4);
+        var cache = new ImageLoads(budget: 3 * 1000 * 4);
         var loads = new List<string>();
         Task<ImageSource?> Load(string key)
         {
@@ -78,7 +78,7 @@ public sealed class ImageTests
     [Fact]
     public void Загрузка_без_ждущих_отменяется_и_не_запоминается()
     {
-        var cache = new MdImageCache(budget: 1_000_000);
+        var cache = new ImageLoads(budget: 1_000_000);
         var tokens = new List<CancellationToken>();
         Task<ImageSource?> Load(CancellationToken token)
         {
@@ -120,8 +120,31 @@ public sealed class ImageTests
         });
     }
 
+    [Fact]
+    public void Свой_загрузчик_получает_ширину_декодирования()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var loader = new CountingLoader();
+            var viewer = new MarkdownViewer { ImageLoader = loader, Markdown = "![a](decode-width.png){width=100}" };
+            var window = WpfHost.Show(viewer);
+            WaitFor(window, () => loader.Calls == 1);
+
+            loader.Widths.Should().ContainSingle().Which.Should().Be(256);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Декодирование_уменьшает_только_картинку_шире_заданной_ширины()
+    {
+        ((BitmapSource)MdImageLoader.Decode(Png(600, 4), 256)!).PixelWidth.Should().Be(256);
+        ((BitmapSource)MdImageLoader.Decode(Png(100, 4), 256)!).PixelWidth.Should().Be(100);
+        MdImageLoader.Decode([1, 2, 3], 256).Should().BeNull();
+    }
+
     /// <summary>Прогоняет очередь окна, пока условие не выполнится; фоновая работа успевает за это время.</summary>
-    private static void WaitFor(Window window, Func<bool> condition)
+    internal static void WaitFor(Window window, Func<bool> condition)
     {
         for (var attempt = 0; attempt < 200 && !condition(); attempt++)
         {
@@ -130,14 +153,14 @@ public sealed class ImageTests
         }
     }
 
-    private static BitmapSource Bitmap(int width, int height)
+    internal static BitmapSource Bitmap(int width, int height)
     {
         var bitmap = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, new byte[width * height * 4], width * 4);
         bitmap.Freeze();
         return bitmap;
     }
 
-    private static byte[] Png(int width, int height)
+    internal static byte[] Png(int width, int height)
     {
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(Bitmap(width, height)));
@@ -151,7 +174,7 @@ public sealed class ImageTests
     {
         public int Calls { get; private set; }
 
-        public Task<ImageSource?> LoadAsync(string url, Uri? uri, CancellationToken cancellationToken)
+        public Task<ImageSource?> LoadAsync(string url, Uri? uri, int decodeWidth, CancellationToken cancellationToken)
             => Task.FromResult<ImageSource?>(++Calls == 1 ? null : Bitmap(10, 10));
     }
 
@@ -160,10 +183,25 @@ public sealed class ImageTests
     {
         public List<CancellationToken> Tokens { get; } = [];
 
-        public Task<ImageSource?> LoadAsync(string url, Uri? uri, CancellationToken cancellationToken)
+        public Task<ImageSource?> LoadAsync(string url, Uri? uri, int decodeWidth, CancellationToken cancellationToken)
         {
             Tokens.Add(cancellationToken);
             return Task.Delay(Timeout.Infinite, cancellationToken).ContinueWith(_ => (ImageSource?)null, TaskScheduler.Default);
+        }
+    }
+
+    /// <summary>Загрузчик, который считает вызовы и запоминает ширину декодирования.</summary>
+    internal sealed class CountingLoader : IMdImageLoader
+    {
+        public int Calls { get; private set; }
+
+        public List<int> Widths { get; } = [];
+
+        public Task<ImageSource?> LoadAsync(string url, Uri? uri, int decodeWidth, CancellationToken cancellationToken)
+        {
+            Calls++;
+            Widths.Add(decodeWidth);
+            return Task.FromResult<ImageSource?>(Bitmap(10, 10));
         }
     }
 
@@ -172,7 +210,7 @@ public sealed class ImageTests
     {
         public static Loader Instance { get; } = new();
 
-        public Task<ImageSource?> LoadAsync(string url, Uri? uri, CancellationToken cancellationToken)
+        public Task<ImageSource?> LoadAsync(string url, Uri? uri, int decodeWidth, CancellationToken cancellationToken)
             => Task.FromResult<ImageSource?>(null);
     }
 }

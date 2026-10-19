@@ -49,44 +49,6 @@
 - **Восстановление пакетов** в этом окружении для нового проекта идёт минутами: недоступный
   частный NuGet-источник даёт `NU1900`. Сборку под другую платформу делать на копии и ждать в фоне.
 
-## Этап 13. Картинки: кэш, сеть, декодирование (п. 17)
-
-**Что сделать.**
-1. Публичный фасад кэша — статический класс (имя `MdImageCache` отдать ему, нынешний внутренний
-   переименовать):
-   - `Budget` — бюджет в байтах, сейчас 128 МБ;
-   - `Clear()` и `Invalidate(…)` по адресу. Адрес — такой, каким его разрешил вьюер: ключ кэша сейчас
-     `uri?.ToString() ?? image.Url`;
-   - после `Clear` и `Invalidate` — внутреннее статическое событие. `MdImage` подписан на него, пока
-     загружен (`Loaded`/`Unloaded`, без утечек), и перезапрашивает картинку, если адрес совпал.
-     Событие может прийти из любого потока — дальше через `Dispatcher`.
-2. `MdImageLoader`:
-   - предел размера — статическое `MaxDownloadBytes`, 20 МБ по умолчанию:
-     - `http(s)` — `HttpCompletionOption.ResponseHeadersRead`, проверка `Content-Length` и чтение
-       потока со счётчиком;
-     - файл — по `FileInfo.Length`;
-     - `data:` — по длине base64;
-     - превышение — `null`, то есть alt-текст;
-   - заголовок `User-Agent: Beresta.Markdown.Wpf/<версия сборки>` в `DefaultRequestHeaders` общего
-     `HttpClient`.
-3. `IMdImageLoader.LoadAsync(string url, Uri? uri, int decodeWidth, CancellationToken)` — ширина
-   декодирования в сигнатуре; ломающее изменение, принято. `MdImage.Load` считает `DecodeWidth` для
-   любого загрузчика. Нынешний закрытый `Decode` — публичным помощником
-   `MdImageLoader.Decode(byte[] bytes, int decodeWidth)` для своих загрузчиков.
-4. Тестовые загрузчики — на новую сигнатуру: `AccessibilityTests.OnePixel`,
-   `ImagePolicyTests.RecordingLoader`, `ImageTests.FlakyLoader`, `ImageTests.EndlessLoader`,
-   `ImageTests.Loader`, `MarkupTests.RecordingLoader`, `MarkupTests.ThrowingLoader`.
-
-**Тесты** — `ImageTests`: `Invalidate` файла, поменявшегося на диске, — вьюер показывает новую
-картинку; `Clear` — то же для всех картинок; `data:` больше `MaxDownloadBytes` — alt-текст; свой
-загрузчик получает `decodeWidth`; `Decode` уменьшает картинку шире `decodeWidth`.
-
-**Документация.** Images, оба языка:
-- разделы о кэше (бюджет, сброс, перезагрузка) и о пределах загрузки (размер, User-Agent);
-- пример `AttachmentImageLoader` — с новой сигнатурой и `MdImageLoader.Decode`.
-
-Плюс Settings-and-Hooks, оба языка, и перевод в ru.xml.
-
 ## Этап 14. Экранный диктор: весь документ и таблицы (п. 16)
 
 **Что сделать.**

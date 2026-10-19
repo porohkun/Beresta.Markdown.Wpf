@@ -274,7 +274,7 @@ public sealed class MarkupTests
     {
         public List<(string Url, Uri? Uri)> Calls { get; } = [];
 
-        public Task<ImageSource?> LoadAsync(string url, Uri? uri, CancellationToken cancellationToken)
+        public Task<ImageSource?> LoadAsync(string url, Uri? uri, int decodeWidth, CancellationToken cancellationToken)
         {
             Calls.Add((url, uri));
             var bitmap = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, new byte[width * height * 4], width * 4);
@@ -285,7 +285,7 @@ public sealed class MarkupTests
 
     private sealed class ThrowingLoader : IMdImageLoader
     {
-        public Task<ImageSource?> LoadAsync(string url, Uri? uri, CancellationToken cancellationToken)
+        public Task<ImageSource?> LoadAsync(string url, Uri? uri, int decodeWidth, CancellationToken cancellationToken)
             => throw new InvalidOperationException("The loader failed.");
     }
 

@@ -9,15 +9,37 @@ using System.Windows.Media.Imaging;
 /// не нужные вытесняются первыми. Неудачная загрузка не запоминается, а загрузка, которую больше никто
 /// не ждёт, отменяется.
 /// </summary>
-internal sealed class MdImageCache(long budget)
+internal sealed class ImageLoads(long budget)
 {
     private readonly object _lock = new();
     private readonly Dictionary<(IMdImageLoader Loader, string Key, int Width), Entry> _entries = [];
     private readonly LinkedList<(IMdImageLoader Loader, string Key, int Width)> _recent = [];
+    private long _budget = budget;
     private long _bytes;
 
-    /// <summary>Кэш всех вьюеров.</summary>
-    public static MdImageCache Shared { get; } = new(128L * 1024 * 1024);
+    /// <summary>Загрузки всех вьюеров.</summary>
+    public static ImageLoads Shared { get; } = new(128L * 1024 * 1024);
+
+    /// <summary>Бюджет памяти в байтах; меньше занятого — лишнее вытесняется сразу.</summary>
+    public long Budget
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _budget;
+            }
+        }
+
+        set
+        {
+            lock (_lock)
+            {
+                _budget = value;
+                Trim();
+            }
+        }
+    }
 
     /// <summary>
     /// Загрузка картинки: уже идущая или законченная — общая, иначе новая. Пока билет не отдан, загрузку
@@ -55,6 +77,30 @@ internal sealed class MdImageCache(long budget)
         }
 
         return new(this, entry);
+    }
+
+    /// <summary>Забывает все загрузки: следующий запрос грузит картинку заново.</summary>
+    public void Clear()
+    {
+        lock (_lock)
+        {
+            foreach (var entry in _entries.Values.ToList())
+            {
+                Remove(entry);
+            }
+        }
+    }
+
+    /// <summary>Забывает загрузки адреса — любым загрузчиком и любой шириной.</summary>
+    public void Invalidate(string key)
+    {
+        lock (_lock)
+        {
+            foreach (var entry in _entries.Where(pair => pair.Key.Key == key).Select(pair => pair.Value).ToList())
+            {
+                Remove(entry);
+            }
+        }
     }
 
     /// <summary>Байты картинки в памяти; не растровая — не в счёт.</summary>
@@ -95,16 +141,22 @@ internal sealed class MdImageCache(long budget)
             entry.Counted = true;
             entry.Bytes = SizeOf(entry.Loading.Result);
             _bytes += entry.Bytes;
-            for (var node = _recent.Last; node is not null && _bytes > budget;)
-            {
-                var previous = node.Previous;
-                if (_entries.TryGetValue(node.Value, out var old) && old.Counted)
-                {
-                    Remove(old);
-                }
+            Trim();
+        }
+    }
 
-                node = previous;
+    /// <summary>Вытесняет давно не нужные картинки, пока занятое больше бюджета.</summary>
+    private void Trim()
+    {
+        for (var node = _recent.Last; node is not null && _bytes > _budget;)
+        {
+            var previous = node.Previous;
+            if (_entries.TryGetValue(node.Value, out var old) && old.Counted)
+            {
+                Remove(old);
             }
+
+            node = previous;
         }
     }
 
@@ -137,7 +189,7 @@ internal sealed class MdImageCache(long budget)
     }
 
     /// <summary>Загрузка, которую ждут, пока билет не отдан.</summary>
-    internal sealed class Ticket(MdImageCache cache, Entry entry) : IDisposable
+    internal sealed class Ticket(ImageLoads loads, Entry entry) : IDisposable
     {
         private bool _released;
 
@@ -148,7 +200,7 @@ internal sealed class MdImageCache(long budget)
             if (!_released)
             {
                 _released = true;
-                cache.Release(entry);
+                loads.Release(entry);
             }
         }
     }

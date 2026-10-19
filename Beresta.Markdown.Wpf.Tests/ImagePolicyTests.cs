@@ -106,7 +106,7 @@ public sealed class ImagePolicyTests
     {
         public List<string> Urls { get; } = [];
 
-        public Task<ImageSource?> LoadAsync(string url, Uri? uri, CancellationToken cancellationToken)
+        public Task<ImageSource?> LoadAsync(string url, Uri? uri, int decodeWidth, CancellationToken cancellationToken)
         {
             Urls.Add(url);
             var bitmap = BitmapSource.Create(1, 1, 96, 96, PixelFormats.Bgra32, null, new byte[4], 4);

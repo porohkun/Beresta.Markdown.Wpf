@@ -921,7 +921,7 @@ static extern int SetWindowLong(IntPtr window, int index, int value);
 /// <summary>Картинки снимков: баннер по адресу с <c>banner</c>, остальное — заставка.</summary>
 sealed class ShotLoader : IMdImageLoader
 {
-    public Task<ImageSource?> LoadAsync(string url, Uri? uri, CancellationToken cancellationToken)
+    public Task<ImageSource?> LoadAsync(string url, Uri? uri, int decodeWidth, CancellationToken cancellationToken)
         => Task.FromResult<ImageSource?>(url.Contains("banner", StringComparison.Ordinal) ? Banner() : Still());
 
     private static ImageSource Banner()
