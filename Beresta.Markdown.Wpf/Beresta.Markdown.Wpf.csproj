@@ -15,20 +15,18 @@
 	<PropertyGroup>
 		<IsPackable>true</IsPackable>
 		<PackageId>Beresta.Markdown.Wpf</PackageId>
-		<Version>0.8.0</Version>
-		<AssemblyVersion>0.8.0.0</AssemblyVersion>
-		<FileVersion>0.8.0.0</FileVersion>
-		<InformationalVersion>0.8.0</InformationalVersion>
+		<VersionPrefix>0.8.0</VersionPrefix>
 		<Title>Beresta.Markdown.Wpf</Title>
 		<Authors>Porohkun</Authors>
-		<Description>A WPF control that shows Markdown with native WPF elements: virtualized, selectable across blocks, themed through resource keys, with ready-made extensions for the syntax of GitHub, Obsidian, MkDocs and other programs. Markdig parses the text.</Description>
+		<Copyright>Copyright (c) 2026 Pavel</Copyright>
+		<Description>Fast native Markdown viewer for WPF, no browser or FlowDocument: virtualized for huge documents, live updates for previews and streamed answers, selection across blocks, themeable and extensible. On Markdig.</Description>
 		<PackageIcon>icon512.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageProjectUrl>https://github.com/porohkun/Beresta.Markdown.Wpf</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/porohkun/Beresta.Markdown.Wpf</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageTags>markdown;wpf;markdig;viewer;markdown-viewer;xaml;control;gfm;obsidian</PackageTags>
+		<PackageTags>markdown;wpf;xaml;viewer;renderer;control;markdig;commonmark;gfm;chat;obsidian</PackageTags>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 		<IncludeSymbols>true</IncludeSymbols>
