@@ -171,23 +171,24 @@ internal sealed partial class ModelBuilder
         }
 
         var start = node.Span.Start;
-        var end = Math.Min(node.Span.End, _source.Length - 1);
-        var (startLine, endLine) = node is Block block
-            ? GetLines(block)
-            : (GetLineAt(start), GetLineAt(end));
+        var block = node as Block;
+        var end = Math.Min(block is null ? node.Span.End : EndOf(block), _source.Length - 1);
+        var (startLine, endLine) = block is null
+            ? (GetLineAt(start), GetLineAt(end))
+            : GetLines(block);
 
         return new(start, end - start + 1, startLine, endLine);
     }
 
     internal string GetSource(MarkdownObject node)
     {
-        return GetSourceText(node.Span);
+        return GetSourceText(node is Block block ? new(node.Span.Start, EndOf(block)) : node.Span);
     }
 
     private static CodeBlockVm ConvertCodeBlock(CodeBlock block)
     {
         var info = (block as FencedCodeBlock)?.Info;
-        return new(info, ParseLanguage(info), GetLeafText(block));
+        return new(info, ParseLanguage(info), CodeOf(block)) { IsFenced = block is FencedCodeBlock };
     }
 
     private static InlineState ApplyEmphasis(InlineState state, EmphasisInline emphasis)
@@ -252,10 +253,42 @@ internal sealed partial class ModelBuilder
         return string.IsNullOrWhiteSpace(firstToken) ? null : firstToken;
     }
 
-    /// <summary>Строки блока через <c>\n</c>, какими бы ни были переводы строк исходника.</summary>
-    private static string GetLeafText(LeafBlock block)
+    /// <summary>
+    /// Строки кода через <c>\n</c>, какими бы ни были переводы строк исходника. Пустые строки в конце
+    /// остаются только перед закрывающей оградой.
+    /// </summary>
+    private static string CodeOf(CodeBlock block)
     {
-        return block.Lines.ToString().Replace("\r\n", "\n").Replace('\r', '\n').TrimEnd('\n');
+        var code = block.Lines.ToString().Replace("\r\n", "\n").Replace('\r', '\n');
+        return block is FencedCodeBlock { ClosingFencedCharCount: > 0 } ? code : code.TrimEnd('\n');
+    }
+
+    /// <summary>
+    /// Последний знак блока в исходнике. Код с отступом и код без закрывающей ограды кончаются своей
+    /// последней непустой строкой, контейнер — не раньше своего последнего блока.
+    /// </summary>
+    private static int EndOf(Block block)
+    {
+        switch (block)
+        {
+            case ContainerBlock { LastChild: { } last }:
+                return Math.Max(block.Span.End, EndOf(last));
+
+            case CodeBlock code when code.GetType() == typeof(CodeBlock) || code is FencedCodeBlock { ClosingFencedCharCount: 0 }:
+                for (var i = code.Lines.Count - 1; i >= 0; i--)
+                {
+                    var slice = code.Lines.Lines[i].Slice;
+                    if (!slice.IsEmptyOrWhitespace())
+                    {
+                        return slice.End;
+                    }
+                }
+
+                return block.Span.End;
+
+            default:
+                return block.Span.End;
+        }
     }
 
     private static Uri? TryCreateUri(string? value)
@@ -553,13 +586,7 @@ internal sealed partial class ModelBuilder
     /// <summary>Контейнер глубже предела вложенности — абзацем его исходника.</summary>
     private List<BlockVm> BlockSource(Block block)
     {
-        var end = block.Span.End;
-        for (var node = block; node is ContainerBlock { LastChild: { } last }; node = last)
-        {
-            end = Math.Max(end, last.Span.End);
-        }
-
-        return block.Span.Start >= 0 && SourceParagraph(block.Span.Start, end + 1) is { } paragraph
+        return block.Span.Start >= 0 && SourceParagraph(block.Span.Start, EndOf(block) + 1) is { } paragraph
             ? [Stamp(paragraph, block)]
             : [];
     }
@@ -785,7 +812,7 @@ internal sealed partial class ModelBuilder
     private IEnumerable<Piece> PiecesOf(Block block, int listDepth)
     {
         var (startLine, endLine) = GetLines(block);
-        var whole = new Piece(block.Span.Start, block.Span.End + 1, startLine, endLine) { Block = block };
+        var whole = new Piece(block.Span.Start, EndOf(block) + 1, startLine, endLine) { Block = block };
         if (block is not HtmlBlock html || html.Type == HtmlBlockType.Comment)
         {
             return [whole];
@@ -1486,7 +1513,7 @@ internal sealed partial class ModelBuilder
     {
         var end = block is ContainerBlock { LastChild: { } last }
             ? GetLines(last).End
-            : GetLineAt(block.Span.End);
+            : GetLineAt(EndOf(block));
 
         return (block.Line, Math.Max(block.Line, end));
     }

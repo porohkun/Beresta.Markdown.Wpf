@@ -2714,8 +2714,14 @@
         <member name="P:Beresta.Markdown.Wpf.ViewModels.CodeBlockVm.Runs">
             <summary>Код одним куском текста — для <c>MdTextBlock</c> и текстовой карты.</summary>
         </member>
+        <member name="P:Beresta.Markdown.Wpf.ViewModels.CodeBlockVm.Code">
+            <summary>Код; новый код получает и новый <see cref="P:Beresta.Markdown.Wpf.ViewModels.CodeBlockVm.Runs"/>.</summary>
+        </member>
         <member name="P:Beresta.Markdown.Wpf.ViewModels.CodeBlockVm.IsFenced">
-            <summary>Код в ограждении <c>```</c>; у отступленного кода ограждения нет.</summary>
+            <summary>
+            Код в ограждении <c>```</c>; у отступленного кода ограждения нет. Ставит разбор; расширение,
+            которое создаёт блок кода, ставит его само.
+            </summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.ViewModels.DefinitionItemVm">
             <summary>

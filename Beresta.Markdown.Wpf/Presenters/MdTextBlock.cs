@@ -156,6 +156,7 @@ public class MdTextBlock : TextBlock
     private List<Highlight> _highlights = [];
     private IReadOnlyList<(int Offset, double Height)> _gaps = [];
     private List<(int Line, Rect Row)>? _sourceRows;
+    private Run? _lastEmptyRow;
     private AdornerLayer? _adornerLayer;
     private MdHighlightAdorner? _adorner;
 
@@ -288,7 +289,9 @@ public class MdTextBlock : TextBlock
             }
         }
 
-        return null;
+        return _lastEmptyRow is not null && offset == _segments[^1].End
+            ? _lastEmptyRow.ContentStart.GetCharacterRect(LogicalDirection.Forward)
+            : null;
     }
 
     /// <summary>Кусок текстовой карты, который рисует этот блок.</summary>
@@ -634,6 +637,7 @@ public class MdTextBlock : TextBlock
         _styled.Clear();
         _gapRows.Clear();
         _sourceRows = null;
+        _lastEmptyRow = null;
         _gaps = GapsOfRuns();
         var nextGap = 0;
 
@@ -687,6 +691,16 @@ public class MdTextBlock : TextBlock
                     _segments.Add(new(inline, start, length, host, cover, widget));
                     break;
             }
+        }
+
+        if (_segments is [.., { Inline: RunVm { Text: [.., '\n'] } } last])
+        {
+            AddGapRows(last.End, ref nextGap);
+
+            // BYDESIGN: перевод строки в самом конце текста WPF новой строкой не рисует — пустую
+            // последнюю строку держит невидимый знак, которого в карте нет.
+            _lastEmptyRow = new Run("​");
+            Inlines.Add(_lastEmptyRow);
         }
 
         AddGapRows(int.MaxValue, ref nextGap);
