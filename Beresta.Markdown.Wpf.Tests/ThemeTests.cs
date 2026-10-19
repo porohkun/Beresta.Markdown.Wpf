@@ -12,6 +12,23 @@ using Styling;
 public sealed class ThemeTests
 {
     [Fact]
+    public void Свой_неявный_стиль_вьюера_без_BasedOn_не_гасит_тему()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "# H\n\ntext" };
+            var host = new Border { Child = viewer };
+            host.Resources.Add(typeof(MarkdownViewer), new Style(typeof(MarkdownViewer)) { Setters = { new Setter(FrameworkElement.MarginProperty, new Thickness(4)) } });
+            var window = WpfHost.Show(host);
+
+            viewer.Margin.Should().Be(new Thickness(4));
+            viewer.StyleProvider.Should().NotBeNull();
+            Visuals.Descendants<MdTextBlock>(viewer).Should().HaveCount(2);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Провайдер_с_BasedOn_заменяет_только_свой_шаблон()
     {
         WpfHost.Invoke(() =>

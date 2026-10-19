@@ -37,8 +37,8 @@ the Russian one.
 
 ## Connect the theme
 
-Merge the theme of the viewer into the application resources once — without it the viewer stays
-empty.
+Merge the theme of the viewer into the application resources once — without it the viewer shows a hint
+with this address instead of the document.
 
 `App.xaml`:
 

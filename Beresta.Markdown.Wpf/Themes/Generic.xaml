@@ -1565,6 +1565,15 @@
 
                             <!-- BYDESIGN: поля идут после блоков — раскладываются позже и видят их уже на местах -->
                             <p:MdLineGutter x:Name="PART_Gutter" Visibility="Collapsed" />
+
+                            <!-- BYDESIGN: подсказка — литералом: её показывают, когда ключей темы нет -->
+                            <TextBlock
+                                x:Name="PART_ThemeHint"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Visibility="Collapsed"
+                                TextWrapping="Wrap"
+                                Text="Beresta.Markdown.Wpf: the theme is not connected. Merge pack://application:,,,/Beresta.Markdown.Wpf;component/Themes/Generic.xaml into the resources of the application." />
                         </Grid>
 
                     </Border>

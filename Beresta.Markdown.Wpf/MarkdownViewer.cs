@@ -3,6 +3,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Automation.Peers;
 using System.Windows.Controls;
@@ -24,6 +25,7 @@ using ViewModels;
 /// <summary>A control that shows Markdown text as blocks drawn by the templates of the theme.</summary>
 [TemplatePart(Name = GutterPart, Type = typeof(MdLineGutter))]
 [TemplatePart(Name = RowMarksPart, Type = typeof(MdRowMarks))]
+[TemplatePart(Name = ThemeHintPart, Type = typeof(UIElement))]
 public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 {
     /// <summary>The text of the document.</summary>
@@ -243,6 +245,8 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 
     private const string GutterPart = "PART_Gutter";
     private const string RowMarksPart = "PART_RowMarks";
+    private const string ThemeHintPart = "PART_ThemeHint";
+    private const string ThemeSource = "pack://application:,,,/Beresta.Markdown.Wpf;component/Themes/Generic.xaml";
 
     private static readonly DependencyProperty FeedQueryProperty =
         MdFeedSearch.QueryProperty.AddOwner(
@@ -338,6 +342,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         // внешняя прокрутка не должна.
         AddHandler(RequestBringIntoViewEvent, new RequestBringIntoViewEventHandler((_, e) => e.Handled = ReferenceEquals(e.TargetObject, this)));
         AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler((_, _) => OnViewportMaybeChanged()));
+        Loaded += OnFirstLoaded;
     }
 
     /// <summary>The selection changed.</summary>
@@ -770,6 +775,23 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         base.OnApplyTemplate();
         Gutter = GetTemplateChild(GutterPart) as MdLineGutter;
         RowMarks = GetTemplateChild(RowMarksPart) as MdRowMarks;
+    }
+
+    /// <summary>Тема не влита в ресурсы — вьюер показывает подсказку вместо пустоты и пишет предупреждение.</summary>
+    private void OnFirstLoaded(object sender, RoutedEventArgs e)
+    {
+        Loaded -= OnFirstLoaded;
+        if (TryFindResource("Md.DefaultStyleProvider") is not null)
+        {
+            return;
+        }
+
+        if (GetTemplateChild(ThemeHintPart) is UIElement hint)
+        {
+            hint.Visibility = Visibility.Visible;
+        }
+
+        Trace.TraceWarning($"Beresta.Markdown.Wpf: the theme is not connected. Merge {ThemeSource} into the resources of the application.");
     }
 
     /// <summary>Ближайший вьюер, внутри которого стоит элемент.</summary>
