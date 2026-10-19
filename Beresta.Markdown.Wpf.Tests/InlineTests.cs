@@ -1,5 +1,8 @@
 ﻿namespace Beresta.Markdown.Wpf.Tests;
 
+using System.Windows.Controls;
+using System.Windows.Documents;
+using Presenters;
 using ViewModels;
 
 /// <summary>Инлайны: начертания и то, для чего своего вида нет.</summary>
@@ -75,5 +78,36 @@ public sealed class InlineTests
     public void Ссылка_по_метке_без_адреса_остаётся_текстом()
     {
         ModelDump.Of("a [b] c").Should().Be("P(a [b] c)");
+    }
+
+    [Fact]
+    public void В_режиме_склейки_мягкий_перенос_становится_пробелом_а_жёсткий_остаётся()
+    {
+        ModelDump.Of(ModelBuilder.Parse("a\nb", null, null, null, out _, joinSoftLineBreaks: true)).Should().Be("P(a b)");
+        ModelDump.Of(ModelBuilder.Parse("a  \nb", null, null, null, out _, joinSoftLineBreaks: true)).Should().Be("P(a\nb)");
+    }
+
+    [Fact]
+    public void Вьюер_в_режиме_склейки_рисует_абзац_одной_строкой()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "a\nb" };
+            var host = new Border { Child = viewer };
+            MarkdownViewer.SetJoinSoftLineBreaks(host, true);
+            var window = WpfHost.Show(host);
+            var text = viewer.TextMap.Text;
+
+            text.Should().Be("a b");
+            Visuals.Descendants<MdTextBlock>(viewer).Single().Inlines.OfType<LineBreak>().Should().BeEmpty();
+            viewer.TextMap.SourceLineOf(text.IndexOf('b')).Should().Be(1);
+            viewer.SelectAll();
+            viewer.SelectedMarkdown.Should().Be("a b");
+
+            MarkdownViewer.SetJoinSoftLineBreaks(host, false);
+            WpfHost.Settle(window);
+            viewer.TextMap.Text.Should().Be("a\nb");
+            window.Close();
+        });
     }
 }

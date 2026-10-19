@@ -202,6 +202,17 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
 
+    /// <summary>
+    /// Lines of a paragraph joined by soft line breaks are drawn as one text with spaces, as on
+    /// GitHub; off — every source line starts a new line on the screen. Inherited.
+    /// </summary>
+    public static readonly DependencyProperty JoinSoftLineBreaksProperty =
+        DependencyProperty.RegisterAttached(
+            nameof(JoinSoftLineBreaks),
+            typeof(bool),
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits, OnJoinSoftLineBreaksChanged));
+
     private static readonly DependencyPropertyKey SelectionStartPropertyKey =
         DependencyProperty.RegisterReadOnly(
             nameof(SelectionStart),
@@ -488,6 +499,13 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         set => SetValue(ShowCodeLineNumbersProperty, value);
     }
 
+    /// <inheritdoc cref="JoinSoftLineBreaksProperty"/>
+    public bool JoinSoftLineBreaks
+    {
+        get => (bool)GetValue(JoinSoftLineBreaksProperty);
+        set => SetValue(JoinSoftLineBreaksProperty, value);
+    }
+
     /// <inheritdoc cref="ShowCodeCopyButtonProperty"/>
     public bool ShowCodeCopyButton
     {
@@ -569,6 +587,14 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     /// <inheritdoc cref="ShowCodeLineNumbersProperty"/>
     public static void SetShowCodeLineNumbers(DependencyObject element, bool value)
         => element.SetValue(ShowCodeLineNumbersProperty, value);
+
+    /// <inheritdoc cref="JoinSoftLineBreaksProperty"/>
+    public static bool GetJoinSoftLineBreaks(DependencyObject element)
+        => (bool)element.GetValue(JoinSoftLineBreaksProperty);
+
+    /// <inheritdoc cref="JoinSoftLineBreaksProperty"/>
+    public static void SetJoinSoftLineBreaks(DependencyObject element, bool value)
+        => element.SetValue(JoinSoftLineBreaksProperty, value);
 
     /// <summary>
     /// The position of a source line in the coordinates of the viewer; the fraction is a part of
@@ -963,6 +989,14 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     private static void OnPipelineChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownViewer)d).ResetPipeline();
 
+    private static void OnJoinSoftLineBreaksChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is MarkdownViewer viewer)
+        {
+            viewer.Rebuild(discardRunning: true);
+        }
+    }
+
     private static void OnDocumentKeyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var viewer = (MarkdownViewer)d;
@@ -1334,21 +1368,22 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 
         var pipeline = GetPipeline();
         var extensions = ActiveExtensions;
+        var joinSoftLineBreaks = JoinSoftLineBreaks;
         if (BackgroundParseThreshold <= 0 || markdown.Length < BackgroundParseThreshold)
         {
-            ParseHere(markdown, pipeline, extensions);
+            ParseHere(markdown, pipeline, extensions, joinSoftLineBreaks);
             return;
         }
 
-        var parsing = Task.Run(() => Parse(markdown, pipeline, extensions));
+        var parsing = Task.Run(() => Parse(markdown, pipeline, extensions, joinSoftLineBreaks));
         _parsing = parsing;
         parsing.ContinueWith(_ => Dispatcher.BeginInvoke(() => FinishParse(parsing)), TaskScheduler.Default);
     }
 
     /// <summary>Разбирает и кладёт текст в потоке интерфейса.</summary>
-    private void ParseHere(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions)
+    private void ParseHere(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions, bool joinSoftLineBreaks)
     {
-        var document = Parse(markdown, pipeline, extensions);
+        var document = Parse(markdown, pipeline, extensions, joinSoftLineBreaks);
         _identity.Commit();
         Apply(document);
     }
@@ -1373,7 +1408,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 
         if (failed && !queued)
         {
-            var document = Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions);
+            var document = Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions, JoinSoftLineBreaks);
             _identity.Commit();
             Apply(document);
             if (document.Failures.Count == 0)
@@ -1397,14 +1432,14 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     }
 
     /// <summary>Разбирает текст; упавший код расширения отдаёт узел встроенному разбору, упавший Markdig — запасному документу из строк исходника.</summary>
-    private ParsedDocument Parse(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions)
+    private ParsedDocument Parse(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions, bool joinSoftLineBreaks)
     {
         var failures = new List<(Exception Exception, MdExtension? Extension)>();
         var owners = new Dictionary<object, MdExtension>(ReferenceEqualityComparer.Instance);
         var guard = new ExtensionGuard((exception, extension) => failures.Add((exception, extension)), owners.GetValueOrDefault);
         try
         {
-            var blocks = ModelBuilder.Parse(markdown, pipeline, extensions, _identity, out var frontMatter, commit: false, guard, owners);
+            var blocks = ModelBuilder.Parse(markdown, pipeline, extensions, _identity, out var frontMatter, commit: false, guard, owners, joinSoftLineBreaks);
             return new(blocks, frontMatter, MdTextMap.Build(blocks, markdown, guard), markdown) { Failures = failures, Owners = owners };
         }
         catch (Exception exception)

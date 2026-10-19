@@ -1171,6 +1171,12 @@
         <member name="F:Beresta.Markdown.Wpf.MarkdownViewer.ShowCodeLineNumbersProperty">
             <summary>Номера строк внутри блоков кода; наследуется блоками кода.</summary>
         </member>
+        <member name="F:Beresta.Markdown.Wpf.MarkdownViewer.JoinSoftLineBreaksProperty">
+            <summary>
+            Строки абзаца, разделённые мягкими переносами, рисуются одним текстом через пробел, как на
+            GitHub; выключено — каждая строка исходника начинается на экране с новой строки. Наследуется.
+            </summary>
+        </member>
         <member name="F:Beresta.Markdown.Wpf.MarkdownViewer.SelectionStartProperty">
             <summary>Начало выделения в текстовой карте.</summary>
         </member>
@@ -1255,6 +1261,9 @@
         <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.ShowCodeLineNumbers">
             <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.ShowCodeLineNumbersProperty"/>
         </member>
+        <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.JoinSoftLineBreaks">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.JoinSoftLineBreaksProperty"/>
+        </member>
         <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.ShowCodeCopyButton">
             <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.ShowCodeCopyButtonProperty"/>
         </member>
@@ -1302,6 +1311,12 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.SetShowCodeLineNumbers(System.Windows.DependencyObject,System.Boolean)">
             <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.ShowCodeLineNumbersProperty"/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.GetJoinSoftLineBreaks(System.Windows.DependencyObject)">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.JoinSoftLineBreaksProperty"/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.SetJoinSoftLineBreaks(System.Windows.DependencyObject,System.Boolean)">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.JoinSoftLineBreaksProperty"/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.GetSourceLineOffset(System.Double)">
             <summary>Позиция строки исходника в координатах вьюера; дробная часть — доля строки.</summary>

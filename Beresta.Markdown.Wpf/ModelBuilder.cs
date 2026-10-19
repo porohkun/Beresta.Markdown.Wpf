@@ -54,6 +54,7 @@ internal sealed partial class ModelBuilder
     private readonly Dictionary<HtmlBlock, int> _htmlParts = new(ReferenceEqualityComparer.Instance);
     private readonly ExtensionGuard _guard;
     private readonly IDictionary<object, MdExtension>? _owners;
+    private readonly bool _joinSoftLineBreaks;
 
     private int _depth;
     private int _inlineDepth;
@@ -64,7 +65,8 @@ internal sealed partial class ModelBuilder
         ModelIdentity identity,
         IReadOnlyDictionary<SmartyPantType, string>? smartyPants,
         ExtensionGuard guard,
-        IDictionary<object, MdExtension>? owners)
+        IDictionary<object, MdExtension>? owners,
+        bool joinSoftLineBreaks = false)
     {
         _source = source;
         _lineStarts = FindLineStarts(source);
@@ -73,6 +75,7 @@ internal sealed partial class ModelBuilder
         _smartyPants = smartyPants;
         _guard = guard;
         _owners = owners;
+        _joinSoftLineBreaks = joinSoftLineBreaks;
     }
 
     /// <summary>
@@ -91,7 +94,8 @@ internal sealed partial class ModelBuilder
     /// и отдаёт текст front matter без разбора; нет его — <c>null</c>. Без <paramref name="commit"/> память
     /// разборов запоминает этот разбор, только когда её <see cref="ModelIdentity.Commit"/> вызовут отдельно.
     /// Код расширений идёт через <paramref name="guard"/>; <paramref name="owners"/> получает, какое
-    /// расширение создало каждую его вьюмодель.
+    /// расширение создало каждую его вьюмодель. С <paramref name="joinSoftLineBreaks"/> мягкий перенос
+    /// строки становится пробелом.
     /// </summary>
     public static IReadOnlyList<BlockVm> Parse(
         string markdown,
@@ -101,7 +105,8 @@ internal sealed partial class ModelBuilder
         out string? frontMatter,
         bool commit = true,
         ExtensionGuard? guard = null,
-        IDictionary<object, MdExtension>? owners = null)
+        IDictionary<object, MdExtension>? owners = null,
+        bool joinSoftLineBreaks = false)
     {
         markdown ??= string.Empty;
         identity ??= new();
@@ -112,7 +117,7 @@ internal sealed partial class ModelBuilder
         frontMatter = document is [YamlFrontMatterBlock yaml, ..] ? yaml.Lines.ToString() : null;
 
         var smartyPants = pipeline.Extensions.Find<SmartyPantsExtension>()?.Options.Mapping;
-        var builder = new ModelBuilder(markdown, extensions ?? [], identity, smartyPants, guard ?? ExtensionGuard.Silent, owners);
+        var builder = new ModelBuilder(markdown, extensions ?? [], identity, smartyPants, guard ?? ExtensionGuard.Silent, owners, joinSoftLineBreaks);
         var blocks = builder.ConvertBlocks(document, listDepth: 0);
         if (commit)
         {
@@ -1287,6 +1292,10 @@ internal sealed partial class ModelBuilder
                 {
                     case LiteralInline literal:
                         AddText(literal.Content.ToString(), state, output, node);
+                        break;
+
+                    case LineBreakInline { IsHard: false } when _joinSoftLineBreaks:
+                        AddText(" ", state, output, node);
                         break;
 
                     case LineBreakInline lineBreak:
