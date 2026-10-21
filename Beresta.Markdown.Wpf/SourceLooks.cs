@@ -1,6 +1,7 @@
 ﻿namespace Beresta.Markdown.Wpf;
 
 using Extensions;
+using Selection;
 using ViewModels;
 
 /// <summary>
@@ -188,7 +189,10 @@ internal static class SourceLooks
         return end;
     }
 
-    /// <summary>Дети встроенного элемента с местами в исходнике; лист и чужой элемент — <c>null</c>.</summary>
+    /// <summary>
+    /// Дети элемента с местами в исходнике: у встроенного — свои, у своей модели — вложенное, которое она
+    /// пишет в текстовую карту; лист — <c>null</c>.
+    /// </summary>
     private static IEnumerable<NodeVm>? ChildrenOf(NodeVm node) => node switch
     {
         ParagraphVm paragraph => paragraph.Inlines,
@@ -208,8 +212,21 @@ internal static class SourceLooks
         CalloutVm callout => [.. callout.Title, .. callout.Blocks],
         DetailsVm details => [.. details.Summary, .. details.Blocks],
         DefinitionItemVm item => [.. item.Terms, .. item.Blocks],
+        IMdTextSource source => Nested(node, source),
         _ => null
     };
+
+    /// <summary>Инлайны и блоки, которые своя модель пишет в карту; ни у одного нет места в исходнике — <c>null</c>.</summary>
+    private static List<NodeVm>? Nested(NodeVm node, IMdTextSource source)
+    {
+        var nested = new List<NodeVm>();
+        var writer = new MdTextWriter(_ => { }, inlines => nested.AddRange(inlines), blocks => nested.AddRange(blocks));
+
+        // BYDESIGN: сбой виджета молчит — его уже отдала в RenderFailed сборка текстовой карты
+        return ExtensionGuard.Silent.CallWidget(node, () => source.WriteText(writer)) && nested.Any(child => !child.Source.IsEmpty)
+            ? nested
+            : null;
+    }
 
     /// <summary>Текст, его строки и куда складываются описания: встроенные, знаки разметки, расширений.</summary>
     private sealed record Context(

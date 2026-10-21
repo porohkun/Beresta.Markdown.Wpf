@@ -7,7 +7,9 @@ using System.Windows.Media.TextFormatting;
 using Editor;
 using Extensions;
 using ICSharpCode.AvalonEdit.Rendering;
+using Markdig.Extensions.CustomContainers;
 using Markdig.Extensions.TaskLists;
+using Selection;
 using ViewModels;
 
 /// <summary>
@@ -61,6 +63,44 @@ public sealed class SourceLookTests
         var look = Describe(Text, tasks);
 
         look.Pieces[^1].Should().Be((At("[ ]"), 3, "Probe"));
+    }
+
+    [Fact]
+    public void Вложенное_своей_модели_описано_как_встроенное()
+    {
+        const string text = ":::note Title\nA **b** c\n:::";
+        var notes = new LambdaExtension
+        {
+            Block = (block, context) => block is CustomContainer { Info: "note" } container ? new NoteVm(context.ConvertChildren(container)) : null
+        };
+
+        var look = Describe(text, notes);
+
+        look.Pieces.Should().Contain((text.IndexOf("b**", StringComparison.Ordinal), 1, "Bold"));
+        look.Pieces
+            .Where(piece => piece.Look == "Source.Markup")
+            .Select(piece => text.Substring(piece.Start, piece.Length).Trim())
+            .Should().BeEquivalentTo([":::note Title", "**", "**", ":::"]);
+    }
+
+    [Fact]
+    public void Своя_модель_без_вложенного_с_местом_остаётся_простым_текстом()
+    {
+        const string text = ":::card Title\nA **b** c\n:::\n\n:::broken\nA **b** c\n:::";
+        var widgets = new LambdaExtension
+        {
+            Block = (block, context) => block switch
+            {
+                CustomContainer { Info: "card" } => new CardVm(),
+                CustomContainer { Info: "broken" } container => new BrokenVm(context.ConvertChildren(container)),
+                _ => null
+            }
+        };
+
+        var look = Describe(text, widgets);
+
+        look.Pieces.Should().BeEmpty();
+        look.Lines.Should().BeEmpty();
     }
 
     [Fact]
@@ -124,6 +164,24 @@ public sealed class SourceLookTests
         return line.Elements
             .First(element => element.RelativeTextOffset <= column && column < element.RelativeTextOffset + element.DocumentLength)
             .TextRunProperties;
+    }
+
+    /// <summary>Своя модель-контейнер: вложенные блоки пишет в карту.</summary>
+    private sealed record NoteVm(IReadOnlyList<BlockVm> Blocks) : BlockVm, IMdTextSource
+    {
+        public void WriteText(MdTextWriter writer) => writer.Blocks(Blocks);
+    }
+
+    /// <summary>Своя модель-лист: пишет в карту только свой текст.</summary>
+    private sealed record CardVm : BlockVm, IMdTextSource
+    {
+        public void WriteText(MdTextWriter writer) => writer.Text("card");
+    }
+
+    /// <summary>Своя модель, которая падает на записи в карту.</summary>
+    private sealed record BrokenVm(IReadOnlyList<BlockVm> Blocks) : BlockVm, IMdTextSource
+    {
+        public void WriteText(MdTextWriter writer) => throw new InvalidOperationException("broken");
     }
 
     /// <summary>Наследник вьюера, который открывает тестам описание исходника.</summary>

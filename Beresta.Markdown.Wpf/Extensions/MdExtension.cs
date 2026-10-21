@@ -61,8 +61,8 @@ public abstract class MdExtension
     public virtual MdSourceEdit? EditSource(NodeVm node, object? state, MdSourceContext context) => null;
 
     /// <summary>
-    /// How your widget looks in the source of an editor: marks its pieces and lines with looks. By
-    /// default — nothing: the source of the widget is plain text.
+    /// How your widget looks in the source of an editor: marks its pieces and lines with looks. They are
+    /// drawn over the default look: nested inlines and blocks as elsewhere, the text around them as markup.
     /// </summary>
     public virtual void DescribeSource(NodeVm node, MdSourceLook look)
     {

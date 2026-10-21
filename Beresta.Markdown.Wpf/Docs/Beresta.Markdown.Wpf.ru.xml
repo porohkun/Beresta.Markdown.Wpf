@@ -424,8 +424,9 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.Extensions.MdExtension.DescribeSource(Beresta.Markdown.Wpf.ViewModels.NodeVm,Beresta.Markdown.Wpf.Extensions.MdSourceLook)">
             <summary>
-            Как твой виджет выглядит в исходнике редактора: отмечает его куски и строки видами. По
-            умолчанию — ничего: исходник виджета — простой текст.
+            Как твой виджет выглядит в исходнике редактора: отмечает его куски и строки видами. Они
+            рисуются поверх вида по умолчанию: вложенные инлайны и блоки — как везде, текст вокруг
+            них — знаки разметки.
             </summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Extensions.MdExtensionCollection">
