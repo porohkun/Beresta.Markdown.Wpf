@@ -151,11 +151,9 @@ internal sealed class SourcePositions
         var panelOffset = _viewer.TranslatePoint(new(0, offset), panel).Y;
         var index = Math.Clamp(panel.IndexAtOffset(panelOffset), 0, Math.Min(items.Count, panel.ItemCount) - 1);
 
-        if (items[index] is SourceWindowVm window
-            && window.Element.IsDescendantOf(_viewer)
-            && window.Rows.GetSourceLineAt(_viewer.TranslatePoint(new(0, offset), window.Element).Y) is { } inside)
+        if (LineInWindow(offset) is { } inside)
         {
-            return Math.Clamp(inside, window.Source.StartLine, window.Source.EndLine + 1);
+            return inside;
         }
 
         var gaps = Layout().Gaps;
@@ -169,6 +167,30 @@ internal sealed class SourcePositions
         var height = panel.GetItemBottom(index) - top;
         return LineIn(top, height, source.StartLine, source.EndLine + 1, Math.Clamp(panelOffset, top, top + height), gaps);
     }
+
+    /// <summary>Строка исходника в позиции вьюера, если позиция — в окне наследника, где бы оно ни стояло.</summary>
+    private double? LineInWindow(double offset)
+    {
+        if (_viewer.ShownWindow is not { } window || !window.Element.IsDescendantOf(_viewer))
+        {
+            return null;
+        }
+
+        var local = _viewer.TranslatePoint(new(0, offset), window.Element).Y;
+        return local >= 0 && local < window.Element.ActualHeight && window.Rows.GetSourceLineAt(local) is { } inside
+            ? Math.Clamp(inside, window.Source.StartLine, window.Source.EndLine + 1)
+            : null;
+    }
+
+    /// <summary>Позиция строки исходника во вьюере, если строка — в окне наследника, где бы оно ни стояло.</summary>
+    private double? OffsetInWindow(double line)
+        => _viewer.ShownWindow is { } window
+           && window.Element.IsDescendantOf(_viewer)
+           && line >= window.Source.StartLine
+           && line <= window.Source.EndLine + 1
+           && window.Rows.GetSourceLineOffset(line) is { } inside
+            ? window.Element.TranslatePoint(new(0, inside), _viewer).Y
+            : null;
 
     /// <summary>Позиция строки в блоке <paramref name="index"/>; созданные элементы блока берутся один раз на проход.</summary>
     private double? OffsetIn(
@@ -189,11 +211,9 @@ internal sealed class SourcePositions
             return ToViewer(panel, panel.GetItemBottom(index));
         }
 
-        if (items[index] is SourceWindowVm window
-            && window.Element.IsDescendantOf(_viewer)
-            && window.Rows.GetSourceLineOffset(line) is { } inside)
+        if (OffsetInWindow(line) is { } inside)
         {
-            return window.Element.TranslatePoint(new(0, inside), _viewer).Y;
+            return inside;
         }
 
         var gaps = Layout().Gaps;

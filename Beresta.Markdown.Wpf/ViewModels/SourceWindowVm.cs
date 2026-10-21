@@ -8,4 +8,7 @@ internal sealed record SourceWindowVm(FrameworkElement Element, IMdSourceRows Ro
 {
     /// <summary>Идентификатор окна — один на все разборы; разбор таких не выдаёт.</summary>
     public const long Id = -1;
+
+    /// <summary>Идентификатор пунктов после окна у списка, который окно поделило.</summary>
+    public const long AfterListId = -2;
 }

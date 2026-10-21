@@ -39,9 +39,7 @@ internal sealed class SourceLookIndex
     public IReadOnlyList<(int Start, int End, string Look)> PiecesOn(int line)
         => line >= 0 && line < _pieces.Length ? _pieces[line] ?? [] : [];
 
-    /// <summary>Виды строки с нуля.</summary>
-    public IEnumerable<string> LooksAt(int line)
-        => _lines
-            .Where(entry => entry.FirstLine <= line && line <= entry.LastLine)
-            .Select(entry => entry.Look);
+    /// <summary>Виды строки с нуля и строки, которым их дали.</summary>
+    public IEnumerable<(int FirstLine, int LastLine, string Look)> LooksAt(int line)
+        => _lines.Where(entry => entry.FirstLine <= line && line <= entry.LastLine);
 }

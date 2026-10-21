@@ -1592,10 +1592,11 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.SetSourceWindow(System.Int32,System.Int32,System.Windows.FrameworkElement,Beresta.Markdown.Wpf.Scrolling.IMdSourceRows)">
             <summary>
-            Ставит элемент наследника в документ вместо блоков верхнего уровня на строках исходника с
-            <paramref name="firstLine"/> по <paramref name="lastLine"/>, считая с нуля; блок, вылезший за
-            эти строки, уходит под элемент целиком. <paramref name="rows"/> говорит, где строки внутри
-            элемента.
+            Ставит элемент наследника в документ вместо блоков на строках исходника с
+            <paramref name="firstLine"/> по <paramref name="lastLine"/>, считая с нуля: на самом глубоком
+            уровне <see cref="M:Beresta.Markdown.Wpf.MarkdownViewer.SourceLevelsAt(System.Int32)"/>, где строки лежат на единицах одного
+            контейнера; блок, вылезший за эти строки, уходит под элемент целиком. <paramref name="rows"/>
+            говорит, где строки внутри элемента.
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.ClearSourceWindow">
@@ -1608,6 +1609,13 @@
             <summary>
             Держит элемент <see cref="M:Beresta.Markdown.Wpf.MarkdownViewer.SetSourceWindow(System.Int32,System.Int32,System.Windows.FrameworkElement,Beresta.Markdown.Wpf.Scrolling.IMdSourceRows)"/> там, где он стоит на экране, пока в
             документе меняются высоты, — пока прокрутку не сдвинет кто-то другой.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.SourceLevelsAt(System.Int32)">
+            <summary>
+            Уровни правимых единиц вокруг строки исходника, от верхнего до самого глубокого: наверху —
+            блоки; в цитате, плашке и сворачиваемом блоке — их блоки; в списке — его пункты; в пункте — его
+            блоки после первого. Внутрь свёрнутого блока не заходит.
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.OnDocumentApplied">
@@ -1884,7 +1892,8 @@
             <summary>
             Вертикальная панель блоков документа: создаёт только блоки, попавшие в видимую область
             прокруток-предков, остальным отводит место по известной или оценённой высоте; элемент,
-            который наследник вьюера ставит вместо блоков, создаёт, где бы тот ни стоял. Высоты помнит
+            который наследник вьюера ставит вместо блоков, и блок, в котором он стоит, создаёт, где бы
+            они ни стояли. Высоты помнит
             по идентификаторам блоков, так что новый текст их не сбрасывает. Пустые места перед блоками и
             после них отводит и штрихует сама; места внутри несозданного блока входят в оценку его высоты.
             </summary>
@@ -3269,6 +3278,20 @@
         </member>
         <member name="P:Beresta.Markdown.Wpf.ViewModels.MarkupFrame.ReplacesLink">
             <summary>Обрамление само записывает ссылку куска: разметка ссылки вокруг него не ставится.</summary>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.ViewModels.MdSourceLevel">
+            <summary>
+            Правимые единицы одного контейнера вокруг строки исходника: <paramref name="Container"/> —
+            место контейнера, <paramref name="Units"/> — места его единиц по порядку, <paramref name="Indent"/>
+            — сколько знаков в начале их строк контейнер рисует по-своему.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.ViewModels.MdSourceLevel.#ctor(Beresta.Markdown.Wpf.ViewModels.MdSourceSpan,System.Collections.Generic.IReadOnlyList{Beresta.Markdown.Wpf.ViewModels.MdSourceSpan},System.Int32)">
+            <summary>
+            Правимые единицы одного контейнера вокруг строки исходника: <paramref name="Container"/> —
+            место контейнера, <paramref name="Units"/> — места его единиц по порядку, <paramref name="Indent"/>
+            — сколько знаков в начале их строк контейнер рисует по-своему.
+            </summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.ViewModels.MdSourceSpan">
             <summary>

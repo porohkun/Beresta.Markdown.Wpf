@@ -386,7 +386,7 @@ var thread = new Thread(() =>
             });
         }
 
-        // Редактор: блочный режим с курсором в абзаце, весь текст и «только контролы» с полями карточки
+        // Редактор: блочный режим с курсором в абзаце и в пункте списка, весь текст и «только контролы» с полями карточки
         var notes = L("""
             ---
             title: Release notes
@@ -414,7 +414,7 @@ var thread = new Thread(() =>
             - [x] Блоки под курсором
             - [ ] Весь текст на месте
             """).ReplaceLineEndings("\n");
-        foreach (var (name, mode) in new[] { ("editor-blocks.png", MdEditMode.Blocks), ("editor-full.png", MdEditMode.Full), ("editor-controls.png", MdEditMode.Controls) })
+        foreach (var (name, mode) in new[] { ("editor-blocks.png", MdEditMode.Blocks), ("editor-item.png", MdEditMode.Blocks), ("editor-full.png", MdEditMode.Full), ("editor-controls.png", MdEditMode.Controls) })
         {
             if (!Wanted(name))
             {
@@ -425,7 +425,11 @@ var thread = new Thread(() =>
             editor.Extensions.Add(new PropertiesCard());
             Shot(russian, name, editor, 640, () =>
             {
-                if (mode == MdEditMode.Blocks)
+                if (name == "editor-item.png")
+                {
+                    editor.SourceCaretOffset = notes.IndexOf(L("The whole text", "Весь текст"), StringComparison.Ordinal) + 4;
+                }
+                else if (mode == MdEditMode.Blocks)
                 {
                     editor.SourceCaretOffset = notes.IndexOf(L("The **editor**", "**Редактор**"), StringComparison.Ordinal) + 4;
                 }

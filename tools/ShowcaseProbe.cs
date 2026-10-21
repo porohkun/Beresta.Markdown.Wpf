@@ -26,6 +26,7 @@ using Beresta.Markdown.Wpf.Editor;
 using Beresta.Markdown.Wpf.Presenters;
 using Beresta.Markdown.Wpf.Scrolling;
 using Beresta.Markdown.Wpf.Selection;
+using Beresta.Markdown.Wpf.ViewModels;
 using Beresta.Markdown.Wpf.Showcase;
 using Beresta.Markdown.Wpf.Showcase.Localization;
 using Beresta.Markdown.Wpf.Showcase.Showcases.Copying;
@@ -616,8 +617,38 @@ static string WindowReport(MarkdownEditor editor)
     var foreign = (IReadOnlyList<int>)typeof(MarkdownEditor).GetMethod("ForeignLines", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(editor, [])!;
     var visible = (bool)typeof(MarkdownEditor).GetMethod("IsCaretVisible", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(editor, [])!;
     var lines = Internal(editor, "WindowLines") is ValueTuple<int, int> window ? $"{window.Item1}–{window.Item2}" : "нет";
-    return $"окно {lines}, разложено {Internal(editor, "LaidOutLines")}, чужие строки: {(foreign.Count == 0 ? "нет" : string.Join(",", foreign))}, " +
+    return $"окно {lines} {WindowPlace(editor.Items.Cast<BlockVm>()) ?? "нигде"}, разложено {Internal(editor, "LaidOutLines")}, " +
+        $"чужие строки: {(foreign.Count == 0 ? "нет" : string.Join(",", foreign))}, " +
         $"курсор в строке {editor.TextEditor.TextArea.Caret.Line}, виден: {(visible ? "да" : "нет")}";
+}
+
+// Где стоит окно: наверху или внутри контейнеров — цитаты, плашки, сворачиваемого блока, пункта
+static string? WindowPlace(IEnumerable<NodeVm> nodes)
+{
+    foreach (var node in nodes)
+    {
+        if (node.GetType().Name == "SourceWindowVm")
+        {
+            return "наверху";
+        }
+
+        IEnumerable<NodeVm> inside = node switch
+        {
+            QuoteVm quote => quote.Blocks,
+            CalloutVm callout => callout.Blocks,
+            DetailsVm details => details.Blocks,
+            ListVm list => list.Items,
+            ListItemVm item => item.Blocks,
+            _ => []
+        };
+        if (WindowPlace(inside) is { } place)
+        {
+            var here = node.GetType().Name[..^2];
+            return place == "наверху" ? $"в {here}" : $"в {here} › {place[2..]}";
+        }
+    }
+
+    return null;
 }
 
 static string FoldLines(MarkdownViewer viewer)

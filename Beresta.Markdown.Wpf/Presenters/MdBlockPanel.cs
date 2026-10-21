@@ -11,8 +11,8 @@ using ViewModels;
 /// <summary>
 /// The vertical panel of the blocks of a document: creates only the blocks that fall into the
 /// visible area of the scrolling ancestors and gives the rest room by a known or estimated height;
-/// the element a derived viewer puts in place of blocks is created wherever it stands. Heights are
-/// remembered by the ids of blocks, so a new text keeps them.
+/// the element a derived viewer puts in place of blocks, and the block it stands in, are created
+/// wherever they stand. Heights are remembered by the ids of blocks, so a new text keeps them.
 /// </summary>
 public sealed class MdBlockPanel : VirtualizingPanel
 {
@@ -45,6 +45,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
     private bool _keysChanged = true;
     private bool _hasGaps;
     private int _pinned = -1;
+    private int _windowVersion = -1;
     private bool _hold;
     private (HeightKey Key, int Index, double Top, double ViewportTop)? _anchor;
 
@@ -136,6 +137,15 @@ public sealed class MdBlockPanel : VirtualizingPanel
         _ = InternalChildren;
 
         var owner = ItemsControl.GetItemsOwner(this);
+
+        // BYDESIGN: элемент, заменённый при живом контейнере, WPF привязывает к прежнему контейнеру без
+        // события о смене элементов — а окно могло встать внутрь него или уйти; это ловит номер раскладки.
+        if (FindViewer() is { } viewer && viewer.WindowVersion != _windowVersion)
+        {
+            _windowVersion = viewer.WindowVersion;
+            _keysChanged = true;
+        }
+
         UpdateKeys(owner);
         UpdateOffsets();
 
@@ -539,6 +549,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
         }
 
         var gaps = GetValue(GapsProperty) as GapLayout ?? GapLayout.Empty;
+        var viewer = FindViewer();
         _hasGaps = false;
         _pinned = -1;
         _measuredSum = 0;
@@ -557,7 +568,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
             _after[i] = gaps.After(item);
             _inside[i] = gaps.Inside(item);
             _hasGaps |= _before[i] > 0 || _after[i] > 0;
-            if (item is SourceWindowVm)
+            if (item is SourceWindowVm || viewer?.HoldsWindow(item) == true)
             {
                 _pinned = i;
             }

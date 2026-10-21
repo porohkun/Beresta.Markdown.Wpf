@@ -1,6 +1,7 @@
 ﻿namespace Beresta.Markdown.Wpf.Editor;
 
 using System.ComponentModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -74,6 +75,7 @@ public sealed class MarkdownEditor : MarkdownViewer
     private readonly DispatcherTimer _autoScroll;
     private readonly Dictionary<string, LookStyle> _styles = [];
     private SourceLookIndex? _look;
+    private List<(int FirstLine, int LastLine)> _windowContainers = [];
     private TextDocument _document;
     private (string Text, ITextSourceVersion Version)? _given;
     private bool _dirty;
@@ -1042,23 +1044,40 @@ public sealed class MarkdownEditor : MarkdownViewer
     }
 
     /// <summary>
-    /// Строки документа блоков верхнего уровня последнего разбора, задевающих строки документа:
-    /// блоки целиком, с соседними строками, которых вьюер не рисует.
+    /// Строки документа правимых единиц последнего разбора, задевающих строки документа: на самом
+    /// глубоком уровне, общем для первой и последней строки, единицы целиком, с соседними строками,
+    /// которых вьюер не рисует, а наверху — и до краёв текста.
     /// </summary>
     private (int First, int Last) BlockLines((int First, int Last) lines)
     {
-        var spans = TopBlockSpans;
+        var shownFirst = ToShownLine(lines.First);
+        var shownLast = ToShownLine(lines.Last);
+        var (level, top) = CommonLevel(SourceLevelsAt(shownFirst), SourceLevelsAt(shownLast));
+        var spans = level.Units;
         if (spans.Count == 0)
         {
             return lines;
         }
 
-        var shown = ShownMarkdown;
-        var first = BlockAt(spans, ToShownLine(lines.First));
-        var last = BlockAt(spans, ToShownLine(lines.Last));
-        var start = Math.Min(first > 0 ? spans[first - 1].EndLine + 1 : 0, spans[first].StartLine);
-        var end = Math.Max(last + 1 < spans.Count ? spans[last + 1].StartLine - 1 : _shownLines.Count(shown) - 1, spans[last].EndLine);
+        var first = BlockAt(spans, shownFirst);
+        var last = BlockAt(spans, shownLast);
+        var lower = top ? 0 : spans[0].StartLine;
+        var upper = top ? _shownLines.Count(ShownMarkdown) - 1 : spans[^1].EndLine;
+        var start = Math.Min(first > 0 ? spans[first - 1].EndLine + 1 : lower, spans[first].StartLine);
+        var end = Math.Max(last + 1 < spans.Count ? spans[last + 1].StartLine - 1 : upper, spans[last].EndLine);
         return (Math.Min(lines.First, ToDocumentLine(start)), Math.Max(lines.Last, DocumentLineOfEnd(end)));
+    }
+
+    /// <summary>Самый глубокий уровень единиц, общий для двух строк, и верхний ли он.</summary>
+    private static (MdSourceLevel Level, bool Top) CommonLevel(IReadOnlyList<MdSourceLevel> first, IReadOnlyList<MdSourceLevel> last)
+    {
+        var depth = 0;
+        while (depth + 1 < first.Count && depth + 1 < last.Count && first[depth + 1].Container == last[depth + 1].Container)
+        {
+            depth++;
+        }
+
+        return (first[depth], depth == 0);
     }
 
     /// <summary>
@@ -1108,7 +1127,57 @@ public sealed class MarkdownEditor : MarkdownViewer
         var start = _versions.ToText(shown, _document.GetLineByNumber(first).Offset, _document, AnchorMovementType.AfterInsertion);
         var end = _versions.ToText(shown, _document.GetLineByNumber(last).EndOffset, _document, AnchorMovementType.BeforeInsertion);
         var shownFirst = _shownLines.LineAt(shown, start);
-        SetSourceWindow(shownFirst, Math.Max(shownFirst, _shownLines.LineAt(shown, end)), _window.Element, _window);
+        var shownLast = Math.Max(shownFirst, _shownLines.LineAt(shown, end));
+        PlaceInside(shownFirst, shownLast);
+        SetSourceWindow(shownFirst, shownLast, _window.Element, _window);
+    }
+
+    /// <summary>
+    /// Окно внутри контейнеров: их полосы исходник не рисует — они нарисованы вокруг, а внутри пункта
+    /// окно сдвигается влево на отступ, который пункт рисует сам.
+    /// </summary>
+    private void PlaceInside(int shownFirst, int shownLast)
+    {
+        var first = SourceLevelsAt(shownFirst);
+        var last = SourceLevelsAt(shownLast);
+        var depth = 0;
+        while (depth + 1 < first.Count && depth + 1 < last.Count && first[depth + 1].Container == last[depth + 1].Container)
+        {
+            depth++;
+        }
+
+        _windowContainers = first
+            .Skip(1)
+            .Take(depth)
+            .Select(level => (level.Container.StartLine, level.Container.EndLine))
+            .ToList();
+        var indent = first
+            .Take(depth + 1)
+            .Max(level => level.Indent);
+        _window.Element.Margin = new(-IndentWidth(shownFirst, indent), 0, 0, 0);
+    }
+
+    /// <summary>Ширина первых знаков строки показанного текста шрифтом AvalonEdit.</summary>
+    private double IndentWidth(int shownLine, int indent)
+    {
+        var shown = ShownMarkdown;
+        var start = _shownLines.StartOf(shown, shownLine);
+        var length = Math.Min(indent, _shownLines.EndOf(shown, shownLine) - start);
+        if (length <= 0)
+        {
+            return 0;
+        }
+
+        var typeface = new Typeface(_editor.FontFamily, _editor.FontStyle, _editor.FontWeight, _editor.FontStretch);
+        return new FormattedText(
+                shown.Substring(start, length),
+                CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight,
+                typeface,
+                _editor.FontSize,
+                Brushes.Black,
+                VisualTreeHelper.GetDpi(this).PixelsPerDip)
+            .WidthIncludingTrailingWhitespace;
     }
 
     /// <summary>Окно закрывается: блоки снова нарисованы, набранное уходит в текст.</summary>
@@ -1237,7 +1306,9 @@ public sealed class MarkdownEditor : MarkdownViewer
     private IEnumerable<LookStyle> LooksAt(int line)
     {
         var look = _look ??= new(GetSourceLook(), ShownMarkdown, _shownLines);
-        return look.LooksAt(ToShownLine(line)).Select(StyleOf);
+        return look.LooksAt(ToShownLine(line))
+            .Where(entry => !_windowContainers.Contains((entry.FirstLine, entry.LastLine)))
+            .Select(entry => StyleOf(entry.Look));
     }
 
     /// <summary>Шрифт и цвета вида по ключам темы — один раз на разбор.</summary>

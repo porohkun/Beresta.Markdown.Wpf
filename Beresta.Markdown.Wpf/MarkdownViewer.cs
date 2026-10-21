@@ -329,6 +329,7 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     private List<int>? _lineStarts;
     private (int FirstLine, int LastLine, FrameworkElement Element, IMdSourceRows Rows)? _windowRequest;
     private SourceWindowVm? _window;
+    private readonly HashSet<long> _windowPath = [];
     private MarkdownPipeline? _pipeline;
     private Task<ParsedDocument>? _parsing;
     private bool _rebuildQueued;
@@ -622,6 +623,12 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     internal MdLineGutter? Gutter { get; private set; }
 
     internal MdRowMarks? RowMarks { get; private set; }
+
+    /// <summary>Окно наследника, которое стоит в документе; окна нет — <c>null</c>.</summary>
+    internal SourceWindowVm? ShownWindow => _window;
+
+    /// <summary>Номер раскладки блоков с окном: меняется с каждой новой, и панели заново ищут, что держать созданным.</summary>
+    internal int WindowVersion { get; private set; }
 
     /// <summary>
     /// Places of the top-level blocks of the last parse, the blocks under the element of
@@ -1012,10 +1019,11 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     }
 
     /// <summary>
-    /// Puts an element of the derived control into the document in place of the top-level blocks on
-    /// the source lines from <paramref name="firstLine"/> to <paramref name="lastLine"/>, counting
-    /// from zero; a block that sticks out of these lines goes under the element as a whole.
-    /// <paramref name="rows"/> tells where the lines are inside the element.
+    /// Puts an element of the derived control into the document in place of the blocks on the source
+    /// lines from <paramref name="firstLine"/> to <paramref name="lastLine"/>, counting from zero: on the
+    /// deepest level of <see cref="SourceLevelsAt"/> where the lines lie on units of one container; a
+    /// block that sticks out of these lines goes under the element as a whole. <paramref name="rows"/>
+    /// tells where the lines are inside the element.
     /// </summary>
     protected void SetSourceWindow(int firstLine, int lastLine, FrameworkElement element, IMdSourceRows rows)
     {
@@ -1056,7 +1064,33 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     /// Keeps the element of <see cref="SetSourceWindow"/> where it stands on the screen while heights
     /// in the document change, until someone else scrolls.
     /// </summary>
-    protected void HoldSourceWindow() => BlockPanel?.HoldWindow();
+    protected void HoldSourceWindow()
+    {
+        if (_window?.Element is not { } element || !element.IsDescendantOf(this))
+        {
+            BlockPanel?.HoldWindow();
+            return;
+        }
+
+        for (var node = VisualTreeHelper.GetParent(element); node is not null && !ReferenceEquals(node, this); node = VisualTreeHelper.GetParent(node))
+        {
+            if (node is MdBlockPanel panel)
+            {
+                panel.HoldWindow();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Levels of editable units around a source line, from the top one to the deepest: at the top —
+    /// the blocks; inside a quote, a callout and a collapsible block — their blocks; in a list — its
+    /// items; in an item — its blocks after the first one. A collapsed block is not entered.
+    /// </summary>
+    protected IReadOnlyList<MdSourceLevel> SourceLevelsAt(int line)
+    {
+        var starts = _lineStarts ??= ModelBuilder.FindLineStarts(Source);
+        return SourceUnits.LevelsAt(_parsedBlocks, line, new(0, Source.Length, 0, Math.Max(0, starts.Count - 1)), starts, IsFolded);
+    }
 
     /// <summary>A new parse has been laid on the document: its blocks, text map and <see cref="TopBlockSpans"/>.</summary>
     protected virtual void OnDocumentApplied()
@@ -1758,7 +1792,9 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     private void ShowBlocks()
     {
         _window = _windowRequest is { } request ? WindowOf(request.FirstLine, request.LastLine, request.Element, request.Rows) : null;
+        WindowVersion++;
         _blocks.Apply(WithWindow(_parsedBlocks));
+        BlockPanel?.InvalidateMeasure();
         UpdateGapLayout();
     }
 
@@ -1778,41 +1814,18 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
             : new SourceWindowVm(element, rows) { NodeId = SourceWindowVm.Id, Source = span };
     }
 
-    /// <summary>Блоки с окном вместо тех, что задевают его строки; окно встаёт на место первого из них.</summary>
+    /// <summary>Блоки с окном на самом глубоком уровне, где оно укладывается в единицы одного контейнера.</summary>
     private IReadOnlyList<BlockVm> WithWindow(IReadOnlyList<BlockVm> blocks)
     {
-        if (_window is not { } window)
-        {
-            return blocks;
-        }
-
-        var (first, last) = (window.Source.StartLine, window.Source.EndLine);
-        var shown = new List<BlockVm>(blocks.Count + 1);
-        var placed = false;
-        foreach (var block in blocks)
-        {
-            var source = block.Source;
-            var below = !source.IsEmpty && source.StartLine > last;
-            var under = !source.IsEmpty && !below && source.EndLine >= first;
-            if ((under || below) && !placed)
-            {
-                shown.Add(window);
-                placed = true;
-            }
-
-            if (!under)
-            {
-                shown.Add(block);
-            }
-        }
-
-        if (!placed)
-        {
-            shown.Add(window);
-        }
-
-        return shown;
+        _windowPath.Clear();
+        return _window is { } window ? SourceUnits.Place(blocks, window, IsFolded, _windowPath) : blocks;
     }
+
+    /// <summary>Свёрнутый блок: внутрь него окно не встаёт.</summary>
+    private bool IsFolded(NodeVm node) => _states.StateOf(node) is MdFoldState { IsExpanded: false };
+
+    /// <summary>Элемент списка блоков стоит на пути к окну: его контейнер держится созданным.</summary>
+    internal bool HoldsWindow(object item) => item is NodeVm { NodeId: not 0 } node && _windowPath.Contains(node.NodeId);
 
     /// <summary>Разобранный текст: блоки, front matter, текстовая карта, сбои разбора и какое расширение создало какую вьюмодель.</summary>
     private sealed record ParsedDocument(IReadOnlyList<BlockVm> Blocks, string? FrontMatter, MdTextMap TextMap, string Markdown)
