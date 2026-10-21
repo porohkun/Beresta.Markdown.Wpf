@@ -141,7 +141,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
 
         var constraint = new Size(availableSize.Width, double.PositiveInfinity);
 
-        // Окно создаётся раньше остальных: его высота нужна якорю, где бы окно ни стояло
+        // BYDESIGN: окно создаётся раньше остальных — его высота нужна якорю, где бы окно ни стояло
         if (_pinned >= 0)
         {
             Realize(_pinned, _pinned, constraint);

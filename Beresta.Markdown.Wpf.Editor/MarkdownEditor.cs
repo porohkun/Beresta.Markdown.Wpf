@@ -347,7 +347,7 @@ public sealed class MarkdownEditor : MarkdownViewer
             return;
         }
 
-        // Щелчок по документу, который правится, переносит фокус в редактор: Ctrl+Z отменяет щелчок по флажку
+        // Щелчок по документу, который правится, переносит фокус в редактор
         if (EditMode != MdEditMode.View && !IsKeyboardFocusWithin)
         {
             Focus();

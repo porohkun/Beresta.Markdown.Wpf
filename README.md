@@ -1,4 +1,4 @@
-﻿# Beresta.Markdown.Wpf v0.8.0
+﻿# Beresta.Markdown.Wpf v0.9.0
 
 [![NuGet](https://img.shields.io/nuget/v/Beresta.Markdown.Wpf)](https://www.nuget.org/packages/Beresta.Markdown.Wpf)
 [![Downloads](https://img.shields.io/nuget/dt/Beresta.Markdown.Wpf)](https://www.nuget.org/packages/Beresta.Markdown.Wpf)
@@ -11,7 +11,8 @@
 A fast native Markdown viewer for WPF, with no browser and no FlowDocument inside: documents are drawn
 with real WPF controls and templates. It virtualizes huge documents, updates live for previews and
 streamed chat answers, lets you select text across blocks, and is fully themeable and extensible.
-[Markdig](https://github.com/xoofx/markdig) parses the text.
+[Markdig](https://github.com/xoofx/markdig) parses the text. The second package,
+`Beresta.Markdown.Wpf.Editor`, edits the source right where it is drawn.
 
 ![The viewer in the showcase theme](https://raw.githubusercontent.com/wiki/porohkun/Beresta.Markdown.Wpf/images/overview.png)
 
@@ -31,6 +32,8 @@ streamed chat answers, lets you select text across blocks, and is fully themeabl
 - **Many Markdown elements, only the ones you need.** CommonMark, Markdig extensions and HTML from
   READMEs out of the box; the syntax of GitHub, GitLab, Obsidian, MkDocs, Docusaurus, HackMD and chats
   as ready-made extensions, one by one or as sets — [Supported Markdown](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Supported-Markdown).
+- **An editor in the same drawing.** The blocks under the caret show their Markdown in AvalonEdit, the
+  rest of the document stays drawn — [Editor](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor).
 
 ## Install
 
@@ -96,6 +99,31 @@ root element):
 </md:MarkdownViewer>
 ```
 
+## Edit Markdown
+
+The second package edits the source right where it is drawn. It brings the viewer of the same version
+and AvalonEdit.
+
+```bash
+dotnet add package Beresta.Markdown.Wpf.Editor
+```
+
+`App.xaml`, after the theme of the viewer:
+
+```xml
+<ResourceDictionary Source="pack://application:,,,/Beresta.Markdown.Wpf.Editor;component/Themes/Generic.xaml" />
+```
+
+`MainWindow.xaml`:
+
+```xml
+<ScrollViewer>
+    <md:MarkdownEditor Markdown="{Binding Text, Mode=TwoWay}" EditMode="Blocks" Margin="24,16" />
+</ScrollViewer>
+```
+
+Modes, keys, undo and front matter — [Editor](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor).
+
 ## Documentation
 
 The [wiki](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki) describes every feature with a working example; all settings and hooks are
@@ -123,6 +151,7 @@ on one page, [Settings and Hooks](https://github.com/porohkun/Beresta.Markdown.W
   [Source Lines and Two Panes](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Source-Lines-and-Two-Panes),
   [Coordinates](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Coordinates),
   [Live Preview](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Live-Preview).
+- **Editing:** [Editor](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor).
 - **Your own syntax:** [Extensions](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Extensions).
 - **Ready-made extensions:** [Sets](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Kit-Sets),
   [Callouts and Collapsibles](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Kit-Callouts),

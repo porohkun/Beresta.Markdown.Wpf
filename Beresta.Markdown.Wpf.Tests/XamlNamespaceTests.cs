@@ -31,6 +31,18 @@ public sealed class XamlNamespaceTests
     }
 
     [Fact]
+    public void Редактор_в_том_же_пространстве_XAML_без_повторов_имён()
+    {
+        var editor = typeof(Editor.MarkdownEditor).Assembly;
+        var viewerNames = typeof(MarkdownViewer).Assembly.GetExportedTypes().Select(type => type.Name).ToHashSet();
+
+        editor.GetCustomAttributes<XmlnsDefinitionAttribute>()
+            .Should().ContainSingle(attribute => attribute.XmlNamespace == Uri && attribute.ClrNamespace == "Beresta.Markdown.Wpf.Editor");
+        editor.GetExportedTypes().Select(type => type.Name).Should().NotContain(viewerNames);
+        WpfHost.Invoke(() => XamlReader.Parse($"""<md:MarkdownEditor xmlns:md="{Uri}" EditMode="Blocks" />""").Should().BeOfType<Editor.MarkdownEditor>());
+    }
+
+    [Fact]
     public void Разметка_с_одним_пространством_разбирается()
     {
         WpfHost.Invoke(() =>

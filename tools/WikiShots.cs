@@ -18,6 +18,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Beresta.Markdown.Wpf;
+using Beresta.Markdown.Wpf.Editor;
 using Beresta.Markdown.Wpf.Extensions;
 using Beresta.Markdown.Wpf.Kit;
 using Beresta.Markdown.Wpf.Scrolling;
@@ -382,6 +383,52 @@ var thread = new Thread(() =>
                         .Select(line => new MdMark(line, line) { Style = "Comment" })
                         .ToList()
                 });
+            });
+        }
+
+        // Редактор: блочный режим с курсором в абзаце, весь текст и «только контролы» с полями карточки
+        var notes = L("""
+            ---
+            title: Release notes
+            tags: [editor, markdown]
+            ---
+
+            ## What's new
+
+            The **editor** shows the block under the caret as its source,
+            and the rest of the document stays drawn.
+
+            - [x] Blocks under the caret
+            - [ ] The whole text in place
+            """, """
+            ---
+            title: Заметки к выпуску
+            tags: [редактор, markdown]
+            ---
+
+            ## Что нового
+
+            **Редактор** показывает блок под курсором исходником,
+            а остальной документ остаётся нарисованным.
+
+            - [x] Блоки под курсором
+            - [ ] Весь текст на месте
+            """).ReplaceLineEndings("\n");
+        foreach (var (name, mode) in new[] { ("editor-blocks.png", MdEditMode.Blocks), ("editor-full.png", MdEditMode.Full), ("editor-controls.png", MdEditMode.Controls) })
+        {
+            if (!Wanted(name))
+            {
+                continue;
+            }
+
+            var editor = new MarkdownEditor { Markdown = notes, EditMode = mode };
+            editor.Extensions.Add(new PropertiesCard());
+            Shot(russian, name, editor, 640, () =>
+            {
+                if (mode == MdEditMode.Blocks)
+                {
+                    editor.SourceCaretOffset = notes.IndexOf(L("The **editor**", "**Редактор**"), StringComparison.Ordinal) + 4;
+                }
             });
         }
 
