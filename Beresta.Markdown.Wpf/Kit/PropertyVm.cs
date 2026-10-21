@@ -17,6 +17,21 @@ public sealed record PropertyVm(IReadOnlyList<InlineVm> Key, IReadOnlyList<Inlin
     /// </summary>
     public MdSourceSpan ValueSource { get; init; }
 
+    /// <summary>The type of the value: the field of the application or the guess by the value.</summary>
+    public MdPropertyType Type { get; init; } = MdPropertyType.Text;
+
+    /// <summary>The items of a <see cref="MdPropertyType.List"/> value; other values — empty.</summary>
+    public IReadOnlyList<string> Items { get; init; } = [];
+
+    /// <summary>A <see cref="MdPropertyType.Bool"/> value is on: <c>true</c>, <c>yes</c> or <c>on</c>.</summary>
+    public bool IsChecked { get; init; }
+
+    /// <summary>The date of a <see cref="MdPropertyType.Date"/> value; not a date — <c>null</c>.</summary>
+    public DateTime? Date { get; init; }
+
     /// <summary>Место и запись значения для правки; значение, которое только показывается, — <c>null</c>.</summary>
     internal FrontMatterValue? Place { get; init; }
+
+    /// <summary>Ключ текстом, как в front matter без кавычек.</summary>
+    internal string KeyText { get; init; } = string.Empty;
 }

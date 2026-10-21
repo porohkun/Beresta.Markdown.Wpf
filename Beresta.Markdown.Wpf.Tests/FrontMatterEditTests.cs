@@ -19,14 +19,9 @@ public sealed class FrontMatterEditTests
     [InlineData("title: Hello", " padded", "title: \" padded\"")]
     [InlineData("title: Hello", "true", "title: \"true\"")]
     [InlineData("title: Hello", "42", "title: \"42\"")]
-    [InlineData("flag: true", "false", "flag: false")]
     [InlineData("count: 1", "2", "count: 2")]
     [InlineData("title: 'Hello'", "It's", "title: 'It''s'")]
     [InlineData("title: \"Hello\"", "say \"hi\" \\o/", "title: \"say \\\"hi\\\" \\\\o/\"")]
-    [InlineData("tags: [a, b]", "a, c, d", "tags: [a, c, d]")]
-    [InlineData("tags: [a, b]", "a, x: y", "tags: [a, \"x: y\"]")]
-    [InlineData("tags:\n  - a\n  - b", "x, y", "tags:\n  - x\n  - y")]
-    [InlineData("tags:\n- a", "x, y", "tags:\n- x\n- y")]
     public void Поле_пишет_значение_тем_же_видом(string property, string value, string expected)
     {
         WpfHost.Invoke(() =>

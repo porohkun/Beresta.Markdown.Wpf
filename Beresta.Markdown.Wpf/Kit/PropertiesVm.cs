@@ -6,6 +6,9 @@ using ViewModels;
 /// <summary>The properties card: front matter as «key — value» rows.</summary>
 public sealed record PropertiesVm(IReadOnlyList<PropertyVm> Items) : BlockVm, IMdTextSource
 {
+    /// <summary>The keys the row that adds a property suggests: the fields of the application not in the card yet.</summary>
+    public IReadOnlyList<string> Suggestions { get; init; } = [];
+
     /// <inheritdoc/>
     public void WriteText(MdTextWriter writer)
     {

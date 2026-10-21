@@ -1,6 +1,8 @@
 ﻿---
 title: Editing in place
 tags: [markdown, editor]
+draft: false
+date: 2026-10-22
 ---
 
 # Editing in place

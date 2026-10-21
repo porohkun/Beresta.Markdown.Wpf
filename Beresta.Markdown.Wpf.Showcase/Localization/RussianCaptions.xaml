@@ -23,5 +23,8 @@
     <sys:String x:Key="Md.Callout.Bug.Title">Ошибка</sys:String>
     <sys:String x:Key="Md.Callout.Example.Title">Пример</sys:String>
     <sys:String x:Key="Md.Callout.Quote.Title">Цитата</sys:String>
+    <sys:String x:Key="Md.Properties.Remove">Убрать</sys:String>
+    <sys:String x:Key="Md.Properties.Add">Добавить свойство</sys:String>
+    <sys:String x:Key="Md.Properties.AddItem">Добавить пункт</sys:String>
 
 </ResourceDictionary>

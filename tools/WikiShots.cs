@@ -448,6 +448,24 @@ var thread = new Thread(() =>
             });
         }
 
+        // Карточка свойств по типам: флажок, дата, чипы списка, крестики строк и строка добавления
+        if (Wanted("properties-types.png"))
+        {
+            var card = new PropertiesCard();
+            card.Fields.Add(new MdPropertyField { Key = "author" });
+            var viewer = new MarkdownViewer
+            {
+                Markdown = L(
+                    "---\ntitle: Release notes\ndraft: false\ndate: 2026-10-22\ntags: [release, wpf]\n---\n",
+                    "---\ntitle: Заметки к выпуску\ndraft: false\ndate: 2026-10-22\ntags: [выпуск, wpf]\n---\n"),
+                AreControlsEditable = true,
+                IsFrontMatterEditable = true,
+                Language = XmlLanguage.GetLanguage(russian ? "ru-RU" : "en-US")
+            };
+            viewer.Extensions.Add(card);
+            Shot(russian, "properties-types.png", viewer, 640);
+        }
+
         // Редактор: таблица исходником стоит столбцами
         if (Wanted("editor-table.png"))
         {

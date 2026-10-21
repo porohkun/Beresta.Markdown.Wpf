@@ -978,8 +978,14 @@
             <summary>
             Карточка свойств: front matter в начале документа рисуется таблицей «ключ — значение»; вид —
             шаблон темы <c>Md.Properties.Template</c>. Пока контролы правят исходник и включено
-            <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.IsFrontMatterEditable"/>, плоские значения и простые списки правятся в
-            полях ввода.
+            <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.IsFrontMatterEditable"/>, значения правятся по своему типу, а свойства
+            добавляются и удаляются.
+            </summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.PropertiesCard.Fields">
+            <summary>
+            Свойства, которые знает приложение: их типы сильнее догадки по значению, а их ключи предлагает
+            строка добавления свойства.
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.PropertiesCard.SetupPipeline(Markdig.MarkdownPipelineBuilder)">
@@ -999,6 +1005,9 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.PropertiesVm.#ctor(System.Collections.Generic.IReadOnlyList{Beresta.Markdown.Wpf.Kit.PropertyVm})">
             <summary>Карточка свойств: front matter строками «ключ — значение».</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.PropertiesVm.Suggestions">
+            <summary>Ключи, которые предлагает строка добавления свойства: поля приложения, которых в карточке ещё нет.</summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.PropertiesVm.WriteText(Beresta.Markdown.Wpf.Selection.MdTextWriter)">
             <inheritdoc/>
@@ -1020,6 +1029,59 @@
             Где значение в исходнике: от двоеточия после ключа до конца значения; у значения, которое только
             показывается, — <c>default</c>.
             </summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.PropertyVm.Type">
+            <summary>Тип значения: поле приложения или догадка по значению.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.PropertyVm.Items">
+            <summary>Пункты значения <see cref="P:Beresta.Markdown.Wpf.Kit.MdPropertyType.List"/>; у других значений — пусто.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.PropertyVm.IsChecked">
+            <summary>Значение <see cref="P:Beresta.Markdown.Wpf.Kit.MdPropertyType.Bool"/> включено: <c>true</c>, <c>yes</c> или <c>on</c>.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.PropertyVm.Date">
+            <summary>Дата значения <see cref="P:Beresta.Markdown.Wpf.Kit.MdPropertyType.Date"/>; не дата — <c>null</c>.</summary>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.Kit.MdPropertyType">
+            <summary>
+            Тип значения front matter: как карточка свойств его показывает и правит. Тип <c>X</c> рисуется
+            шаблоном темы <c>Md.Properties.X.Template</c>; тип без шаблона — текстом.
+            </summary>
+            <param name="Name">Имя типа: его шаблон темы — <c>Md.Properties.&lt;Name&gt;.Template</c>.</param>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Kit.MdPropertyType.#ctor(System.String)">
+            <summary>
+            Тип значения front matter: как карточка свойств его показывает и правит. Тип <c>X</c> рисуется
+            шаблоном темы <c>Md.Properties.X.Template</c>; тип без шаблона — текстом.
+            </summary>
+            <param name="Name">Имя типа: его шаблон темы — <c>Md.Properties.&lt;Name&gt;.Template</c>.</param>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.MdPropertyType.Name">
+            <summary>Имя типа: его шаблон темы — <c>Md.Properties.&lt;Name&gt;.Template</c>.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.MdPropertyType.Text">
+            <summary>Текст в поле ввода.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.MdPropertyType.Bool">
+            <summary>Флаг: <c>true</c> и <c>false</c>, <c>yes</c> и <c>no</c>, <c>on</c> и <c>off</c>.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.MdPropertyType.Date">
+            <summary>Дата <c>yyyy-MM-dd</c>.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.MdPropertyType.List">
+            <summary>Список <c>[a, b]</c> или строки <c>- a</c>.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Kit.MdPropertyType.ToString">
+            <inheritdoc/>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.Kit.MdPropertyField">
+            <summary>Свойство, которое знает приложение: его ключ и тип значения.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.MdPropertyField.Key">
+            <summary>Ключ свойства во front matter.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.MdPropertyField.Type">
+            <summary>Тип значения; он сильнее догадки по значению. Нет его — тип угадывается по значению.</summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Kit.MdValueKind">
             <summary>Как записано значение front matter; новое значение пишется так же.</summary>
@@ -2287,6 +2349,48 @@
             <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Presenters.MdTablePresenter.OnCreateAutomationPeer">
+            <inheritdoc/>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.Presenters.MdPropertiesPresenter">
+            <summary>
+            Строки карточки свойств и её строка добавления свойства. Её команды и флажки в её строках пишут в
+            исходник, пока включено <see cref="P:Beresta.Markdown.Wpf.Presenters.MdPropertiesPresenter.IsEditing"/>.
+            </summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Presenters.MdPropertiesPresenter.IsEditingProperty">
+            <summary>Карточка правит исходник: контролы правят исходник, и front matter правится.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Presenters.MdPropertiesPresenter.SetValueCommand">
+            <summary>Пишет текст из параметра значением строки, откуда пришла команда.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Presenters.MdPropertiesPresenter.AddItemCommand">
+            <summary>Добавляет текст из параметра пунктом в список строки, откуда пришла команда.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Presenters.MdPropertiesPresenter.RemoveItemCommand">
+            <summary>Убирает пункт из параметра из списка строки, откуда пришла команда.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Presenters.MdPropertiesPresenter.RemoveCommand">
+            <summary>Удаляет свойство строки, откуда пришла команда, — все его строки.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Presenters.MdPropertiesPresenter.AddCommand">
+            <summary>Добавляет свойство с ключом из параметра перед закрывающей чертой front matter.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Presenters.MdPropertiesPresenter.IsEditing">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.Presenters.MdPropertiesPresenter.IsEditingProperty"/>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.Presenters.MdPropertyValue">
+            <summary>
+            Значение строки карточки свойств: рисуется шаблоном темы своего типа,
+            <c>Md.Properties.&lt;Тип&gt;.Template</c>; тип без шаблона — шаблоном <c>Md.Properties.Text.Template</c>.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Presenters.MdPropertyValue.#ctor">
+            <summary>Создаёт значение; его строка — <see cref="T:Beresta.Markdown.Wpf.Kit.PropertyVm"/> в <see cref="P:System.Windows.Controls.ContentControl.Content"/>.</summary>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.Presenters.MdPropertyDatePicker">
+            <summary>Выбор даты значения в карточке свойств: выбранная дата пишется как <c>yyyy-MM-dd</c>.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Presenters.MdPropertyDatePicker.OnSelectedDateChanged(System.Windows.Controls.SelectionChangedEventArgs)">
             <inheritdoc/>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Presenters.MdPropertyBox">

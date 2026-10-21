@@ -1513,45 +1513,225 @@
            BasedOn="{StaticResource Md.Paragraph.Style}">
         <Setter Property="FontWeight" Value="{DynamicResource Md.Title.FontWeight}" />
     </Style>
+    <!-- Карточка свойств: строки со значением по шаблону его типа, крестик удаления и строка добавления, пока карточка правит исходник -->
+    <Thickness x:Key="Md.Properties.ChipPadding">6,0,2,0</Thickness>
+    <Thickness x:Key="Md.Properties.ChipMargin">0,1,4,1</Thickness>
+    <CornerRadius x:Key="Md.Properties.ChipCornerRadius">8</CornerRadius>
+    <Geometry x:Key="Md.Properties.RemoveIcon">M0,0 L8,8 M8,0 L0,8</Geometry>
+    <sys:Double x:Key="Md.Properties.RemoveIconSize">8</sys:Double>
+    <Thickness x:Key="Md.Properties.RemovePadding">4,0</Thickness>
+    <sys:Double x:Key="Md.Properties.RemoveIconStrokeThickness">1.5</sys:Double>
+    <sys:String x:Key="Md.Properties.Remove">Remove</sys:String>
+    <sys:String x:Key="Md.Properties.Add">Add a property</sys:String>
+    <sys:String x:Key="Md.Properties.AddItem">Add an item</sys:String>
+    <ControlTemplate x:Key="Md.Properties.RemoveTemplate" TargetType="{x:Type Button}">
+        <Border Background="Transparent" Padding="{DynamicResource Md.Properties.RemovePadding}" Cursor="Hand">
+            <Path Data="{DynamicResource Md.Properties.RemoveIcon}"
+                  Stroke="{DynamicResource Md.Figure.CaptionForeground}"
+                  StrokeThickness="{DynamicResource Md.Properties.RemoveIconStrokeThickness}"
+                  Stretch="Uniform"
+                  Width="{DynamicResource Md.Properties.RemoveIconSize}"
+                  Height="{DynamicResource Md.Properties.RemoveIconSize}"
+                  VerticalAlignment="Center" />
+        </Border>
+    </ControlTemplate>
     <DataTemplate x:Key="Md.Properties.Template" DataType="{x:Type kit:PropertiesVm}">
-        <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
-                BorderThickness="{DynamicResource Md.Table.BorderThickness}"
-                Grid.IsSharedSizeScope="True">
+        <p:MdPropertiesPresenter ItemsSource="{Binding Items}" />
+    </DataTemplate>
+    <DataTemplate x:Key="Md.Properties.Text.Template" DataType="{x:Type kit:PropertyVm}">
+        <Grid>
+            <p:MdTextBlock x:Name="ValueText" Runs="{Binding Value}" Style="{DynamicResource Md.Paragraph.Style}" />
+            <p:MdPropertyBox x:Name="ValueBox" Visibility="Collapsed" />
+        </Grid>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding IsActive, ElementName=ValueBox}" Value="True">
+                <Setter TargetName="ValueText" Property="Visibility" Value="Collapsed" />
+                <Setter TargetName="ValueBox" Property="Visibility" Value="Visible" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+    <DataTemplate x:Key="Md.Properties.Bool.Template" DataType="{x:Type kit:PropertyVm}">
+        <CheckBox IsChecked="{Binding IsChecked, Mode=OneWay}"
+                  IsEnabled="{Binding IsEditing, RelativeSource={RelativeSource AncestorType={x:Type p:MdPropertiesPresenter}}}"
+                  HorizontalAlignment="Left"
+                  VerticalAlignment="Center" />
+    </DataTemplate>
+    <DataTemplate x:Key="Md.Properties.Date.Template" DataType="{x:Type kit:PropertyVm}">
+        <Grid>
+            <p:MdTextBlock x:Name="DateText" Runs="{Binding Value}" Style="{DynamicResource Md.Paragraph.Style}" />
+            <p:MdPropertyDatePicker x:Name="DatePicker" SelectedDate="{Binding Date, Mode=OneWay}" HorizontalAlignment="Left" Visibility="Collapsed" />
+        </Grid>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding IsEditing, RelativeSource={RelativeSource AncestorType={x:Type p:MdPropertiesPresenter}}}" Value="True">
+                <Setter TargetName="DateText" Property="Visibility" Value="Collapsed" />
+                <Setter TargetName="DatePicker" Property="Visibility" Value="Visible" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+    <DataTemplate x:Key="Md.Properties.List.Template" DataType="{x:Type kit:PropertyVm}">
+        <WrapPanel>
             <ItemsControl ItemsSource="{Binding Items}" Focusable="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type kit:PropertyVm}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" SharedSizeGroup="MdPropertyKey" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
-                                    BorderThickness="{DynamicResource Md.Table.BorderThickness}"
-                                    Padding="{DynamicResource Md.Table.CellPadding}"
-                                    Background="{DynamicResource Md.Table.HeaderBackground}">
-                                <p:MdTextBlock Runs="{Binding Key}" Style="{DynamicResource Md.Properties.KeyStyle}" />
-                            </Border>
-                            <Border Grid.Column="1"
-                                    BorderBrush="{DynamicResource Md.Table.BorderBrush}"
-                                    BorderThickness="{DynamicResource Md.Table.BorderThickness}"
-                                    Padding="{DynamicResource Md.Table.CellPadding}">
-                                <Grid>
-                                    <p:MdTextBlock x:Name="ValueText" Runs="{Binding Value}" Style="{DynamicResource Md.Paragraph.Style}" />
-                                    <p:MdPropertyBox x:Name="ValueBox" Visibility="Collapsed" />
-                                </Grid>
-                            </Border>
-                        </Grid>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource Md.Chip.Background}"
+                                CornerRadius="{DynamicResource Md.Properties.ChipCornerRadius}"
+                                Padding="{DynamicResource Md.Properties.ChipPadding}"
+                                Margin="{DynamicResource Md.Properties.ChipMargin}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding}" VerticalAlignment="Center" />
+                                <Button x:Name="Remove"
+                                        Style="{x:Null}"
+                                        OverridesDefaultStyle="True"
+                                        Focusable="False"
+                                        Template="{DynamicResource Md.Properties.RemoveTemplate}"
+                                        Command="{x:Static p:MdPropertiesPresenter.RemoveItemCommand}"
+                                        CommandParameter="{Binding}"
+                                        ToolTip="{DynamicResource Md.Properties.Remove}"
+                                        AutomationProperties.Name="{DynamicResource Md.Properties.Remove}"
+                                        Visibility="Collapsed" />
+                            </StackPanel>
+                        </Border>
                         <DataTemplate.Triggers>
-                            <DataTrigger Binding="{Binding IsActive, ElementName=ValueBox}" Value="True">
-                                <Setter TargetName="ValueText" Property="Visibility" Value="Collapsed" />
-                                <Setter TargetName="ValueBox" Property="Visibility" Value="Visible" />
+                            <DataTrigger Binding="{Binding IsEditing, RelativeSource={RelativeSource AncestorType={x:Type p:MdPropertiesPresenter}}}" Value="True">
+                                <Setter TargetName="Remove" Property="Visibility" Value="Visible" />
                             </DataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-        </Border>
+            <TextBox x:Name="NewItem"
+                     MinWidth="80"
+                     VerticalAlignment="Center"
+                     ToolTip="{DynamicResource Md.Properties.AddItem}"
+                     AutomationProperties.Name="{DynamicResource Md.Properties.AddItem}"
+                     Visibility="Collapsed">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{x:Static p:MdPropertiesPresenter.AddItemCommand}" CommandParameter="{Binding Text, ElementName=NewItem}" />
+                </TextBox.InputBindings>
+            </TextBox>
+        </WrapPanel>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding IsEditing, RelativeSource={RelativeSource AncestorType={x:Type p:MdPropertiesPresenter}}}" Value="True">
+                <Setter TargetName="NewItem" Property="Visibility" Value="Visible" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
     </DataTemplate>
+    <Style TargetType="{x:Type p:MdPropertiesPresenter}">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="ItemTemplate">
+            <Setter.Value>
+                <DataTemplate DataType="{x:Type kit:PropertyVm}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="MdPropertyKey" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                                BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                                Padding="{DynamicResource Md.Table.CellPadding}"
+                                Background="{DynamicResource Md.Table.HeaderBackground}">
+                            <p:MdTextBlock Runs="{Binding Key}" Style="{DynamicResource Md.Properties.KeyStyle}" />
+                        </Border>
+                        <Border Grid.Column="1"
+                                BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                                BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                                Padding="{DynamicResource Md.Table.CellPadding}">
+                            <DockPanel>
+                                <Button x:Name="Remove"
+                                        DockPanel.Dock="Right"
+                                        Style="{x:Null}"
+                                        OverridesDefaultStyle="True"
+                                        Focusable="False"
+                                        Template="{DynamicResource Md.Properties.RemoveTemplate}"
+                                        Command="{x:Static p:MdPropertiesPresenter.RemoveCommand}"
+                                        ToolTip="{DynamicResource Md.Properties.Remove}"
+                                        AutomationProperties.Name="{DynamicResource Md.Properties.Remove}"
+                                        Visibility="Collapsed" />
+                                <p:MdPropertyValue Content="{Binding}" />
+                            </DockPanel>
+                        </Border>
+                    </Grid>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsEditing, RelativeSource={RelativeSource AncestorType={x:Type p:MdPropertiesPresenter}}}" Value="True">
+                            <Setter TargetName="Remove" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type p:MdPropertiesPresenter}">
+                    <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                            BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                            Grid.IsSharedSizeScope="True">
+                        <StackPanel>
+                            <ItemsPresenter />
+                            <Grid x:Name="AddRow" Visibility="Collapsed">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="MdPropertyKey" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                                        BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                                        Padding="{DynamicResource Md.Table.CellPadding}"
+                                        Background="{DynamicResource Md.Table.HeaderBackground}">
+                                    <ComboBox x:Name="PART_NewKey"
+                                              IsEditable="True"
+                                              MinWidth="100"
+                                              ItemsSource="{Binding Suggestions}"
+                                              ToolTip="{DynamicResource Md.Properties.Add}"
+                                              AutomationProperties.Name="{DynamicResource Md.Properties.Add}">
+                                        <ComboBox.InputBindings>
+                                            <KeyBinding Key="Enter" Command="{x:Static p:MdPropertiesPresenter.AddCommand}" CommandParameter="{Binding Text, ElementName=PART_NewKey}" />
+                                        </ComboBox.InputBindings>
+                                    </ComboBox>
+                                </Border>
+                                <Border Grid.Column="1"
+                                        BorderBrush="{DynamicResource Md.Table.BorderBrush}"
+                                        BorderThickness="{DynamicResource Md.Table.BorderThickness}"
+                                        Padding="{DynamicResource Md.Table.CellPadding}">
+                                    <Button Style="{x:Null}"
+                                            OverridesDefaultStyle="True"
+                                            Focusable="False"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Cursor="Hand"
+                                            Command="{x:Static p:MdPropertiesPresenter.AddCommand}"
+                                            CommandParameter="{Binding Text, ElementName=PART_NewKey}"
+                                            Content="{DynamicResource Md.Properties.Add}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="{x:Type Button}">
+                                                <TextBlock Text="{TemplateBinding Content}" Foreground="{DynamicResource Md.Paragraph.LinkForeground}" Background="Transparent" />
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEditing" Value="True">
+                            <Setter TargetName="AddRow" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsEditing" Value="False" />
+                                <Condition Property="HasItems" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
     <Style TargetType="{x:Type p:MdBlockItem}">
         <Setter Property="Focusable" Value="False" />

@@ -57,7 +57,14 @@
                                 EditMode="{Binding Mode}"
                                 Margin="24,16">
                 <mde:MarkdownEditor.Extensions>
-                    <md:PropertiesCard />
+                    <md:PropertiesCard>
+                        <md:PropertiesCard.Fields>
+                            <md:MdPropertyField Key="tags" Type="List" />
+                            <md:MdPropertyField Key="draft" Type="Bool" />
+                            <md:MdPropertyField Key="date" Type="Date" />
+                            <md:MdPropertyField Key="author" />
+                        </md:PropertiesCard.Fields>
+                    </md:PropertiesCard>
                     <md:TaskStatuses />
                     <md:ObsidianCallouts />
                     <md:WikiLinks />

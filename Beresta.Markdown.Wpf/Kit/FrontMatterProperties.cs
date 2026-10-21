@@ -75,6 +75,73 @@ internal static partial class FrontMatterProperties
         return value is null ? null : new MdSourceEdit(span.Start, span.Length, value);
     }
 
+    /// <summary>Тип значения по записи: список, простой флаг, дата <c>yyyy-MM-dd</c>; остальное — текст.</summary>
+    public static MdPropertyType TypeOf(FrontMatterValue place, string value)
+        => place.Kind is MdValueKind.FlowList or MdValueKind.BlockList ? MdPropertyType.List
+            : place.Kind == MdValueKind.Plain && Flag(place.Raw) is not null ? MdPropertyType.Bool
+            : DateOf(value) is not null ? MdPropertyType.Date
+            : MdPropertyType.Text;
+
+    /// <summary>Флаг включён: <c>true</c>, <c>yes</c> или <c>on</c> в любом регистре.</summary>
+    public static bool IsOn(string value) => Flag(value) == true;
+
+    /// <summary>Дата <c>yyyy-MM-dd</c>; не дата — <c>null</c>.</summary>
+    public static DateTime? DateOf(string value)
+        => DateTime.TryParseExact(value.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) ? date : null;
+
+    /// <summary>
+    /// Флаг словом прежнего значения: у <c>yes</c> и <c>no</c>, <c>on</c> и <c>off</c> — их пара, иначе
+    /// <c>true</c> и <c>false</c>; регистр — как у прежнего.
+    /// </summary>
+    public static string FlagWord(bool value, string old)
+    {
+        var (on, off) = old.Trim().ToLowerInvariant() switch
+        {
+            "yes" or "no" => ("yes", "no"),
+            "on" or "off" => ("on", "off"),
+            _ => ("true", "false")
+        };
+        var word = value ? on : off;
+        var letters = old.Where(char.IsLetter).ToList();
+        return letters.Count > 1 && letters.All(char.IsUpper) ? word.ToUpperInvariant()
+            : letters.Count > 0 && char.IsUpper(letters[0]) ? char.ToUpperInvariant(word[0]) + word[1..]
+            : word;
+    }
+
+    /// <summary>Удаление свойства: его строки целиком вместе с переводом строки после них.</summary>
+    public static MdSourceEdit Remove(MdSourceSpan span, string source)
+    {
+        var end = Math.Min(span.End, source.Length);
+        end += source.AsSpan(end).StartsWith("\r\n") ? 2 : source.AsSpan(end).StartsWith("\n") ? 1 : 0;
+        return new(span.Start, end - span.Start, string.Empty);
+    }
+
+    /// <summary>
+    /// Новое свойство: строка <c>ключ: </c> перед закрывающей чертой front matter; ключ, который так не
+    /// прочтётся, — в двойных кавычках. Пустой ключ и front matter без закрывающей черты — <c>null</c>.
+    /// </summary>
+    public static MdSourceEdit? Add(MdSourceSpan block, string key, string source)
+    {
+        key = key.Trim();
+        var at = block.Start;
+        var first = true;
+        while (key.Length > 0 && at < source.Length)
+        {
+            var end = source.IndexOf('\n', at);
+            var line = (end < 0 ? source[at..] : source[at..end]).TrimEnd('\r');
+            if (!first && line.TrimEnd() is "---" or "...")
+            {
+                var newLine = source.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+                return new(at, 0, (SafeKey(key) ? key : Quote(key)) + ": " + newLine);
+            }
+
+            first = false;
+            at = end < 0 ? source.Length : end + 1;
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// Место значения, которое можно записать заново: строка, строка в кавычках, список в скобках или
     /// строками; вложенное, многострочное и с якорями — <c>null</c>.
@@ -159,6 +226,23 @@ internal static partial class FrontMatterProperties
            && (!flow || text.IndexOfAny([',', '[', ']', '{', '}']) < 0)
            && (!LooksTyped(text) || (old is not null && LooksTyped(old)));
 
+    /// <summary>Ключ прочтётся тем же текстом без кавычек: как простое значение, без знака разметки YAML в начале.</summary>
+    private static bool SafeKey(string key)
+        => !key.Contains(": ", StringComparison.Ordinal)
+           && !key.EndsWith(':')
+           && !key.Contains(" #", StringComparison.Ordinal)
+           && !key.Contains('\n')
+           && !Indicators.Contains(key[0]);
+
+    /// <summary>Флаг: <c>true</c>, <c>yes</c>, <c>on</c> — включён, <c>false</c>, <c>no</c>, <c>off</c> — выключен; другое — <c>null</c>.</summary>
+    private static bool? Flag(string text)
+        => text.Trim().ToLowerInvariant() switch
+        {
+            "true" or "yes" or "on" => true,
+            "false" or "no" or "off" => false,
+            _ => null
+        };
+
     /// <summary>YAML прочтёт текст флагом, пустотой или числом.</summary>
     private static bool LooksTyped(string text)
         => text.ToLowerInvariant() is "true" or "false" or "null" or "~" or "yes" or "no" or "on" or "off"
@@ -168,7 +252,7 @@ internal static partial class FrontMatterProperties
         => "\"" + text.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\t", "\\t") + "\"";
 
     /// <summary>Пункты из поля: через запятую, без пробелов по краям и пустых.</summary>
-    private static List<string> Elements(string text)
+    public static List<string> Elements(string text)
         => text.Split(',')
             .Select(item => item.Trim())
             .Where(item => item.Length > 0)
