@@ -1,5 +1,6 @@
 ﻿namespace Beresta.Markdown.Wpf;
 
+using System.Text.RegularExpressions;
 using Extensions;
 using Selection;
 using ViewModels;
@@ -9,7 +10,7 @@ using ViewModels;
 /// элемента за вычетом мест его детей, виджеты расширений — по их описанию. Описания расширений идут
 /// последними и рисуются поверх.
 /// </summary>
-internal static class SourceLooks
+internal static partial class SourceLooks
 {
     private const string Markup = "Source.Markup";
 
@@ -20,7 +21,7 @@ internal static class SourceLooks
         Func<NodeVm, MdExtension?> ownerOf,
         ExtensionGuard guard)
     {
-        var context = new Context(source, lineStarts, ownerOf, guard, new(), new(), new());
+        var context = new Context(source, lineStarts, ownerOf, guard, new(source), new(source), new(source));
         foreach (var block in blocks)
         {
             Visit(block, context);
@@ -62,6 +63,9 @@ internal static class SourceLooks
                 case ListItemVm item:
                     MarkItemIndent(item, context);
                     break;
+                case TableVm table:
+                    MarkTableColumns(table, span, context);
+                    break;
             }
         }
 
@@ -75,10 +79,57 @@ internal static class SourceLooks
             Visit(child, context);
         }
 
-        if (!span.IsEmpty && span.End <= context.Source.Length)
+        // BYDESIGN: у детей без мест в исходнике знаков разметки не узнать — строка CSV, к примеру, не серая
+        if (!span.IsEmpty && span.End <= context.Source.Length && children.Any(child => !child.Source.IsEmpty))
         {
             MarkGaps(span, children, context);
         }
+    }
+
+    /// <summary>
+    /// Столбцы таблицы с вертикальными чертами: в каждой её строке — неэкранированные <c>|</c> после
+    /// ячеек, без черты в начале. Таблица без строки разделителей вторым рядом — сетка — не отмечается.
+    /// </summary>
+    private static void MarkTableColumns(TableVm table, MdSourceSpan span, Context context)
+    {
+        if (span.StartLine + 1 > span.EndLine || span.EndLine >= context.LineStarts.Count)
+        {
+            return;
+        }
+
+        var column = span.Start - context.LineStarts[span.StartLine];
+        var rows = new List<(int Line, IReadOnlyList<int> Separators)>();
+        for (var line = span.StartLine; line <= span.EndLine; line++)
+        {
+            var end = LineEnd(context, line);
+            var first = Math.Min(context.LineStarts[line] + column, end);
+            while (first < end && context.Source[first] is ' ' or '\t')
+            {
+                first++;
+            }
+
+            if (line == span.StartLine + 1 && !Delimiters().IsMatch(context.Source.AsSpan(first, end - first)))
+            {
+                return;
+            }
+
+            var separators = new List<int>();
+            for (var at = first; at < end; at++)
+            {
+                if (context.Source[at] == '\\')
+                {
+                    at++;
+                }
+                else if (context.Source[at] == '|' && at != first)
+                {
+                    separators.Add(at);
+                }
+            }
+
+            rows.Add((line, separators));
+        }
+
+        context.Look.MarkColumns(rows, table.Alignments);
     }
 
     /// <summary>Кусок текста — по начертанию; обратные кавычки кода по краям — знаки разметки.</summary>
@@ -280,6 +331,9 @@ internal static class SourceLooks
             ? nested
             : null;
     }
+
+    [GeneratedRegex(@"^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$")]
+    private static partial Regex Delimiters();
 
     /// <summary>Текст, его строки и куда складываются описания: встроенные, знаки разметки, расширений.</summary>
     private sealed record Context(

@@ -436,6 +436,25 @@ var thread = new Thread(() =>
             });
         }
 
+        // Редактор: таблица исходником стоит столбцами
+        if (Wanted("editor-table.png"))
+        {
+            var table = L("""
+                | Mode | What is edited | Count |
+                |---|:---:|---:|
+                | View | nothing | 0 |
+                | **Controls** | tasks and `folding` | 12 |
+                | Blocks | the blocks under the caret | 345 |
+                """, """
+                | Режим | Что правится | Сколько |
+                |---|:---:|---:|
+                | Просмотр | ничего | 0 |
+                | **Контролы** | задачи и `сворачивание` | 12 |
+                | Блоки | блоки под кареткой | 345 |
+                """).ReplaceLineEndings("\n");
+            Shot(russian, "editor-table.png", new MarkdownEditor { Markdown = table, EditMode = MdEditMode.Full }, 640, () => { });
+        }
+
         // Готовые расширения
         var github = new GitHubSet { Resolver = resolver };
         github.IssueTemplates["#"] = "https://github.com/org/repo/issues/{0}";

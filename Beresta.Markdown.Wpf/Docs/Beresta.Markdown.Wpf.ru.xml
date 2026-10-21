@@ -328,6 +328,9 @@
             исходника. Шрифты и цвета вида с именем <c>X</c> редактор берёт из ключей темы <c>Md.X.*</c>.
             </summary>
         </member>
+        <member name="P:Beresta.Markdown.Wpf.Extensions.MdSourceLook.Text">
+            <summary>Показанный текст исходника, в котором места: расширение находит в нём свои знаки.</summary>
+        </member>
         <member name="P:Beresta.Markdown.Wpf.Extensions.MdSourceLook.Pieces">
             <summary>Куски исходника с их видами; поздний кусок рисуется поверх раннего.</summary>
         </member>
@@ -336,6 +339,9 @@
         </member>
         <member name="P:Beresta.Markdown.Wpf.Extensions.MdSourceLook.Indents">
             <summary>Строки исходника, считая с нуля, которые начинаются маркером такой длины: перенесённые строки начинаются после него.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Extensions.MdSourceLook.Columns">
+            <summary>Таблицы, чьи столбцы редактор выравнивает по их разделителям.</summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Extensions.MdSourceLook.Mark(System.Int32,System.Int32,System.String)">
             <summary>
@@ -353,6 +359,26 @@
             <summary>
             Отмечает первые <paramref name="length"/> знаков строки исходника её маркером — маркером
             списка, <c>&gt;</c> цитаты: перенесённые строки этой строки начинаются после него.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Extensions.MdSourceLook.MarkColumns(System.Collections.Generic.IReadOnlyList{System.ValueTuple{System.Int32,System.Collections.Generic.IReadOnlyList{System.Int32}}},System.Collections.Generic.IReadOnlyList{Beresta.Markdown.Wpf.ViewModels.TableAlignment})">
+            <summary>
+            Отмечает таблицу, чьи столбцы редактор выравнивает: строки — строки исходника с местами
+            разделителей, которыми кончаются их ячейки, выравнивания — выравнивания столбцов.
+            </summary>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.Extensions.MdSourceColumns">
+            <summary>
+            Столбцы таблицы в исходнике: <paramref name="Rows"/> — строки исходника, считая с нуля, у каждой —
+            места разделителей, которыми кончаются её ячейки; <paramref name="Alignments"/> — выравнивание
+            столбцов.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Extensions.MdSourceColumns.#ctor(System.Collections.Generic.IReadOnlyList{System.ValueTuple{System.Int32,System.Collections.Generic.IReadOnlyList{System.Int32}}},System.Collections.Generic.IReadOnlyList{Beresta.Markdown.Wpf.ViewModels.TableAlignment})">
+            <summary>
+            Столбцы таблицы в исходнике: <paramref name="Rows"/> — строки исходника, считая с нуля, у каждой —
+            места разделителей, которыми кончаются её ячейки; <paramref name="Alignments"/> — выравнивание
+            столбцов.
             </summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Extensions.MdSourceContext">
@@ -621,6 +647,9 @@
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.CsvTables.ConvertBlock(Markdig.Syntax.Block,Beresta.Markdown.Wpf.Extensions.MdConvertContext)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Kit.CsvTables.DescribeSource(Beresta.Markdown.Wpf.ViewModels.NodeVm,Beresta.Markdown.Wpf.Extensions.MdSourceLook)">
             <inheritdoc/>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Kit.DocusaurusSet">

@@ -1,5 +1,7 @@
 ﻿namespace Beresta.Markdown.Wpf.Extensions;
 
+using ViewModels;
+
 /// <summary>
 /// How the source of a document looks in an editor: named looks of pieces of the source text and of
 /// source lines. An editor takes the fonts and colors of a look named <c>X</c> from the theme keys
@@ -10,10 +12,15 @@ public sealed class MdSourceLook
     private readonly List<(int Start, int Length, string Look)> _pieces = [];
     private readonly List<(int FirstLine, int LastLine, string Look)> _lines = [];
     private readonly List<(int Line, int Length)> _indents = [];
+    private readonly List<MdSourceColumns> _columns = [];
 
-    internal MdSourceLook()
+    internal MdSourceLook(string text)
     {
+        Text = text;
     }
+
+    /// <summary>The shown source text the places are in: an extension finds its marks in it.</summary>
+    public string Text { get; }
 
     /// <summary>Pieces of the source with their looks; a later piece is drawn over an earlier one.</summary>
     public IReadOnlyList<(int Start, int Length, string Look)> Pieces => _pieces;
@@ -23,6 +30,9 @@ public sealed class MdSourceLook
 
     /// <summary>Source lines, counting from zero, that start with a marker of this length: wrapped lines start after it.</summary>
     public IReadOnlyList<(int Line, int Length)> Indents => _indents;
+
+    /// <summary>Tables whose columns an editor lines up by their separators.</summary>
+    public IReadOnlyList<MdSourceColumns> Columns => _columns;
 
     /// <summary>
     /// Gives a piece of the source a look: <c>Heading1</c>–<c>Heading6</c>, <c>Bold</c>,
@@ -63,11 +73,26 @@ public sealed class MdSourceLook
         }
     }
 
-    /// <summary>Добавляет куски, строки и маркеры другого описания после своих.</summary>
+    /// <summary>
+    /// Marks a table whose columns an editor lines up: the rows are source lines with the places of the
+    /// separators that end their cells, the alignments are the alignments of the columns.
+    /// </summary>
+    public void MarkColumns(IReadOnlyList<(int Line, IReadOnlyList<int> Separators)> rows, IReadOnlyList<TableAlignment> alignments)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        ArgumentNullException.ThrowIfNull(alignments);
+        if (rows.Count > 0)
+        {
+            _columns.Add(new(rows, alignments));
+        }
+    }
+
+    /// <summary>Добавляет куски, строки, маркеры и столбцы другого описания после своих.</summary>
     internal void Append(MdSourceLook other)
     {
         _pieces.AddRange(other._pieces);
         _lines.AddRange(other._lines);
         _indents.AddRange(other._indents);
+        _columns.AddRange(other._columns);
     }
 }

@@ -76,6 +76,8 @@ public sealed class MarkdownEditor : MarkdownViewer
     private readonly Dictionary<string, LookStyle> _styles = [];
     private SourceLookIndex? _look;
     private List<(int FirstLine, int LastLine)> _windowContainers = [];
+    private readonly Dictionary<string, List<double>> _cellWidths = [];
+    private Dictionary<int, IReadOnlyList<(int Offset, double Before, double After)>>? _separators;
     private TextDocument _document;
     private (string Text, ITextSourceVersion Version)? _given;
     private bool _dirty;
@@ -129,6 +131,15 @@ public sealed class MarkdownEditor : MarkdownViewer
         var area = _editor.TextArea;
         area.TextView.ElementGenerators.Insert(0, new LineStruts(StrutOf));
         area.TextView.ElementGenerators.Insert(1, new LineMarkers(MarkerOf));
+        area.TextView.ElementGenerators.Insert(2, new TableColumns(SeparatorsOf));
+        area.TextView.SizeChanged += (_, e) =>
+        {
+            if (e.WidthChanged && _separators is not null)
+            {
+                _separators = null;
+                area.TextView.Redraw();
+            }
+        };
         area.TextView.LineTransformers.Add(new SourceColorizer(PiecesOn));
         area.TextView.BackgroundRenderers.Add(new SourceBackground(LooksAt));
         CommandManager.AddPreviewExecutedHandler(area, OnTextAreaCommand);
@@ -340,6 +351,8 @@ public sealed class MarkdownEditor : MarkdownViewer
     {
         _look = null;
         _styles.Clear();
+        _separators = null;
+        _cellWidths.Clear();
         _editor.TextArea.TextView.Redraw();
         if (_window.IsOpen)
         {
@@ -677,6 +690,16 @@ public sealed class MarkdownEditor : MarkdownViewer
             _commit.Start();
             _typed |= !_stepping;
             QueueReconcile();
+        }
+
+        if (_separators is { Count: > 0 } separators && separators.ContainsKey(_document.GetLineByOffset(Math.Min(e.Offset, _document.TextLength)).LineNumber))
+        {
+            _separators = null;
+            _editor.TextArea.TextView.Redraw();
+        }
+        else if (_separators is not null)
+        {
+            _separators = null;
         }
 
         SourceChanged?.Invoke(this, new(new MdSourceEdit(e.Offset, e.RemovalLength, e.InsertedText.Text)));
@@ -1360,6 +1383,169 @@ public sealed class MarkdownEditor : MarkdownViewer
         return top > 0 || bottom > 0
             ? ((family.Baseline * size) + top, ((family.LineSpacing - family.Baseline) * size) + bottom)
             : null;
+    }
+
+    /// <summary>Разделители столбцов строки документа с местом до и после них; строка не в таблице — пусто.</summary>
+    internal IReadOnlyList<(int Offset, double Before, double After)> SeparatorsOf(DocumentLine line)
+        => (_separators ??= LayOutTables()).GetValueOrDefault(line.LineNumber) ?? [];
+
+    /// <summary>
+    /// Столбцы таблиц описания исходника по нынешнему тексту: край столбца — по самой широкой ячейке, у
+    /// столбца по правому краю место встаёт перед текстом, по центру — поровну. Таблица шире AvalonEdit не
+    /// выравнивается: перенос строк сломал бы столбцы.
+    /// </summary>
+    private Dictionary<int, IReadOnlyList<(int Offset, double Before, double After)>> LayOutTables()
+    {
+        var result = new Dictionary<int, IReadOnlyList<(int Offset, double Before, double After)>>();
+        var look = _look ??= new(GetSourceLook(), ShownMarkdown, _shownLines);
+        var available = _editor.TextArea.TextView.ActualWidth;
+        foreach (var table in look.Columns)
+        {
+            var rows = new List<(DocumentLine Line, List<int> Separators, List<double> Widths)>();
+            foreach (var (shownLine, separators) in table.Rows)
+            {
+                if (RowOf(look.Text, shownLine, separators) is { } row)
+                {
+                    rows.Add((row.Line, row.Separators, CellWidths(row.Line, row.Separators)));
+                }
+            }
+
+            var columns = rows.Count == 0 ? 0 : rows.Max(row => row.Separators.Count);
+            var widest = Enumerable.Range(0, columns)
+                .Select(column => rows.Where(row => column < row.Widths.Count).Max(row => row.Widths[column]))
+                .ToList();
+            var separator = rows.Count == 0 ? 0 : MeasureCell(rows[0].Line, rows[0].Separators[0], rows[0].Separators[0] + 1);
+            if (rows.Count < 2 || widest.Sum() + (columns * separator) + rows.Max(row => row.Widths[^1]) > available)
+            {
+                continue;
+            }
+
+            foreach (var (line, separators, widths) in rows)
+            {
+                var spaces = separators.Select(offset => (Offset: offset, Before: 0.0, After: 0.0)).ToList();
+                for (var column = 0; column < separators.Count; column++)
+                {
+                    var extra = widest[column] - widths[column];
+                    var alignment = column < table.Alignments.Count ? table.Alignments[column] : TableAlignment.Default;
+                    var ahead = column == 0 ? 0 : alignment switch
+                    {
+                        TableAlignment.Right => extra,
+                        TableAlignment.Center => extra / 2,
+                        _ => 0
+                    };
+                    spaces[column] = spaces[column] with { Before = spaces[column].Before + extra - ahead };
+                    if (ahead > 0)
+                    {
+                        spaces[column - 1] = spaces[column - 1] with { After = spaces[column - 1].After + ahead };
+                    }
+                }
+
+                result[line.LineNumber] = spaces;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Строка таблицы в документе и её разделители там, где они теперь; строку или разделитель не узнать — <c>null</c>.</summary>
+    private (DocumentLine Line, List<int> Separators)? RowOf(string text, int shownLine, IReadOnlyList<int> separators)
+    {
+        if (separators.Count == 0
+            || _versions.Map(text, _shownLines.StartOf(text, shownLine), _document, AnchorMovementType.BeforeInsertion) is not { } start
+            || _document.GetLineByOffset(Math.Min(start, _document.TextLength)) is not { } line
+            || line.Offset != start)
+        {
+            return null;
+        }
+
+        var mapped = new List<int>(separators.Count);
+        foreach (var separator in separators)
+        {
+            if (_versions.Map(text, separator, _document, AnchorMovementType.BeforeInsertion) is not { } at
+                || at < line.Offset
+                || at >= line.EndOffset
+                || _document.GetCharAt(at) != text[separator])
+            {
+                return null;
+            }
+
+            mapped.Add(at);
+        }
+
+        return (line, mapped);
+    }
+
+    /// <summary>Ширины ячеек строки таблицы — до каждого разделителя и после последнего; та же строка с тем же текстом не перемеряется.</summary>
+    private List<double> CellWidths(DocumentLine line, List<int> separators)
+    {
+        var key = string.Join(",", separators.Select(at => at - line.Offset)) + "|" + _document.GetText(line);
+        if (!_cellWidths.TryGetValue(key, out var widths))
+        {
+            widths = [];
+            var start = line.Offset;
+            foreach (var separator in separators)
+            {
+                widths.Add(MeasureCell(line, start, separator));
+                start = separator + 1;
+            }
+
+            widths.Add(MeasureCell(line, start, line.EndOffset));
+            _cellWidths[key] = widths;
+        }
+
+        return widths;
+    }
+
+    /// <summary>Ширина куска строки документа шрифтом AvalonEdit с оформлением его кусков.</summary>
+    private double MeasureCell(DocumentLine line, int start, int end)
+    {
+        if (end <= start)
+        {
+            return 0;
+        }
+
+        var view = _editor.TextArea.TextView;
+        var text = new FormattedText(
+            _document.GetText(start, end - start),
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            new Typeface(_editor.FontFamily, _editor.FontStyle, _editor.FontWeight, _editor.FontStretch),
+            _editor.FontSize,
+            Brushes.Black,
+            null,
+            TextOptions.GetTextFormattingMode(view),
+            VisualTreeHelper.GetDpi(view).PixelsPerDip);
+        foreach (var (from, to, style) in PiecesOn(line))
+        {
+            var a = Math.Max(from, start) - start;
+            var b = Math.Min(to, end) - start;
+            if (b <= a)
+            {
+                continue;
+            }
+
+            if (style.FontFamily is { } family)
+            {
+                text.SetFontFamily(family, a, b - a);
+            }
+
+            if (style.FontSize is { } size)
+            {
+                text.SetFontSize(size, a, b - a);
+            }
+
+            if (style.FontWeight is { } weight)
+            {
+                text.SetFontWeight(weight, a, b - a);
+            }
+
+            if (style.FontStyle is { } fontStyle)
+            {
+                text.SetFontStyle(fontStyle, a, b - a);
+            }
+        }
+
+        return text.WidthIncludingTrailingWhitespace;
     }
 
     /// <summary>Виды строки документа с единицы: фон, полоса.</summary>

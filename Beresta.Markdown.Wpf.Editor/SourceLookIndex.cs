@@ -31,6 +31,7 @@ internal sealed class SourceLookIndex
         }
 
         _lines = look.Lines;
+        Columns = look.Columns;
         foreach (var (line, length) in look.Indents)
         {
             _indents[line] = Math.Max(length, _indents.GetValueOrDefault(line));
@@ -39,6 +40,9 @@ internal sealed class SourceLookIndex
 
     /// <summary>Текст, который описан.</summary>
     public string Text { get; }
+
+    /// <summary>Таблицы, чьи столбцы выравниваются по разделителям.</summary>
+    public IReadOnlyList<MdSourceColumns> Columns { get; }
 
     /// <summary>Куски строки с нуля в порядке рисования.</summary>
     public IReadOnlyList<(int Start, int End, string Look)> PiecesOn(int line)
