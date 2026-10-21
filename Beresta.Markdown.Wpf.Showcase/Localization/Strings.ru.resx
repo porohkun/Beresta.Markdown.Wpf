@@ -198,11 +198,35 @@
   <data name="Document.WholeWord" xml:space="preserve">
     <value>Слово целиком</value>
   </data>
+  <data name="Editor.Characters" xml:space="preserve">
+    <value>Знаков в Markdown:</value>
+  </data>
   <data name="Editor.Header" xml:space="preserve">
-    <value>MarkdownEditor из пакета Beresta.Markdown.Wpf.Editor: вьюер, который правит исходник своего документа.</value>
+    <value>MarkdownEditor из пакета Beresta.Markdown.Wpf.Editor: вьюер, который правит исходник своего документа. Исходник живёт в AvalonEdit и доходит до Markdown через секунду после последней правки. «Только контролы» — флажки задач и сворачивание пишут в текст, Ctrl+Z и Ctrl+Y отменяют и возвращают правку.</value>
+  </data>
+  <data name="Editor.Mode" xml:space="preserve">
+    <value>Режим:</value>
+  </data>
+  <data name="Editor.Mode.Blocks" xml:space="preserve">
+    <value>Блоки</value>
+  </data>
+  <data name="Editor.Mode.Controls" xml:space="preserve">
+    <value>Только контролы</value>
+  </data>
+  <data name="Editor.Mode.Full" xml:space="preserve">
+    <value>Весь текст</value>
+  </data>
+  <data name="Editor.Mode.View" xml:space="preserve">
+    <value>Просмотр</value>
+  </data>
+  <data name="Editor.Redo" xml:space="preserve">
+    <value>Вернуть</value>
   </data>
   <data name="Editor.Title" xml:space="preserve">
     <value>Редактор</value>
+  </data>
+  <data name="Editor.Undo" xml:space="preserve">
+    <value>Отменить</value>
   </data>
   <data name="Extensions.Header" xml:space="preserve">
     <value>Свой синтаксис на MdExtension: заметка :::note со своим состоянием, упоминание @имя со своим разбором и чипы ::текст:: — оформленный текст, а не виджет. Каждое расширение подключено отдельно, строкой в Extensions вьюера; наборы — на витрине «Наборы».</value>

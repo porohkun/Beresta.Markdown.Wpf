@@ -5,7 +5,94 @@
     </assembly>
     <members>
         <member name="T:Beresta.Markdown.Wpf.Editor.MarkdownEditor">
-            <summary>Редактор Markdown: вьюер, который ещё и правит исходник своего документа.</summary>
+            <summary>
+            Редактор Markdown: вьюер, который ещё и правит исходник своего документа. Исходник живёт в
+            AvalonEdit и уходит в <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.Markdown"/> вскоре после последней правки.
+            </summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.EditModeProperty">
+            <summary>Как редактор правит свой документ; <see cref="F:Beresta.Markdown.Wpf.Editor.MdEditMode.View"/> — только показывает.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.CanUndoProperty">
+            <summary>Есть правка исходника, которую можно отменить.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.CanRedoProperty">
+            <summary>Есть отменённая правка исходника, которую можно вернуть.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.#ctor">
+            <summary>Создаёт пустой редактор, который только показывает.</summary>
+        </member>
+        <member name="E:Beresta.Markdown.Wpf.Editor.MarkdownEditor.SourceChanged">
+            <summary>Исходник поменялся: набор, отмена, контрол, новый текст.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MarkdownEditor.EditMode">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.EditModeProperty"/>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MarkdownEditor.CanUndo">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.CanUndoProperty"/>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MarkdownEditor.CanRedo">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.CanRedoProperty"/>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MarkdownEditor.SourceCaretOffset">
+            <summary>Курсор в исходнике: позиция знака, перед которым он стоит.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MarkdownEditor.SourceSelectionStart">
+            <summary>Начало выделения в исходнике.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MarkdownEditor.SourceSelectionLength">
+            <summary>Длина выделения в исходнике; 0 — ничего не выделено.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MarkdownEditor.TextEditor">
+            <summary>AvalonEdit, в котором живёт исходник: его документ, настройки и вид.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.SelectSource(System.Int32,System.Int32)">
+            <summary>Выделяет кусок исходника.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.InsertText(System.String)">
+            <summary>Ставит текст вместо выделенного в исходнике или у курсора.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.CommitText">
+            <summary>
+            Отдаёт правленый исходник в <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.Markdown"/> сразу, не дожидаясь:
+            перед сохранением, перед тем как читать текст снаружи.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.Undo">
+            <summary>Отменяет последнюю правку исходника; курсор встаёт на её место.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.Redo">
+            <summary>Возвращает последнюю отменённую правку исходника; курсор встаёт на её место.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.OnPreviewMouseLeftButtonDown(System.Windows.Input.MouseButtonEventArgs)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.ApplySourceEdit(Beresta.Markdown.Wpf.MdSourceEdit)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.Editor.MdEditMode">
+            <summary>Как редактор правит свой документ.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MdEditMode.View">
+            <summary>Только показывает, как вьюер: флажки задач и сворачивание исходник не трогают.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MdEditMode.Controls">
+            <summary>Флажки задач и сворачивание пишут в исходник; сам текст не набирается.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MdEditMode.Blocks">
+            <summary>Блоки под курсором показывают свой исходник и набираются на месте; остальное остаётся нарисованным.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MdEditMode.Full">
+            <summary>Весь исходник набирается на месте нарисованного документа.</summary>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.Editor.MdSourceChangedEventArgs">
+            <summary>Исходник в редакторе поменялся: набор, отмена, контрол, новый текст.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MdSourceChangedEventArgs.#ctor(Beresta.Markdown.Wpf.MdSourceEdit)">
+            <summary>Исходник поменялся правкой <paramref name="change"/>.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MdSourceChangedEventArgs.Change">
+            <summary>Что поменялось: место, сколько знаков ушло и что встало на их место.</summary>
         </member>
     </members>
 </doc>

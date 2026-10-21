@@ -10,6 +10,9 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -18,6 +21,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Beresta.Markdown.Wpf;
+using Beresta.Markdown.Wpf.Presenters;
 using Beresta.Markdown.Wpf.Scrolling;
 using Beresta.Markdown.Wpf.Selection;
 using Beresta.Markdown.Wpf.Showcase;
@@ -186,6 +190,62 @@ var thread = new Thread(() =>
                 typeof(MarkdownViewer)
                     .GetMethod("SetSourceWindow", BindingFlags.Instance | BindingFlags.NonPublic)!
                     .Invoke(Viewers(window).First(), [lines[0], lines[1], probe, new ProbeRows(lines[0], lines[1])]);
+                break;
+            }
+
+            // Нажатие флажка задачи с номером — как щелчок, через автоматизацию; печатает строку задачи в Markdown
+            case "task":
+            {
+                var viewer = Viewers(window).First();
+                var mark = Descendants<MdTaskMark>(viewer).ElementAt(int.Parse(value));
+                var toggle = (IToggleProvider)UIElementAutomationPeer.CreatePeerForElement(mark).GetPattern(PatternInterface.Toggle);
+                try
+                {
+                    toggle.Toggle();
+                }
+                catch (ElementNotEnabledException)
+                {
+                    Console.WriteLine("флажок не нажимается");
+                }
+
+                Settle(window);
+                Console.WriteLine($"Markdown: {TaskLines(viewer)}");
+                break;
+            }
+
+            // Разворачивание или сворачивание сворачиваемого блока с номером — через автоматизацию; печатает строки свёрнутости в Markdown
+            case "fold":
+            {
+                var viewer = Viewers(window).First();
+                var folding = Descendants<FrameworkElement>(viewer)
+                    .Where(element => element is MdDetailsPresenter or MdCalloutPresenter)
+                    .Select(element => UIElementAutomationPeer.CreatePeerForElement(element).GetPattern(PatternInterface.ExpandCollapse))
+                    .OfType<IExpandCollapseProvider>()
+                    .ElementAt(int.Parse(value));
+                if (folding.ExpandCollapseState == ExpandCollapseState.Expanded)
+                {
+                    folding.Collapse();
+                }
+                else
+                {
+                    folding.Expand();
+                }
+
+                Settle(window);
+                Console.WriteLine($"Markdown: {FoldLines(viewer)}");
+                break;
+            }
+
+            // Ctrl+Z и Ctrl+Y редактору — командами отмены и возврата
+            case "undo":
+            case "redo":
+            {
+                var viewer = Viewers(window).First();
+                var command = name == "undo" ? ApplicationCommands.Undo : ApplicationCommands.Redo;
+                Console.WriteLine($"{name}: {(command.CanExecute(null, viewer) ? "доступна" : "недоступна")}");
+                command.Execute(null, viewer);
+                Settle(window);
+                Console.WriteLine($"Markdown: {TaskLines(viewer)}");
                 break;
             }
 
@@ -466,6 +526,16 @@ static bool InsideViewer(DependencyObject element)
 }
 
 static bool IsCyrillic(char letter) => letter is >= 'А' and <= 'я' or 'Ё' or 'ё';
+
+static string TaskLines(MarkdownViewer viewer)
+    => string.Join(" | ", (viewer.Markdown ?? string.Empty)
+        .Split('\n')
+        .Where(line => line.TrimStart().StartsWith("- [", StringComparison.Ordinal)));
+
+static string FoldLines(MarkdownViewer viewer)
+    => string.Join(" | ", (viewer.Markdown ?? string.Empty)
+        .Split('\n')
+        .Where(line => line.Contains("<details", StringComparison.Ordinal) || line.Contains("[!", StringComparison.Ordinal)));
 
 static FrameworkElement Root(Window window) => (FrameworkElement)VisualTreeHelper.GetChild(window, 0);
 

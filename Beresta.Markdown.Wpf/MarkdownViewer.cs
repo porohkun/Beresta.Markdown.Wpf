@@ -611,6 +611,13 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     /// </summary>
     protected IReadOnlyList<MdSourceSpan> TopBlockSpans { get; private set; } = [];
 
+    /// <summary>
+    /// The text of the shown document — the last one parsed and laid on it: places of the model and
+    /// of edits are in it. While a long text is parsed in the background, it lags behind
+    /// <see cref="Markdown"/>.
+    /// </summary>
+    protected string ShownMarkdown => Source;
+
     // BYDESIGN: кисти пометок — логические потомки вьюера: иначе смена темы до них не доходит.
     /// <inheritdoc/>
     protected override IEnumerator LogicalChildren => WithThemeBrushes(base.LogicalChildren, _themeBrushes.All);
@@ -1020,6 +1027,18 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     {
     }
 
+    /// <summary>
+    /// Applies an edit of the source that no handler of <see cref="SourceEditRequested"/> took: by
+    /// default to <see cref="Markdown"/>, if it holds <see cref="ShownMarkdown"/>.
+    /// </summary>
+    protected virtual void ApplySourceEdit(MdSourceEdit edit)
+    {
+        if (string.Equals(Markdown ?? string.Empty, Source, StringComparison.Ordinal))
+        {
+            SetCurrentValue(MarkdownProperty, edit.ApplyTo(Source));
+        }
+    }
+
     /// <inheritdoc/>
     protected override AutomationPeer OnCreateAutomationPeer() => new MdDocumentAutomationPeer(this);
 
@@ -1196,7 +1215,7 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     /// <summary>
     /// Контрол просит правку исходника — его нажали (<paramref name="state"/> — <c>null</c>) или
     /// сменилось его состояние. Что записать, решает хозяин элемента модели. Правку никто не взял —
-    /// она ложится в <see cref="Markdown"/>, если там тот же текст, что показан.
+    /// её применяет <see cref="ApplySourceEdit"/>.
     /// </summary>
     internal void RequestSourceEdit(NodeVm node, object? state)
     {
@@ -1207,9 +1226,9 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
 
         var request = new MdSourceEditRequestedEventArgs(SourceEditRequestedEvent, this, edit, node);
         RaiseEvent(request);
-        if (!request.Handled && string.Equals(Markdown ?? string.Empty, Source, StringComparison.Ordinal))
+        if (!request.Handled)
         {
-            SetCurrentValue(MarkdownProperty, edit.ApplyTo(Source));
+            ApplySourceEdit(edit);
         }
     }
 

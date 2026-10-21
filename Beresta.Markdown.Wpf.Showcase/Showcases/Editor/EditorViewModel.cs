@@ -1,5 +1,7 @@
 ﻿namespace Beresta.Markdown.Wpf.Showcase.Showcases.Editor;
 
+using Beresta.Markdown.Wpf.Editor;
+
 /// <summary>Редактор: вьюер, который правит исходник своего документа.</summary>
 public sealed class EditorViewModel : ShowcaseViewModel
 {
@@ -14,6 +16,13 @@ public sealed class EditorViewModel : ShowcaseViewModel
         get;
         set => Set(ref field, value);
     } = Samples.Near<EditorViewModel>("Editor.md");
+
+    /// <summary>Режим правки редактора.</summary>
+    public MdEditMode Mode
+    {
+        get;
+        set => Set(ref field, value);
+    } = MdEditMode.Controls;
 
     /// <summary>Язык сменился: правки уступают образцу на новом языке.</summary>
     protected override void OnLanguageChanged()

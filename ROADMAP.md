@@ -4,43 +4,6 @@
 [`docs/ideas/editor.md`](docs/ideas/editor.md); здесь — что сделать и в каком порядке. Каждый этап
 опирается на предыдущие и заканчивается рабочим состоянием: сборка, тесты, витрина.
 
-## Этап 4. Редактор: текст в AvalonEdit и «только контролы»
-
-- [ ] `MdEditMode`: `View`, `Controls`, `Blocks`, `Full`; свойство `EditMode`, по умолчанию `View`.
-- [ ] Текст живёт в `TextDocument` AvalonEdit всегда; в `View` и `Controls` самого редактора на
-  экране нет.
-- [ ] Синхронизация с `Markdown`.
-  - Внешний текст — значение, которое редактор не отдавал сам последним, — ложится в документ так,
-    как его принимает AvalonEdit (`TextEditor.Text`): курсор в начало, отмена очищается, окно
-    закрывается.
-  - Свой текст отдаётся через `SetCurrentValue(MarkdownProperty, …)`: через секунду после
-    последней правки и не реже раза в пять секунд; сразу — при переходе окна, щелчке по контролу и
-    в `CommitText`.
-  - Свой текст, вернувшийся через привязку без изменений, ничего не делает.
-- [ ] `Controls`: `AreControlsEditable = true`; редактор обрабатывает `SourceEditRequested` — правка
-  ложится в документ AvalonEdit, в его отмену, текст отдаётся сразу.
-- [ ] Отмена.
-  - `Undo` и `Redo` — через `UndoStack`. Место правки ловится `Document.Changed` во время отмены, и
-    курсор встаёт туда.
-  - Ctrl+Z и Ctrl+Y перехватываются: на `TextArea` — `CommandManager.AddPreviewExecutedHandler`, в
-    `Controls` — на самом редакторе.
-- [ ] Обёртки.
-  - `CanUndo` и `CanRedo` — по `UndoStack.PropertyChanged`.
-  - `SourceCaretOffset`, `SourceSelectionStart`, `SourceSelectionLength`, `SelectSource`.
-  - `InsertText` — вместо выделения или у курсора.
-  - `CommitText`.
-  - Событие `SourceChanged` из `Document.Changed`: место, сколько убрано, что вставлено.
-  - `TextEditor` — сам AvalonEdit.
-- [ ] Тесты.
-  - Внешний текст сбрасывает отмену.
-  - Щелчок по флажку в `Controls` отменяется Ctrl+Z.
-  - Свой текст уходит в `Markdown` по таймеру, а `CommitText` отдаёт его сразу.
-  - `SourceChanged` — на каждую правку.
-- [ ] Витрина «Редактор»: переключатель режима, кнопки отмены.
-
-Готово, когда: в витрине режим «только контролы» переключает флажки и сворачивание, Ctrl+Z их
-отменяет, а `Markdown` получает текст.
-
 ## Этап 5. Редактор: окно правимых блоков
 
 Блочный и полный режимы.
@@ -199,7 +162,8 @@
   - «Сравнение» — раздел «Редактирование»; «Живой предпросмотр» — редактор вместо двух панелей.
   - «Медиа и данные» — поля карточки свойств.
   - «Настройки и перехват» — защищённое API наследника вьюера: `SetSourceWindow`, `ClearSourceWindow`,
-    `IMdSourceRows`, `TopBlockSpans`, `OnDocumentApplied`, `HoldWindowLine`.
+    `IMdSourceRows`, `TopBlockSpans`, `OnDocumentApplied`, `HoldWindowLine`, `ShownMarkdown`,
+    `ApplySourceEdit`.
 - [ ] Снимки: в `tools/WikiShots.cs` — блочный, полный и «только контролы», на обоих языках.
 - [ ] `README.md` и `README.ru.md`: второй пакет — установка и короткий пример.
 - [ ] `GLOSSARY.md`: режим правки, правимые блоки, окно правки.

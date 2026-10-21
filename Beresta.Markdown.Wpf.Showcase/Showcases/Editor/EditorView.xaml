@@ -4,20 +4,63 @@
              xmlns:loc="clr-namespace:Beresta.Markdown.Wpf.Showcase.Localization"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:md="https://github.com/porohkun/Beresta.Markdown.Wpf"
              xmlns:mde="clr-namespace:Beresta.Markdown.Wpf.Editor;assembly=Beresta.Markdown.Wpf.Editor"
              xmlns:local="clr-namespace:Beresta.Markdown.Wpf.Showcase.Showcases.Editor"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:EditorViewModel}">
+    <UserControl.Resources>
+        <local:EditModeIsConverter x:Key="ModeIs" />
+    </UserControl.Resources>
+
     <DockPanel>
         <Border Style="{StaticResource ShowcaseHeader}">
-            <TextBlock TextWrapping="Wrap"
-                       Text="{loc:Text Editor.Header}" />
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap"
+                           Text="{loc:Text Editor.Header}" />
+
+                <!-- Режим правки, отмена и сколько текста дошло до Markdown -->
+                <WrapPanel Margin="0,8,0,0">
+                    <TextBlock Text="{loc:Text Editor.Mode}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0" />
+                    <hc:ButtonGroup Margin="0,0,24,0">
+                        <RadioButton Content="{loc:Text Editor.Mode.View}"
+                                     IsChecked="{Binding Mode, Converter={StaticResource ModeIs}, ConverterParameter={x:Static mde:MdEditMode.View}}" />
+                        <RadioButton Content="{loc:Text Editor.Mode.Controls}"
+                                     IsChecked="{Binding Mode, Converter={StaticResource ModeIs}, ConverterParameter={x:Static mde:MdEditMode.Controls}}" />
+                        <RadioButton Content="{loc:Text Editor.Mode.Blocks}"
+                                     IsChecked="{Binding Mode, Converter={StaticResource ModeIs}, ConverterParameter={x:Static mde:MdEditMode.Blocks}}" />
+                        <RadioButton Content="{loc:Text Editor.Mode.Full}"
+                                     IsChecked="{Binding Mode, Converter={StaticResource ModeIs}, ConverterParameter={x:Static mde:MdEditMode.Full}}" />
+                    </hc:ButtonGroup>
+                    <Button Content="{loc:Text Editor.Undo}"
+                            Command="Undo"
+                            CommandTarget="{Binding ElementName=Editor}"
+                            Margin="0,0,4,0" />
+                    <Button Content="{loc:Text Editor.Redo}"
+                            Command="Redo"
+                            CommandTarget="{Binding ElementName=Editor}" />
+                    <TextBlock VerticalAlignment="Center"
+                               Margin="16,0,0,0">
+                        <Run Text="{loc:Text Editor.Characters}" />
+                        <Run Text="{Binding Text.Length, Mode=OneWay}" />
+                    </TextBlock>
+                </WrapPanel>
+            </StackPanel>
         </Border>
 
         <ScrollViewer>
             <mde:MarkdownEditor x:Name="Editor"
                                 Markdown="{Binding Text, Mode=TwoWay}"
-                                Margin="24,16" />
+                                EditMode="{Binding Mode}"
+                                Margin="24,16">
+                <mde:MarkdownEditor.Extensions>
+                    <md:TaskStatuses />
+                    <md:ObsidianCallouts />
+                </mde:MarkdownEditor.Extensions>
+            </mde:MarkdownEditor>
         </ScrollViewer>
     </DockPanel>
 </UserControl>

@@ -198,11 +198,35 @@
   <data name="Document.WholeWord" xml:space="preserve">
     <value>Whole word</value>
   </data>
+  <data name="Editor.Characters" xml:space="preserve">
+    <value>Characters in Markdown:</value>
+  </data>
   <data name="Editor.Header" xml:space="preserve">
-    <value>MarkdownEditor from the Beresta.Markdown.Wpf.Editor package: the viewer that edits the source of its document.</value>
+    <value>MarkdownEditor from the Beresta.Markdown.Wpf.Editor package: the viewer that edits the source of its document. The source lives in AvalonEdit and reaches Markdown a second after the last edit. «Controls only» — task boxes and folding write into the text, Ctrl+Z and Ctrl+Y undo and redo them.</value>
+  </data>
+  <data name="Editor.Mode" xml:space="preserve">
+    <value>Mode:</value>
+  </data>
+  <data name="Editor.Mode.Blocks" xml:space="preserve">
+    <value>Blocks</value>
+  </data>
+  <data name="Editor.Mode.Controls" xml:space="preserve">
+    <value>Controls only</value>
+  </data>
+  <data name="Editor.Mode.Full" xml:space="preserve">
+    <value>Whole text</value>
+  </data>
+  <data name="Editor.Mode.View" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="Editor.Redo" xml:space="preserve">
+    <value>Redo</value>
   </data>
   <data name="Editor.Title" xml:space="preserve">
     <value>Editor</value>
+  </data>
+  <data name="Editor.Undo" xml:space="preserve">
+    <value>Undo</value>
   </data>
   <data name="Extensions.Header" xml:space="preserve">
     <value>Your own syntax on MdExtension: a :::note note with its own state, an @name mention with its own parsing, and ::text:: chips — styled text, not a widget. Each extension is connected on its own, as a line in Extensions of the viewer; sets are in the Sets showcase.</value>

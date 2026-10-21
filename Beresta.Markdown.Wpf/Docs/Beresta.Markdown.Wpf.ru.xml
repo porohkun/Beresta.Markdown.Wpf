@@ -1382,6 +1382,13 @@
             <see cref="M:Beresta.Markdown.Wpf.MarkdownViewer.SetSourceWindow(System.Int32,System.Int32,System.Windows.FrameworkElement,Beresta.Markdown.Wpf.Scrolling.IMdSourceRows)"/>.
             </summary>
         </member>
+        <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.ShownMarkdown">
+            <summary>
+            Текст показанного документа — последний разобранный и лёгший на него: в нём места модели и
+            правок. Пока длинный текст разбирается в фоне, он отстаёт от
+            <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.Markdown"/>.
+            </summary>
+        </member>
         <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.LogicalChildren">
             <inheritdoc/>
         </member>
@@ -1522,6 +1529,13 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.OnDocumentApplied">
             <summary>Новый разбор лёг на документ: его блоки, текстовая карта и <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.TopBlockSpans"/>.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.ApplySourceEdit(Beresta.Markdown.Wpf.MdSourceEdit)">
+            <summary>
+            Применяет правку исходника, которую не взял ни один обработчик
+            <see cref="E:Beresta.Markdown.Wpf.MarkdownViewer.SourceEditRequested"/>: по умолчанию — к
+            <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.Markdown"/>, если там <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.ShownMarkdown"/>.
+            </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.OnCreateAutomationPeer">
             <inheritdoc/>
