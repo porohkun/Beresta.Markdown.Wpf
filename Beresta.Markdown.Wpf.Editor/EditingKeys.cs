@@ -9,8 +9,8 @@ using ICSharpCode.AvalonEdit.Editing;
 /// <summary>
 /// Клавиши правки Markdown: Enter продолжает список и выходит из него, Tab и Shift+Tab сдвигают пункт,
 /// Ctrl+B и Ctrl+I обрамляют знаками жирного и курсива, нумерованный список перенумеровывается, набранное
-/// ограждение кода закрывается само, вставка — только текстом. Каждое правило — один шаг отмены; внутри
-/// блока кода правила списка не работают.
+/// ограждение кода закрывается само, вставка — только текстом, а вставка с форматированием переводит
+/// HTML в Markdown. Каждое правило — один шаг отмены; внутри блока кода правила списка не работают.
 /// </summary>
 internal static partial class EditingKeys
 {
@@ -498,6 +498,27 @@ internal static partial class EditingKeys
         }
 
         area.Caret.Offset = caret;
+    }
+
+    /// <summary>
+    /// Вставка с форматированием: HTML из данных — Markdown на месте выделения, без HTML — текст, как
+    /// обычной вставкой; одним шагом отмены.
+    /// </summary>
+    public static void PasteFormatted(TextArea area, IDataObject data)
+    {
+        var text = data.GetDataPresent(DataFormats.Html) && data.GetData(DataFormats.Html) is string { Length: > 0 } html
+            ? HtmlMarkdown.Convert(html)
+            : data.GetData(DataFormats.UnicodeText) as string;
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        var document = area.Document;
+        using (document.RunUpdate())
+        {
+            area.Selection.ReplaceSelectionWithText(TextUtilities.NormalizeNewLines(text, TextUtilities.GetNewLineFromDocument(document, area.Caret.Line)));
+        }
     }
 
     /// <summary>Вставка и перетаскивание — только текстом: без текста в данных ничего не вставляется.</summary>

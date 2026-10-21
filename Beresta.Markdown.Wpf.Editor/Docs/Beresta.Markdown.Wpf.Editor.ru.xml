@@ -140,6 +140,12 @@
         <member name="P:Beresta.Markdown.Wpf.Editor.MdSourceChangedEventArgs.Change">
             <summary>Что поменялось: место, сколько знаков ушло и что встало на их место.</summary>
         </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MarkdownEditor.PasteFormattedCommand">
+            <summary>
+            Ctrl+Shift+V: вставляет HTML из буфера обмена Markdown-ом на место выделения; без HTML — текст, как
+            обычная вставка.
+            </summary>
+        </member>
         <member name="T:Beresta.Markdown.Wpf.Editor.MdAvalonCodeHighlighter">
             <summary>
             Подсвечивает блоки кода определениями подсветки AvalonEdit: C#, JavaScript, HTML, XML, CSS, C++,

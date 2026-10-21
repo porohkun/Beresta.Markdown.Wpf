@@ -128,6 +128,13 @@ public sealed class MarkdownEditor : MarkdownViewer
                 EditingCommands.ToggleItalic,
                 (sender, _) => EditingKeys.Emphasis(((MarkdownEditor)sender)._editor.TextArea, "*"),
                 (sender, e) => e.CanExecute = ((MarkdownEditor)sender).EditsText));
+
+        CommandManager.RegisterClassCommandBinding(
+            typeof(MarkdownEditor),
+            new(
+                PasteFormattedCommand,
+                (sender, _) => ((MarkdownEditor)sender).PasteFormatted(Clipboard.GetDataObject()),
+                (sender, e) => e.CanExecute = ((MarkdownEditor)sender).EditsText));
     }
 
     /// <summary>Creates an empty editor that only shows.</summary>
@@ -178,11 +185,19 @@ public sealed class MarkdownEditor : MarkdownViewer
         };
         area.TextEntered += (_, e) => EditingKeys.CloseFence(area, e.Text);
         DataObject.AddPastingHandler(area, EditingKeys.OnPasting);
+        area.SetResourceReference(ContextMenuProperty, "Md.Source.ContextMenu");
         ViewportChanged += (_, _) => Place();
     }
 
     /// <summary>The source changed: typing, an undo, a control, a new text.</summary>
     public event EventHandler<MdSourceChangedEventArgs>? SourceChanged;
+
+    /// <summary>
+    /// Ctrl+Shift+V: pastes the HTML from the clipboard as Markdown in place of the selection; without HTML —
+    /// the text, as an ordinary paste.
+    /// </summary>
+    public static RoutedUICommand PasteFormattedCommand { get; } =
+        new("Paste with formatting", nameof(PasteFormattedCommand), typeof(MarkdownEditor), [new KeyGesture(Key.V, ModifierKeys.Control | ModifierKeys.Shift)]);
 
     /// <inheritdoc cref="EditModeProperty"/>
     public MdEditMode EditMode
@@ -750,6 +765,15 @@ public sealed class MarkdownEditor : MarkdownViewer
 
     /// <summary>Исходник правится текстом: весь — в полном режиме, блоки под курсором — в блочном, когда окно открыто.</summary>
     private bool EditsText => EditMode == MdEditMode.Full || (EditMode == MdEditMode.Blocks && _window.IsOpen);
+
+    /// <summary>Вставка с форматированием из данных буфера обмена; данных нет — ничего.</summary>
+    internal void PasteFormatted(IDataObject? data)
+    {
+        if (data is not null)
+        {
+            EditingKeys.PasteFormatted(_editor.TextArea, data);
+        }
+    }
 
     /// <summary>
     /// Команды AvalonEdit, которые ведёт редактор: Ctrl+Z и Ctrl+Y — его отмена, она переносит курсор;

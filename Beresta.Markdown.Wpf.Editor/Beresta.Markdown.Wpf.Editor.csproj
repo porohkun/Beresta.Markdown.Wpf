@@ -39,6 +39,12 @@
 
 	<ItemGroup>
 		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+		<PackageReference Include="ReverseMarkdown" Version="6.2.1" />
+	</ItemGroup>
+
+	<!-- BYDESIGN: AngleSharp из ReverseMarkdown под .NET 7 берёт сборку netstandard2.0, а её зависимость пакет для .NET 7 не объявляет -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net7.0-windows'">
+		<PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>

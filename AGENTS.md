@@ -20,7 +20,7 @@ AvalonEdit — и подключается сабмодулем: так им п�
 ## Зависимости
 
 `Beresta.Markdown.Wpf.Showcase` → `Beresta.Markdown.Wpf.Editor` → `Beresta.Markdown.Wpf` → пакет
-Markdig; редактор зависит ещё от пакета AvalonEdit. Библиотека о редакторе и витрине не знает и знать
+Markdig; редактор зависит ещё от пакетов AvalonEdit и ReverseMarkdown. Библиотека о редакторе и витрине не знает и знать
 не должна. `Beresta.Markdown.Wpf.Tests` → оба пакета и видит их внутренние типы.
 
 ## Команды

@@ -101,8 +101,8 @@ root element):
 
 ## Edit Markdown
 
-The second package edits the source right where it is drawn. It brings the viewer of the same version
-and AvalonEdit.
+The second package edits the source right where it is drawn. It brings the viewer of the same version,
+AvalonEdit, and ReverseMarkdown for pasting HTML as Markdown.
 
 ```bash
 dotnet add package Beresta.Markdown.Wpf.Editor

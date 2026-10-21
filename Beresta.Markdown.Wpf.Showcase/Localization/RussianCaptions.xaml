@@ -26,5 +26,10 @@
     <sys:String x:Key="Md.Properties.Remove">Убрать</sys:String>
     <sys:String x:Key="Md.Properties.Add">Добавить свойство</sys:String>
     <sys:String x:Key="Md.Properties.AddItem">Добавить пункт</sys:String>
+    <sys:String x:Key="Md.Source.ContextMenu.Cut">Вырезать</sys:String>
+    <sys:String x:Key="Md.Source.ContextMenu.Copy">Копировать</sys:String>
+    <sys:String x:Key="Md.Source.ContextMenu.Paste">Вставить</sys:String>
+    <sys:String x:Key="Md.Source.ContextMenu.PasteFormatted">Вставить с форматированием</sys:String>
+    <sys:String x:Key="Md.Source.ContextMenu.SelectAll">Выделить всё</sys:String>
 
 </ResourceDictionary>

@@ -101,7 +101,8 @@ dotnet add package Beresta.Markdown.Wpf
 
 ## Правка Markdown
 
-Второй пакет правит исходник прямо там, где он нарисован. Он приносит вьюер той же версии и AvalonEdit.
+Второй пакет правит исходник прямо там, где он нарисован. Он приносит вьюер той же версии, AvalonEdit и
+ReverseMarkdown для вставки HTML Markdown-ом.
 
 ```bash
 dotnet add package Beresta.Markdown.Wpf.Editor
