@@ -120,6 +120,15 @@ public sealed class MarkdownEditor : MarkdownViewer
         area.PreviewMouseMove += OnTextAreaMouseMove;
         area.PreviewMouseLeftButtonUp += (_, _) => EndDrag();
         area.PreviewKeyDown += OnTextAreaKeyDown;
+        area.TextEntering += (_, e) =>
+        {
+            if (!e.Handled && e.Text is "\n" or "\r" or "\r\n" && EditingKeys.Enter(area))
+            {
+                e.Handled = true;
+            }
+        };
+        area.TextEntered += (_, e) => EditingKeys.CloseFence(area, e.Text);
+        DataObject.AddPastingHandler(area, EditingKeys.OnPasting);
         ViewportChanged += (_, _) => Place();
     }
 
@@ -622,7 +631,7 @@ public sealed class MarkdownEditor : MarkdownViewer
 
     /// <summary>
     /// Команды AvalonEdit, которые ведёт редактор: Ctrl+Z и Ctrl+Y — его отмена, она переносит курсор;
-    /// листание — на высоту экрана страницы, а не своего окна.
+    /// Tab и Shift+Tab в пункте сдвигают пункт; листание — на высоту экрана страницы, а не своего окна.
     /// </summary>
     private void OnTextAreaCommand(object sender, ExecutedRoutedEventArgs e)
     {
@@ -635,6 +644,10 @@ public sealed class MarkdownEditor : MarkdownViewer
         {
             Redo();
             e.Handled = true;
+        }
+        else if (e.Command == EditingCommands.TabForward || e.Command == EditingCommands.TabBackward)
+        {
+            e.Handled = EditingKeys.Shift(_editor.TextArea, outdent: e.Command == EditingCommands.TabBackward);
         }
         else if (_window.IsOpen && Scroller is not null && PageStep(e.Command) is { } step)
         {
