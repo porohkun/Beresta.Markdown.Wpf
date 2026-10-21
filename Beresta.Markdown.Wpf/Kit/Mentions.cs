@@ -40,4 +40,14 @@ public sealed class Mentions : MdExtension
     /// <inheritdoc/>
     public override DataTemplate? SelectTemplate(object item, DependencyObject container)
         => item is MentionVm && container is FrameworkElement element ? element.TryFindResource("Md.Mention.Template") as DataTemplate : null;
+
+    /// <inheritdoc/>
+    public override void DescribeSource(NodeVm node, MdSourceLook look)
+    {
+        if (node is MentionVm { Source: { IsEmpty: false } span })
+        {
+            look.Mark(span.Start, span.Length, "Link");
+            look.Mark(span.Start, span.Length, "Mention");
+        }
+    }
 }

@@ -661,6 +661,9 @@
         <member name="M:Beresta.Markdown.Wpf.Kit.CriticMarkup.SelectTemplate(System.Object,System.Windows.DependencyObject)">
             <inheritdoc/>
         </member>
+        <member name="M:Beresta.Markdown.Wpf.Kit.CriticMarkup.DescribeSource(Beresta.Markdown.Wpf.ViewModels.NodeVm,Beresta.Markdown.Wpf.Extensions.MdSourceLook)">
+            <inheritdoc/>
+        </member>
         <member name="T:Beresta.Markdown.Wpf.Kit.CsvTables">
             <summary>
             Таблицы из CSV: блок кода с языком <c>csv</c> или <c>tsv</c> рисуется таблицей ядра, первая
@@ -898,6 +901,9 @@
             <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.Mentions.SelectTemplate(System.Object,System.Windows.DependencyObject)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Kit.Mentions.DescribeSource(Beresta.Markdown.Wpf.ViewModels.NodeVm,Beresta.Markdown.Wpf.Extensions.MdSourceLook)">
             <inheritdoc/>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Kit.MentionVm">
@@ -1199,6 +1205,9 @@
         <member name="M:Beresta.Markdown.Wpf.Kit.WikiEmbeds.ConvertInlines(Markdig.Syntax.Inlines.Inline,Beresta.Markdown.Wpf.Extensions.MdConvertContext)">
             <inheritdoc/>
         </member>
+        <member name="M:Beresta.Markdown.Wpf.Kit.WikiEmbeds.DescribeSource(Beresta.Markdown.Wpf.ViewModels.NodeVm,Beresta.Markdown.Wpf.Extensions.MdSourceLook)">
+            <inheritdoc/>
+        </member>
         <member name="T:Beresta.Markdown.Wpf.Kit.WikiLinks">
             <summary>
             Вики-ссылки <c>[[Страница]]</c>, <c>[[Страница#Раздел]]</c>, <c>[[Страница|подпись]]</c> — ссылкой
@@ -1216,6 +1225,9 @@
             <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.WikiLinks.ConvertInlines(Markdig.Syntax.Inlines.Inline,Beresta.Markdown.Wpf.Extensions.MdConvertContext)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Kit.WikiLinks.DescribeSource(Beresta.Markdown.Wpf.ViewModels.NodeVm,Beresta.Markdown.Wpf.Extensions.MdSourceLook)">
             <inheritdoc/>
         </member>
         <member name="T:Beresta.Markdown.Wpf.MarkdownLink">
@@ -3493,10 +3505,16 @@
             <summary>Расшифровка сокращения из <c>*[метка]: расшифровка</c>; нет — <c>null</c>.</summary>
         </member>
         <member name="P:Beresta.Markdown.Wpf.ViewModels.RunVm.StyleName">
-            <summary>Имя оформления: кусок рисуется стилем <c>Span</c> с ключом темы <c>Md.&lt;имя&gt;.Style</c>; нет — <c>null</c>.</summary>
+            <summary>
+            Имя оформления: кусок рисуется стилем <c>Span</c> с ключом темы <c>Md.&lt;имя&gt;.Style</c>, его
+            исходник в редакторе — видом с этим именем; нет — <c>null</c>.
+            </summary>
         </member>
         <member name="P:Beresta.Markdown.Wpf.ViewModels.RunVm.Markup">
-            <summary>Обрамление куска в разметке выделенного; нет — кусок пишется без обрамления.</summary>
+            <summary>
+            Обрамление куска в разметке выделенного, знаки разметки в исходнике редактора; нет — кусок
+            пишется без обрамления.
+            </summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.ViewModels.TableAlignment">
             <summary>Выравнивание столбца таблицы из строки-разделителя: <c>:---</c>, <c>:---:</c>, <c>---:</c>.</summary>

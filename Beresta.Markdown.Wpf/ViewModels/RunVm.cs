@@ -38,13 +38,13 @@ public sealed record RunVm(
 {
     /// <summary>
     /// The name of a look: the piece is drawn with the <c>Span</c> style under the theme key
-    /// <c>Md.&lt;name&gt;.Style</c>; none — <c>null</c>.
+    /// <c>Md.&lt;name&gt;.Style</c>, its source in an editor — with the look of this name; none — <c>null</c>.
     /// </summary>
     public string? StyleName { get; init; }
 
     /// <summary>
-    /// The framing of the piece in the markup of the selection; none — the piece is written without
-    /// framing.
+    /// The framing of the piece in the markup of the selection, markup in the source of an editor; none —
+    /// the piece is written without framing.
     /// </summary>
     public MarkupFrame? Markup { get; init; }
 }

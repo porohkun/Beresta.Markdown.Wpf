@@ -121,6 +121,21 @@ var thread = new Thread(() =>
                 }
 
                 break;
+            case "kit":
+                foreach (var viewer in Viewers(window))
+                {
+                    Beresta.Markdown.Wpf.Extensions.MdExtension[] kit =
+                    [
+                        new Beresta.Markdown.Wpf.Kit.MkDocsAdmonitions(), new Beresta.Markdown.Wpf.Kit.CalloutContainers(),
+                        new Beresta.Markdown.Wpf.Kit.WikiEmbeds(), new Beresta.Markdown.Wpf.Kit.Chips(), new Beresta.Markdown.Wpf.Kit.Spoilers()
+                    ];
+                    foreach (var extension in kit)
+                    {
+                        viewer.Extensions.Add(extension);
+                    }
+                }
+
+                break;
             case "wait":
                 Pump(int.Parse(value));
                 break;

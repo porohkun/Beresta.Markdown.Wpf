@@ -21,7 +21,7 @@ internal static partial class SourceLooks
         Func<NodeVm, MdExtension?> ownerOf,
         ExtensionGuard guard)
     {
-        var context = new Context(source, lineStarts, ownerOf, guard, new(source), new(source), new(source));
+        var context = new Context(source, lineStarts, ownerOf, guard, new(source), new(source), new(source), []);
         foreach (var block in blocks)
         {
             Visit(block, context);
@@ -60,6 +60,10 @@ internal static partial class SourceLooks
                     context.Look.MarkLines(span.StartLine, span.EndLine, "Quote");
                     MarkQuoteIndents(span, context);
                     break;
+                case CalloutVm callout:
+                    context.Look.MarkLines(span.StartLine, LastLine(span, context), CalloutLook(callout));
+                    MarkQuoteIndents(span, context);
+                    break;
                 case ListItemVm item:
                     MarkItemIndent(item, context);
                     break;
@@ -83,6 +87,34 @@ internal static partial class SourceLooks
         if (!span.IsEmpty && span.End <= context.Source.Length && children.Any(child => !child.Source.IsEmpty))
         {
             MarkGaps(span, children, context);
+        }
+
+        MarkCalloutKind(node, span, context);
+    }
+
+    /// <summary>Вид плашки: <c>Callout.</c> и её вид с большой буквы, как в ключах темы.</summary>
+    private static string CalloutLook(CalloutVm callout)
+    {
+        var kind = callout.Kind.Trim().ToLowerInvariant();
+        return "Callout." + (kind.Length == 0 ? "Note" : char.ToUpperInvariant(kind[0]) + kind[1..]);
+    }
+
+    /// <summary>
+    /// Вид плашки в строке её заголовка — <c>[!note]</c>, слово вида у <c>!!! note</c> и <c>:::note</c> —
+    /// видом плашки поверх знаков разметки.
+    /// </summary>
+    private static void MarkCalloutKind(NodeVm node, MdSourceSpan span, Context context)
+    {
+        if (node is not CalloutVm callout || span.IsEmpty || span.End > context.Source.Length)
+        {
+            return;
+        }
+
+        var end = LineEnd(context, span.StartLine);
+        if (end > span.Start && CalloutKind().Match(context.Source, span.Start, end - span.Start) is { Success: true } match)
+        {
+            var kind = match.Groups["kind"];
+            context.Markup.Mark(kind.Index, kind.Length, CalloutLook(callout));
         }
     }
 
@@ -132,11 +164,14 @@ internal static partial class SourceLooks
         context.Look.MarkColumns(rows, table.Alignments);
     }
 
-    /// <summary>Кусок текста — по начертанию; обратные кавычки кода по краям — знаки разметки.</summary>
+    /// <summary>
+    /// Кусок текста — по начертанию и своему виду; рамка куска и обратные кавычки кода по краям — знаки
+    /// разметки.
+    /// </summary>
     private static void DescribeRun(RunVm run, MdSourceSpan span, Context context)
     {
         var source = context.Source;
-        var (start, end) = (span.Start, span.End);
+        var (start, end) = run.Markup is { } frame ? Frame(frame, span, context) : (span.Start, span.End);
         if (run.Code)
         {
             var open = 0;
@@ -184,6 +219,44 @@ internal static partial class SourceLooks
         {
             context.Look.Mark(start, length, "Link");
         }
+
+        if (run.StyleName is { } style)
+        {
+            context.Look.Mark(start, length, style);
+        }
+    }
+
+    /// <summary>
+    /// Текст куска в рамке: открывающий знак, с которого исходник начинается, и закрывающий — в его конце
+    /// или первый за текстом — знаки разметки. Куски одного узла — замена CriticMarkup — идут по его
+    /// исходнику друг за другом.
+    /// </summary>
+    private static (int Start, int End) Frame(MarkupFrame frame, MdSourceSpan span, Context context)
+    {
+        var source = context.Source.AsSpan();
+        var start = context.Framed.GetValueOrDefault(span, span.Start);
+        var end = span.End;
+        if (frame.Open.Length > 0 && source[start..end].StartsWith(frame.Open, StringComparison.Ordinal))
+        {
+            context.Markup.Mark(start, frame.Open.Length, Markup);
+            start += frame.Open.Length;
+        }
+
+        var next = end;
+        if (frame.Close.Length > 0)
+        {
+            var close = source[start..end].EndsWith(frame.Close, StringComparison.Ordinal)
+                ? end - frame.Close.Length
+                : source[start..end].IndexOf(frame.Close, StringComparison.Ordinal) is var at and >= 0 ? start + at : -1;
+            if (close >= 0)
+            {
+                context.Markup.Mark(close, frame.Close.Length, Markup);
+                (end, next) = (close, close + frame.Close.Length);
+            }
+        }
+
+        context.Framed[span] = next;
+        return (start, end);
     }
 
     /// <summary>Маркер пункта — от начала строки до его текста, у задачи — и до текста после флажка.</summary>
@@ -315,6 +388,18 @@ internal static partial class SourceLooks
         }
     }
 
+    /// <summary>Последняя строка места — с закрывающим ограждением, которого нет в строках контейнера.</summary>
+    private static int LastLine(MdSourceSpan span, Context context)
+    {
+        var line = span.EndLine;
+        while (line + 1 < context.LineStarts.Count && context.LineStarts[line + 1] < span.End)
+        {
+            line++;
+        }
+
+        return line;
+    }
+
     /// <summary>Конец строки исходника с нуля — без перевода строки.</summary>
     private static int LineEnd(Context context, int line)
     {
@@ -370,7 +455,13 @@ internal static partial class SourceLooks
     [GeneratedRegex(@"^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$")]
     private static partial Regex Delimiters();
 
-    /// <summary>Текст, его строки и куда складываются описания: встроенные, знаки разметки, расширений.</summary>
+    [GeneratedRegex(@"(?<kind>\[![A-Za-z][\w-]*\][+-]?)|(?:!!!|\?\?\?\+?)[ \t]+(?<kind>[A-Za-z][\w-]*)|:{3,}[ \t]*(?<kind>[A-Za-z][\w-]*)")]
+    private static partial Regex CalloutKind();
+
+    /// <summary>
+    /// Текст, его строки и куда складываются описания: встроенные, знаки разметки, расширений; где
+    /// начинается следующий кусок в рамке у места, которое делят куски одного узла.
+    /// </summary>
     private sealed record Context(
         string Source,
         IReadOnlyList<int> LineStarts,
@@ -378,5 +469,6 @@ internal static partial class SourceLooks
         ExtensionGuard Guard,
         MdSourceLook Look,
         MdSourceLook Markup,
-        MdSourceLook Extensions);
+        MdSourceLook Extensions,
+        Dictionary<MdSourceSpan, int> Framed);
 }

@@ -6,8 +6,9 @@ using System.Windows.Media;
 using ICSharpCode.AvalonEdit.Rendering;
 
 /// <summary>
-/// Шрифт и цвета вида исходника с именем <c>X</c> — из ключей темы <c>Md.X.*</c>; у жирного, курсива,
-/// зачёркнутого и ссылки — свои. У кусков — шрифт, цвет и фон, у строк — фон и полоса слева.
+/// Шрифт и цвета вида исходника с именем <c>X</c> — из ключей темы <c>Md.X.*</c>, а без своего ключа — из
+/// сеттеров стиля <c>Md.X.Style</c>; у жирного, курсива, зачёркнутого, ссылки и плашки — свои. У кусков —
+/// шрифт, цвет и фон, у строк — фон и полоса слева.
 /// </summary>
 internal sealed record LookStyle
 {
@@ -42,13 +43,42 @@ internal sealed record LookStyle
         "Italic" => new() { FontStyle = FontStyles.Italic },
         "Strike" => new() { Strike = true },
         "Link" => new() { Foreground = find("Md.Paragraph.LinkForeground") as Brush },
-        _ => Keyed(look, find) ?? Styled(find($"Md.{look}.Style") as Style, find) ?? new()
+        _ when look.StartsWith("Callout.", StringComparison.Ordinal) => Callout(look["Callout.".Length..], find),
+        _ => Combined(Keyed(look, find), Styled(find($"Md.{look}.Style") as Style, find))
     };
 
-    /// <summary>Вид по своим ключам темы <c>Md.X.*</c>; ни одного нет — <c>null</c>.</summary>
-    private static LookStyle? Keyed(string look, Func<string, object?> find)
+    /// <summary>Свои ключи вида поверх сеттеров его стиля: у свойства без своего ключа — значение стиля.</summary>
+    private static LookStyle Combined(LookStyle keyed, LookStyle? styled) => styled is null ? keyed : keyed with
     {
-        var style = new LookStyle
+        Foreground = keyed.Foreground ?? styled.Foreground,
+        Background = keyed.Background ?? styled.Background,
+        FontFamily = keyed.FontFamily ?? styled.FontFamily,
+        FontWeight = keyed.FontWeight ?? styled.FontWeight,
+        FontStyle = keyed.FontStyle ?? styled.FontStyle,
+        FontSize = keyed.FontSize ?? styled.FontSize,
+        Strike = styled.Strike,
+        Underline = styled.Underline
+    };
+
+    /// <summary>
+    /// Вид плашки: полоса её строк и вид в заголовке — кистью вида <c>Md.Callout.X.Brush</c>, у вида без
+    /// своей кисти — как у <c>Note</c>; поля — поля плашки.
+    /// </summary>
+    private static LookStyle Callout(string kind, Func<string, object?> find)
+    {
+        var brush = (find($"Md.Callout.{kind}.Brush") ?? find("Md.Callout.Note.Brush")) as Brush;
+        return new()
+        {
+            Foreground = brush,
+            Bar = brush,
+            BarWidth = find("Md.Callout.BorderThickness") is Thickness thickness ? thickness.Left : 0,
+            Margin = find("Md.Callout.Margin") as Thickness?
+        };
+    }
+
+    /// <summary>Вид по своим ключам темы <c>Md.X.*</c>.</summary>
+    private static LookStyle Keyed(string look, Func<string, object?> find)
+        => new()
         {
             Foreground = find($"Md.{look}.Foreground") as Brush,
             Background = find($"Md.{look}.Background") as Brush,
@@ -60,9 +90,6 @@ internal sealed record LookStyle
             BarWidth = find($"Md.{look}.BorderThickness") is Thickness thickness ? thickness.Left : 0,
             Margin = find($"Md.{look}.Margin") as Thickness?
         };
-
-        return style == new LookStyle() ? null : style;
-    }
 
     /// <summary>
     /// Вид по сеттерам стиля <c>Md.X.Style</c> — того же, которым рисуется оформленный текст: цвет, фон,

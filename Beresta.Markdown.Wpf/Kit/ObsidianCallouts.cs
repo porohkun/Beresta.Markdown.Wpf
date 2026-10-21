@@ -63,7 +63,7 @@ public sealed partial class ObsidianCallouts : MdExtension
         var body = lineEnd < 0 ? [] : rest.GetRange(lineEnd + 1, rest.Count - lineEnd - 1);
         if (body.Count > 0)
         {
-            blocks[0] = first with { Inlines = body };
+            blocks[0] = first with { Inlines = body, Source = BodySpan(first.Source, body) };
         }
         else
         {
@@ -77,6 +77,12 @@ public sealed partial class ObsidianCallouts : MdExtension
             IsFolded = fold == "-"
         };
     }
+
+    /// <summary>Место абзаца без строки заголовка: от первого инлайна содержимого с местом.</summary>
+    private static MdSourceSpan BodySpan(MdSourceSpan paragraph, List<InlineVm> body)
+        => body.FirstOrDefault(inline => !inline.Source.IsEmpty) is { Source: var start } && start.Start > paragraph.Start && start.Start < paragraph.End
+            ? new(start.Start, paragraph.End - start.Start, start.StartLine, paragraph.EndLine)
+            : paragraph;
 
     /// <summary>Инлайны без первых <paramref name="count"/> знаков текста.</summary>
     private static List<InlineVm> Skip(IReadOnlyList<InlineVm> inlines, int count)

@@ -60,6 +60,10 @@
                     <md:PropertiesCard />
                     <md:TaskStatuses />
                     <md:ObsidianCallouts />
+                    <md:WikiLinks />
+                    <md:Tags />
+                    <md:Mentions />
+                    <md:CriticMarkup />
                 </mde:MarkdownEditor.Extensions>
             </mde:MarkdownEditor>
         </ScrollViewer>
