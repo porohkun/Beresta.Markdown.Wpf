@@ -20,6 +20,12 @@ internal sealed class SourceLines
 
     public int Count => _starts.Count;
 
+    /// <summary>Текст исходника.</summary>
+    public string Text => _text;
+
+    /// <summary>Начало строки в тексте исходника.</summary>
+    public int StartOf(int line) => _starts[line];
+
     /// <summary>Текст строки; нет такой строки — <c>null</c>.</summary>
     public string? TextOf(int line) => line >= 0 && line < _starts.Count ? Span(line).ToString() : null;
 

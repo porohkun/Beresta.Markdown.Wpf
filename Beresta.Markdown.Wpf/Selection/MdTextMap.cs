@@ -309,6 +309,34 @@ public sealed class MdTextMap
         return block.Source.IsEmpty ? null : block.Source.StartLine;
     }
 
+    /// <summary>
+    /// The place in the source text under a position of the map: in text the source has as it is — the
+    /// same character, otherwise the start of the inline; in a code block — the same line and column.
+    /// <c>null</c> — the position is in no block.
+    /// </summary>
+    public int? SourceOffsetOf(int position)
+    {
+        if (Innermost(position, _ => true) is not { Block: var block })
+        {
+            return null;
+        }
+
+        if (block is CodeBlockVm code && TryGetRange(code.Runs, out var codeRange) && CodeOffset(code, position - codeRange.Start) is { } inCode)
+        {
+            return inCode;
+        }
+
+        foreach (var inlines in InlinesOf(block))
+        {
+            if (OffsetIn(inlines, position) is { } offset)
+            {
+                return offset;
+            }
+        }
+
+        return block.Source.IsEmpty ? null : block.Source.Start;
+    }
+
     /// <summary>The text of a piece for copying: indivisible elements give their text for copying or nothing.</summary>
     public string GetText(MdTextRange range)
     {
@@ -453,6 +481,126 @@ public sealed class MdTextMap
         }
 
         return null;
+    }
+
+    /// <summary>Списки инлайнов блока, на которых может стоять позиция.</summary>
+    private static IEnumerable<IReadOnlyList<InlineVm>> InlinesOf(BlockVm block) => block switch
+    {
+        ParagraphVm paragraph => [paragraph.Inlines],
+        HeadingVm heading => [heading.Inlines],
+        FigureCaptionVm caption => [caption.Inlines],
+        CalloutVm callout => [callout.Title],
+        DetailsVm details => [details.Summary],
+        DefinitionListVm definitions => definitions.Items.Select(item => item.Terms),
+        TableVm table => table.Rows.SelectMany(row => row.Cells).Select(cell => cell.Inlines),
+        _ => []
+    };
+
+    /// <summary>Место исходника позиции внутри списка инлайнов; позиция вне него — <c>null</c>.</summary>
+    private int? OffsetIn(IReadOnlyList<InlineVm> inlines, int position)
+    {
+        if (!TryGetRange(inlines, out var range) || position < range.Start || position > range.End)
+        {
+            return null;
+        }
+
+        var start = range.Start;
+        for (var i = 0; i < inlines.Count; i++)
+        {
+            var length = TextOf(inlines[i]).Length;
+            if (position < start + length || i == inlines.Count - 1)
+            {
+                return OffsetIn(inlines[i], position - start);
+            }
+
+            start += length;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Место исходника знака инлайна: у текста, который исходник хранит как есть, — тот же знак, у кода
+    /// строкой — за обратными кавычками; иначе — начало инлайна.
+    /// </summary>
+    private int? OffsetIn(InlineVm inline, int offset)
+    {
+        var span = inline.Source;
+        if (span.IsEmpty)
+        {
+            return null;
+        }
+
+        if (inline is RunVm run && _lines is { Text: var text } && span.End <= text.Length)
+        {
+            var source = text.AsSpan(span.Start, span.Length);
+            var from = run.Code ? CodeContent(source, run.Text) : TextContent(source, run.Text);
+            if (from is { } start)
+            {
+                return span.Start + start + Math.Clamp(offset, 0, run.Text.Length);
+            }
+        }
+
+        return span.Start;
+    }
+
+    /// <summary>Где в исходнике куска начинается его текст: исходник — тот же текст, может быть, с пробелами по краям.</summary>
+    private static int? TextContent(ReadOnlySpan<char> source, string text)
+    {
+        if (source.SequenceEqual(text))
+        {
+            return 0;
+        }
+
+        var trimmed = source.TrimStart();
+        return trimmed.TrimEnd().SequenceEqual(text) ? source.Length - trimmed.Length : null;
+    }
+
+    /// <summary>Где в исходнике кода строкой начинается его текст: после обратных кавычек и, может быть, пробела.</summary>
+    private static int? CodeContent(ReadOnlySpan<char> source, string text)
+    {
+        var open = 0;
+        while (open < source.Length && source[open] == '`')
+        {
+            open++;
+        }
+
+        for (var from = open; from <= open + 1 && from + text.Length <= source.Length; from++)
+        {
+            if (source.Slice(from, text.Length).SequenceEqual(text))
+            {
+                return from;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Место исходника знака блока кода: та же строка, столбец — после отступа, срезанного у кода;
+    /// строку кода в исходнике не узнать — её начало.
+    /// </summary>
+    private int? CodeOffset(CodeBlockVm code, int offset)
+    {
+        if (_lines is not { } lines)
+        {
+            return null;
+        }
+
+        var inCode = Math.Clamp(offset, 0, code.Code.Length);
+        var lineStart = inCode == 0 ? 0 : code.Code.LastIndexOf('\n', inCode - 1) + 1;
+        var next = code.Code.IndexOf('\n', lineStart);
+        var lineEnd = next < 0 ? code.Code.Length : next;
+        var line = code.CodeFirstLine + CharCount.In(code.Code.AsSpan(0, lineStart), '\n');
+        if (line >= lines.Count || lines.TextOf(line) is not { } text)
+        {
+            return null;
+        }
+
+        var codeLine = code.Code.AsSpan(lineStart, lineEnd - lineStart);
+        return text.AsSpan().EndsWith(codeLine)
+            ? lines.StartOf(line) + text.Length - codeLine.Length + inCode - lineStart
+            : lines.StartOf(line);
     }
 
     /// <summary>Кусок карты блока; блока в карте нет — <c>null</c>.</summary>

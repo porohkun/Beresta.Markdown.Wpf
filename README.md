@@ -1,4 +1,4 @@
-﻿# Beresta.Markdown.Wpf v0.9.0
+﻿# Beresta.Markdown.Wpf v0.10.0
 
 [![NuGet](https://img.shields.io/nuget/v/Beresta.Markdown.Wpf)](https://www.nuget.org/packages/Beresta.Markdown.Wpf)
 [![Downloads](https://img.shields.io/nuget/dt/Beresta.Markdown.Wpf)](https://www.nuget.org/packages/Beresta.Markdown.Wpf)

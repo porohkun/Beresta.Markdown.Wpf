@@ -13,6 +13,7 @@ using Behaviors;
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Document;
 using Presenters;
+using AvalonSelection = ICSharpCode.AvalonEdit.Editing.Selection;
 using Scrolling;
 using Selection;
 using ViewModels;
@@ -86,6 +87,7 @@ public sealed class MarkdownEditor : MarkdownViewer
     private bool _reconcileQueued;
     private bool _refitQueued;
     private bool _dragging;
+    private int? _clicked;
 
     static MarkdownEditor()
     {
@@ -265,8 +267,8 @@ public sealed class MarkdownEditor : MarkdownViewer
     }
 
     /// <summary>
-    /// Щелчок по нарисованному: курсор в начало строки исходника под точкой вьюера, и её блок
-    /// становится правимым. Под точкой нет строки — <c>false</c>.
+    /// Щелчок по нарисованному: курсор на знак исходника под точкой вьюера, а вне текста — в начало
+    /// строки исходника под ней; её блок становится правимым. Под точкой нет строки — <c>false</c>.
     /// </summary>
     internal bool PlaceCaretAt(Point point)
     {
@@ -275,7 +277,8 @@ public sealed class MarkdownEditor : MarkdownViewer
             return false;
         }
 
-        var target = ToDocumentLine((int)Math.Floor(line));
+        var shownLine = (int)Math.Floor(line);
+        var target = ToDocumentLine(shownLine);
         if (FrontMatterEditing != MdFrontMatterEditing.Text && target <= FrontMatterEnd())
         {
             return false;
@@ -283,8 +286,34 @@ public sealed class MarkdownEditor : MarkdownViewer
 
         _windowWanted = true;
         _editor.TextArea.ClearSelection();
-        _editor.CaretOffset = _document.GetLineByNumber(target).Offset;
+        _editor.CaretOffset = OffsetAt(point, shownLine) ?? _document.GetLineByNumber(target).Offset;
+        _clicked = _editor.CaretOffset;
         Reconcile();
+        return true;
+    }
+
+    /// <summary>
+    /// Двойной щелчок по нарисованному: первый открыл блок, и в исходнике выделяется слово у места
+    /// первого щелчка — так, как его выделил бы AvalonEdit. Первый щелчок был не по нарисованному —
+    /// <c>false</c>.
+    /// </summary>
+    internal bool SelectClickedWord()
+    {
+        if (_clicked is not { } offset || offset > _document.TextLength)
+        {
+            return false;
+        }
+
+        _clicked = null;
+        var line = _document.GetLineByOffset(offset);
+        var start = TextUtilities.GetNextCaretPosition(_document, Math.Min(offset + 1, line.EndOffset), LogicalDirection.Backward, CaretPositioningMode.WordStartOrSymbol);
+        start = Math.Max(start, line.Offset);
+        var end = TextUtilities.GetNextCaretPosition(_document, start, LogicalDirection.Forward, CaretPositioningMode.WordBorderOrSymbol);
+        end = end < 0 ? line.EndOffset : Math.Min(end, line.EndOffset);
+
+        var area = _editor.TextArea;
+        area.Caret.Offset = end;
+        area.Selection = AvalonSelection.Create(area, start, end);
         return true;
     }
 
@@ -334,6 +363,13 @@ public sealed class MarkdownEditor : MarkdownViewer
     /// <inheritdoc/>
     protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
     {
+        if (e.ClickCount == 2 && SelectClickedWord())
+        {
+            e.Handled = true;
+            return;
+        }
+
+        _clicked = null;
         var source = e.OriginalSource as DependencyObject;
         if (EditMode == MdEditMode.Blocks
             && !Keyboard.Modifiers.HasFlag(ModifierKeys.Control)
@@ -837,9 +873,24 @@ public sealed class MarkdownEditor : MarkdownViewer
             }
         }
 
-        return GetSourceLineAt(point.Y) is { } line
-            ? _document.GetLineByNumber(ToDocumentLine((int)Math.Floor(line))).Offset
-            : null;
+        if (GetSourceLineAt(point.Y) is not { } line)
+        {
+            return null;
+        }
+
+        var shownLine = (int)Math.Floor(line);
+        return OffsetAt(point, shownLine) ?? _document.GetLineByNumber(ToDocumentLine(shownLine)).Offset;
+    }
+
+    /// <summary>Место документа под знаком нарисованного текста, если знак стоит на этой строке показанного текста; иначе — <c>null</c>.</summary>
+    private int? OffsetAt(Point point, int shownLine)
+    {
+        var shown = ShownMarkdown;
+        return GetPositionFromPoint(point, snapToText: true) is { } position
+            && TextMap.SourceOffsetOf(position) is { } offset
+            && _shownLines.LineAt(shown, offset) == shownLine
+                ? _versions.Map(shown, offset, _document, AnchorMovementType.Default)
+                : null;
     }
 
     private bool IsInWindow(DependencyObject? source)

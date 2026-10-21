@@ -77,21 +77,75 @@ public sealed class EditorWindowTests
     }
 
     [Fact]
-    public void Щелчок_по_нарисованному_ставит_окно_на_блок_и_курсор_в_начало_строки()
+    public void Щелчок_по_нарисованному_ставит_окно_на_блок_и_курсор_на_знак_под_мышью()
     {
         WpfHost.Invoke(() =>
         {
             var (editor, window) = Show();
             Open(editor, window, Line(10));
-            var text = Visuals.Descendants<MdTextBlock>(editor).First(block => Text(editor, block).StartsWith("Paragraph 12 one", StringComparison.Ordinal));
-            var middle = text.TranslatePoint(new(10, text.ActualHeight / 2), editor);
 
-            editor.PlaceCaretAt(middle).Should().BeTrue();
+            editor.PlaceCaretAt(At(editor, "Paragraph 12 two", "two")).Should().BeTrue();
             WpfHost.Settle(window);
 
             editor.WindowLines.Should().Be((49, 51));
-            editor.SourceCaretOffset.Should().Be(editor.TextEditor.Document.GetLineByNumber(50).Offset);
+            editor.SourceCaretOffset.Should().Be(Line(12) + "Paragraph 12 one\nParagraph 12 ".Length);
             ShouldBeSound(editor);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Щелчок_после_правки_выше_ставит_курсор_на_тот_же_знак_пока_разбор_не_лёг()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var (editor, window) = Show();
+            Open(editor, window, Line(10));
+            editor.TextEditor.TextArea.PerformTextInput("New ");
+            WpfHost.Settle(window);
+
+            editor.PlaceCaretAt(At(editor, "Paragraph 12 two", "two")).Should().BeTrue();
+
+            editor.SourceCaretOffset.Should().Be(Line(12) + "New ".Length + "Paragraph 12 one\nParagraph 12 ".Length);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Щелчок_правее_конца_строки_ставит_курсор_в_её_конец()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var (editor, window) = Show();
+            Open(editor, window, Line(10));
+            var end = At(editor, "Paragraph 12 one", "one");
+
+            editor.PlaceCaretAt(new(end.X + 300, end.Y)).Should().BeTrue();
+            WpfHost.Settle(window);
+
+            editor.SourceCaretOffset.Should().Be(Line(12) + "Paragraph 12 one".Length);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Двойной_щелчок_по_нарисованному_выделяет_слово_в_исходнике()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var (editor, window) = Show();
+            Open(editor, window, Line(10));
+            editor.PlaceCaretAt(At(editor, "Paragraph 12 two", "two")).Should().BeTrue();
+            WpfHost.Settle(window);
+            var second = new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left) { RoutedEvent = UIElement.PreviewMouseLeftButtonDownEvent };
+            typeof(MouseButtonEventArgs).GetProperty(nameof(MouseButtonEventArgs.ClickCount))!.SetValue(second, 2);
+
+            editor.RaiseEvent(second);
+
+            second.Handled.Should().BeTrue();
+            editor.SourceSelectionStart.Should().Be(Line(12) + "Paragraph 12 one\nParagraph 12 ".Length);
+            editor.SourceSelectionLength.Should().Be("two".Length);
+            editor.SelectClickedWord().Should().BeFalse("слово выделяет только двойной щелчок сразу после щелчка по нарисованному");
             window.Close();
         });
     }
@@ -271,6 +325,14 @@ public sealed class EditorWindowTests
         .Split('\n')
         .Take(4 * block)
         .Sum(line => line.Length + 1);
+
+    /// <summary>Точка у левого края первого знака куска в нарисованном тексте, который начинается строкой <paramref name="line"/>.</summary>
+    private static Point At(MarkdownEditor editor, string line, string piece)
+    {
+        var position = editor.TextMap.Text.IndexOf(line, StringComparison.Ordinal) + line.IndexOf(piece, StringComparison.Ordinal);
+        var box = editor.GetRangeRects(new(position, 1))[0];
+        return new(box.Left + (box.Width / 4), box.Top + (box.Height / 2));
+    }
 
     /// <summary>Курсор на место: в блочном режиме окно встаёт на его блок.</summary>
     private static void Open(MarkdownEditor editor, Window window, int offset)

@@ -286,6 +286,24 @@ var thread = new Thread(() =>
                 break;
             }
 
+            // Щелчок и двойной щелчок по точке редактора x;y — как по нарисованному, без мыши и фокуса
+            case "click":
+            case "dblclick":
+            {
+                var editor = Editor(window);
+                var parts = value.Split(';');
+                var point = new Point(Number(parts[0]), Number(parts[1]));
+                var placed = (bool)typeof(MarkdownEditor).GetMethod("PlaceCaretAt", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(editor, [point])!;
+                Settle(window);
+                if (name == "dblclick" && placed)
+                {
+                    typeof(MarkdownEditor).GetMethod("SelectClickedWord", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(editor, []);
+                }
+
+                Console.WriteLine($"{name}: {(placed ? $"курсор {editor.SourceCaretOffset}" : "мимо")}, выделено «{editor.TextEditor.SelectedText}»");
+                break;
+            }
+
             // Ctrl+Z и Ctrl+Y редактору — командами отмены и возврата
             case "undo":
             case "redo":
