@@ -28,6 +28,9 @@ internal sealed record LookStyle
 
     public double BarWidth { get; init; }
 
+    /// <summary>Поля блока в отрисовке: исходник поднимает строки до той же высоты.</summary>
+    public Thickness? Margin { get; init; }
+
     /// <param name="look">Имя вида.</param>
     /// <param name="find">Ресурс по ключу; нет — <c>null</c>.</param>
     public static LookStyle Resolve(string look, Func<string, object?> find) => look switch
@@ -45,7 +48,8 @@ internal sealed record LookStyle
             FontStyle = find($"Md.{look}.FontStyle") as FontStyle?,
             FontSize = find($"Md.{look}.FontSize") as double?,
             Bar = find($"Md.{look}.BorderBrush") as Brush,
-            BarWidth = find($"Md.{look}.BorderThickness") is Thickness thickness ? thickness.Left : 0
+            BarWidth = find($"Md.{look}.BorderThickness") is Thickness thickness ? thickness.Left : 0,
+            Margin = find($"Md.{look}.Margin") as Thickness?
         }
     };
 

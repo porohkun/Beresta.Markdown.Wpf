@@ -334,6 +334,9 @@
         <member name="P:Beresta.Markdown.Wpf.Extensions.MdSourceLook.Lines">
             <summary>Строки исходника, считая с нуля, с их видами: фон, полоса слева.</summary>
         </member>
+        <member name="P:Beresta.Markdown.Wpf.Extensions.MdSourceLook.Indents">
+            <summary>Строки исходника, считая с нуля, которые начинаются маркером такой длины: перенесённые строки начинаются после него.</summary>
+        </member>
         <member name="M:Beresta.Markdown.Wpf.Extensions.MdSourceLook.Mark(System.Int32,System.Int32,System.String)">
             <summary>
             Даёт куску исходника вид: <c>Heading1</c>–<c>Heading6</c>, <c>Bold</c>, <c>Italic</c>,
@@ -344,6 +347,12 @@
             <summary>
             Даёт строкам исходника с <paramref name="firstLine"/> по <paramref name="lastLine"/> вид:
             <c>CodeBlock</c>, <c>Quote</c> или свой.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Extensions.MdSourceLook.MarkIndent(System.Int32,System.Int32)">
+            <summary>
+            Отмечает первые <paramref name="length"/> знаков строки исходника её маркером — маркером
+            списка, <c>&gt;</c> цитаты: перенесённые строки этой строки начинаются после него.
             </summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Extensions.MdSourceContext">

@@ -127,6 +127,8 @@ public sealed class MarkdownEditor : MarkdownViewer
         _editor.DocumentChanged += (_, _) => Reattach();
 
         var area = _editor.TextArea;
+        area.TextView.ElementGenerators.Insert(0, new LineStruts(StrutOf));
+        area.TextView.ElementGenerators.Insert(1, new LineMarkers(MarkerOf));
         area.TextView.LineTransformers.Add(new SourceColorizer(PiecesOn));
         area.TextView.BackgroundRenderers.Add(new SourceBackground(LooksAt));
         CommandManager.AddPreviewExecutedHandler(area, OnTextAreaCommand);
@@ -1146,11 +1148,16 @@ public sealed class MarkdownEditor : MarkdownViewer
             depth++;
         }
 
-        _windowContainers = first
+        var containers = first
             .Skip(1)
             .Take(depth)
             .Select(level => (level.Container.StartLine, level.Container.EndLine))
             .ToList();
+        if (!containers.SequenceEqual(_windowContainers))
+        {
+            _windowContainers = containers;
+            _editor.TextArea.TextView.Redraw();
+        }
         var indent = first
             .Take(depth + 1)
             .Max(level => level.Indent);
@@ -1300,6 +1307,59 @@ public sealed class MarkdownEditor : MarkdownViewer
                 }
             }
         }
+    }
+
+    /// <summary>Длина маркера строки документа — пункта, цитаты; маркера нет или строку не узнать — 0.</summary>
+    private int MarkerOf(DocumentLine line)
+    {
+        var look = _look ??= new(GetSourceLook(), ShownMarkdown, _shownLines);
+        var text = look.Text;
+        var shownLine = ToShownLine(line.LineNumber);
+        var start = _shownLines.StartOf(text, shownLine);
+        return look.IndentOn(shownLine) is > 0 and var length
+               && _versions.Map(text, start, _document, AnchorMovementType.BeforeInsertion) == line.Offset
+               && _versions.Map(text, start + length, _document, AnchorMovementType.BeforeInsertion) is { } end
+            ? Math.Clamp(end - line.Offset, 0, line.Length)
+            : 0;
+    }
+
+    /// <summary>
+    /// Распорка строки документа: строка заголовка поднимается на его поля, а строки с видом, у которого
+    /// есть поля, — на верхнее у первой строки и нижнее у последней. Распорки не нужно — <c>null</c>.
+    /// </summary>
+    private (double Ascent, double Descent)? StrutOf(DocumentLine line)
+    {
+        var look = _look ??= new(GetSourceLook(), ShownMarkdown, _shownLines);
+        var text = look.Text;
+        var shownLine = ToShownLine(line.LineNumber);
+        if (_versions.Map(text, _shownLines.StartOf(text, shownLine), _document, AnchorMovementType.BeforeInsertion) != line.Offset)
+        {
+            return null;
+        }
+
+        var (top, bottom) = (0.0, 0.0);
+        var (family, size) = (_editor.FontFamily, _editor.FontSize);
+        foreach (var (_, _, name) in look.PiecesOn(shownLine))
+        {
+            if (name.StartsWith("Heading", StringComparison.Ordinal) && StyleOf(name) is { Margin: { } margin } heading)
+            {
+                (top, bottom) = (margin.Top, margin.Bottom);
+                (family, size) = (heading.FontFamily ?? family, heading.FontSize ?? size);
+            }
+        }
+
+        foreach (var (first, last, name) in look.LooksAt(shownLine))
+        {
+            if (!_windowContainers.Contains((first, last)) && StyleOf(name) is { Margin: { } margin })
+            {
+                top = shownLine == first ? Math.Max(top, margin.Top) : top;
+                bottom = shownLine == last ? Math.Max(bottom, margin.Bottom) : bottom;
+            }
+        }
+
+        return top > 0 || bottom > 0
+            ? ((family.Baseline * size) + top, ((family.LineSpacing - family.Baseline) * size) + bottom)
+            : null;
     }
 
     /// <summary>Виды строки документа с единицы: фон, полоса.</summary>

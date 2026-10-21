@@ -57,6 +57,10 @@ internal static class SourceLooks
                     break;
                 case QuoteVm:
                     context.Look.MarkLines(span.StartLine, span.EndLine, "Quote");
+                    MarkQuoteIndents(span, context);
+                    break;
+                case ListItemVm item:
+                    MarkItemIndent(item, context);
                     break;
             }
         }
@@ -128,6 +132,55 @@ internal static class SourceLooks
         if (run.Href is not null)
         {
             context.Look.Mark(start, length, "Link");
+        }
+    }
+
+    /// <summary>Маркер пункта — от начала строки до его текста, у задачи — и до текста после флажка.</summary>
+    private static void MarkItemIndent(ListItemVm item, Context context)
+    {
+        if (item.Blocks is not [{ Source: { IsEmpty: false } first } block, ..] || first.StartLine >= context.LineStarts.Count)
+        {
+            return;
+        }
+
+        var end = first.Start;
+        if (block is ParagraphVm { Inlines: [TaskVm { Source: { IsEmpty: false } task }, ..] })
+        {
+            end = task.End;
+            while (end < context.Source.Length && context.Source[end] == ' ')
+            {
+                end++;
+            }
+        }
+
+        context.Look.MarkIndent(first.StartLine, end - context.LineStarts[first.StartLine]);
+    }
+
+    /// <summary>Маркеры строк цитаты: <c>&gt;</c> с пробелом, у вложенной цитаты — все подряд.</summary>
+    private static void MarkQuoteIndents(MdSourceSpan span, Context context)
+    {
+        for (var line = span.StartLine; line <= span.EndLine && line < context.LineStarts.Count; line++)
+        {
+            var start = context.LineStarts[line];
+            var end = LineEnd(context, line);
+            var at = start;
+            while (true)
+            {
+                var mark = at;
+                while (mark < end && mark - at < 3 && context.Source[mark] == ' ')
+                {
+                    mark++;
+                }
+
+                if (mark >= end || context.Source[mark] != '>')
+                {
+                    break;
+                }
+
+                at = mark + 1 < end && context.Source[mark + 1] == ' ' ? mark + 2 : mark + 1;
+            }
+
+            context.Look.MarkIndent(line, at - start);
         }
     }
 

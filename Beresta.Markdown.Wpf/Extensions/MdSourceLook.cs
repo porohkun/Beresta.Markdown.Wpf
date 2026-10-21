@@ -9,6 +9,7 @@ public sealed class MdSourceLook
 {
     private readonly List<(int Start, int Length, string Look)> _pieces = [];
     private readonly List<(int FirstLine, int LastLine, string Look)> _lines = [];
+    private readonly List<(int Line, int Length)> _indents = [];
 
     internal MdSourceLook()
     {
@@ -19,6 +20,9 @@ public sealed class MdSourceLook
 
     /// <summary>Source lines, counting from zero, with their looks: a background, a bar on the left.</summary>
     public IReadOnlyList<(int FirstLine, int LastLine, string Look)> Lines => _lines;
+
+    /// <summary>Source lines, counting from zero, that start with a marker of this length: wrapped lines start after it.</summary>
+    public IReadOnlyList<(int Line, int Length)> Indents => _indents;
 
     /// <summary>
     /// Gives a piece of the source a look: <c>Heading1</c>–<c>Heading6</c>, <c>Bold</c>,
@@ -47,10 +51,23 @@ public sealed class MdSourceLook
         }
     }
 
-    /// <summary>Добавляет куски и строки другого описания после своих.</summary>
+    /// <summary>
+    /// Marks the first <paramref name="length"/> characters of a source line as its marker — a list
+    /// marker, <c>&gt;</c> of a quote: the wrapped lines of this line start after it.
+    /// </summary>
+    public void MarkIndent(int line, int length)
+    {
+        if (length > 0)
+        {
+            _indents.Add((line, length));
+        }
+    }
+
+    /// <summary>Добавляет куски, строки и маркеры другого описания после своих.</summary>
     internal void Append(MdSourceLook other)
     {
         _pieces.AddRange(other._pieces);
         _lines.AddRange(other._lines);
+        _indents.AddRange(other._indents);
     }
 }

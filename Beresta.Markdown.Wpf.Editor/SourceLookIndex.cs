@@ -10,6 +10,7 @@ internal sealed class SourceLookIndex
 {
     private readonly List<(int Start, int End, string Look)>?[] _pieces;
     private readonly IReadOnlyList<(int FirstLine, int LastLine, string Look)> _lines;
+    private readonly Dictionary<int, int> _indents = [];
 
     public SourceLookIndex(MdSourceLook look, string text, TextLines lines)
     {
@@ -30,6 +31,10 @@ internal sealed class SourceLookIndex
         }
 
         _lines = look.Lines;
+        foreach (var (line, length) in look.Indents)
+        {
+            _indents[line] = Math.Max(length, _indents.GetValueOrDefault(line));
+        }
     }
 
     /// <summary>Текст, который описан.</summary>
@@ -38,6 +43,9 @@ internal sealed class SourceLookIndex
     /// <summary>Куски строки с нуля в порядке рисования.</summary>
     public IReadOnlyList<(int Start, int End, string Look)> PiecesOn(int line)
         => line >= 0 && line < _pieces.Length ? _pieces[line] ?? [] : [];
+
+    /// <summary>Длина маркера строки с нуля; маркера нет — 0.</summary>
+    public int IndentOn(int line) => _indents.GetValueOrDefault(line);
 
     /// <summary>Виды строки с нуля и строки, которым их дали.</summary>
     public IEnumerable<(int FirstLine, int LastLine, string Look)> LooksAt(int line)
