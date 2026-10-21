@@ -1,4 +1,4 @@
-<Solution>
+﻿<Solution>
   <Folder Name="/Solution Items/">
     <File Path=".gitignore" />
     <File Path="AGENTS.md" />
@@ -9,7 +9,9 @@
     <File Path="LICENSE" />
     <File Path="README.md" />
     <File Path="ROADMAP.md" />
+    <File Path="build/Documentation.targets" />
   </Folder>
+  <Project Path="Beresta.Markdown.Wpf.Editor/Beresta.Markdown.Wpf.Editor.csproj" />
   <Project Path="Beresta.Markdown.Wpf.Showcase/Beresta.Markdown.Wpf.Showcase.csproj" />
   <Project Path="Beresta.Markdown.Wpf.Tests/Beresta.Markdown.Wpf.Tests.csproj" />
   <Project Path="Beresta.Markdown.Wpf/Beresta.Markdown.Wpf.csproj" />

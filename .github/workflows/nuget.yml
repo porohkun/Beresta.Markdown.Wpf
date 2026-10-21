@@ -29,7 +29,7 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $prefix = (Select-Xml -Path Beresta.Markdown.Wpf/Beresta.Markdown.Wpf.csproj -XPath '//VersionPrefix').Node.InnerText.Trim()
+          $prefix = (Select-Xml -Path Directory.Build.props -XPath '//VersionPrefix').Node.InnerText.Trim()
           $released = [bool](git ls-remote --tags origin "refs/tags/v$prefix")
           $release = '${{ github.event_name }}' -eq 'push'
 
@@ -103,12 +103,16 @@ jobs:
       - name: Тесты
         run: dotnet test Beresta.Markdown.Wpf.Tests -c Release --no-build
 
-      - name: Пакет
-        run: >-
-          dotnet pack Beresta.Markdown.Wpf/Beresta.Markdown.Wpf.csproj -c Release --no-build -o artifacts
-          "-p:VersionSuffix=$env:SUFFIX" -p:ContinuousIntegrationBuild=true "-p:PackageReleaseNotes=$env:NOTES"
+      - name: Пакеты
+        run: |
+          foreach ($project in 'Beresta.Markdown.Wpf', 'Beresta.Markdown.Wpf.Editor') {
+            dotnet pack "$project/$project.csproj" -c Release --no-build -o artifacts "-p:VersionSuffix=$env:SUFFIX" -p:ContinuousIntegrationBuild=true "-p:PackageReleaseNotes=$env:NOTES"
+            if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+            }
+          }
 
-      - name: Пакет в артефакты
+      - name: Пакеты в артефакты
         uses: actions/upload-artifact@v7
         with:
           name: Beresta.Markdown.Wpf.${{ env.VERSION }}

@@ -1,0 +1,11 @@
+﻿<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Beresta.Markdown.Wpf.Editor</name>
+    </assembly>
+    <members>
+        <member name="T:Beresta.Markdown.Wpf.Editor.MarkdownEditor">
+            <summary>Редактор Markdown: вьюер, который ещё и правит исходник своего документа.</summary>
+        </member>
+    </members>
+</doc>

@@ -6,6 +6,7 @@
            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
            xmlns:hc="https://handyorg.github.io/handycontrol"
            xmlns:mdv="clr-namespace:Beresta.Markdown.Wpf;assembly=Beresta.Markdown.Wpf"
+           xmlns:mde="clr-namespace:Beresta.Markdown.Wpf.Editor;assembly=Beresta.Markdown.Wpf.Editor"
            xmlns:local="clr-namespace:Beresta.Markdown.Wpf.Showcase"
            xmlns:loc="clr-namespace:Beresta.Markdown.Wpf.Showcase.Localization"
            xmlns:document="clr-namespace:Beresta.Markdown.Wpf.Showcase.Showcases.Document"
@@ -19,6 +20,7 @@
            xmlns:streaming="clr-namespace:Beresta.Markdown.Wpf.Showcase.Showcases.Streaming"
            xmlns:margin="clr-namespace:Beresta.Markdown.Wpf.Showcase.Showcases.MarginButtons"
            xmlns:preview="clr-namespace:Beresta.Markdown.Wpf.Showcase.Showcases.Preview"
+           xmlns:editing="clr-namespace:Beresta.Markdown.Wpf.Showcase.Showcases.Editor"
            xmlns:copying="clr-namespace:Beresta.Markdown.Wpf.Showcase.Showcases.Copying"
            xmlns:about="clr-namespace:Beresta.Markdown.Wpf.Showcase.Showcases.About"
            mc:Ignorable="d"
@@ -39,6 +41,7 @@
             <Setter Property="IsSelectionEnabled" Value="{Binding Options.IsSelectionEnabled}" />
             <Setter Property="BaseUri" Value="pack://application:,,,/Beresta.Markdown.Wpf.Showcase;component/Samples/" />
         </Style>
+        <Style TargetType="{x:Type mde:MarkdownEditor}" BasedOn="{StaticResource {x:Type mdv:MarkdownViewer}}" />
 
         <!-- Капсулы HandyControl, полоса заголовков слева и прижата к верху -->
         <Style x:Key="ShowcaseTabs" TargetType="{x:Type TabControl}" BasedOn="{StaticResource TabControlCapsule}">
@@ -111,6 +114,9 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type preview:PreviewViewModel}">
             <preview:PreviewView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type editing:EditorViewModel}">
+            <editing:EditorView />
         </DataTemplate>
         <DataTemplate DataType="{x:Type copying:CopyingViewModel}">
             <copying:CopyingView />

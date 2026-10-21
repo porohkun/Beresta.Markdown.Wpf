@@ -2,7 +2,7 @@
 
 	<!-- Package: English docs of the public API next to the assembly, Russian ones in ru -->
 	<PropertyGroup>
-		<RussianDocumentationFile>$(MSBuildThisFileDirectory)$(MSBuildProjectName).ru.xml</RussianDocumentationFile>
+		<RussianDocumentationFile>$(MSBuildProjectDirectory)\Docs\$(MSBuildProjectName).ru.xml</RussianDocumentationFile>
 		<TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);PackDocumentation</TargetsForTfmSpecificBuildOutput>
 	</PropertyGroup>
 

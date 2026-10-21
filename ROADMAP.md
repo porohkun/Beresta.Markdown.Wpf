@@ -4,56 +4,6 @@
 [`docs/ideas/editor.md`](docs/ideas/editor.md); здесь — что сделать и в каком порядке. Каждый этап
 опирается на предыдущие и заканчивается рабочим состоянием: сборка, тесты, витрина.
 
-## Этап 1. Второй пакет и наследник вьюера
-
-Решение собирается с проектом `Beresta.Markdown.Wpf.Editor`, оба пакета пакуются одной версией,
-`MarkdownEditor` без режимов рисует документ как вьюер.
-
-- [ ] `MarkdownViewer` без `sealed`.
-  - Перекрытия мыши — `OnPreviewMouseLeftButtonDown`, `OnPreviewMouseMove`,
-    `OnPreviewMouseLeftButtonUp`, `OnLostMouseCapture` — остаются `protected override`: наследник
-    перекрывает их дальше.
-  - `DefaultStyleKey` наследник не меняет и берёт шаблон вьюера из его темы.
-  - Тест: наследник рисует тот же документ, что вьюер, — те же блоки и тот же текст карты.
-- [ ] Проект `Beresta.Markdown.Wpf.Editor/`.
-  - csproj: `net7.0-windows` — `net10.0-windows`, `RootNamespace` `Beresta.Markdown.Wpf.Editor`,
-    `GenerateDocumentationFile`, `CS1591` — ошибкой.
-  - Пакет `Beresta.Markdown.Wpf.Editor`: автор, лицензия, значок, ссылки, символы `snupkg` — как у
-    вьюера; своё описание и теги (`markdown;wpf;editor;avalonedit;…`); страница пакета — тот же
-    корневой `README.md`.
-  - Зависимости: ссылка на проект `Beresta.Markdown.Wpf` — в пакете это зависимость от вьюера той
-    же версии; пакет `AvalonEdit` 6.3.1.120 — проверить, нет ли новее. Под .NET 7 AvalonEdit берёт
-    сборку `net6.0-windows`.
-  - `InternalsVisibleTo` для `Beresta.Markdown.Wpf.Tests`.
-  - Пустой `MarkdownEditor : MarkdownViewer` с XML-доком.
-  - `AGENTS.md` проекта: что это, состав, зависимости; правила — только открытый и защищённый API
-    вьюера, обход чинится во вьюере.
-- [ ] Русские доки второго пакета.
-  - `Documentation.targets` переезжает из `Beresta.Markdown.Wpf/Docs/` в общее место и ищет
-    `<проект>.ru.xml` в папке `Docs` своего проекта.
-  - У редактора — `Beresta.Markdown.Wpf.Editor/Docs/Beresta.Markdown.Wpf.Editor.ru.xml`.
-  - `DocumentationTests` проверяет и сборку редактора: русский файл переводит ровно открытый API.
-- [ ] Общая версия.
-  - `VersionPrefix` переезжает из csproj вьюера в `Directory.Build.props`.
-  - `nuget.yml` читает его оттуда.
-  - Раздел «Версия» в `Beresta.Markdown.Wpf/AGENTS.md` — тоже.
-- [ ] `nuget.yml`: шаг «Пакет» пакует оба проекта. Публикация уже перебирает все `*.nupkg`, так что
-  на nuget.org и в релиз на GitHub уходят оба.
-- [ ] Решение и ссылки.
-  - Проект — в `Beresta.Markdown.Wpf.slnx`.
-  - Тесты и витрина ссылаются на проект редактора.
-  - Корневой `AGENTS.md`: проект в таблице состава; зависимости — `Showcase → Editor →
-    Beresta.Markdown.Wpf → Markdig` и `Editor → AvalonEdit`; вьюер о редакторе не знает.
-- [ ] Витрина.
-  - В `THIRD-PARTY-NOTICES.md` — раздел AvalonEdit: копирайт и лицензия MIT.
-  - Витрина «Редактор» в `Showcases/Editor/`: вьюмодель от `ShowcaseViewModel`, вид с шапкой
-    `ShowcaseHeader`, образец `Editor.md` и `Editor.ru.md`, строки `Editor.*` в `Strings.resx` и
-    `Strings.ru.resx`.
-  - `tools/ShowcaseProbe.cs`: шаг, открывающий витрину «Редактор».
-
-Готово, когда: решение собирается, тесты проходят, `dotnet pack` даёт два пакета одной версии,
-витрина «Редактор» показывает документ.
-
 ## Этап 2. Вьюер: правка исходника контролами
 
 Во вьюере, без редактора, флажок задачи и сворачивание пишут в исходник.

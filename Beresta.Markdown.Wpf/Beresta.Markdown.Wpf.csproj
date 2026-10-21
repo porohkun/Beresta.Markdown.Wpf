@@ -15,7 +15,6 @@
 	<PropertyGroup>
 		<IsPackable>true</IsPackable>
 		<PackageId>Beresta.Markdown.Wpf</PackageId>
-		<VersionPrefix>0.8.0</VersionPrefix>
 		<Title>Beresta.Markdown.Wpf</Title>
 		<Authors>Porohkun</Authors>
 		<Copyright>Copyright (c) 2026 Pavel</Copyright>
@@ -46,6 +45,6 @@
 		<InternalsVisibleTo Include="Beresta.Markdown.Wpf.Tests" />
 	</ItemGroup>
 
-	<Import Project="Docs\Documentation.targets" />
+	<Import Project="..\build\Documentation.targets" />
 
 </Project>

@@ -195,6 +195,12 @@
   <data name="Document.WholeWord" xml:space="preserve">
     <value>Whole word</value>
   </data>
+  <data name="Editor.Header" xml:space="preserve">
+    <value>MarkdownEditor from the Beresta.Markdown.Wpf.Editor package: the viewer that edits the source of its document.</value>
+  </data>
+  <data name="Editor.Title" xml:space="preserve">
+    <value>Editor</value>
+  </data>
   <data name="Extensions.Header" xml:space="preserve">
     <value>Your own syntax on MdExtension: a :::note note with its own state, an @name mention with its own parsing, and ::text:: chips — styled text, not a widget. Each extension is connected on its own, as a line in Extensions of the viewer; sets are in the Sets showcase.</value>
   </data>

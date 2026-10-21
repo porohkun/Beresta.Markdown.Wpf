@@ -18,12 +18,17 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Beresta.Markdown.Wpf\Beresta.Markdown.Wpf.csproj" />
+		<ProjectReference Include="..\Beresta.Markdown.Wpf.Editor\Beresta.Markdown.Wpf.Editor.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<None
 			Include="..\Beresta.Markdown.Wpf\Docs\Beresta.Markdown.Wpf.ru.xml"
 			Link="Docs\Beresta.Markdown.Wpf.ru.xml"
+			CopyToOutputDirectory="PreserveNewest" />
+		<None
+			Include="..\Beresta.Markdown.Wpf.Editor\Docs\Beresta.Markdown.Wpf.Editor.ru.xml"
+			Link="Docs\Beresta.Markdown.Wpf.Editor.ru.xml"
 			CopyToOutputDirectory="PreserveNewest" />
 		<None
 			Include="..\Beresta.Markdown.Wpf\Themes\Generic.xaml"

@@ -1,9 +1,10 @@
 ﻿# Beresta.Markdown.Wpf
 
 WPF-контрол, который показывает markdown: текст разбирает Markdig, рисуют шаблоны WPF. Выходит
-NuGet-пакетом `Beresta.Markdown.Wpf` и подключается сабмодулем — так им пользуется Storaxis. Стек:
-WPF и Markdig; библиотека и тесты собираются под .NET 7, 8, 9 и 10 (`net7.0-windows` —
-`net10.0-windows`), витрина — под .NET 10.
+двумя NuGet-пакетами — вьюер `Beresta.Markdown.Wpf` и редактор `Beresta.Markdown.Wpf.Editor` на
+AvalonEdit — и подключается сабмодулем: так им пользуется Storaxis. Стек: WPF, Markdig и AvalonEdit;
+пакеты и тесты собираются под .NET 7, 8, 9 и 10 (`net7.0-windows` — `net10.0-windows`), витрина — под
+.NET 10.
 
 Термины — в [`GLOSSARY.md`](GLOSSARY.md), и только там.
 
@@ -12,14 +13,15 @@ WPF и Markdig; библиотека и тесты собираются под .
 | Проект | Пространство имён | Что это |
 |---|---|---|
 | [`Beresta.Markdown.Wpf`](Beresta.Markdown.Wpf/AGENTS.md) | `Beresta.Markdown.Wpf` | библиотека: вьюер, разбор, тема по умолчанию; то, что уходит в пакет |
+| [`Beresta.Markdown.Wpf.Editor`](Beresta.Markdown.Wpf.Editor/AGENTS.md) | `Beresta.Markdown.Wpf.Editor` | редактор: наследник вьюера, который правит исходник в AvalonEdit; второй пакет |
 | [`Beresta.Markdown.Wpf.Showcase`](Beresta.Markdown.Wpf.Showcase/AGENTS.md) | `Beresta.Markdown.Wpf.Showcase` | витрина на HandyControls: встраивание, темы, сценарии списком слева, образец разметки; в пакет не входит |
-| `Beresta.Markdown.Wpf.Tests` | `Beresta.Markdown.Wpf.Tests` | тесты библиотеки: разбор, панель блоков, выделение, позиции, виджеты; xUnit и FluentAssertions |
+| `Beresta.Markdown.Wpf.Tests` | `Beresta.Markdown.Wpf.Tests` | тесты обоих пакетов: разбор, панель блоков, выделение, позиции, виджеты, редактор; xUnit и FluentAssertions |
 
 ## Зависимости
 
-`Beresta.Markdown.Wpf.Showcase` → `Beresta.Markdown.Wpf` → пакет Markdig. Библиотека о витрине не
-знает и знать не должна. `Beresta.Markdown.Wpf.Tests` → `Beresta.Markdown.Wpf` и видит его внутренние
-типы.
+`Beresta.Markdown.Wpf.Showcase` → `Beresta.Markdown.Wpf.Editor` → `Beresta.Markdown.Wpf` → пакет
+Markdig; редактор зависит ещё от пакета AvalonEdit. Библиотека о редакторе и витрине не знает и знать
+не должна. `Beresta.Markdown.Wpf.Tests` → оба пакета и видит их внутренние типы.
 
 ## Команды
 
@@ -33,7 +35,7 @@ WPF и Markdig; библиотека и тесты собираются под .
 
 ## Публикация
 
-Пакет на nuget.org публикует `.github/workflows/nuget.yml`: пуш в `main` с ещё не выпущенной
+Оба пакета на nuget.org публикует `.github/workflows/nuget.yml`: пуш в `main` с ещё не выпущенной
 `VersionPrefix` — релиз с тегом `vX.Y.Z` и релизом на GitHub, запуск вручную на ветке — превью
 `X.Y.Z-preview.N`. Выпущенная версия не публикуется повторно ни релизом, ни превью: версия
 поднимается в ветке до первой публикации.

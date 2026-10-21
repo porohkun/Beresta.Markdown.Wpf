@@ -26,7 +26,7 @@ using ViewModels;
 [TemplatePart(Name = GutterPart, Type = typeof(MdLineGutter))]
 [TemplatePart(Name = RowMarksPart, Type = typeof(MdRowMarks))]
 [TemplatePart(Name = ThemeHintPart, Type = typeof(UIElement))]
-public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
+public class MarkdownViewer : ItemsControl, IMdScrollSide
 {
     /// <summary>The text of the document.</summary>
     public static readonly DependencyProperty MarkdownProperty =
