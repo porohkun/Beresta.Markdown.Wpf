@@ -57,6 +57,7 @@
                                 EditMode="{Binding Mode}"
                                 Margin="24,16">
                 <mde:MarkdownEditor.Extensions>
+                    <md:PropertiesCard />
                     <md:TaskStatuses />
                     <md:ObsidianCallouts />
                 </mde:MarkdownEditor.Extensions>

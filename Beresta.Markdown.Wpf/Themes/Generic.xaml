@@ -1492,9 +1492,18 @@
                                     BorderBrush="{DynamicResource Md.Table.BorderBrush}"
                                     BorderThickness="{DynamicResource Md.Table.BorderThickness}"
                                     Padding="{DynamicResource Md.Table.CellPadding}">
-                                <p:MdTextBlock Runs="{Binding Value}" Style="{DynamicResource Md.Paragraph.Style}" />
+                                <Grid>
+                                    <p:MdTextBlock x:Name="ValueText" Runs="{Binding Value}" Style="{DynamicResource Md.Paragraph.Style}" />
+                                    <p:MdPropertyBox x:Name="ValueBox" Visibility="Collapsed" />
+                                </Grid>
                             </Border>
                         </Grid>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsActive, ElementName=ValueBox}" Value="True">
+                                <Setter TargetName="ValueText" Property="Visibility" Value="Collapsed" />
+                                <Setter TargetName="ValueBox" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

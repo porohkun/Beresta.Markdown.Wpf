@@ -910,14 +910,19 @@
         </member>
         <member name="T:Beresta.Markdown.Wpf.Kit.PropertiesCard">
             <summary>
-            Карточка свойств: front matter в начале документа рисуется таблицей «ключ — значение». Разбор —
-            только для показа; вид — шаблон темы <c>Md.Properties.Template</c>.
+            Карточка свойств: front matter в начале документа рисуется таблицей «ключ — значение»; вид —
+            шаблон темы <c>Md.Properties.Template</c>. Пока контролы правят исходник и включено
+            <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.IsFrontMatterEditable"/>, плоские значения и простые списки правятся в
+            полях ввода.
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.PropertiesCard.SetupPipeline(Markdig.MarkdownPipelineBuilder)">
             <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.PropertiesCard.ConvertBlock(Markdig.Syntax.Block,Beresta.Markdown.Wpf.Extensions.MdConvertContext)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Kit.PropertiesCard.EditSource(Beresta.Markdown.Wpf.ViewModels.NodeVm,System.Object,Beresta.Markdown.Wpf.Extensions.MdSourceContext)">
             <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.PropertiesCard.SelectTemplate(System.Object,System.Windows.DependencyObject)">
@@ -937,6 +942,39 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.PropertyVm.#ctor(System.Collections.Generic.IReadOnlyList{Beresta.Markdown.Wpf.ViewModels.InlineVm},System.Collections.Generic.IReadOnlyList{Beresta.Markdown.Wpf.ViewModels.InlineVm})">
             <summary>Строка карточки свойств: ключ и значение текстом.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.PropertyVm.ValueText">
+            <summary>Значение так, как его показывает поле ввода; список — пункты через запятую.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.PropertyVm.ValueKind">
+            <summary>Как значение записано в исходнике; новое значение пишется так же.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Kit.PropertyVm.ValueSource">
+            <summary>
+            Где значение в исходнике: от двоеточия после ключа до конца значения; у значения, которое только
+            показывается, — <c>default</c>.
+            </summary>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.Kit.MdValueKind">
+            <summary>Как записано значение front matter; новое значение пишется так же.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Kit.MdValueKind.ReadOnly">
+            <summary>Вложенное, многострочное или иное сложное: только показывается, не правится.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Kit.MdValueKind.Plain">
+            <summary>Простое значение: <c>key: value</c>.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Kit.MdValueKind.SingleQuoted">
+            <summary>В одинарных кавычках: <c>key: 'value'</c>.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Kit.MdValueKind.DoubleQuoted">
+            <summary>В двойных кавычках: <c>key: "value"</c>.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Kit.MdValueKind.FlowList">
+            <summary>Список в скобках: <c>key: [a, b]</c>.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Kit.MdValueKind.BlockList">
+            <summary>Список строками: <c>- a</c> под ключом.</summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Kit.Shortcodes">
             <summary>
@@ -1280,6 +1318,12 @@
             <see cref="F:Beresta.Markdown.Wpf.MarkdownViewer.SourceEditRequestedEvent"/>; выключено — только показывают. Наследуется.
             </summary>
         </member>
+        <member name="F:Beresta.Markdown.Wpf.MarkdownViewer.IsFrontMatterEditableProperty">
+            <summary>
+            Значения карточки свойств правятся в полях ввода, пока включено
+            <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.AreControlsEditable"/>; выключено — карточка только показывает. Наследуется.
+            </summary>
+        </member>
         <member name="F:Beresta.Markdown.Wpf.MarkdownViewer.SourceEditRequestedEvent">
             <summary>
             Контрол документа просит правку исходника; её никто не взял — вьюер сам кладёт её в
@@ -1385,6 +1429,9 @@
         <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.AreControlsEditable">
             <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.AreControlsEditableProperty"/>
         </member>
+        <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.IsFrontMatterEditable">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.IsFrontMatterEditableProperty"/>
+        </member>
         <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.ShowCodeCopyButton">
             <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.ShowCodeCopyButtonProperty"/>
         </member>
@@ -1457,6 +1504,12 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.SetAreControlsEditable(System.Windows.DependencyObject,System.Boolean)">
             <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.AreControlsEditableProperty"/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.GetIsFrontMatterEditable(System.Windows.DependencyObject)">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.IsFrontMatterEditableProperty"/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.SetIsFrontMatterEditable(System.Windows.DependencyObject,System.Boolean)">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.IsFrontMatterEditableProperty"/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.GetSourceLineOffset(System.Double)">
             <summary>Позиция строки исходника в координатах вьюера; дробная часть — доля строки.</summary>
@@ -2141,6 +2194,30 @@
             <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Presenters.MdTablePresenter.OnCreateAutomationPeer">
+            <inheritdoc/>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.Presenters.MdPropertyBox">
+            <summary>
+            Поле ввода значения в карточке свойств: Enter и потеря фокуса пишут значение в исходник, Esc
+            возвращает записанное. Его <see cref="P:Beresta.Markdown.Wpf.Presenters.MdPropertyBox.IsActive"/> говорит шаблону, когда его показывать.
+            </summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Presenters.MdPropertyBox.IsActiveProperty">
+            <summary>
+            Поле правит своё значение: контролы правят исходник, front matter правится, и значение можно
+            записать заново.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Presenters.MdPropertyBox.#ctor">
+            <summary>Создаёт поле; его значение — <see cref="T:Beresta.Markdown.Wpf.Kit.PropertyVm"/> в контексте данных.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Presenters.MdPropertyBox.IsActive">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.Presenters.MdPropertyBox.IsActiveProperty"/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Presenters.MdPropertyBox.OnKeyDown(System.Windows.Input.KeyEventArgs)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Presenters.MdPropertyBox.OnLostKeyboardFocus(System.Windows.Input.KeyboardFocusChangedEventArgs)">
             <inheritdoc/>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Presenters.MdTaskMark">

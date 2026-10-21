@@ -14,6 +14,27 @@
         <member name="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.EditModeProperty">
             <summary>Как редактор правит свой документ; <see cref="F:Beresta.Markdown.Wpf.Editor.MdEditMode.View"/> — только показывает.</summary>
         </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.FrontMatterEditingProperty">
+            <summary>Как правится front matter; по умолчанию — текстом.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MarkdownEditor.FrontMatterEditing">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.FrontMatterEditingProperty"/>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.Editor.MdFrontMatterEditing">
+            <summary>Как редактор правит front matter.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MdFrontMatterEditing.None">
+            <summary>Не правится: карточка свойств только показывает, а правимый исходник начинается после front matter.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MdFrontMatterEditing.Fields">
+            <summary>В полях ввода карточки свойств; правимый исходник начинается после front matter.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MdFrontMatterEditing.Text">
+            <summary>
+            Текстом: в <see cref="F:Beresta.Markdown.Wpf.Editor.MdEditMode.Blocks"/> и <see cref="F:Beresta.Markdown.Wpf.Editor.MdEditMode.Full"/> front matter правится как любой
+            другой блок, в <see cref="F:Beresta.Markdown.Wpf.Editor.MdEditMode.Controls"/> — в полях карточки.
+            </summary>
+        </member>
         <member name="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.CanUndoProperty">
             <summary>Есть правка исходника, которую можно отменить.</summary>
         </member>

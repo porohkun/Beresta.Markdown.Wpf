@@ -33,6 +33,15 @@ public sealed class MarkdownEditor : MarkdownViewer
             new FrameworkPropertyMetadata(MdEditMode.View, OnEditModeChanged),
             value => value is MdEditMode mode && Enum.IsDefined(mode));
 
+    /// <summary>How front matter is edited; by default — as text.</summary>
+    public static readonly DependencyProperty FrontMatterEditingProperty =
+        DependencyProperty.Register(
+            nameof(FrontMatterEditing),
+            typeof(MdFrontMatterEditing),
+            typeof(MarkdownEditor),
+            new FrameworkPropertyMetadata(MdFrontMatterEditing.Text, OnFrontMatterEditingChanged),
+            value => value is MdFrontMatterEditing editing && Enum.IsDefined(editing));
+
     private static readonly DependencyPropertyKey CanUndoPropertyKey =
         DependencyProperty.RegisterReadOnly(
             nameof(CanUndo),
@@ -144,6 +153,13 @@ public sealed class MarkdownEditor : MarkdownViewer
     {
         get => (MdEditMode)GetValue(EditModeProperty);
         set => SetValue(EditModeProperty, value);
+    }
+
+    /// <inheritdoc cref="FrontMatterEditingProperty"/>
+    public MdFrontMatterEditing FrontMatterEditing
+    {
+        get => (MdFrontMatterEditing)GetValue(FrontMatterEditingProperty);
+        set => SetValue(FrontMatterEditingProperty, value);
     }
 
     /// <inheritdoc cref="CanUndoProperty"/>
@@ -259,9 +275,15 @@ public sealed class MarkdownEditor : MarkdownViewer
             return false;
         }
 
+        var target = ToDocumentLine((int)Math.Floor(line));
+        if (FrontMatterEditing != MdFrontMatterEditing.Text && target <= FrontMatterEnd())
+        {
+            return false;
+        }
+
         _windowWanted = true;
         _editor.TextArea.ClearSelection();
-        _editor.CaretOffset = _document.GetLineByNumber(ToDocumentLine((int)Math.Floor(line))).Offset;
+        _editor.CaretOffset = _document.GetLineByNumber(target).Offset;
         Reconcile();
         return true;
     }
@@ -427,6 +449,13 @@ public sealed class MarkdownEditor : MarkdownViewer
     private static void OnEditModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownEditor)d).SwitchMode((MdEditMode)e.OldValue, (MdEditMode)e.NewValue);
 
+    private static void OnFrontMatterEditingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var editor = (MarkdownEditor)d;
+        editor.UpdateFrontMatter();
+        editor.QueueReconcile();
+    }
+
     /// <summary>Номер блока верхнего уровня, задевающего строку, а в промежутке между блоками — следующего.</summary>
     private static int BlockAt(IReadOnlyList<MdSourceSpan> spans, int line)
     {
@@ -487,6 +516,7 @@ public sealed class MarkdownEditor : MarkdownViewer
         var top = GetVisibleSourceLine();
         SetCurrentValue(AreControlsEditableProperty, mode != MdEditMode.View);
         SetCurrentValue(IsSelectionEnabledProperty, mode is MdEditMode.View or MdEditMode.Controls);
+        UpdateFrontMatter();
 
         // Из полного режима в блочный окно остаётся на блоках курсора, только если в нём печатали
         _windowWanted = mode == MdEditMode.Blocks && _editor.TextArea.IsKeyboardFocusWithin;
@@ -815,11 +845,11 @@ public sealed class MarkdownEditor : MarkdownViewer
     private bool IsInWindow(DependencyObject? source)
         => Ancestors(source).TakeWhile(node => !ReferenceEquals(node, this)).Any(node => ReferenceEquals(node, _window.Element));
 
-    /// <summary>Контрол документа, который щелчком пишет в исходник: флажок задачи, сворачивание, свой контрол виджета.</summary>
+    /// <summary>Контрол документа, который пишет в исходник: флажок задачи, сворачивание, поле карточки, свой контрол виджета.</summary>
     private bool IsControl(DependencyObject? source)
         => Ancestors(source)
             .TakeWhile(node => !ReferenceEquals(node, this))
-            .Any(node => node is MdTaskMark or ToggleButton || MdSelection.GetIsInteractive(node));
+            .Any(node => node is MdTaskMark or ToggleButton or TextBoxBase || MdSelection.GetIsInteractive(node));
 
     private bool OpensWindow(object source)
         => EditMode == MdEditMode.Blocks && !_window.IsOpen && !IsInWindow(source as DependencyObject);
@@ -895,10 +925,11 @@ public sealed class MarkdownEditor : MarkdownViewer
     /// </summary>
     private (int First, int Last)? WantedLines(bool typed, bool caretMoved, bool checkEdges)
     {
+        var after = FrontMatterEditing == MdFrontMatterEditing.Text ? 0 : FrontMatterEnd();
         switch (EditMode)
         {
             case MdEditMode.Full:
-                return (1, _document.LineCount);
+                return after < _document.LineCount ? (after + 1, _document.LineCount) : null;
             case MdEditMode.Blocks when _window.IsOpen || _windowWanted:
                 break;
             default:
@@ -908,6 +939,16 @@ public sealed class MarkdownEditor : MarkdownViewer
         var opening = !_window.IsOpen || _windowWanted;
         _windowWanted = false;
         var area = _editor.TextArea;
+        if (area.Caret.Line <= after)
+        {
+            if (after >= _document.LineCount)
+            {
+                return null;
+            }
+
+            area.ClearSelection();
+            area.Caret.Offset = _document.GetLineByNumber(after + 1).Offset;
+        }
         var focus = area.Selection.IsEmpty
             ? (area.Caret.Line, area.Caret.Line)
             : (_document.GetLineByOffset(area.Selection.SurroundingSegment.Offset).LineNumber,
@@ -918,7 +959,35 @@ public sealed class MarkdownEditor : MarkdownViewer
                 ? Union(BlockLines(focus), _window.Lines)
                 : _window.Lines;
 
-        return checkEdges ? BlockLines(lines) : lines;
+        lines = checkEdges ? BlockLines(lines) : lines;
+        return (Math.Max(lines.First, after + 1), Math.Max(lines.Last, after + 1));
+    }
+
+    /// <summary>Front matter правится полями или никак: поля карточки — во всех режимах, где правят, текстом — в «только контролах».</summary>
+    private void UpdateFrontMatter()
+        => SetCurrentValue(
+            IsFrontMatterEditableProperty,
+            FrontMatterEditing == MdFrontMatterEditing.Fields
+                ? EditMode != MdEditMode.View
+                : FrontMatterEditing == MdFrontMatterEditing.Text && EditMode == MdEditMode.Controls);
+
+    /// <summary>Последняя строка front matter в документе, с единицы; front matter нет — 0.</summary>
+    private int FrontMatterEnd()
+    {
+        if (_document.LineCount < 2 || _document.GetText(_document.GetLineByNumber(1)).TrimStart('﻿').TrimEnd() != "---")
+        {
+            return 0;
+        }
+
+        for (var line = 2; line <= _document.LineCount; line++)
+        {
+            if (_document.GetText(_document.GetLineByNumber(line)).TrimEnd() is "---" or "...")
+            {
+                return line;
+            }
+        }
+
+        return 0;
     }
 
     /// <summary>

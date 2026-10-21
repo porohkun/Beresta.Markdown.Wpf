@@ -225,6 +225,17 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
             new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
 
     /// <summary>
+    /// Values of the properties card are edited in input fields while
+    /// <see cref="AreControlsEditable"/> is on; off — the card only shows. Inherited.
+    /// </summary>
+    public static readonly DependencyProperty IsFrontMatterEditableProperty =
+        DependencyProperty.RegisterAttached(
+            nameof(IsFrontMatterEditable),
+            typeof(bool),
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
+
+    /// <summary>
     /// A control of the document asks to change the source; not handled — the viewer applies the
     /// change to <see cref="Markdown"/> itself.
     /// </summary>
@@ -559,6 +570,13 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
         set => SetValue(AreControlsEditableProperty, value);
     }
 
+    /// <inheritdoc cref="IsFrontMatterEditableProperty"/>
+    public bool IsFrontMatterEditable
+    {
+        get => (bool)GetValue(IsFrontMatterEditableProperty);
+        set => SetValue(IsFrontMatterEditableProperty, value);
+    }
+
     /// <inheritdoc cref="ShowCodeCopyButtonProperty"/>
     public bool ShowCodeCopyButton
     {
@@ -669,6 +687,14 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     /// <inheritdoc cref="AreControlsEditableProperty"/>
     public static void SetAreControlsEditable(DependencyObject element, bool value)
         => element.SetValue(AreControlsEditableProperty, value);
+
+    /// <inheritdoc cref="IsFrontMatterEditableProperty"/>
+    public static bool GetIsFrontMatterEditable(DependencyObject element)
+        => (bool)element.GetValue(IsFrontMatterEditableProperty);
+
+    /// <inheritdoc cref="IsFrontMatterEditableProperty"/>
+    public static void SetIsFrontMatterEditable(DependencyObject element, bool value)
+        => element.SetValue(IsFrontMatterEditableProperty, value);
 
     /// <summary>
     /// The position of a source line in the coordinates of the viewer; the fraction is a part of
