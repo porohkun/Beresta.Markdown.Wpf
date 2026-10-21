@@ -6,6 +6,9 @@
 /// </summary>
 public interface IMdSourceRows
 {
+    /// <summary>The lines moved inside the element: the viewer redraws what stands at them — line numbers, marks.</summary>
+    event EventHandler? RowsChanged;
+
     /// <summary>
     /// The top of a source line in the coordinates of the element; the fraction is a part of the
     /// line. Unknown — <c>null</c>.

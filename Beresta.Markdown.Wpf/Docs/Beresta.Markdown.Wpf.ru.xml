@@ -1520,11 +1520,10 @@
             видны.
             </summary>
         </member>
-        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.HoldWindowLine(System.Double)">
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.HoldSourceWindow">
             <summary>
-            Держит точку элемента <see cref="M:Beresta.Markdown.Wpf.MarkdownViewer.SetSourceWindow(System.Int32,System.Int32,System.Windows.FrameworkElement,Beresta.Markdown.Wpf.Scrolling.IMdSourceRows)"/> на <paramref name="offset"/> от его верха
-            на своём месте экрана, пока в документе меняются высоты, — пока прокрутку не сдвинет кто-то
-            другой. Вызов, пока точка держится, ставит новую точку на место прежней.
+            Держит элемент <see cref="M:Beresta.Markdown.Wpf.MarkdownViewer.SetSourceWindow(System.Int32,System.Int32,System.Windows.FrameworkElement,Beresta.Markdown.Wpf.Scrolling.IMdSourceRows)"/> там, где он стоит на экране, пока в
+            документе меняются высоты, — пока прокрутку не сдвинет кто-то другой.
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.OnDocumentApplied">
@@ -2271,6 +2270,9 @@
             Строки исходника элемента, который стоит в документе вместо блоков: где каждая строка в
             координатах элемента.
             </summary>
+        </member>
+        <member name="E:Beresta.Markdown.Wpf.Scrolling.IMdSourceRows.RowsChanged">
+            <summary>Строки внутри элемента сдвинулись: вьюер заново рисует то, что стоит у них, — номера строк, пометки.</summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Scrolling.IMdSourceRows.GetSourceLineOffset(System.Double)">
             <summary>

@@ -183,7 +183,7 @@ public sealed class SourceWindowTests
             WpfHost.Settle(window);
             var before = element.TranslatePoint(default, scroll).Y;
 
-            viewer.Hold(RowHeight / 2);
+            viewer.Hold();
             viewer.Markdown = LongText.Replace("Paragraph 25\n", string.Join(" ", Enumerable.Repeat("Paragraph 25 is long now", 20)) + "\n");
             WpfHost.Settle(window);
 
@@ -205,7 +205,7 @@ public sealed class SourceWindowTests
             WpfHost.Settle(window);
             scroll.ScrollToVerticalOffset(element.TranslatePoint(default, viewer).Y - 250);
             WpfHost.Settle(window);
-            viewer.Hold(RowHeight / 2);
+            viewer.Hold();
             WpfHost.Settle(window);
 
             scroll.ScrollToVerticalOffset(scroll.VerticalOffset - 100);
@@ -286,6 +286,12 @@ public sealed class SourceWindowTests
     /// <summary>Строки окна одной высоты, все видны.</summary>
     private sealed class EvenRows(int first, int last) : IMdSourceRows
     {
+        public event EventHandler? RowsChanged
+        {
+            add { }
+            remove { }
+        }
+
         public double? GetSourceLineOffset(double line) => (Math.Clamp(line, first, last + 1) - first) * RowHeight;
 
         public double? GetSourceLineAt(double offset) => first + Math.Clamp(offset / RowHeight, 0, last + 1 - first);
@@ -309,7 +315,7 @@ public sealed class SourceWindowTests
 
         public void Close() => ClearSourceWindow();
 
-        public void Hold(double offset) => HoldWindowLine(offset);
+        public void Hold() => HoldSourceWindow();
 
         protected override void OnDocumentApplied() => Applied++;
     }

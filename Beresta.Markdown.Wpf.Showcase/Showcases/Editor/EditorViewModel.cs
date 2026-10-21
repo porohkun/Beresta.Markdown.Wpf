@@ -22,7 +22,7 @@ public sealed class EditorViewModel : ShowcaseViewModel
     {
         get;
         set => Set(ref field, value);
-    } = MdEditMode.Controls;
+    } = MdEditMode.Blocks;
 
     /// <summary>Язык сменился: правки уступают образцу на новом языке.</summary>
     protected override void OnLanguageChanged()

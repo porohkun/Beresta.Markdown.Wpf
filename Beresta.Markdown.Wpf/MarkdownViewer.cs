@@ -995,6 +995,16 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     {
         ArgumentNullException.ThrowIfNull(element);
         ArgumentNullException.ThrowIfNull(rows);
+        if (!ReferenceEquals(_windowRequest?.Rows, rows))
+        {
+            if (_windowRequest is { } old)
+            {
+                old.Rows.RowsChanged -= OnWindowRowsChanged;
+            }
+
+            rows.RowsChanged += OnWindowRowsChanged;
+        }
+
         _windowRequest = (firstLine, lastLine, element, rows);
         ShowBlocks();
     }
@@ -1005,22 +1015,22 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     /// </summary>
     protected void ClearSourceWindow()
     {
-        if (_windowRequest is null)
+        if (_windowRequest is not { } request)
         {
             return;
         }
 
+        request.Rows.RowsChanged -= OnWindowRowsChanged;
         _windowRequest = null;
         BlockPanel?.ReleaseWindow();
         ShowBlocks();
     }
 
     /// <summary>
-    /// Keeps the point of the element of <see cref="SetSourceWindow"/> at <paramref name="offset"/>
-    /// from its top in its place on the screen while heights in the document change, until someone
-    /// else scrolls. Called while a point is held, it holds the new point in the place of the old one.
+    /// Keeps the element of <see cref="SetSourceWindow"/> where it stands on the screen while heights
+    /// in the document change, until someone else scrolls.
     /// </summary>
-    protected void HoldWindowLine(double offset) => BlockPanel?.HoldWindow(offset);
+    protected void HoldSourceWindow() => BlockPanel?.HoldWindow();
 
     /// <summary>A new parse has been laid on the document: its blocks, text map and <see cref="TopBlockSpans"/>.</summary>
     protected virtual void OnDocumentApplied()
@@ -1701,6 +1711,13 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
         RowMarks?.InvalidateVisual();
         RaiseRenderFailed(document.Failures, isBackground: false);
         OnDocumentApplied();
+    }
+
+    /// <summary>Строки внутри окна сдвинулись: поля и строки пометок рисуются заново.</summary>
+    private void OnWindowRowsChanged(object? sender, EventArgs e)
+    {
+        OnBlocksArranged();
+        OnViewportMaybeChanged();
     }
 
     /// <summary>Блоки последнего разбора — в список, а те, что на строках окна, — под элемент окна.</summary>

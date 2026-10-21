@@ -45,8 +45,8 @@ public sealed class MdBlockPanel : VirtualizingPanel
     private bool _keysChanged = true;
     private bool _hasGaps;
     private int _pinned = -1;
-    private double? _hold;
-    private (HeightKey Key, int Index, double Top, double ViewportTop, double? Held)? _anchor;
+    private bool _hold;
+    private (HeightKey Key, int Index, double Top, double ViewportTop)? _anchor;
 
     /// <summary>Creates an empty panel.</summary>
     public MdBlockPanel()
@@ -108,28 +108,25 @@ public sealed class MdBlockPanel : VirtualizingPanel
     }
 
     /// <summary>
-    /// Держит строку окна: точка элемента окна на <paramref name="offset"/> от его верха остаётся
-    /// там же на экране, пока прокрутку не сдвинет кто-то другой. Держится уже — точка сменяется, а
-    /// место на экране остаётся прежним.
+    /// Держит строку окна: окно стоит там, где оно на экране сейчас, пока прокрутку не сдвинет кто-то
+    /// другой. Раскладка ещё не готова — окно встаёт на якорь после следующей.
     /// </summary>
-    internal void HoldWindow(double offset)
+    internal void HoldWindow()
     {
-        var holding = _hold is not null;
-        _hold = offset;
-        if (!holding
-            && !_keysChanged
+        _hold = true;
+        if (!_keysChanged
             && _pinned >= 0
             && _pinned < _tops.Length
             && FindViewport() is { PhysicalScroller: not null } viewport)
         {
-            _anchor = (_keys[_pinned], _pinned, _tops[_pinned], viewport.Top, offset);
+            _anchor = (_keys[_pinned], _pinned, _tops[_pinned], viewport.Top);
         }
 
         InvalidateMeasure();
     }
 
     /// <summary>Окно больше не держится: якорем снова становится блок у верха видимой области.</summary>
-    internal void ReleaseWindow() => _hold = null;
+    internal void ReleaseWindow() => _hold = false;
 
     /// <inheritdoc/>
     protected override Size MeasureOverride(Size availableSize)
@@ -319,8 +316,8 @@ public sealed class MdBlockPanel : VirtualizingPanel
 
     /// <summary>
     /// Насколько с прошлого раза сдвинулся якорь — блок, бывший вверху видимой области, или
-    /// удерживаемая строка окна; если прокрутку с тех пор двигал кто-то другой — ноль, и строка окна
-    /// больше не держится.
+    /// удерживаемое окно; если прокрутку с тех пор двигал кто-то другой — ноль, и окно больше не
+    /// держится.
     /// </summary>
     private double AnchorShift(Viewport viewport)
     {
@@ -331,22 +328,21 @@ public sealed class MdBlockPanel : VirtualizingPanel
 
         if (Math.Abs(viewport.Top - anchor.ViewportTop) > 0.5)
         {
-            _hold = null;
+            _hold = false;
             return 0;
         }
 
         var index = anchor.Index < _keys.Length && _keys[anchor.Index] == anchor.Key ? anchor.Index : Array.IndexOf(_keys, anchor.Key);
-        var moved = anchor.Held is { } held && _hold is { } hold ? hold - held : 0;
-        return index >= 0 ? _tops[index] + moved - anchor.Top : 0;
+        return index >= 0 ? _tops[index] - anchor.Top : 0;
     }
 
     private void RememberAnchor(Viewport viewport)
     {
         var index = AnchorIndex(viewport);
-        _anchor = index >= 0 ? (_keys[index], index, _tops[index], viewport.Top, index == _pinned ? _hold : null) : null;
+        _anchor = index >= 0 ? (_keys[index], index, _tops[index], viewport.Top) : null;
     }
 
-    /// <summary>Блок-якорь: окно, пока его строка держится, иначе блок у верха видимой области; якоря нет — -1.</summary>
+    /// <summary>Блок-якорь: окно, пока оно держится, иначе блок у верха видимой области; якоря нет — -1.</summary>
     private int AnchorIndex(Viewport viewport)
     {
         if (viewport.PhysicalScroller is null)
@@ -354,7 +350,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
             return -1;
         }
 
-        if (_hold is not null && _pinned >= 0)
+        if (_hold && _pinned >= 0)
         {
             return _pinned;
         }
@@ -582,7 +578,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
 
         if (_pinned < 0)
         {
-            _hold = null;
+            _hold = false;
         }
 
         _estimates = [];

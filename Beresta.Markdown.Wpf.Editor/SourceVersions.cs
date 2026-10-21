@@ -39,4 +39,22 @@ internal sealed class SourceVersions
 
         return string.Equals(text, document.Text, StringComparison.Ordinal) ? offset : null;
     }
+
+    /// <summary>
+    /// Место нынешнего документа в тексте <paramref name="text"/>; текст незнаком — то же место,
+    /// прижатое к длине текста.
+    /// </summary>
+    public int ToText(string text, int offset, TextDocument document, AnchorMovementType movement)
+    {
+        for (var i = _known.Count - 1; i >= 0; i--)
+        {
+            var (known, version) = _known[i];
+            if (ReferenceEquals(known, text) && version.BelongsToSameDocumentAs(document.Version))
+            {
+                return Math.Clamp(document.Version.MoveOffsetTo(version, offset, movement), 0, text.Length);
+            }
+        }
+
+        return Math.Clamp(offset, 0, text.Length);
+    }
 }

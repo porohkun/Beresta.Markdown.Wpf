@@ -15,12 +15,14 @@ using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Beresta.Markdown.Wpf;
+using Beresta.Markdown.Wpf.Editor;
 using Beresta.Markdown.Wpf.Presenters;
 using Beresta.Markdown.Wpf.Scrolling;
 using Beresta.Markdown.Wpf.Selection;
@@ -28,6 +30,7 @@ using Beresta.Markdown.Wpf.Showcase;
 using Beresta.Markdown.Wpf.Showcase.Localization;
 using Beresta.Markdown.Wpf.Showcase.Showcases.Copying;
 using Beresta.Markdown.Wpf.Showcase.Showcases.CustomLook;
+using Beresta.Markdown.Wpf.Showcase.Showcases.Editor;
 using Beresta.Markdown.Wpf.Showcase.Showcases.Sets;
 using Beresta.Markdown.Wpf.Showcase.Showcases.TwoPanes;
 using ColorPicker = HandyControl.Controls.ColorPicker;
@@ -233,6 +236,53 @@ var thread = new Thread(() =>
 
                 Settle(window);
                 Console.WriteLine($"Markdown: {FoldLines(viewer)}");
+                break;
+            }
+
+            // Режим редактора: View, Controls, Blocks, Full
+            case "mode":
+                ((EditorViewModel)model.Selected).Mode = Enum.Parse<MdEditMode>(value);
+                break;
+
+            // Курсор редактора в начало строки исходника с единицы
+            case "caret":
+            {
+                var editor = Editor(window);
+                editor.SourceCaretOffset = editor.TextEditor.Document.GetLineByNumber(int.Parse(value)).Offset;
+                break;
+            }
+
+            // Клавиша в AvalonEdit редактора — командой, без фокуса: Down, Up, ShiftDown, ShiftUp, PageDown, PageUp, CtrlA, Backspace
+            case "key":
+            {
+                var area = Editor(window).TextEditor.TextArea;
+                RoutedCommand command = value switch
+                {
+                    "Down" => EditingCommands.MoveDownByLine,
+                    "Up" => EditingCommands.MoveUpByLine,
+                    "ShiftDown" => EditingCommands.SelectDownByLine,
+                    "ShiftUp" => EditingCommands.SelectUpByLine,
+                    "PageDown" => EditingCommands.MoveDownByPage,
+                    "PageUp" => EditingCommands.MoveUpByPage,
+                    "CtrlA" => ApplicationCommands.SelectAll,
+                    _ => EditingCommands.Backspace
+                };
+                command.Execute(null, area);
+                break;
+            }
+
+            // Набор в AvalonEdit редактора; \n — перевод строки
+            case "type":
+                Editor(window).TextEditor.TextArea.PerformTextInput(value.Replace("\\n", "\n"));
+                break;
+
+            // Протяжка выделения на столько пикселей ниже верха окна правки
+            case "drag":
+            {
+                var editor = Editor(window);
+                var element = (FrameworkElement)Internal(editor, "WindowElement")!;
+                var point = element.TranslatePoint(new Point(10, Number(value)), editor);
+                typeof(MarkdownEditor).GetMethod("ExtendSelectionTo", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(editor, [point]);
                 break;
             }
 
@@ -473,6 +523,11 @@ var thread = new Thread(() =>
         }
 
         Settle(window);
+        if (name is "mode" or "caret" or "key" or "type" or "drag" or "undo" or "redo")
+        {
+            Console.WriteLine($"{step}: {WindowReport(Editor(window))}");
+        }
+
         var title = string.Concat(step.Take(40).Select(letter => char.IsLetterOrDigit(letter) ? letter : '_'));
         Write(Render(Root(window)), Path.Combine(output, $"{shot++:00}-{title}.png"));
     }
@@ -531,6 +586,21 @@ static string TaskLines(MarkdownViewer viewer)
     => string.Join(" | ", (viewer.Markdown ?? string.Empty)
         .Split('\n')
         .Where(line => line.TrimStart().StartsWith("- [", StringComparison.Ordinal)));
+
+static MarkdownEditor Editor(Window window) => Descendants<MarkdownEditor>(window).First(editor => editor.IsVisible);
+
+static object? Internal(MarkdownEditor editor, string name)
+    => typeof(MarkdownEditor).GetProperty(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(editor);
+
+// Строки окна, сколько строк разложено, чужие строки в видимой части AvalonEdit, виден ли курсор
+static string WindowReport(MarkdownEditor editor)
+{
+    var foreign = (IReadOnlyList<int>)typeof(MarkdownEditor).GetMethod("ForeignLines", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(editor, [])!;
+    var visible = (bool)typeof(MarkdownEditor).GetMethod("IsCaretVisible", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(editor, [])!;
+    var lines = Internal(editor, "WindowLines") is ValueTuple<int, int> window ? $"{window.Item1}–{window.Item2}" : "нет";
+    return $"окно {lines}, разложено {Internal(editor, "LaidOutLines")}, чужие строки: {(foreign.Count == 0 ? "нет" : string.Join(",", foreign))}, " +
+        $"курсор в строке {editor.TextEditor.TextArea.Caret.Line}, виден: {(visible ? "да" : "нет")}";
+}
 
 static string FoldLines(MarkdownViewer viewer)
     => string.Join(" | ", (viewer.Markdown ?? string.Empty)
@@ -608,6 +678,12 @@ static extern int SetWindowLong(IntPtr window, int index, int value);
 /// <summary>Строки пробного окна одной высоты, все видны.</summary>
 internal sealed class ProbeRows(int first, int last) : IMdSourceRows
 {
+    public event EventHandler? RowsChanged
+    {
+        add { }
+        remove { }
+    }
+
     public const double RowHeight = 20;
 
     public double? GetSourceLineOffset(double line) => (Math.Clamp(line, first, last + 1) - first) * RowHeight;
