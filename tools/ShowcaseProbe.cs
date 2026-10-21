@@ -284,6 +284,10 @@ var thread = new Thread(() =>
                     "PageDown" => EditingCommands.MoveDownByPage,
                     "PageUp" => EditingCommands.MoveUpByPage,
                     "CtrlA" => ApplicationCommands.SelectAll,
+                    "CtrlB" => EditingCommands.ToggleBold,
+                    "CtrlI" => EditingCommands.ToggleItalic,
+                    "End" => EditingCommands.MoveToLineEnd,
+                    "Tab" => EditingCommands.TabForward,
                     _ => EditingCommands.Backspace
                 };
                 command.Execute(null, area);

@@ -92,6 +92,7 @@ public sealed class MarkdownEditor : MarkdownViewer
     private bool _refitQueued;
     private bool _dragging;
     private int? _clicked;
+    private int? _linesBeforeDelete;
 
     static MarkdownEditor()
     {
@@ -113,6 +114,20 @@ public sealed class MarkdownEditor : MarkdownViewer
                 ApplicationCommands.Redo,
                 (sender, _) => ((MarkdownEditor)sender).Redo(),
                 (sender, e) => e.CanExecute = ((MarkdownEditor)sender).CanRedo));
+
+        CommandManager.RegisterClassCommandBinding(
+            typeof(MarkdownEditor),
+            new(
+                EditingCommands.ToggleBold,
+                (sender, _) => EditingKeys.Emphasis(((MarkdownEditor)sender)._editor.TextArea, "**"),
+                (sender, e) => e.CanExecute = ((MarkdownEditor)sender).EditsText));
+
+        CommandManager.RegisterClassCommandBinding(
+            typeof(MarkdownEditor),
+            new(
+                EditingCommands.ToggleItalic,
+                (sender, _) => EditingKeys.Emphasis(((MarkdownEditor)sender)._editor.TextArea, "*"),
+                (sender, e) => e.CanExecute = ((MarkdownEditor)sender).EditsText));
     }
 
     /// <summary>Creates an empty editor that only shows.</summary>
@@ -146,6 +161,7 @@ public sealed class MarkdownEditor : MarkdownViewer
         area.TextView.LineTransformers.Add(new SourceColorizer(PiecesOn));
         area.TextView.BackgroundRenderers.Add(new SourceBackground(LooksAt));
         CommandManager.AddPreviewExecutedHandler(area, OnTextAreaCommand);
+        area.AddHandler(CommandManager.ExecutedEvent, new ExecutedRoutedEventHandler(OnTextAreaCommandDone), handledEventsToo: true);
         area.Caret.PositionChanged += (_, _) => OnCaretMoved();
         area.SelectionChanged += (_, _) => OnCaretMoved();
         area.TextView.ScrollOffsetChanged += (_, _) => OnSelfScroll();
@@ -732,12 +748,16 @@ public sealed class MarkdownEditor : MarkdownViewer
         CommandManager.InvalidateRequerySuggested();
     }
 
+    /// <summary>Исходник правится текстом: весь — в полном режиме, блоки под курсором — в блочном, когда окно открыто.</summary>
+    private bool EditsText => EditMode == MdEditMode.Full || (EditMode == MdEditMode.Blocks && _window.IsOpen);
+
     /// <summary>
     /// Команды AvalonEdit, которые ведёт редактор: Ctrl+Z и Ctrl+Y — его отмена, она переносит курсор;
     /// Tab и Shift+Tab в пункте сдвигают пункт; листание — на высоту экрана страницы, а не своего окна.
     /// </summary>
     private void OnTextAreaCommand(object sender, ExecutedRoutedEventArgs e)
     {
+        _linesBeforeDelete = e.Command == EditingCommands.Backspace || e.Command == EditingCommands.Delete ? _document.LineCount : null;
         if (e.Command == ApplicationCommands.Undo)
         {
             Undo();
@@ -757,6 +777,17 @@ public sealed class MarkdownEditor : MarkdownViewer
             MoveByPage(step.Direction, step.Select);
             e.Handled = true;
         }
+    }
+
+    /// <summary>Backspace или Delete удалили строку: нумерованный список у курсора перенумеровывается.</summary>
+    private void OnTextAreaCommandDone(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (_linesBeforeDelete is { } before && _document.LineCount < before)
+        {
+            EditingKeys.RenumberAfterDelete(_editor.TextArea);
+        }
+
+        _linesBeforeDelete = null;
     }
 
     private static (int Direction, bool Select)? PageStep(ICommand command)
