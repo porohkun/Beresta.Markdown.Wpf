@@ -162,6 +162,16 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new FrameworkPropertyMetadata(MdImagePolicy.Default, FrameworkPropertyMetadataOptions.Inherits, OnImagePolicyChanged));
 
+    /// <summary>
+    /// Highlights code blocks by their language; inherited. None — the code is drawn in one color.
+    /// </summary>
+    public static readonly DependencyProperty CodeHighlighterProperty =
+        DependencyProperty.RegisterAttached(
+            nameof(CodeHighlighter),
+            typeof(IMdCodeHighlighter),
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnCodeHighlighterChanged));
+
     /// <summary>The address of the document: relative addresses of images are resolved against it.</summary>
     public static readonly DependencyProperty BaseUriProperty =
         DependencyProperty.Register(
@@ -316,6 +326,7 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     private readonly SourcePositions _positions;
     private readonly WidgetStates _states;
     private readonly ModelIdentity _identity = new();
+    private readonly CodeHighlights _highlights = new();
     private readonly ModelCollection<BlockVm> _blocks = [];
     private readonly MdMarkLayer _decorationLayer = new("Decorations");
     private readonly ThemeBrushes _themeBrushes;
@@ -536,6 +547,13 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
         set => SetValue(ImagePolicyProperty, value);
     }
 
+    /// <inheritdoc cref="CodeHighlighterProperty"/>
+    public IMdCodeHighlighter? CodeHighlighter
+    {
+        get => (IMdCodeHighlighter?)GetValue(CodeHighlighterProperty);
+        set => SetValue(CodeHighlighterProperty, value);
+    }
+
     /// <inheritdoc cref="BaseUriProperty"/>
     public Uri? BaseUri
     {
@@ -654,6 +672,14 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     /// <inheritdoc cref="ImagePolicyProperty"/>
     public static void SetImagePolicy(DependencyObject element, MdImagePolicy value)
         => element.SetValue(ImagePolicyProperty, value);
+
+    /// <inheritdoc cref="CodeHighlighterProperty"/>
+    public static IMdCodeHighlighter? GetCodeHighlighter(DependencyObject element)
+        => (IMdCodeHighlighter?)element.GetValue(CodeHighlighterProperty);
+
+    /// <inheritdoc cref="CodeHighlighterProperty"/>
+    public static void SetCodeHighlighter(DependencyObject element, IMdCodeHighlighter? value)
+        => element.SetValue(CodeHighlighterProperty, value);
 
     /// <inheritdoc cref="SharedExtensionsProperty"/>
     public static MdExtensionCollection? GetSharedExtensions(DependencyObject element)
@@ -1625,25 +1651,34 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
         var pipeline = GetPipeline();
         var extensions = ActiveExtensions;
         var joinSoftLineBreaks = JoinSoftLineBreaks;
+        var highlighter = CodeHighlighter;
         if (BackgroundParseThreshold <= 0
             || markdown.Length < BackgroundParseThreshold
+            || highlighter is not (null or IMdBackgroundSafe)
             || !extensions.All(extension => Guard.Call(extension, () => extension.AllowsBackgroundParse, false)))
         {
-            ParseHere(markdown, pipeline, extensions, joinSoftLineBreaks);
+            ParseHere(markdown, pipeline, extensions, joinSoftLineBreaks, highlighter);
             return;
         }
 
-        var parsing = Task.Run(() => Parse(markdown, pipeline, extensions, joinSoftLineBreaks));
+        var parsing = Task.Run(() => Parse(markdown, pipeline, extensions, joinSoftLineBreaks, highlighter));
         _parsing = parsing;
         parsing.ContinueWith(_ => Dispatcher.BeginInvoke(() => FinishParse(parsing)), TaskScheduler.Default);
     }
 
     /// <summary>Разбирает и кладёт текст в потоке интерфейса.</summary>
-    private void ParseHere(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions, bool joinSoftLineBreaks)
+    private void ParseHere(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions, bool joinSoftLineBreaks, IMdCodeHighlighter? highlighter)
     {
-        var document = Parse(markdown, pipeline, extensions, joinSoftLineBreaks);
-        _identity.Commit();
+        var document = Parse(markdown, pipeline, extensions, joinSoftLineBreaks, highlighter);
+        Commit();
         Apply(document);
+    }
+
+    /// <summary>Разбор лёг: память разборов и подсветка блоков кода помнят его.</summary>
+    private void Commit()
+    {
+        _identity.Commit();
+        _highlights.Retain();
     }
 
     /// <summary>
@@ -1666,8 +1701,8 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
 
         if (failed && !queued)
         {
-            var document = Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions, JoinSoftLineBreaks);
-            _identity.Commit();
+            var document = Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions, JoinSoftLineBreaks, CodeHighlighter);
+            Commit();
             Apply(document);
             if (document.Failures.Count == 0)
             {
@@ -1679,7 +1714,7 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
 
         if (!failed && !discard)
         {
-            _identity.Commit();
+            Commit();
             Apply(parsing.Result);
         }
 
@@ -1690,14 +1725,14 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     }
 
     /// <summary>Разбирает текст; упавший код расширения отдаёт узел встроенному разбору, упавший Markdig — запасному документу из строк исходника.</summary>
-    private ParsedDocument Parse(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions, bool joinSoftLineBreaks)
+    private ParsedDocument Parse(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions, bool joinSoftLineBreaks, IMdCodeHighlighter? highlighter)
     {
         var failures = new List<(Exception Exception, MdExtension? Extension)>();
         var owners = new Dictionary<object, MdExtension>(ReferenceEqualityComparer.Instance);
         var guard = new ExtensionGuard((exception, extension) => failures.Add((exception, extension)), owners.GetValueOrDefault);
         try
         {
-            var blocks = ModelBuilder.Parse(markdown, pipeline, extensions, _identity, out var frontMatter, commit: false, guard, owners, joinSoftLineBreaks);
+            var blocks = ModelBuilder.Parse(markdown, pipeline, extensions, _identity, out var frontMatter, commit: false, guard, owners, joinSoftLineBreaks, highlighter, _highlights);
             return new(blocks, frontMatter, MdTextMap.Build(blocks, markdown, guard), markdown) { Failures = failures, Owners = owners };
         }
         catch (Exception exception)
@@ -1819,6 +1854,14 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     {
         _windowPath.Clear();
         return _window is { } window ? SourceUnits.Place(blocks, window, IsFolded, _windowPath) : blocks;
+    }
+
+    private static void OnCodeHighlighterChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is MarkdownViewer viewer)
+        {
+            viewer.Rebuild(discardRunning: true);
+        }
     }
 
     /// <summary>Свёрнутый блок: внутрь него окно не встаёт.</summary>

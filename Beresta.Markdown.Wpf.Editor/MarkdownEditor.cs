@@ -96,6 +96,9 @@ public sealed class MarkdownEditor : MarkdownViewer
     static MarkdownEditor()
     {
         MarkdownProperty.OverrideMetadata(typeof(MarkdownEditor), new FrameworkPropertyMetadata(OnMarkdownChanged));
+        CodeHighlighterProperty.OverrideMetadata(
+            typeof(MarkdownEditor),
+            new FrameworkPropertyMetadata(MdAvalonCodeHighlighter.Instance, FrameworkPropertyMetadataOptions.Inherits));
 
         CommandManager.RegisterClassCommandBinding(
             typeof(MarkdownEditor),

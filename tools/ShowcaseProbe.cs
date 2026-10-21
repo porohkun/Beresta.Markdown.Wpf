@@ -108,6 +108,9 @@ var thread = new Thread(() =>
             case "codenumbers":
                 model.Options.ShowCodeLineNumbers = !model.Options.ShowCodeLineNumbers;
                 break;
+            case "highlight":
+                model.Options.HighlightCode = !model.Options.HighlightCode;
+                break;
             case "noselect":
                 model.Options.IsSelectionEnabled = false;
                 break;

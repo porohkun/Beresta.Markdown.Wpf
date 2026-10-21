@@ -1,6 +1,7 @@
 ﻿namespace Beresta.Markdown.Wpf.Editor;
 
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Media;
 using ICSharpCode.AvalonEdit.Rendering;
 
@@ -24,6 +25,8 @@ internal sealed record LookStyle
 
     public bool Strike { get; init; }
 
+    public bool Underline { get; init; }
+
     public Brush? Bar { get; init; }
 
     public double BarWidth { get; init; }
@@ -39,7 +42,13 @@ internal sealed record LookStyle
         "Italic" => new() { FontStyle = FontStyles.Italic },
         "Strike" => new() { Strike = true },
         "Link" => new() { Foreground = find("Md.Paragraph.LinkForeground") as Brush },
-        _ => new()
+        _ => Keyed(look, find) ?? Styled(find($"Md.{look}.Style") as Style, find) ?? new()
+    };
+
+    /// <summary>Вид по своим ключам темы <c>Md.X.*</c>; ни одного нет — <c>null</c>.</summary>
+    private static LookStyle? Keyed(string look, Func<string, object?> find)
+    {
+        var style = new LookStyle
         {
             Foreground = find($"Md.{look}.Foreground") as Brush,
             Background = find($"Md.{look}.Background") as Brush,
@@ -50,8 +59,45 @@ internal sealed record LookStyle
             Bar = find($"Md.{look}.BorderBrush") as Brush,
             BarWidth = find($"Md.{look}.BorderThickness") is Thickness thickness ? thickness.Left : 0,
             Margin = find($"Md.{look}.Margin") as Thickness?
+        };
+
+        return style == new LookStyle() ? null : style;
+    }
+
+    /// <summary>
+    /// Вид по сеттерам стиля <c>Md.X.Style</c> — того же, которым рисуется оформленный текст: цвет, фон,
+    /// шрифт, черта; сеттеры основы стиля — раньше его собственных. Стиля нет — <c>null</c>.
+    /// </summary>
+    private static LookStyle? Styled(Style? style, Func<string, object?> find)
+    {
+        if (style is null)
+        {
+            return null;
         }
-    };
+
+        var result = Styled(style.BasedOn, find) ?? new LookStyle();
+        foreach (var setter in style.Setters.OfType<Setter>())
+        {
+            var value = setter.Value is DynamicResourceExtension { ResourceKey: { } key } ? find(key.ToString()!) : setter.Value;
+            result = setter.Property.Name switch
+            {
+                nameof(TextElement.Foreground) => result with { Foreground = value as Brush },
+                nameof(TextElement.Background) => result with { Background = value as Brush },
+                nameof(TextElement.FontFamily) => result with { FontFamily = value as FontFamily },
+                nameof(TextElement.FontWeight) => result with { FontWeight = value as FontWeight? },
+                nameof(TextElement.FontStyle) => result with { FontStyle = value as FontStyle? },
+                nameof(TextElement.FontSize) => result with { FontSize = value as double? },
+                nameof(Inline.TextDecorations) => result with
+                {
+                    Strike = value is TextDecorationCollection strike && strike.Any(decoration => decoration.Location == TextDecorationLocation.Strikethrough),
+                    Underline = value is TextDecorationCollection underline && underline.Any(decoration => decoration.Location == TextDecorationLocation.Underline)
+                },
+                _ => result
+            };
+        }
+
+        return result;
+    }
 
     /// <summary>Шрифт, цвет и фон куска.</summary>
     public void Apply(VisualLineElement element)
@@ -72,9 +118,20 @@ internal sealed record LookStyle
             properties.SetFontRenderingEmSize(size);
         }
 
-        if (Strike)
+        if (Strike || Underline)
         {
-            properties.SetTextDecorations(TextDecorations.Strikethrough);
+            var decorations = new TextDecorationCollection();
+            if (Strike)
+            {
+                decorations.Add(TextDecorations.Strikethrough);
+            }
+
+            if (Underline)
+            {
+                decorations.Add(TextDecorations.Underline);
+            }
+
+            properties.SetTextDecorations(decorations);
         }
 
         if (FontFamily is not null || FontWeight is not null || FontStyle is not null)

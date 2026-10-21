@@ -160,18 +160,21 @@
                               IsChecked="{Binding Options.ShowSourceLineNumbers}" />
                 <ToggleButton Content="{loc:Text Options.CodeLineNumbers}"
                               IsChecked="{Binding Options.ShowCodeLineNumbers}" />
+                <ToggleButton Content="{loc:Text Options.CodeHighlighting}"
+                              IsChecked="{Binding Options.HighlightCode}" />
                 <ToggleButton Content="{loc:Text Options.Selection}"
                               IsChecked="{Binding Options.IsSelectionEnabled}" />
             </hc:ButtonGroup>
         </StackPanel>
 
-        <!-- Витрины; номера строк в коде наследуются всеми вьюерами выбранной -->
+        <!-- Витрины; номера строк в коде и подсветчик кода наследуются всеми вьюерами выбранной -->
         <TabControl Style="{StaticResource ShowcaseTabs}"
                     DockPanel.Dock="Bottom"
                     Margin="5,0"
                     ItemsSource="{Binding Showcases}"
                     SelectedItem="{Binding Selected}"
-                    mdv:MarkdownViewer.ShowCodeLineNumbers="{Binding Options.ShowCodeLineNumbers}">
+                    mdv:MarkdownViewer.ShowCodeLineNumbers="{Binding Options.ShowCodeLineNumbers}"
+                    mdv:MarkdownViewer.CodeHighlighter="{Binding Options.CodeHighlighter}">
             <TabControl.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding Title}" HorizontalAlignment="Left" />

@@ -140,5 +140,17 @@
         <member name="P:Beresta.Markdown.Wpf.Editor.MdSourceChangedEventArgs.Change">
             <summary>Что поменялось: место, сколько знаков ушло и что встало на их место.</summary>
         </member>
+        <member name="T:Beresta.Markdown.Wpf.Editor.MdAvalonCodeHighlighter">
+            <summary>
+            Подсвечивает блоки кода определениями подсветки AvalonEdit: C#, JavaScript, HTML, XML, CSS, C++,
+            Java, PHP, PowerShell, Python, SQL, VB, JSON, diff и Markdown. Годится для фонового потока.
+            </summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MdAvalonCodeHighlighter.Instance">
+            <summary>Подсветчик на все вьюеры и редакторы.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MdAvalonCodeHighlighter.Highlight(System.String,System.String)">
+            <inheritdoc/>
+        </member>
     </members>
 </doc>

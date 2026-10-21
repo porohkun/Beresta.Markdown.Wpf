@@ -254,6 +254,41 @@ internal static partial class SourceLooks
                 context.Markup.Mark(start, length, Markup);
             }
         }
+
+        var lines = code.Code.Split('\n');
+        var offset = 0;
+        foreach (var run in code.Runs.OfType<RunVm>())
+        {
+            if (run.StyleName is { } look)
+            {
+                MarkCode(code, lines, offset, run.Text.Length, look, context);
+            }
+
+            offset += run.Text.Length;
+        }
+    }
+
+    /// <summary>Кусок подсвеченного кода — по строкам кода, на их местах в строках исходника.</summary>
+    private static void MarkCode(CodeBlockVm code, string[] lines, int start, int length, string look, Context context)
+    {
+        var lineStart = 0;
+        for (var index = 0; index < lines.Length && lineStart < start + length; index++)
+        {
+            var lineEnd = lineStart + lines[index].Length;
+            var from = Math.Max(start, lineStart);
+            var to = Math.Min(start + length, lineEnd);
+            var line = code.CodeFirstLine + index;
+            if (to > from && line < context.LineStarts.Count)
+            {
+                var codeStart = LineEnd(context, line) - lines[index].Length;
+                if (codeStart >= context.LineStarts[line] && context.Source.AsSpan(codeStart, lines[index].Length).SequenceEqual(lines[index]))
+                {
+                    context.Look.Mark(codeStart + (from - lineStart), to - from, look);
+                }
+            }
+
+            lineStart = lineEnd + 1;
+        }
     }
 
     /// <summary>Знаки разметки — место элемента за вычетом мест его детей; одни пробелы знаками не считаются.</summary>

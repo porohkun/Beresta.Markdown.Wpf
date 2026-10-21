@@ -524,6 +524,27 @@
         <member name="M:Beresta.Markdown.Wpf.Extensions.MdWidget.GetState(System.Windows.DependencyObject)">
             <inheritdoc cref="F:Beresta.Markdown.Wpf.Extensions.MdWidget.StateProperty"/>
         </member>
+        <member name="T:Beresta.Markdown.Wpf.IMdCodeHighlighter">
+            <summary>
+            Подсвечивает блоки кода: даёт кускам кода виды по языку. Вид с именем <c>X</c> рисуется стилем
+            темы <c>Md.Code.X.Style</c>.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.IMdCodeHighlighter.Highlight(System.String,System.String)">
+            <summary>Куски кода с их видами; язык незнаком — <c>null</c>.</summary>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.MdCodeSpan">
+            <summary>
+            Кусок кода с <paramref name="Start"/> длиной <paramref name="Length"/> и его вид:
+            <paramref name="Look"/> <c>X</c> рисуется стилем <c>Md.Code.X.Style</c>.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MdCodeSpan.#ctor(System.Int32,System.Int32,System.String)">
+            <summary>
+            Кусок кода с <paramref name="Start"/> длиной <paramref name="Length"/> и его вид:
+            <paramref name="Look"/> <c>X</c> рисуется стилем <c>Md.Code.X.Style</c>.
+            </summary>
+        </member>
         <member name="T:Beresta.Markdown.Wpf.IMdImageLoader">
             <summary>Откуда вьюер берёт картинки; ставится в <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.ImageLoader"/>.</summary>
         </member>
@@ -1326,6 +1347,18 @@
         </member>
         <member name="F:Beresta.Markdown.Wpf.MarkdownViewer.ImageLoaderProperty">
             <summary>Откуда берутся картинки; по умолчанию <see cref="T:Beresta.Markdown.Wpf.MdImageLoader"/>.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.MarkdownViewer.CodeHighlighterProperty">
+            <summary>Подсвечивает блоки кода по их языку; наследуется. Нет его — код рисуется одним цветом.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.CodeHighlighter">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.CodeHighlighterProperty"/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.GetCodeHighlighter(System.Windows.DependencyObject)">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.CodeHighlighterProperty"/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.SetCodeHighlighter(System.Windows.DependencyObject,Beresta.Markdown.Wpf.IMdCodeHighlighter)">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.CodeHighlighterProperty"/>
         </member>
         <member name="F:Beresta.Markdown.Wpf.MarkdownViewer.ImagePolicyProperty">
             <summary>Какие картинки загружать; наследуется. По умолчанию — <see cref="P:Beresta.Markdown.Wpf.MdImagePolicy.Default"/>.</summary>

@@ -158,6 +158,18 @@ var thread = new Thread(() =>
             });
         }
 
+        // Подсветка кода подсветчиком AvalonEdit
+        if (Wanted("code-highlight.png"))
+        {
+            Shot(russian, "code-highlight.png", new MarkdownViewer
+            {
+                Markdown = "```csharp\n" + L("// A note with a rating", "// Заметка с оценкой") + "\npublic sealed record Note(string Title, int Stars = 5);\n\n"
+                    + "var note = new Note(" + L("\"Hello\"", "\"Привет\"") + ");\nConsole.WriteLine($\"{note.Title}: {note.Stars}\");\n```\n\n"
+                    + "```xml\n<md:MarkdownViewer Markdown=\"{Binding Text}\" ShowCodeLineNumbers=\"True\" />\n```",
+                CodeHighlighter = MdAvalonCodeHighlighter.Instance
+            }, 640);
+        }
+
         if (Wanted("widgets.png"))
         {
             var viewer = (MarkdownViewer)XamlReader.Parse("""

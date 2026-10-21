@@ -221,6 +221,49 @@
     <sys:Double x:Key="Md.CodeBlock.CopyIconSize">14</sys:Double>
     <Geometry x:Key="Md.CodeBlock.CopiedIcon">M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41,-1.41z</Geometry>
 
+    <!-- ======== Md.Code: подсветка кода; вид куска кода — стиль Span ======== -->
+    <Brush x:Key="Md.Code.Keyword.Foreground">#CF222E</Brush>
+    <Brush x:Key="Md.Code.Type.Foreground">#953800</Brush>
+    <Brush x:Key="Md.Code.String.Foreground">#0A3069</Brush>
+    <Brush x:Key="Md.Code.Number.Foreground">#0550AE</Brush>
+    <Brush x:Key="Md.Code.Comment.Foreground">#6E7781</Brush>
+    <Brush x:Key="Md.Code.Preprocessor.Foreground">#8250DF</Brush>
+    <Brush x:Key="Md.Code.Tag.Foreground">#116329</Brush>
+    <Brush x:Key="Md.Code.Attribute.Foreground">#0550AE</Brush>
+    <Brush x:Key="Md.Code.Inserted.Foreground">#116329</Brush>
+    <Brush x:Key="Md.Code.Deleted.Foreground">#82071E</Brush>
+    <Style x:Key="Md.Code.Keyword.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="{DynamicResource Md.Code.Keyword.Foreground}" />
+    </Style>
+    <Style x:Key="Md.Code.Type.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="{DynamicResource Md.Code.Type.Foreground}" />
+    </Style>
+    <Style x:Key="Md.Code.String.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="{DynamicResource Md.Code.String.Foreground}" />
+    </Style>
+    <Style x:Key="Md.Code.Number.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="{DynamicResource Md.Code.Number.Foreground}" />
+    </Style>
+    <Style x:Key="Md.Code.Comment.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="{DynamicResource Md.Code.Comment.Foreground}" />
+    </Style>
+    <Style x:Key="Md.Code.Preprocessor.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="{DynamicResource Md.Code.Preprocessor.Foreground}" />
+    </Style>
+    <Style x:Key="Md.Code.Tag.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="{DynamicResource Md.Code.Tag.Foreground}" />
+    </Style>
+    <Style x:Key="Md.Code.Attribute.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="{DynamicResource Md.Code.Attribute.Foreground}" />
+    </Style>
+    <Style x:Key="Md.Code.Punctuation.Style" TargetType="{x:Type Span}" />
+    <Style x:Key="Md.Code.Inserted.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="{DynamicResource Md.Code.Inserted.Foreground}" />
+    </Style>
+    <Style x:Key="Md.Code.Deleted.Style" TargetType="{x:Type Span}">
+        <Setter Property="Foreground" Value="{DynamicResource Md.Code.Deleted.Foreground}" />
+    </Style>
+
     <!-- ======== Md.ContextMenu: меню вьюера по умолчанию ======== -->
     <sys:String x:Key="Md.ContextMenu.Copy">Copy</sys:String>
     <sys:String x:Key="Md.ContextMenu.CopyMarkdown">Copy as Markdown</sys:String>

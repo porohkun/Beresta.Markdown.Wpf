@@ -18,6 +18,16 @@
     <SolidColorBrush x:Key="Md.CodeBlock.BorderBrush" Color="{DynamicResource BorderColor}" />
     <SolidColorBrush x:Key="Md.CodeBlock.LineNumberForeground" Color="{DynamicResource ThirdlyTextColor}" />
     <SolidColorBrush x:Key="Md.CodeBlock.HeaderForeground" Color="{DynamicResource ThirdlyTextColor}" />
+    <SolidColorBrush x:Key="Md.Code.Keyword.Foreground" Color="{DynamicResource DangerColor}" />
+    <SolidColorBrush x:Key="Md.Code.Type.Foreground" Color="{DynamicResource WarningColor}" />
+    <SolidColorBrush x:Key="Md.Code.String.Foreground" Color="{DynamicResource SuccessColor}" />
+    <SolidColorBrush x:Key="Md.Code.Number.Foreground" Color="{DynamicResource PrimaryColor}" />
+    <SolidColorBrush x:Key="Md.Code.Comment.Foreground" Color="{DynamicResource SecondaryTextColor}" />
+    <SolidColorBrush x:Key="Md.Code.Preprocessor.Foreground" Color="{DynamicResource VioletColor}" />
+    <SolidColorBrush x:Key="Md.Code.Tag.Foreground" Color="{DynamicResource SuccessColor}" />
+    <SolidColorBrush x:Key="Md.Code.Attribute.Foreground" Color="{DynamicResource PrimaryColor}" />
+    <SolidColorBrush x:Key="Md.Code.Inserted.Foreground" Color="{DynamicResource SuccessColor}" />
+    <SolidColorBrush x:Key="Md.Code.Deleted.Foreground" Color="{DynamicResource DangerColor}" />
 
     <!-- Клавиши, картинки, задачи, сноски -->
     <SolidColorBrush x:Key="Md.Kbd.Foreground" Color="{DynamicResource PrimaryTextColor}" />

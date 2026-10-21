@@ -267,6 +267,9 @@
   <data name="MarginButtons.Title" xml:space="preserve">
     <value>Margin buttons</value>
   </data>
+  <data name="Options.CodeHighlighting" xml:space="preserve">
+    <value>Code highlighting</value>
+  </data>
   <data name="Options.CodeLineNumbers" xml:space="preserve">
     <value>Code line numbers</value>
   </data>
