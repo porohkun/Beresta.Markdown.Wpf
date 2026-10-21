@@ -8,10 +8,23 @@ using ViewModels;
 
 /// <summary>
 /// Obsidian callouts: <c>&gt; [!kind] Title</c>; <c>-</c> or <c>+</c> after the kind makes a
-/// collapsible callout, <c>-</c> a collapsed one.
+/// collapsible callout, <c>-</c> a collapsed one; expanding and collapsing write the sign back.
 /// </summary>
 public sealed partial class ObsidianCallouts : MdExtension
 {
+    /// <inheritdoc/>
+    public override MdSourceEdit? EditSource(NodeVm node, object? state, MdSourceContext context)
+    {
+        if (node is not CalloutVm { IsFoldable: true } callout || state is not MdFoldState fold || callout.Source.IsEmpty)
+        {
+            return null;
+        }
+
+        var sign = fold.IsExpanded ? "+" : "-";
+        var mark = FoldMark().Match(context.Text, callout.Source.Start, callout.Source.Length).Groups["fold"];
+        return mark.Success && mark.Value != sign ? new(mark.Index, mark.Length, sign) : null;
+    }
+
     /// <inheritdoc/>
     public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
     {
@@ -107,4 +120,7 @@ public sealed partial class ObsidianCallouts : MdExtension
 
     [GeneratedRegex(@"^\[!(?<kind>[A-Za-z][\w-]*)\](?<fold>[+-]?)(?:[ \t]+(?<title>\S.*))?[ \t]*$")]
     private static partial Regex Marker();
+
+    [GeneratedRegex(@"\A[ \t]*(?:>[ \t]?)+\[![A-Za-z][\w-]*\](?<fold>[+-]?)")]
+    private static partial Regex FoldMark();
 }

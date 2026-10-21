@@ -222,14 +222,14 @@
         </member>
         <member name="T:Beresta.Markdown.Wpf.Automation.MdTaskMarkAutomationPeer">
             <summary>
-            Флажок задачи для автоматизации: недоступный флажок с состоянием задачи из исходника; у задачи со
-            статусом оно не определено.
+            Флажок задачи для автоматизации: флажок с состоянием задачи из исходника, доступный, пока контролы
+            вьюера правят исходник; у задачи со статусом состояние не определено.
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Automation.MdTaskMarkAutomationPeer.#ctor(Beresta.Markdown.Wpf.Presenters.MdTaskMark)">
             <summary>
-            Флажок задачи для автоматизации: недоступный флажок с состоянием задачи из исходника; у задачи со
-            статусом оно не определено.
+            Флажок задачи для автоматизации: флажок с состоянием задачи из исходника, доступный, пока контролы
+            вьюера правят исходник; у задачи со статусом состояние не определено.
             </summary>
         </member>
         <member name="P:Beresta.Markdown.Wpf.Automation.MdTaskMarkAutomationPeer.ToggleState">
@@ -322,6 +322,12 @@
         <member name="M:Beresta.Markdown.Wpf.Extensions.IMdClickableState.OnClick">
             <summary>По куску щёлкнули, не выделяя текста.</summary>
         </member>
+        <member name="T:Beresta.Markdown.Wpf.Extensions.MdSourceContext">
+            <summary>Исходник, в который пишет виджет: текст, из которого собран показанный документ.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Extensions.MdSourceContext.Text">
+            <summary>Текст показанного документа; в него указывают позиции модели.</summary>
+        </member>
         <member name="T:Beresta.Markdown.Wpf.Extensions.MdConvertContext">
             <summary>
             Разбор изнутри расширения: вложенная разметка своего узла превращается в модель так же, как
@@ -384,6 +390,12 @@
             <summary>
             Состояние своего виджета, которое должно пережить его контрол: свёрнут ли, что выбрано.
             Шаблон получает его через <see cref="F:Beresta.Markdown.Wpf.Extensions.MdWidget.StateProperty"/>; <c>null</c> — состояния нет.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Extensions.MdExtension.EditSource(Beresta.Markdown.Wpf.ViewModels.NodeVm,System.Object,Beresta.Markdown.Wpf.Extensions.MdSourceContext)">
+            <summary>
+            Что записать в исходник, когда твой виджет нажали (<paramref name="state"/> — <c>null</c>) или
+            сменилось его состояние (новое состояние); <c>null</c> — ничего.
             </summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Extensions.MdExtensionCollection">
@@ -468,6 +480,9 @@
             Контейнеры <c>:::вид Заголовок</c> Docusaurus, VuePress и HackMD: известный вид — плашкой,
             <c>details</c> и <c>spoiler</c> — сворачиваемым блоком. Заголовок — после имени или в квадратных скобках.
             </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Kit.CalloutContainers.EditSource(Beresta.Markdown.Wpf.ViewModels.NodeVm,System.Object,Beresta.Markdown.Wpf.Extensions.MdSourceContext)">
+            <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.CalloutContainers.ConvertBlock(Markdig.Syntax.Block,Beresta.Markdown.Wpf.Extensions.MdConvertContext)">
             <inheritdoc/>
@@ -820,8 +835,12 @@
         <member name="T:Beresta.Markdown.Wpf.Kit.MkDocsAdmonitions">
             <summary>
             Предупреждения MkDocs: <c>!!! вид "Заголовок"</c> и содержимое с отступом в четыре пробела;
-            <c>???</c> — свёрнутое, <c>???+</c> — развёрнутое сворачиваемое.
+            <c>???</c> — свёрнутое, <c>???+</c> — развёрнутое сворачиваемое; разворачивание и сворачивание
+            пишут знак обратно.
             </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Kit.MkDocsAdmonitions.EditSource(Beresta.Markdown.Wpf.ViewModels.NodeVm,System.Object,Beresta.Markdown.Wpf.Extensions.MdSourceContext)">
+            <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.MkDocsAdmonitions.SetupPipeline(Markdig.MarkdownPipelineBuilder)">
             <inheritdoc/>
@@ -838,8 +857,11 @@
         <member name="T:Beresta.Markdown.Wpf.Kit.ObsidianCallouts">
             <summary>
             Плашки Obsidian: <c>&gt; [!вид] Заголовок</c>; <c>-</c> или <c>+</c> после вида — сворачиваемая
-            плашка, <c>-</c> — свёрнутая сразу.
+            плашка, <c>-</c> — свёрнутая сразу; разворачивание и сворачивание пишут знак обратно.
             </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Kit.ObsidianCallouts.EditSource(Beresta.Markdown.Wpf.ViewModels.NodeVm,System.Object,Beresta.Markdown.Wpf.Extensions.MdSourceContext)">
+            <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.ObsidianCallouts.ConvertBlock(Markdig.Syntax.Block,Beresta.Markdown.Wpf.Extensions.MdConvertContext)">
             <inheritdoc/>
@@ -973,7 +995,8 @@
         <member name="T:Beresta.Markdown.Wpf.Kit.TaskStatuses">
             <summary>
             Статусы задач <c>- [/]</c>, <c>- [-]</c>, <c>- [&gt;]</c>, <c>- [?]</c>, <c>- [!]</c> — значком вместо флажка;
-            статус — в <see cref="P:Beresta.Markdown.Wpf.ViewModels.TaskVm.Status"/>. Вид — шаблон темы <c>Md.TaskStatus.Template</c>.
+            статус — в <see cref="P:Beresta.Markdown.Wpf.ViewModels.TaskVm.Status"/>. Вид — шаблон темы <c>Md.TaskStatus.Template</c>;
+            нажатие ставит следующий статус в этом порядке.
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.TaskStatuses.SetupPipeline(Markdig.MarkdownPipelineBuilder)">
@@ -983,6 +1006,9 @@
             <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Kit.TaskStatuses.SelectTemplate(System.Object,System.Windows.DependencyObject)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Kit.TaskStatuses.EditSource(Beresta.Markdown.Wpf.ViewModels.NodeVm,System.Object,Beresta.Markdown.Wpf.Extensions.MdSourceContext)">
             <inheritdoc/>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Kit.TocVm">
@@ -1218,6 +1244,24 @@
             GitHub; выключено — каждая строка исходника начинается на экране с новой строки. Наследуется.
             </summary>
         </member>
+        <member name="F:Beresta.Markdown.Wpf.MarkdownViewer.AreControlsEditableProperty">
+            <summary>
+            Флажки задач и сворачиваемые блоки просят правку исходника через
+            <see cref="F:Beresta.Markdown.Wpf.MarkdownViewer.SourceEditRequestedEvent"/>; выключено — только показывают. Наследуется.
+            </summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.MarkdownViewer.SourceEditRequestedEvent">
+            <summary>
+            Контрол документа просит правку исходника; её никто не взял — вьюер сам кладёт её в
+            <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.Markdown"/>.
+            </summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.MarkdownViewer.ActivateWidgetCommand">
+            <summary>
+            Виджет нажали: вьюер спрашивает у его расширения, что записать в исходник; параметр — модель
+            виджета.
+            </summary>
+        </member>
         <member name="F:Beresta.Markdown.Wpf.MarkdownViewer.SelectionStartProperty">
             <summary>Начало выделения в текстовой карте.</summary>
         </member>
@@ -1244,6 +1288,9 @@
             Markdig или расширение бросили исключение, пока вьюер собирал или рисовал документ; вьюер его
             поймал и показал, что смог.
             </summary>
+        </member>
+        <member name="E:Beresta.Markdown.Wpf.MarkdownViewer.SourceEditRequested">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.SourceEditRequestedEvent"/>
         </member>
         <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.Markdown">
             <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.MarkdownProperty"/>
@@ -1305,6 +1352,9 @@
         <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.JoinSoftLineBreaks">
             <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.JoinSoftLineBreaksProperty"/>
         </member>
+        <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.AreControlsEditable">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.AreControlsEditableProperty"/>
+        </member>
         <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.ShowCodeCopyButton">
             <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.ShowCodeCopyButtonProperty"/>
         </member>
@@ -1358,6 +1408,12 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.SetJoinSoftLineBreaks(System.Windows.DependencyObject,System.Boolean)">
             <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.JoinSoftLineBreaksProperty"/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.GetAreControlsEditable(System.Windows.DependencyObject)">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.AreControlsEditableProperty"/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.SetAreControlsEditable(System.Windows.DependencyObject,System.Boolean)">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.MarkdownViewer.AreControlsEditableProperty"/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.GetSourceLineOffset(System.Double)">
             <summary>Позиция строки исходника в координатах вьюера; дробная часть — доля строки.</summary>
@@ -1527,6 +1583,42 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.MdImagePolicy.Allows(System.String,System.Uri)">
             <summary>Отдать ли загрузчику картинку: адрес из разметки и он же, разобранный от адреса документа.</summary>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.MdSourceEdit">
+            <summary>
+            Правка исходника: <see cref="P:Beresta.Markdown.Wpf.MdSourceEdit.Length"/> знаков с <see cref="P:Beresta.Markdown.Wpf.MdSourceEdit.Start"/> заменяются на
+            <see cref="P:Beresta.Markdown.Wpf.MdSourceEdit.Text"/>; нулевая длина — вставка, пустой текст — удаление.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MdSourceEdit.#ctor(System.Int32,System.Int32,System.String)">
+            <summary>
+            Правка исходника: <see cref="P:Beresta.Markdown.Wpf.MdSourceEdit.Length"/> знаков с <see cref="P:Beresta.Markdown.Wpf.MdSourceEdit.Start"/> заменяются на
+            <see cref="P:Beresta.Markdown.Wpf.MdSourceEdit.Text"/>; нулевая длина — вставка, пустой текст — удаление.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MdSourceEdit.ApplyTo(System.String)">
+            <summary>Текст с этой правкой.</summary>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.MdSourceEditRequestedEventArgs">
+            <summary>
+            Контрол документа просит правку исходника: нажатый флажок задачи, развёрнутый или свёрнутый
+            сворачиваемый блок.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MdSourceEditRequestedEventArgs.#ctor(System.Windows.RoutedEvent,System.Object,Beresta.Markdown.Wpf.MdSourceEdit,Beresta.Markdown.Wpf.ViewModels.NodeVm)">
+            <summary>Просьба о правке исходника от имени элемента модели.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.MdSourceEditRequestedEventArgs.Edit">
+            <summary>Правка; её позиции указывают в текст показанного документа.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.MdSourceEditRequestedEventArgs.Node">
+            <summary>Элемент модели, чей контрол просит.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MdSourceEditRequestedEventArgs.InvokeEventHandler(System.Delegate,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.MdSourceEditRequestedEventHandler">
+            <summary>Обработчик <see cref="F:Beresta.Markdown.Wpf.MarkdownViewer.SourceEditRequestedEvent"/>.</summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.MdRenderFailedEventArgs">
             <summary>Исключение, которое вьюер поймал, пока собирал или рисовал свой документ.</summary>
@@ -1971,7 +2063,7 @@
             <inheritdoc/>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Presenters.MdTaskMark">
-            <summary>Картинка флажка задачи: пустой квадрат, залитый с галочкой или со знаком статуса. Не нажимается.</summary>
+            <summary>Картинка флажка задачи: пустой квадрат, залитый с галочкой или со знаком статуса. Нажимается, когда включено <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.AreControlsEditable"/>.</summary>
         </member>
         <member name="F:Beresta.Markdown.Wpf.Presenters.MdTaskMark.IsCheckedProperty">
             <summary>Задача выполнена: <c>[x]</c>.</summary>
@@ -2004,6 +2096,12 @@
             <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Presenters.MdTaskMark.OnCreateAutomationPeer">
+            <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Presenters.MdTaskMark.OnMouseLeftButtonDown(System.Windows.Input.MouseButtonEventArgs)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Presenters.MdTaskMark.OnMouseLeftButtonUp(System.Windows.Input.MouseButtonEventArgs)">
             <inheritdoc/>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Presenters.MdTextBlock">

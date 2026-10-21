@@ -2,15 +2,23 @@
 
 using System.Windows;
 using System.Windows.Automation.Peers;
+using System.Windows.Input;
 using System.Windows.Media;
 using Automation;
+using Selection;
+using ViewModels;
 
 /// <summary>
 /// The picture of a task box: an empty square, a filled one with a check mark, or one with a status
-/// sign. Not clickable.
+/// sign. Pressed when <see cref="MarkdownViewer.AreControlsEditable"/> is on.
 /// </summary>
 public sealed class MdTaskMark : FrameworkElement
 {
+    private static readonly DependencyProperty EditableProperty =
+        MarkdownViewer.AreControlsEditableProperty.AddOwner(
+            typeof(MdTaskMark),
+            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits, OnEditableChanged));
+
     /// <summary>The task is done: <c>[x]</c>.</summary>
     public static readonly DependencyProperty IsCheckedProperty =
         DependencyProperty.Register(
@@ -116,6 +124,56 @@ public sealed class MdTaskMark : FrameworkElement
         drawingContext.DrawGeometry(null, pen, mark);
     }
 
+    /// <summary>Задачу можно нажать: контролы вьюера правят исходник.</summary>
+    internal bool IsEditable => (bool)GetValue(EditableProperty);
+
+    /// <summary>Нажатие: вьюер спрашивает, что записать в исходник; задачу нельзя нажать — <c>false</c>.</summary>
+    internal bool Press()
+    {
+        if (!IsEditable || DataContext is not TaskVm task || !MarkdownViewer.ActivateWidgetCommand.CanExecute(task, this))
+        {
+            return false;
+        }
+
+        MarkdownViewer.ActivateWidgetCommand.Execute(task, this);
+        return true;
+    }
+
     /// <inheritdoc/>
     protected override AutomationPeer OnCreateAutomationPeer() => new MdTaskMarkAutomationPeer(this);
+
+    /// <inheritdoc/>
+    protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+    {
+        base.OnMouseLeftButtonDown(e);
+        if (IsEditable)
+        {
+            e.Handled = CaptureMouse();
+        }
+    }
+
+    /// <inheritdoc/>
+    protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
+    {
+        base.OnMouseLeftButtonUp(e);
+        if (!IsMouseCaptured)
+        {
+            return;
+        }
+
+        ReleaseMouseCapture();
+        e.Handled = true;
+        if (IsMouseOver)
+        {
+            Press();
+        }
+    }
+
+    private static void OnEditableChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var mark = (MdTaskMark)d;
+        var editable = (bool)e.NewValue;
+        MdSelection.SetIsInteractive(mark, editable);
+        mark.Cursor = editable ? Cursors.Hand : null;
+    }
 }

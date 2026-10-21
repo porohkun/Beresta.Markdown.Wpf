@@ -165,6 +165,9 @@
   <data name="Document.Back" xml:space="preserve">
     <value>Назад (Shift+Enter)</value>
   </data>
+  <data name="Document.ControlsEditable" xml:space="preserve">
+    <value>Контролы правят исходник</value>
+  </data>
   <data name="Document.Find" xml:space="preserve">
     <value>Найти:</value>
   </data>

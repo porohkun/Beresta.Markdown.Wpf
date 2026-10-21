@@ -213,6 +213,34 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits, OnJoinSoftLineBreaksChanged));
 
+    /// <summary>
+    /// Task boxes and collapsible blocks ask to change the source through
+    /// <see cref="SourceEditRequestedEvent"/>; off — they only show. Inherited.
+    /// </summary>
+    public static readonly DependencyProperty AreControlsEditableProperty =
+        DependencyProperty.RegisterAttached(
+            nameof(AreControlsEditable),
+            typeof(bool),
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
+
+    /// <summary>
+    /// A control of the document asks to change the source; not handled — the viewer applies the
+    /// change to <see cref="Markdown"/> itself.
+    /// </summary>
+    public static readonly RoutedEvent SourceEditRequestedEvent =
+        EventManager.RegisterRoutedEvent(
+            nameof(SourceEditRequested),
+            RoutingStrategy.Bubble,
+            typeof(MdSourceEditRequestedEventHandler),
+            typeof(MarkdownViewer));
+
+    /// <summary>
+    /// A widget is pressed: the viewer asks its extension what to write into the source; the
+    /// parameter is the model of the widget.
+    /// </summary>
+    public static readonly RoutedCommand ActivateWidgetCommand = new(nameof(ActivateWidgetCommand), typeof(MarkdownViewer));
+
     private static readonly DependencyPropertyKey SelectionStartPropertyKey =
         DependencyProperty.RegisterReadOnly(
             nameof(SelectionStart),
@@ -326,6 +354,13 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
                 MarkdownLink.ActivateCommand,
                 (sender, e) => MarkdownLink.Activate(ElementOf(e.OriginalSource) ?? (UIElement)sender, (string)e.Parameter),
                 (sender, e) => e.CanExecute = e.Parameter is string { Length: > 0 }));
+
+        CommandManager.RegisterClassCommandBinding(
+            typeof(MarkdownViewer),
+            new(
+                ActivateWidgetCommand,
+                (sender, e) => ((MarkdownViewer)sender).RequestSourceEdit((NodeVm)e.Parameter, null),
+                (sender, e) => e.CanExecute = sender is MarkdownViewer { AreControlsEditable: true } && e.Parameter is NodeVm));
     }
 
     /// <summary>Creates an empty viewer.</summary>
@@ -334,7 +369,7 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
         Guard = new(
             (exception, extension) => Dispatcher.BeginInvoke(() => RenderFailed?.Invoke(this, new(exception, extension, isBackground: false))),
             widget => _owners.GetValueOrDefault(widget));
-        _states = new(() => ActiveExtensions, Guard);
+        _states = new(() => ActiveExtensions, Guard, () => AreControlsEditable, RequestSourceEdit);
         SetValue(MdWidget.StatesProperty, _states);
 
         _themeBrushes = new(AddLogicalChild);
@@ -370,6 +405,13 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     /// exception and showed what it could.
     /// </summary>
     public event EventHandler<MdRenderFailedEventArgs>? RenderFailed;
+
+    /// <inheritdoc cref="SourceEditRequestedEvent"/>
+    public event MdSourceEditRequestedEventHandler SourceEditRequested
+    {
+        add => AddHandler(SourceEditRequestedEvent, value);
+        remove => RemoveHandler(SourceEditRequestedEvent, value);
+    }
 
     /// <summary>Новый текст лёг в документ: прежняя карта и новая.</summary>
     internal event Action<MdTextMap, MdTextMap>? TextMapChanged;
@@ -506,6 +548,13 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
         set => SetValue(JoinSoftLineBreaksProperty, value);
     }
 
+    /// <inheritdoc cref="AreControlsEditableProperty"/>
+    public bool AreControlsEditable
+    {
+        get => (bool)GetValue(AreControlsEditableProperty);
+        set => SetValue(AreControlsEditableProperty, value);
+    }
+
     /// <inheritdoc cref="ShowCodeCopyButtonProperty"/>
     public bool ShowCodeCopyButton
     {
@@ -595,6 +644,14 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     /// <inheritdoc cref="JoinSoftLineBreaksProperty"/>
     public static void SetJoinSoftLineBreaks(DependencyObject element, bool value)
         => element.SetValue(JoinSoftLineBreaksProperty, value);
+
+    /// <inheritdoc cref="AreControlsEditableProperty"/>
+    public static bool GetAreControlsEditable(DependencyObject element)
+        => (bool)element.GetValue(AreControlsEditableProperty);
+
+    /// <inheritdoc cref="AreControlsEditableProperty"/>
+    public static void SetAreControlsEditable(DependencyObject element, bool value)
+        => element.SetValue(AreControlsEditableProperty, value);
 
     /// <summary>
     /// The position of a source line in the coordinates of the viewer; the fraction is a part of
@@ -1082,6 +1139,42 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Контрол просит правку исходника — его нажали (<paramref name="state"/> — <c>null</c>) или
+    /// сменилось его состояние. Что записать, решает хозяин элемента модели. Правку никто не взял —
+    /// она ложится в <see cref="Markdown"/>, если там тот же текст, что показан.
+    /// </summary>
+    internal void RequestSourceEdit(NodeVm node, object? state)
+    {
+        if (!AreControlsEditable || EditFor(node, state) is not { } edit)
+        {
+            return;
+        }
+
+        var request = new MdSourceEditRequestedEventArgs(SourceEditRequestedEvent, this, edit, node);
+        RaiseEvent(request);
+        if (!request.Handled && string.Equals(Markdown ?? string.Empty, Source, StringComparison.Ordinal))
+        {
+            SetCurrentValue(MarkdownProperty, edit.ApplyTo(Source));
+        }
+    }
+
+    /// <summary>Правка от элемента модели: у виджета расширения — от расширения, у встроенного контрола — своя.</summary>
+    private MdSourceEdit? EditFor(NodeVm node, object? state)
+    {
+        if (_owners.GetValueOrDefault(node) is { } owner)
+        {
+            return Guard.Call(owner, () => owner.EditSource(node, state, new(Source)), null);
+        }
+
+        return (node, state) switch
+        {
+            (TaskVm task, null) => SourceEdits.ToggleTask(task, Source),
+            (DetailsVm details, MdFoldState fold) => SourceEdits.SetDetailsOpen(details, fold.IsExpanded, Source),
+            _ => null
+        };
     }
 
     private static void OnSharedExtensionsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

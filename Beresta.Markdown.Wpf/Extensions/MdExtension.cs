@@ -53,4 +53,10 @@ public abstract class MdExtension
     /// The template gets it through <see cref="MdWidget.StateProperty"/>; <c>null</c> — no state.
     /// </summary>
     public virtual object? CreateState(NodeVm node) => null;
+
+    /// <summary>
+    /// What to write into the source when your widget is pressed (<paramref name="state"/> is
+    /// <c>null</c>) or its state changed (the new state); <c>null</c> — nothing.
+    /// </summary>
+    public virtual MdSourceEdit? EditSource(NodeVm node, object? state, MdSourceContext context) => null;
 }

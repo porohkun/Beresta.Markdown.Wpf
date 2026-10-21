@@ -22,6 +22,8 @@ internal sealed class LambdaExtension : MdExtension
 
     public Func<NodeVm, object?>? State { get; init; }
 
+    public Func<NodeVm, object?, MdSourceContext, MdSourceEdit?>? Edit { get; init; }
+
     public bool Background { get; init; } = true;
 
     public override bool AllowsBackgroundParse => Background;
@@ -38,4 +40,6 @@ internal sealed class LambdaExtension : MdExtension
     public override DataTemplate? SelectTemplate(object item, DependencyObject container) => Template?.Invoke(item);
 
     public override object? CreateState(NodeVm node) => State?.Invoke(node);
+
+    public override MdSourceEdit? EditSource(NodeVm node, object? state, MdSourceContext context) => Edit?.Invoke(node, state, context);
 }
