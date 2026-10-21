@@ -1038,6 +1038,14 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     }
 
     /// <summary>
+    /// How the source of the shown document looks: built-in elements by their kind, markup — the place
+    /// of an element without the places of its children — and the widgets of extensions as they
+    /// describe them.
+    /// </summary>
+    protected MdSourceLook GetSourceLook()
+        => SourceLooks.Describe(_parsedBlocks, Source, _lineStarts ??= ModelBuilder.FindLineStarts(Source), node => _owners.GetValueOrDefault(node), Guard);
+
+    /// <summary>
     /// Applies an edit of the source that no handler of <see cref="SourceEditRequested"/> took: by
     /// default to <see cref="Markdown"/>, if it holds <see cref="ShownMarkdown"/>.
     /// </summary>

@@ -1,0 +1,8 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Тема редактора: вливается в ресурсы приложения после темы вьюера. Остальной вид исходника берёт ключи вьюера -->
+    <Brush x:Key="Md.Source.Markup.Foreground">#8C959F</Brush>
+    <Brush x:Key="Md.Source.Background">#0A8C959F</Brush>
+
+</ResourceDictionary>

@@ -322,6 +322,30 @@
         <member name="M:Beresta.Markdown.Wpf.Extensions.IMdClickableState.OnClick">
             <summary>По куску щёлкнули, не выделяя текста.</summary>
         </member>
+        <member name="T:Beresta.Markdown.Wpf.Extensions.MdSourceLook">
+            <summary>
+            Как исходник документа выглядит в редакторе: именованные виды кусков текста исходника и строк
+            исходника. Шрифты и цвета вида с именем <c>X</c> редактор берёт из ключей темы <c>Md.X.*</c>.
+            </summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Extensions.MdSourceLook.Pieces">
+            <summary>Куски исходника с их видами; поздний кусок рисуется поверх раннего.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Extensions.MdSourceLook.Lines">
+            <summary>Строки исходника, считая с нуля, с их видами: фон, полоса слева.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Extensions.MdSourceLook.Mark(System.Int32,System.Int32,System.String)">
+            <summary>
+            Даёт куску исходника вид: <c>Heading1</c>–<c>Heading6</c>, <c>Bold</c>, <c>Italic</c>,
+            <c>Strike</c>, <c>InlineCode</c>, <c>Link</c>, <c>CodeBlock</c>, <c>Source.Markup</c> или свой.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Extensions.MdSourceLook.MarkLines(System.Int32,System.Int32,System.String)">
+            <summary>
+            Даёт строкам исходника с <paramref name="firstLine"/> по <paramref name="lastLine"/> вид:
+            <c>CodeBlock</c>, <c>Quote</c> или свой.
+            </summary>
+        </member>
         <member name="T:Beresta.Markdown.Wpf.Extensions.MdSourceContext">
             <summary>Исходник, в который пишет виджет: текст, из которого собран показанный документ.</summary>
         </member>
@@ -396,6 +420,12 @@
             <summary>
             Что записать в исходник, когда твой виджет нажали (<paramref name="state"/> — <c>null</c>) или
             сменилось его состояние (новое состояние); <c>null</c> — ничего.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Extensions.MdExtension.DescribeSource(Beresta.Markdown.Wpf.ViewModels.NodeVm,Beresta.Markdown.Wpf.Extensions.MdSourceLook)">
+            <summary>
+            Как твой виджет выглядит в исходнике редактора: отмечает его куски и строки видами. По
+            умолчанию — ничего: исходник виджета — простой текст.
             </summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Extensions.MdExtensionCollection">
@@ -1528,6 +1558,13 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.OnDocumentApplied">
             <summary>Новый разбор лёг на документ: его блоки, текстовая карта и <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.TopBlockSpans"/>.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.GetSourceLook">
+            <summary>
+            Как выглядит исходник показанного документа: встроенные элементы — по своему виду, знаки
+            разметки — место элемента за вычетом мест его детей, виджеты расширений — как их описывают
+            расширения.
+            </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.ApplySourceEdit(Beresta.Markdown.Wpf.MdSourceEdit)">
             <summary>

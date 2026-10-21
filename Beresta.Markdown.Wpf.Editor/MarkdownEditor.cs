@@ -62,6 +62,8 @@ public sealed class MarkdownEditor : MarkdownViewer
     private readonly SourceWindow _window;
     private readonly DispatcherTimer _commit;
     private readonly DispatcherTimer _autoScroll;
+    private readonly Dictionary<string, LookStyle> _styles = [];
+    private SourceLookIndex? _look;
     private TextDocument _document;
     private (string Text, ITextSourceVersion Version)? _given;
     private bool _dirty;
@@ -112,6 +114,8 @@ public sealed class MarkdownEditor : MarkdownViewer
         _editor.DocumentChanged += (_, _) => Reattach();
 
         var area = _editor.TextArea;
+        area.TextView.LineTransformers.Add(new SourceColorizer(PiecesOn));
+        area.TextView.BackgroundRenderers.Add(new SourceBackground(LooksAt));
         CommandManager.AddPreviewExecutedHandler(area, OnTextAreaCommand);
         area.Caret.PositionChanged += (_, _) => OnCaretMoved();
         area.SelectionChanged += (_, _) => OnCaretMoved();
@@ -279,6 +283,9 @@ public sealed class MarkdownEditor : MarkdownViewer
     /// <inheritdoc/>
     protected override void OnDocumentApplied()
     {
+        _look = null;
+        _styles.Clear();
+        _editor.TextArea.TextView.Redraw();
         if (_window.IsOpen)
         {
             ShowWindow();
@@ -1074,6 +1081,54 @@ public sealed class MarkdownEditor : MarkdownViewer
         }
 
         return GetSourceLineOffset(ToShownLine(line)) is { } y ? TranslatePoint(new(0, y), scroller).Y : null;
+    }
+
+    /// <summary>Куски строки документа с видами — по описанию исходника последнего разбора, места переведены на нынешний текст.</summary>
+    private IEnumerable<(int Start, int End, LookStyle Style)> PiecesOn(DocumentLine line)
+    {
+        var look = _look ??= new(GetSourceLook(), ShownMarkdown, _shownLines);
+        var text = look.Text;
+        var from = _versions.ToText(text, line.Offset, _document, AnchorMovementType.AfterInsertion);
+        var to = _versions.ToText(text, line.EndOffset, _document, AnchorMovementType.BeforeInsertion);
+        var last = _shownLines.LineAt(text, to);
+        for (var shown = _shownLines.LineAt(text, from); shown <= last; shown++)
+        {
+            foreach (var (start, end, name) in look.PiecesOn(shown))
+            {
+                if (end <= from
+                    || start >= to
+                    || _versions.Map(text, Math.Max(start, from), _document, AnchorMovementType.AfterInsertion) is not { } a
+                    || _versions.Map(text, Math.Min(end, to), _document, AnchorMovementType.BeforeInsertion) is not { } b)
+                {
+                    continue;
+                }
+
+                a = Math.Clamp(a, line.Offset, line.EndOffset);
+                b = Math.Clamp(b, line.Offset, line.EndOffset);
+                if (b > a)
+                {
+                    yield return (a, b, StyleOf(name));
+                }
+            }
+        }
+    }
+
+    /// <summary>Виды строки документа с единицы: фон, полоса.</summary>
+    private IEnumerable<LookStyle> LooksAt(int line)
+    {
+        var look = _look ??= new(GetSourceLook(), ShownMarkdown, _shownLines);
+        return look.LooksAt(ToShownLine(line)).Select(StyleOf);
+    }
+
+    /// <summary>Шрифт и цвета вида по ключам темы — один раз на разбор.</summary>
+    private LookStyle StyleOf(string look)
+    {
+        if (!_styles.TryGetValue(look, out var style))
+        {
+            _styles[look] = style = LookStyle.Resolve(look, key => TryFindResource(key));
+        }
+
+        return style;
     }
 
     /// <summary>Строка показанного текста с нуля — строка документа с единицы, где теперь её начало.</summary>

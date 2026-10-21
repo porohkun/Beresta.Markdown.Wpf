@@ -59,4 +59,12 @@ public abstract class MdExtension
     /// <c>null</c>) or its state changed (the new state); <c>null</c> — nothing.
     /// </summary>
     public virtual MdSourceEdit? EditSource(NodeVm node, object? state, MdSourceContext context) => null;
+
+    /// <summary>
+    /// How your widget looks in the source of an editor: marks its pieces and lines with looks. By
+    /// default — nothing: the source of the widget is plain text.
+    /// </summary>
+    public virtual void DescribeSource(NodeVm node, MdSourceLook look)
+    {
+    }
 }

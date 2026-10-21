@@ -4,30 +4,6 @@
 [`docs/ideas/editor.md`](docs/ideas/editor.md); здесь — что сделать и в каком порядке. Каждый этап
 опирается на предыдущие и заканчивается рабочим состоянием: сборка, тесты, витрина.
 
-## Этап 7. Оформление исходника
-
-- [ ] Вьюер.
-  - `MdSourceLook` — построитель: оформление куска по имени, вид строки по имени.
-  - Второй новый член `MdExtension`: `void DescribeSource(NodeVm node, MdSourceLook look)`; по
-    умолчанию ничего. Вызов — через `ExtensionGuard`.
-  - Знаки разметки — место элемента за вычетом мест его детей: одна функция для любой вьюмодели
-    с `Source`.
-- [ ] Редактор: раскраска AvalonEdit (`DocumentColorizingTransformer`, `ChangeLinePart`) по модели
-  последнего разбора; места переведены на текущий текст.
-  - Заголовок — размер и начертание из `Md.Heading{N}.FontSize` и `Md.Heading{N}.FontWeight`.
-  - `RunVm`: `Bold`, `Italic`, `Strike` — зачёркивание; `Code` — шрифт, цвет и фон
-    `Md.InlineCode.*`; ссылка — цвет `Md.Paragraph.LinkForeground`.
-  - Блок кода — шрифт и цвет `Md.CodeBlock.*`, фон строк `Md.CodeBlock.Background` через
-    `IBackgroundRenderer`.
-  - Цитата — полоса `Md.Quote.BorderBrush` толщиной `Md.Quote.BorderThickness` слева от её строк.
-  - Знаки разметки — маркеры списков, `#` заголовков, `**`, обратные кавычки, скобки и адрес
-    ссылки, `|` таблиц — цветом `Md.Source.Markup.Foreground`.
-  - Виджеты расширений — по `DescribeSource`.
-- [ ] Тема пакета редактора: `Themes/Generic.xaml` с ключами `Md.Source.Markup.Foreground` и
-  `Md.Source.Background`. Потребитель вливает её в ресурсы приложения после темы вьюера.
-- [ ] Тесты: на документе со всеми элементами — у каждого куска нужные размер, начертание и цвет,
-  знаки разметки приглушены, расширение с `DescribeSource` красит свой виджет.
-
 ## Этап 8. Front matter
 
 - [ ] `FrontMatterProperties.Read` отдаёт ещё место значения в тексте front matter и его вид:
@@ -62,9 +38,10 @@
   - Рубрика в `_Sidebar.md`, ссылки с `Home`.
   - «Сравнение» — раздел «Редактирование»; «Живой предпросмотр» — редактор вместо двух панелей.
   - «Медиа и данные» — поля карточки свойств.
+  - «Расширения» — `DescribeSource` и `MdSourceLook`: как виджет выглядит в исходнике; имена видов и ключи `Md.<вид>.*`.
   - «Настройки и перехват» — защищённое API наследника вьюера: `SetSourceWindow`, `ClearSourceWindow`,
     `IMdSourceRows`, `TopBlockSpans`, `OnDocumentApplied`, `HoldSourceWindow`, `ShownMarkdown`,
-    `ApplySourceEdit`.
+    `ApplySourceEdit`, `GetSourceLook`.
 - [ ] Снимки: в `tools/WikiShots.cs` — блочный, полный и «только контролы», на обоих языках.
 - [ ] `README.md` и `README.ru.md`: второй пакет — установка и короткий пример.
 - [ ] `GLOSSARY.md`: режим правки, правимые блоки, окно правки.
