@@ -227,7 +227,8 @@ internal sealed partial class ModelBuilder
         return state;
     }
 
-    private static List<int> FindLineStarts(string text)
+    /// <summary>Начала строк текста: перевод строки — <c>\n</c>, <c>\r\n</c> или одиночный <c>\r</c>, как у Markdig.</summary>
+    internal static List<int> FindLineStarts(string text)
     {
         var starts = new List<int> { 0 };
 

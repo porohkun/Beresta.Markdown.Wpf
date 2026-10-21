@@ -32,7 +32,7 @@ internal sealed class WidgetStates
     /// <summary>Состояние виджета; первый раз его создаёт расширение. <c>null</c> — состояния нет.</summary>
     public object? StateOf(object? content)
     {
-        if (content is not NodeVm { NodeId: not 0 } node)
+        if (content is not NodeVm { NodeId: not 0 } node || node is SourceWindowVm)
         {
             return null;
         }

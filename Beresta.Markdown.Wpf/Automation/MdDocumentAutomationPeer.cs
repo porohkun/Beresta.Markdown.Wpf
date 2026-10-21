@@ -2,10 +2,11 @@
 
 using System.Runtime.CompilerServices;
 using System.Windows.Automation.Peers;
+using ViewModels;
 
 /// <summary>
 /// The viewer for UI Automation: a document whose children are its blocks, created or not, named with
-/// their text.
+/// their text; the element a derived viewer puts in place of blocks is there with its own node.
 /// </summary>
 public sealed class MdDocumentAutomationPeer(MarkdownViewer owner) : ItemsControlAutomationPeer(owner)
 {
@@ -21,7 +22,9 @@ public sealed class MdDocumentAutomationPeer(MarkdownViewer owner) : ItemsContro
 
         return owner.Items
             .Cast<object>()
-            .Select(item => (AutomationPeer)CreateItemAutomationPeer(item))
+            .Select(item => item is SourceWindowVm window && UIElementAutomationPeer.CreatePeerForElement(window.Element) is { } own
+                ? own
+                : CreateItemAutomationPeer(item))
             .ToList();
     }
 

@@ -10,8 +10,9 @@ using ViewModels;
 
 /// <summary>
 /// The vertical panel of the blocks of a document: creates only the blocks that fall into the
-/// visible area of the scrolling ancestors and gives the rest room by a known or estimated height.
-/// Heights are remembered by the ids of blocks, so a new text keeps them.
+/// visible area of the scrolling ancestors and gives the rest room by a known or estimated height;
+/// the element a derived viewer puts in place of blocks is created wherever it stands. Heights are
+/// remembered by the ids of blocks, so a new text keeps them.
 /// </summary>
 public sealed class MdBlockPanel : VirtualizingPanel
 {
@@ -43,7 +44,9 @@ public sealed class MdBlockPanel : VirtualizingPanel
     private int _changedFrom;
     private bool _keysChanged = true;
     private bool _hasGaps;
-    private (HeightKey Key, int Index, double Top, double ViewportTop)? _anchor;
+    private int _pinned = -1;
+    private double? _hold;
+    private (HeightKey Key, int Index, double Top, double ViewportTop, double? Held)? _anchor;
 
     /// <summary>Creates an empty panel.</summary>
     public MdBlockPanel()
@@ -74,22 +77,59 @@ public sealed class MdBlockPanel : VirtualizingPanel
     /// <summary>Блок, на который приходится позиция в координатах панели.</summary>
     internal int IndexAtOffset(double offset) => offset < 0 ? 0 : IndexAt(offset) is var index and >= 0 ? index : _keys.Length - 1;
 
-    /// <summary>Номера первого и последнего созданных блоков; созданных нет — <c>null</c>.</summary>
+    /// <summary>
+    /// Номера первого и последнего созданных блоков у видимой области; окно, созданное вдали от
+    /// них, не в счёт. Созданных нет — <c>null</c>.
+    /// </summary>
     internal (int First, int Last)? RealizedRange
     {
         get
         {
-            if (InternalChildren.Count == 0)
+            var count = InternalChildren.Count;
+            if (count == 0)
             {
                 return null;
             }
 
             var generator = ItemContainerGenerator;
             var first = generator.IndexFromGeneratorPosition(new(0, 0));
-            var last = generator.IndexFromGeneratorPosition(new(InternalChildren.Count - 1, 0));
+            var last = generator.IndexFromGeneratorPosition(new(count - 1, 0));
+            if (count > 1 && first == _pinned && generator.IndexFromGeneratorPosition(new(1, 0)) != first + 1)
+            {
+                first = generator.IndexFromGeneratorPosition(new(1, 0));
+            }
+            else if (count > 1 && last == _pinned && generator.IndexFromGeneratorPosition(new(count - 2, 0)) != last - 1)
+            {
+                last = generator.IndexFromGeneratorPosition(new(count - 2, 0));
+            }
+
             return first < 0 || last < first ? null : (first, last);
         }
     }
+
+    /// <summary>
+    /// Держит строку окна: точка элемента окна на <paramref name="offset"/> от его верха остаётся
+    /// там же на экране, пока прокрутку не сдвинет кто-то другой. Держится уже — точка сменяется, а
+    /// место на экране остаётся прежним.
+    /// </summary>
+    internal void HoldWindow(double offset)
+    {
+        var holding = _hold is not null;
+        _hold = offset;
+        if (!holding
+            && !_keysChanged
+            && _pinned >= 0
+            && _pinned < _tops.Length
+            && FindViewport() is { PhysicalScroller: not null } viewport)
+        {
+            _anchor = (_keys[_pinned], _pinned, _tops[_pinned], viewport.Top, offset);
+        }
+
+        InvalidateMeasure();
+    }
+
+    /// <summary>Окно больше не держится: якорем снова становится блок у верха видимой области.</summary>
+    internal void ReleaseWindow() => _hold = null;
 
     /// <inheritdoc/>
     protected override Size MeasureOverride(Size availableSize)
@@ -103,6 +143,14 @@ public sealed class MdBlockPanel : VirtualizingPanel
         UpdateOffsets();
 
         var constraint = new Size(availableSize.Width, double.PositiveInfinity);
+
+        // Окно создаётся раньше остальных: его высота нужна якорю, где бы окно ни стояло
+        if (_pinned >= 0)
+        {
+            Realize(_pinned, _pinned, constraint);
+            UpdateOffsets();
+        }
+
         var viewport = owner is not null && GetIsVirtualizing(owner) ? FindViewport() : null;
 
         (int First, int Last) range;
@@ -270,35 +318,55 @@ public sealed class MdBlockPanel : VirtualizingPanel
     }
 
     /// <summary>
-    /// Насколько с прошлого раза сдвинулся блок, бывший вверху видимой области; если прокрутку с
-    /// тех пор двигал кто-то другой — ноль.
+    /// Насколько с прошлого раза сдвинулся якорь — блок, бывший вверху видимой области, или
+    /// удерживаемая строка окна; если прокрутку с тех пор двигал кто-то другой — ноль, и строка окна
+    /// больше не держится.
     /// </summary>
     private double AnchorShift(Viewport viewport)
     {
-        if (viewport.PhysicalScroller is null
-            || _anchor is not { } anchor
-            || Math.Abs(viewport.Top - anchor.ViewportTop) > 0.5)
+        if (viewport.PhysicalScroller is null || _anchor is not { } anchor)
         {
             return 0;
         }
 
+        if (Math.Abs(viewport.Top - anchor.ViewportTop) > 0.5)
+        {
+            _hold = null;
+            return 0;
+        }
+
         var index = anchor.Index < _keys.Length && _keys[anchor.Index] == anchor.Key ? anchor.Index : Array.IndexOf(_keys, anchor.Key);
-        return index >= 0 ? _tops[index] - anchor.Top : 0;
+        var moved = anchor.Held is { } held && _hold is { } hold ? hold - held : 0;
+        return index >= 0 ? _tops[index] + moved - anchor.Top : 0;
     }
 
     private void RememberAnchor(Viewport viewport)
     {
-        var index = viewport.PhysicalScroller is not null && viewport.Top > 0 ? IndexAt(viewport.Top) : -1;
-        _anchor = index >= 0 ? (_keys[index], index, _tops[index], viewport.Top) : null;
+        var index = AnchorIndex(viewport);
+        _anchor = index >= 0 ? (_keys[index], index, _tops[index], viewport.Top, index == _pinned ? _hold : null) : null;
+    }
+
+    /// <summary>Блок-якорь: окно, пока его строка держится, иначе блок у верха видимой области; якоря нет — -1.</summary>
+    private int AnchorIndex(Viewport viewport)
+    {
+        if (viewport.PhysicalScroller is null)
+        {
+            return -1;
+        }
+
+        if (_hold is not null && _pinned >= 0)
+        {
+            return _pinned;
+        }
+
+        return viewport.Top > 0 ? IndexAt(viewport.Top) : -1;
     }
 
     private (int First, int Last) RealizeVisible(Viewport viewport, Size constraint, out double shift)
     {
         shift = 0;
 
-        var anchor = viewport.PhysicalScroller is not null && viewport.Top > 0
-            ? IndexAt(viewport.Top)
-            : -1;
+        var anchor = AnchorIndex(viewport);
         var anchorTop = anchor >= 0 ? _tops[anchor] : 0;
         var cache = (viewport.Bottom - viewport.Top) * CacheShare;
         var range = (First: 0, Last: -1);
@@ -388,7 +456,10 @@ public sealed class MdBlockPanel : VirtualizingPanel
         }
     }
 
-    /// <summary>Запоминает измеренную высоту блока; смещения пересчитываются с него.</summary>
+    /// <summary>
+    /// Запоминает измеренную высоту блока; смещения пересчитываются с него. Окно в оценку высоты
+    /// несозданных блоков не идёт.
+    /// </summary>
     private void Remember(int index, double height)
     {
         _heights[_keys[index]] = height;
@@ -399,13 +470,10 @@ public sealed class MdBlockPanel : VirtualizingPanel
             return;
         }
 
-        if (double.IsNaN(old))
+        if (index != _pinned)
         {
-            AddMeasured(index, height, 1);
-        }
-        else
-        {
-            AddMeasured(index, height - old, 0);
+            var first = double.IsNaN(old);
+            AddMeasured(index, first ? height : height - old, first ? 1 : 0);
         }
 
         _measured[index] = height;
@@ -444,7 +512,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
         {
             var position = new GeneratorPosition(i, 0);
             var index = generator.IndexFromGeneratorPosition(position);
-            if (index >= first && index <= last)
+            if ((index >= first && index <= last) || index == _pinned)
             {
                 continue;
             }
@@ -476,6 +544,7 @@ public sealed class MdBlockPanel : VirtualizingPanel
 
         var gaps = GetValue(GapsProperty) as GapLayout ?? GapLayout.Empty;
         _hasGaps = false;
+        _pinned = -1;
         _measuredSum = 0;
         _measuredCount = 0;
         for (var kind = 0; kind < _kindHeights.Count; kind++)
@@ -492,16 +561,28 @@ public sealed class MdBlockPanel : VirtualizingPanel
             _after[i] = gaps.After(item);
             _inside[i] = gaps.Inside(item);
             _hasGaps |= _before[i] > 0 || _after[i] > 0;
+            if (item is SourceWindowVm)
+            {
+                _pinned = i;
+            }
 
             if (_heights.TryGetValue(_keys[i], out var height))
             {
                 _measured[i] = height;
-                AddMeasured(i, height, 1);
+                if (i != _pinned)
+                {
+                    AddMeasured(i, height, 1);
+                }
             }
             else
             {
                 _measured[i] = double.NaN;
             }
+        }
+
+        if (_pinned < 0)
+        {
+            _hold = null;
         }
 
         _estimates = [];

@@ -314,6 +314,10 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     private bool _updatingMarks;
     private IReadOnlyList<MdExtension> _activeExtensions = [];
     private IReadOnlyDictionary<object, MdExtension> _owners = new Dictionary<object, MdExtension>();
+    private IReadOnlyList<BlockVm> _parsedBlocks = [];
+    private List<int>? _lineStarts;
+    private (int FirstLine, int LastLine, FrameworkElement Element, IMdSourceRows Rows)? _windowRequest;
+    private SourceWindowVm? _window;
     private MarkdownPipeline? _pipeline;
     private Task<ParsedDocument>? _parsing;
     private bool _rebuildQueued;
@@ -582,7 +586,7 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     public string SelectedText => TextMap.GetText(Selection.Range);
 
     /// <summary>The selection written as Markdown with its own formatting; computed on request.</summary>
-    public string SelectedMarkdown => MdMarkdownWriter.Write(_blocks, TextMap, Source, Selection.Range, Guard);
+    public string SelectedMarkdown => MdMarkdownWriter.Write(_parsedBlocks, TextMap, Source, Selection.Range, Guard);
 
     /// <summary>Свои расширения, следом общие — в порядке опроса.</summary>
     internal IReadOnlyList<MdExtension> ActiveExtensions => _activeExtensions;
@@ -600,6 +604,12 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     internal MdLineGutter? Gutter { get; private set; }
 
     internal MdRowMarks? RowMarks { get; private set; }
+
+    /// <summary>
+    /// Places of the top-level blocks of the last parse, the blocks under the element of
+    /// <see cref="SetSourceWindow"/> included.
+    /// </summary>
+    protected IReadOnlyList<MdSourceSpan> TopBlockSpans { get; private set; } = [];
 
     // BYDESIGN: кисти пометок — логические потомки вьюера: иначе смена темы до них не доходит.
     /// <inheritdoc/>
@@ -966,6 +976,48 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
             null);
         var data = MdClipboard.Data(markdownAsText ? markdown : SelectedText, markdown, html, BaseUri);
         return MdClipboard.Approve(this, data) ? data : null;
+    }
+
+    /// <summary>
+    /// Puts an element of the derived control into the document in place of the top-level blocks on
+    /// the source lines from <paramref name="firstLine"/> to <paramref name="lastLine"/>, counting
+    /// from zero; a block that sticks out of these lines goes under the element as a whole.
+    /// <paramref name="rows"/> tells where the lines are inside the element.
+    /// </summary>
+    protected void SetSourceWindow(int firstLine, int lastLine, FrameworkElement element, IMdSourceRows rows)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        ArgumentNullException.ThrowIfNull(rows);
+        _windowRequest = (firstLine, lastLine, element, rows);
+        ShowBlocks();
+    }
+
+    /// <summary>
+    /// Takes the element of <see cref="SetSourceWindow"/> out of the document: the blocks under it are
+    /// shown again.
+    /// </summary>
+    protected void ClearSourceWindow()
+    {
+        if (_windowRequest is null)
+        {
+            return;
+        }
+
+        _windowRequest = null;
+        BlockPanel?.ReleaseWindow();
+        ShowBlocks();
+    }
+
+    /// <summary>
+    /// Keeps the point of the element of <see cref="SetSourceWindow"/> at <paramref name="offset"/>
+    /// from its top in its place on the screen while heights in the document change, until someone
+    /// else scrolls. Called while a point is held, it holds the new point in the place of the old one.
+    /// </summary>
+    protected void HoldWindowLine(double offset) => BlockPanel?.HoldWindow(offset);
+
+    /// <summary>A new parse has been laid on the document: its blocks, text map and <see cref="TopBlockSpans"/>.</summary>
+    protected virtual void OnDocumentApplied()
+    {
     }
 
     /// <inheritdoc/>
@@ -1582,12 +1634,17 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
         var following = TrackFollowingMarks();
 
         Source = document.Markdown;
+        _lineStarts = null;
         _owners = document.Owners;
         TextMap = document.TextMap;
         SetValue(FrontMatterPropertyKey, document.FrontMatter);
         _states.Retain(_identity.Contains);
-        _blocks.Apply(document.Blocks);
-        UpdateGapLayout();
+        _parsedBlocks = document.Blocks;
+        TopBlockSpans = document.Blocks
+            .Select(block => block.Source)
+            .Where(source => !source.IsEmpty)
+            .ToList();
+        ShowBlocks();
 
         if (_templatesChanged)
         {
@@ -1624,6 +1681,67 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
         Gutter?.InvalidateVisual();
         RowMarks?.InvalidateVisual();
         RaiseRenderFailed(document.Failures, isBackground: false);
+        OnDocumentApplied();
+    }
+
+    /// <summary>Блоки последнего разбора — в список, а те, что на строках окна, — под элемент окна.</summary>
+    private void ShowBlocks()
+    {
+        _window = _windowRequest is { } request ? WindowOf(request.FirstLine, request.LastLine, request.Element, request.Rows) : null;
+        _blocks.Apply(WithWindow(_parsedBlocks));
+        UpdateGapLayout();
+    }
+
+    /// <summary>Вьюмодель окна на строках показанного текста; ничего не сменилось — прежняя.</summary>
+    private SourceWindowVm WindowOf(int firstLine, int lastLine, FrameworkElement element, IMdSourceRows rows)
+    {
+        var starts = _lineStarts ??= ModelBuilder.FindLineStarts(Source);
+        var first = Math.Clamp(firstLine, 0, starts.Count - 1);
+        var last = Math.Clamp(lastLine, first, starts.Count - 1);
+        var start = starts[first];
+        var end = last + 1 < starts.Count ? starts[last + 1] : Source.Length;
+
+        // BYDESIGN: окно на пустой последней строке — длиной в знак: место нулевой длины значит, что места нет
+        var span = new MdSourceSpan(start, Math.Max(1, end - start), first, last);
+        return _window is { } window && ReferenceEquals(window.Element, element) && ReferenceEquals(window.Rows, rows) && window.Source == span
+            ? window
+            : new SourceWindowVm(element, rows) { NodeId = SourceWindowVm.Id, Source = span };
+    }
+
+    /// <summary>Блоки с окном вместо тех, что задевают его строки; окно встаёт на место первого из них.</summary>
+    private IReadOnlyList<BlockVm> WithWindow(IReadOnlyList<BlockVm> blocks)
+    {
+        if (_window is not { } window)
+        {
+            return blocks;
+        }
+
+        var (first, last) = (window.Source.StartLine, window.Source.EndLine);
+        var shown = new List<BlockVm>(blocks.Count + 1);
+        var placed = false;
+        foreach (var block in blocks)
+        {
+            var source = block.Source;
+            var below = !source.IsEmpty && source.StartLine > last;
+            var under = !source.IsEmpty && !below && source.EndLine >= first;
+            if ((under || below) && !placed)
+            {
+                shown.Add(window);
+                placed = true;
+            }
+
+            if (!under)
+            {
+                shown.Add(block);
+            }
+        }
+
+        if (!placed)
+        {
+            shown.Add(window);
+        }
+
+        return shown;
     }
 
     /// <summary>Разобранный текст: блоки, front matter, текстовая карта, сбои разбора и какое расширение создало какую вьюмодель.</summary>

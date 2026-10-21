@@ -145,13 +145,13 @@
         <member name="T:Beresta.Markdown.Wpf.Automation.MdDocumentAutomationPeer">
             <summary>
             Вьюер для UI Automation — документ: его дети — все его блоки, созданные и нет, с именем из их
-            текста.
+            текста; элемент, который наследник вьюера ставит вместо блоков, стоит среди них своим узлом.
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Automation.MdDocumentAutomationPeer.#ctor(Beresta.Markdown.Wpf.MarkdownViewer)">
             <summary>
             Вьюер для UI Automation — документ: его дети — все его блоки, созданные и нет, с именем из их
-            текста.
+            текста; элемент, который наследник вьюера ставит вместо блоков, стоит среди них своим узлом.
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Automation.MdDocumentAutomationPeer.GetChildrenCore">
@@ -1376,6 +1376,12 @@
         <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.SelectedMarkdown">
             <summary>Выделенное, записанное markdown со своим оформлением; считается по запросу.</summary>
         </member>
+        <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.TopBlockSpans">
+            <summary>
+            Места блоков верхнего уровня последнего разбора, в том числе блоков под элементом
+            <see cref="M:Beresta.Markdown.Wpf.MarkdownViewer.SetSourceWindow(System.Int32,System.Int32,System.Windows.FrameworkElement,Beresta.Markdown.Wpf.Scrolling.IMdSourceRows)"/>.
+            </summary>
+        </member>
         <member name="P:Beresta.Markdown.Wpf.MarkdownViewer.LogicalChildren">
             <inheritdoc/>
         </member>
@@ -1492,6 +1498,30 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.OnApplyTemplate">
             <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.SetSourceWindow(System.Int32,System.Int32,System.Windows.FrameworkElement,Beresta.Markdown.Wpf.Scrolling.IMdSourceRows)">
+            <summary>
+            Ставит элемент наследника в документ вместо блоков верхнего уровня на строках исходника с
+            <paramref name="firstLine"/> по <paramref name="lastLine"/>, считая с нуля; блок, вылезший за
+            эти строки, уходит под элемент целиком. <paramref name="rows"/> говорит, где строки внутри
+            элемента.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.ClearSourceWindow">
+            <summary>
+            Убирает элемент <see cref="M:Beresta.Markdown.Wpf.MarkdownViewer.SetSourceWindow(System.Int32,System.Int32,System.Windows.FrameworkElement,Beresta.Markdown.Wpf.Scrolling.IMdSourceRows)"/> из документа: блоки под ним снова
+            видны.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.HoldWindowLine(System.Double)">
+            <summary>
+            Держит точку элемента <see cref="M:Beresta.Markdown.Wpf.MarkdownViewer.SetSourceWindow(System.Int32,System.Int32,System.Windows.FrameworkElement,Beresta.Markdown.Wpf.Scrolling.IMdSourceRows)"/> на <paramref name="offset"/> от его верха
+            на своём месте экрана, пока в документе меняются высоты, — пока прокрутку не сдвинет кто-то
+            другой. Вызов, пока точка держится, ставит новую точку на место прежней.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.OnDocumentApplied">
+            <summary>Новый разбор лёг на документ: его блоки, текстовая карта и <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.TopBlockSpans"/>.</summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.OnCreateAutomationPeer">
             <inheritdoc/>
@@ -1749,7 +1779,8 @@
         <member name="T:Beresta.Markdown.Wpf.Presenters.MdBlockPanel">
             <summary>
             Вертикальная панель блоков документа: создаёт только блоки, попавшие в видимую область
-            прокруток-предков, остальным отводит место по известной или оценённой высоте. Высоты помнит
+            прокруток-предков, остальным отводит место по известной или оценённой высоте; элемент,
+            который наследник вьюера ставит вместо блоков, создаёт, где бы тот ни стоял. Высоты помнит
             по идентификаторам блоков, так что новый текст их не сбрасывает. Пустые места перед блоками и
             после них отводит и штрихует сама; места внутри несозданного блока входят в оценку его высоты.
             </summary>
@@ -2220,6 +2251,30 @@
         </member>
         <member name="M:Beresta.Markdown.Wpf.Scrolling.IMdScrollSide.ScrollToSourceLine(System.Double,System.Double)">
             <summary>Прокручивает свою прокрутку так, чтобы строка исходника встала в долю <paramref name="viewportFraction"/> её высоты.</summary>
+        </member>
+        <member name="T:Beresta.Markdown.Wpf.Scrolling.IMdSourceRows">
+            <summary>
+            Строки исходника элемента, который стоит в документе вместо блоков: где каждая строка в
+            координатах элемента.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Scrolling.IMdSourceRows.GetSourceLineOffset(System.Double)">
+            <summary>
+            Верх строки исходника в координатах элемента; дробная часть — доля строки. Неизвестно —
+            <c>null</c>.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Scrolling.IMdSourceRows.GetSourceLineAt(System.Double)">
+            <summary>
+            Строка исходника в позиции элемента; дробная часть — доля строки. Неизвестно —
+            <c>null</c>.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Scrolling.IMdSourceRows.VisibleRows">
+            <summary>
+            Строки исходника, которые начинаются в видимой части элемента: верх и высота экранной строки,
+            с которой каждая начинается, в координатах элемента.
+            </summary>
         </member>
         <member name="T:Beresta.Markdown.Wpf.Scrolling.MdCoordinates">
             <summary>

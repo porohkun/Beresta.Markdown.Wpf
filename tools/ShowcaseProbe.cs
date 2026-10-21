@@ -7,6 +7,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -69,6 +70,7 @@ var thread = new Thread(() =>
 
     var model = (MainWindowViewModel)window.DataContext;
     var shot = 0;
+    Border? probe = null;
     foreach (var step in steps)
     {
         var colon = step.IndexOf(':');
@@ -175,6 +177,33 @@ var thread = new Thread(() =>
                 }
 
                 break;
+
+            // Пробное окно наследника вместо блоков на строках первая-последняя
+            case "probewindow":
+            {
+                var lines = value.Split('-').Select(int.Parse).ToArray();
+                probe = new Border { Height = (lines[1] - lines[0] + 1) * ProbeRows.RowHeight, Background = Brushes.Khaki };
+                typeof(MarkdownViewer)
+                    .GetMethod("SetSourceWindow", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(Viewers(window).First(), [lines[0], lines[1], probe, new ProbeRows(lines[0], lines[1])]);
+                break;
+            }
+
+            // Прокрутка шагами по 100 пикселей: где пробное окно на экране и какая строка вверху
+            case "probescroll":
+            {
+                var scroll = Scrolls(window).First();
+                var viewer = Viewers(window).First();
+                for (var i = 0; i < int.Parse(value); i++)
+                {
+                    scroll.ScrollToVerticalOffset(scroll.VerticalOffset + 100);
+                    Settle(window);
+                    var top = probe is not null && probe.IsDescendantOf(scroll) ? probe.TranslatePoint(default, scroll).Y : double.NaN;
+                    Console.WriteLine($"прокрутка {scroll.VerticalOffset:0}: окно {top:0}, вверху строка {viewer.GetVisibleSourceLine(0):0.##}");
+                }
+
+                break;
+            }
 
             // Выделение и разметка
             case "select":
@@ -505,3 +534,18 @@ static extern int GetWindowLong(IntPtr window, int index);
 
 [DllImport("user32.dll")]
 static extern int SetWindowLong(IntPtr window, int index, int value);
+
+/// <summary>Строки пробного окна одной высоты, все видны.</summary>
+internal sealed class ProbeRows(int first, int last) : IMdSourceRows
+{
+    public const double RowHeight = 20;
+
+    public double? GetSourceLineOffset(double line) => (Math.Clamp(line, first, last + 1) - first) * RowHeight;
+
+    public double? GetSourceLineAt(double offset) => first + Math.Clamp(offset / RowHeight, 0, last + 1 - first);
+
+    public IReadOnlyList<(int Line, double Top, double Height)> VisibleRows()
+        => Enumerable.Range(first, last - first + 1)
+            .Select(line => (line, (line - first) * RowHeight, RowHeight))
+            .ToList();
+}
