@@ -3067,6 +3067,13 @@
             позиции нет ни в одном блоке.
             </summary>
         </member>
+        <member name="M:Beresta.Markdown.Wpf.Selection.MdTextMap.PositionOfSource(System.Int32)">
+            <summary>
+            Позиция карты на месте текста исходника, обратная <see cref="M:Beresta.Markdown.Wpf.Selection.MdTextMap.SourceOffsetOf(System.Int32)"/>: в тексте, который
+            исходник хранит как есть, — перед тем же знаком, иначе начало инлайна; в блоке кода — та же строка
+            и столбец. <c>null</c> — место не нарисовано.
+            </summary>
+        </member>
         <member name="M:Beresta.Markdown.Wpf.Selection.MdTextMap.GetText(Beresta.Markdown.Wpf.Selection.MdTextRange)">
             <summary>Текст куска для копирования: неделимые — своим текстом для копирования или ничем.</summary>
         </member>

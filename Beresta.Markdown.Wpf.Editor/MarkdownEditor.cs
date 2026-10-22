@@ -192,6 +192,9 @@ public sealed class MarkdownEditor : MarkdownViewer
     /// <summary>The source changed: typing, an undo, a control, a new text.</summary>
     public event EventHandler<MdSourceChangedEventArgs>? SourceChanged;
 
+    /// <summary>Новый разбор лёг на документ: его текстовая карта — для показанного текста.</summary>
+    internal event Action? DocumentApplied;
+
     /// <summary>
     /// Ctrl+Shift+V: pastes the HTML from the clipboard as Markdown in place of the selection; without HTML —
     /// the text, as an ordinary paste.
@@ -383,6 +386,7 @@ public sealed class MarkdownEditor : MarkdownViewer
     /// <inheritdoc/>
     protected override void OnDocumentApplied()
     {
+        DocumentApplied?.Invoke();
         _look = null;
         _styles.Clear();
         _separators = null;
@@ -765,6 +769,18 @@ public sealed class MarkdownEditor : MarkdownViewer
 
     /// <summary>Исходник правится текстом: весь — в полном режиме, блоки под курсором — в блочном, когда окно открыто.</summary>
     private bool EditsText => EditMode == MdEditMode.Full || (EditMode == MdEditMode.Blocks && _window.IsOpen);
+
+    /// <summary>
+    /// Кусок карты на месте куска нынешнего документа — через текст, который показывает вьюер; кусок не
+    /// нарисован или ещё не показан — <c>null</c>.
+    /// </summary>
+    internal MdTextRange? MapRange(int start, int end)
+    {
+        var shown = ShownMarkdown;
+        var from = TextMap.PositionOfSource(_versions.ToText(shown, start, _document, AnchorMovementType.AfterInsertion));
+        var to = TextMap.PositionOfSource(_versions.ToText(shown, end, _document, AnchorMovementType.BeforeInsertion));
+        return from is { } a && to is { } b && b > a ? new MdTextRange(a, b - a) : null;
+    }
 
     /// <summary>Вставка с форматированием из данных буфера обмена; данных нет — ничего.</summary>
     internal void PasteFormatted(IDataObject? data)

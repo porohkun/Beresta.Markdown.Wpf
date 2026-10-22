@@ -48,6 +48,48 @@
                         <Run Text="{Binding Text.Length, Mode=OneWay}" />
                     </TextBlock>
                 </WrapPanel>
+
+                <!-- Поиск и замена в исходнике на MdSourceSearch: поля и кнопки — у приложения, совпадения и замена — у поиска -->
+                <WrapPanel x:Name="SearchBar"
+                           Margin="0,8,0,0">
+                    <TextBlock Text="{loc:Text Document.Find}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0" />
+                    <TextBox x:Name="SearchBox"
+                             Width="160"
+                             Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                             KeyDown="OnSearchKeyDown" />
+                    <Button Content="▲"
+                            Margin="4,0,0,0"
+                            ToolTip="{loc:Text Document.Back}"
+                            Click="OnPrevious" />
+                    <Button Content="▼"
+                            Margin="4,0,0,0"
+                            ToolTip="{loc:Text Document.Next}"
+                            Click="OnNext" />
+                    <TextBlock x:Name="Counter"
+                               VerticalAlignment="Center"
+                               MinWidth="60"
+                               Margin="8,0,0,0" />
+                    <TextBlock Text="{loc:Text Editor.ReplaceWith}"
+                               VerticalAlignment="Center"
+                               Margin="8,0,8,0" />
+                    <TextBox x:Name="ReplaceBox"
+                             Width="160" />
+                    <Button Content="{loc:Text Editor.Replace}"
+                            Margin="4,0,0,0"
+                            Click="OnReplace" />
+                    <Button x:Name="ReplaceAllButton"
+                            Content="{loc:Text Editor.ReplaceAll}"
+                            Margin="4,0,0,0"
+                            Click="OnReplaceAll" />
+                    <CheckBox Content="{loc:Text Document.MatchCase}"
+                              IsChecked="{Binding MatchCase}"
+                              Margin="8,0,0,0" />
+                    <CheckBox Content="{loc:Text Document.WholeWord}"
+                              IsChecked="{Binding WholeWord}"
+                              Margin="8,0,0,0" />
+                </WrapPanel>
             </StackPanel>
         </Border>
 

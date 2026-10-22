@@ -26,6 +26,13 @@ internal sealed class SourceLines
     /// <summary>Начало строки в тексте исходника.</summary>
     public int StartOf(int line) => _starts[line];
 
+    /// <summary>Строка, на которой стоит место текста.</summary>
+    public int LineOf(int offset)
+    {
+        var index = _starts.BinarySearch(offset);
+        return index >= 0 ? index : ~index - 1;
+    }
+
     /// <summary>Текст строки; нет такой строки — <c>null</c>.</summary>
     public string? TextOf(int line) => line >= 0 && line < _starts.Count ? Span(line).ToString() : null;
 

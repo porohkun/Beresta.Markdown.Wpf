@@ -401,6 +401,13 @@ var thread = new Thread(() =>
             case "search":
                 Descendants<TextBox>(window).Single(box => box.Name == "SearchBox").Text = value;
                 break;
+            case "replaceall":
+            {
+                Descendants<TextBox>(window).Single(box => box.Name == "ReplaceBox").Text = value;
+                var button = Descendants<Button>(window).Single(candidate => candidate.Name == "ReplaceAllButton");
+                ((IInvokeProvider)new ButtonAutomationPeer(button).GetPattern(PatternInterface.Invoke)!).Invoke();
+                break;
+            }
             case "collapse":
             {
                 var toggle = Descendants<ToggleButton>(window)

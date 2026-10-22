@@ -146,6 +146,67 @@
             обычная вставка.
             </summary>
         </member>
+        <member name="T:Beresta.Markdown.Wpf.Editor.MdSourceSearch">
+            <summary>
+            Поиск и замена в исходнике редактора: совпадения в документе AvalonEdit — фоном в правимом исходнике
+            и слоем пометок в отрисовке; «дальше» и «назад» переходят к ним. Поля ввода и кнопки — у
+            приложения.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MdSourceSearch.#ctor(Beresta.Markdown.Wpf.Editor.MarkdownEditor)">
+            <summary>Кладёт свой слой пометок поверх слоёв редактора, а свой фон — под исходник.</summary>
+        </member>
+        <member name="E:Beresta.Markdown.Wpf.Editor.MdSourceSearch.PropertyChanged">
+            <inheritdoc/>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MdSourceSearch.Layer">
+            <summary>Слой с совпадениями в отрисовке.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MdSourceSearch.Query">
+            <summary>Запрос; новый ищется сразу, и текущим становится совпадение у каретки или после неё.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MdSourceSearch.MatchCase">
+            <summary>С учётом регистра.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MdSourceSearch.WholeWord">
+            <summary>Слово целиком.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MdSourceSearch.Matches">
+            <summary>Совпадения в исходнике по порядку.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MdSourceSearch.Count">
+            <summary>Сколько совпадений.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MdSourceSearch.CurrentIndex">
+            <summary>Номер текущего совпадения с нуля; совпадений нет — -1.</summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MdSourceSearch.Current">
+            <summary>Текущее совпадение; совпадений нет — <c>null</c>.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MdSourceSearch.Next">
+            <summary>
+            Делает текущим следующее совпадение, после последнего — первое: в <see cref="F:Beresta.Markdown.Wpf.Editor.MdEditMode.Blocks"/> и
+            <see cref="F:Beresta.Markdown.Wpf.Editor.MdEditMode.Full"/> оно выделяется в исходнике, иначе к нему прокручивается отрисовка.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MdSourceSearch.Previous">
+            <summary>Делает текущим предыдущее совпадение, перед первым — последнее, и переходит к нему, как <see cref="M:Beresta.Markdown.Wpf.Editor.MdSourceSearch.Next"/>.</summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MdSourceSearch.Replace(System.String)">
+            <summary>
+            Заменяет текущее совпадение текстом одним шагом отмены и переходит к следующему; в
+            <see cref="F:Beresta.Markdown.Wpf.Editor.MdEditMode.View"/> или без совпадений — ничего, <c>false</c>.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MdSourceSearch.ReplaceAll(System.String)">
+            <summary>
+            Заменяет текстом все совпадения одним шагом отмены; в <see cref="F:Beresta.Markdown.Wpf.Editor.MdEditMode.View"/> — ничего.
+            Возвращает, сколько совпадений заменено.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MdSourceSearch.Dispose">
+            <summary>Убирает из редактора свой слой и фон.</summary>
+        </member>
         <member name="T:Beresta.Markdown.Wpf.Editor.MdAvalonCodeHighlighter">
             <summary>
             Подсвечивает блоки кода определениями подсветки AvalonEdit: C#, JavaScript, HTML, XML, CSS, C++,

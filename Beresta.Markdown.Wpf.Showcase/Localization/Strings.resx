@@ -222,6 +222,15 @@
   <data name="Editor.Redo" xml:space="preserve">
     <value>Redo</value>
   </data>
+  <data name="Editor.Replace" xml:space="preserve">
+    <value>Replace</value>
+  </data>
+  <data name="Editor.ReplaceAll" xml:space="preserve">
+    <value>Replace all</value>
+  </data>
+  <data name="Editor.ReplaceWith" xml:space="preserve">
+    <value>Replace with</value>
+  </data>
   <data name="Editor.Title" xml:space="preserve">
     <value>Editor</value>
   </data>
