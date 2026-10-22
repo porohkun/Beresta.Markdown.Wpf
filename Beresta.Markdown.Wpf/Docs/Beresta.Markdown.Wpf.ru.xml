@@ -352,7 +352,7 @@
         <member name="M:Beresta.Markdown.Wpf.Extensions.MdSourceLook.MarkLines(System.Int32,System.Int32,System.String)">
             <summary>
             Даёт строкам исходника с <paramref name="firstLine"/> по <paramref name="lastLine"/> вид:
-            <c>CodeBlock</c>, <c>Quote</c> или свой.
+            <c>CodeBlock</c>, <c>Quote</c>, <c>BlankLine</c> или свой.
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Extensions.MdSourceLook.MarkIndent(System.Int32,System.Int32)">
@@ -1748,6 +1748,12 @@
             <summary>
             Убирает элемент <see cref="M:Beresta.Markdown.Wpf.MarkdownViewer.SetSourceWindow(System.Int32,System.Int32,System.Windows.FrameworkElement,Beresta.Markdown.Wpf.Scrolling.IMdSourceRows)"/> из документа: блоки под ним снова
             видны.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.ReleaseSourceWindow">
+            <summary>
+            Отпускает элемент <see cref="M:Beresta.Markdown.Wpf.MarkdownViewer.SetSourceWindow(System.Int32,System.Int32,System.Windows.FrameworkElement,Beresta.Markdown.Wpf.Scrolling.IMdSourceRows)"/> перед переходом на другие строки: документ не
+            прокручивается вслед за ним; на новом месте его снова держит <see cref="M:Beresta.Markdown.Wpf.MarkdownViewer.HoldSourceWindow"/>.
             </summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.HoldSourceWindow">

@@ -143,7 +143,7 @@ internal sealed class SourcePositions
     /// <summary>Строка исходника в позиции вьюера.</summary>
     public double? LineAt(double offset)
     {
-        if (_viewer.BlockPanel is not { ItemCount: > 0 } panel || _viewer.ItemsSource is not IReadOnlyList<BlockVm> items)
+        if (_viewer.BlockPanel is not { ItemCount: > 0 } panel || _viewer.ItemsSource is not IReadOnlyList<BlockVm> { Count: > 0 } items)
         {
             return null;
         }
@@ -182,12 +182,15 @@ internal sealed class SourcePositions
             : null;
     }
 
-    /// <summary>Позиция строки исходника во вьюере, если строка — в окне наследника, где бы оно ни стояло.</summary>
+    /// <summary>
+    /// Позиция строки исходника во вьюере, если строка — в окне наследника, где бы оно ни стояло; строка
+    /// за окном — уже в своём блоке.
+    /// </summary>
     private double? OffsetInWindow(double line)
         => _viewer.ShownWindow is { } window
            && window.Element.IsDescendantOf(_viewer)
            && line >= window.Source.StartLine
-           && line <= window.Source.EndLine + 1
+           && line < window.Source.EndLine + 1
            && window.Rows.GetSourceLineOffset(line) is { } inside
             ? window.Element.TranslatePoint(new(0, inside), _viewer).Y
             : null;

@@ -35,6 +35,15 @@ internal sealed record LookStyle
     /// <summary>Поля блока в отрисовке: исходник поднимает строки до той же высоты.</summary>
     public Thickness? Margin { get; init; }
 
+    /// <summary>Высота пустой строки вида в отрисовке: пустая строка исходника встаёт той же высотой.</summary>
+    public double? Height { get; init; }
+
+    /// <summary>Отступ тела блока под его первой строкой в отрисовке: вторая строка исходника опускается на него.</summary>
+    public Thickness? BodyMargin { get; init; }
+
+    /// <summary>Высота шапки блока в отрисовке без текста: первая строка исходника встаёт не ниже неё.</summary>
+    public double? Header { get; init; }
+
     /// <param name="look">Имя вида.</param>
     /// <param name="find">Ресурс по ключу; нет — <c>null</c>.</param>
     public static LookStyle Resolve(string look, Func<string, object?> find) => look switch
@@ -44,8 +53,13 @@ internal sealed record LookStyle
         "Strike" => new() { Strike = true },
         "Link" => new() { Foreground = find("Md.Paragraph.LinkForeground") as Brush },
         _ when look.StartsWith("Callout.", StringComparison.Ordinal) => Callout(look["Callout.".Length..], find),
+        "CodeBlock" => Code(Combined(Keyed(look, find), Styled(find($"Md.{look}.Style") as Style, find))),
         _ => Combined(Keyed(look, find), Styled(find($"Md.{look}.Style") as Style, find))
     };
+
+    /// <summary>Вид блока кода: пустая строка кода — высотой строки его шрифта.</summary>
+    private static LookStyle Code(LookStyle style)
+        => style is { Height: null, FontFamily: { } family, FontSize: { } size } ? style with { Height = family.LineSpacing * size } : style;
 
     /// <summary>Свои ключи вида поверх сеттеров его стиля: у свойства без своего ключа — значение стиля.</summary>
     private static LookStyle Combined(LookStyle keyed, LookStyle? styled) => styled is null ? keyed : keyed with
@@ -62,18 +76,32 @@ internal sealed record LookStyle
 
     /// <summary>
     /// Вид плашки: полоса её строк и вид в заголовке — кистью вида <c>Md.Callout.X.Brush</c>, у вида без
-    /// своей кисти — как у <c>Note</c>; поля — поля плашки.
+    /// своей кисти — как у <c>Note</c>; поля — поле, рамка и внутреннее поле плашки, отступ тела — её, шапка —
+    /// значок с его полем.
     /// </summary>
     private static LookStyle Callout(string kind, Func<string, object?> find)
     {
         var brush = (find($"Md.Callout.{kind}.Brush") ?? find("Md.Callout.Note.Brush")) as Brush;
+        var border = find("Md.Callout.BorderThickness") as Thickness?;
+        var icon = find("Md.Icon.Margin") as Thickness? ?? default;
         return new()
         {
             Foreground = brush,
             Bar = brush,
-            BarWidth = find("Md.Callout.BorderThickness") is Thickness thickness ? thickness.Left : 0,
-            Margin = find("Md.Callout.Margin") as Thickness?
+            BarWidth = border?.Left ?? 0,
+            Margin = Sum(find("Md.Callout.Margin") as Thickness?, border, find("Md.Callout.Padding") as Thickness?),
+            BodyMargin = find("Md.Callout.ContentMargin") as Thickness?,
+            Header = find("Md.Icon.Size") is double size ? size + icon.Top + icon.Bottom : null
         };
+    }
+
+    /// <summary>Сумма толщин, которые заданы; не задана ни одна — <c>null</c>.</summary>
+    private static Thickness? Sum(params Thickness?[] parts)
+    {
+        var given = parts.OfType<Thickness>().ToList();
+        return given.Count == 0
+            ? null
+            : new Thickness(given.Sum(part => part.Left), given.Sum(part => part.Top), given.Sum(part => part.Right), given.Sum(part => part.Bottom));
     }
 
     /// <summary>Вид по своим ключам темы <c>Md.X.*</c>.</summary>
@@ -88,7 +116,8 @@ internal sealed record LookStyle
             FontSize = find($"Md.{look}.FontSize") as double?,
             Bar = find($"Md.{look}.BorderBrush") as Brush,
             BarWidth = find($"Md.{look}.BorderThickness") is Thickness thickness ? thickness.Left : 0,
-            Margin = find($"Md.{look}.Margin") as Thickness?
+            Margin = find($"Md.{look}.Margin") as Thickness?,
+            Height = find($"Md.{look}.Height") as double?
         };
 
     /// <summary>

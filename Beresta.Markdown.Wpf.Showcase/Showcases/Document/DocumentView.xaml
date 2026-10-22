@@ -53,7 +53,7 @@
                         <Run Text="{Binding SelectionLength, ElementName=Viewer, Mode=OneWay}" />
                     </TextBlock>
                     <CheckBox Content="{loc:Text Document.ControlsEditable}"
-                              IsChecked="{Binding AreControlsEditable}"
+                              IsChecked="{Binding DataContext.AreControlsEditable, RelativeSource={RelativeSource AncestorType=UserControl}}"
                               Margin="16,0,0,0" />
                 </StackPanel>
             </StackPanel>

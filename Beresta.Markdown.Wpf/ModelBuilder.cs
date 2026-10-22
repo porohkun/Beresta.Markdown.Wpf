@@ -200,6 +200,19 @@ internal sealed partial class ModelBuilder
             ? (GetLineAt(start), GetLineAt(end))
             : GetLines(block);
 
+        // Абзац оповещения начат на строке его вида, а текст рисует со следующей
+        if (node is ParagraphBlock { Parent: AlertBlock alert } && startLine == alert.Line && endLine > startLine)
+        {
+            var column = start - _lineStarts[startLine];
+            startLine++;
+            start = _lineStarts[startLine];
+            var prefixEnd = Math.Min(start + column, end);
+            while (start < prefixEnd && _source[start] is ' ' or '\t' or '>')
+            {
+                start++;
+            }
+        }
+
         return new(start, end - start + 1, startLine, endLine);
     }
 

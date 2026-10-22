@@ -129,6 +129,13 @@ public sealed class MdBlockPanel : VirtualizingPanel
     /// <summary>Окно больше не держится: якорем снова становится блок у верха видимой области.</summary>
     internal void ReleaseWindow() => _hold = false;
 
+    /// <summary>Окно уходит на другие строки: оно больше не держится, и его переход следующая раскладка не возмещает.</summary>
+    internal void LetWindowGo()
+    {
+        _hold = false;
+        _anchor = null;
+    }
+
     /// <inheritdoc/>
     protected override Size MeasureOverride(Size availableSize)
     {

@@ -10,7 +10,7 @@ using Scrolling;
 /// <summary>
 /// Окно правки: AvalonEdit на холсте, который вьюер ставит вместо правимых блоков. Края окна — якоря в
 /// документе; высота холста — высота строк окна, AvalonEdit — высотой с видимую часть холста и запасом,
-/// прокручен изнутри к своим строкам. Строки для вьюера — в номерах текста, который он показывает.
+/// прокручен изнутри к своим строкам. Строки для вьюера — в номерах показанного текста и по тексту, без полей распорок.
 /// </summary>
 internal sealed class SourceWindow : IMdSourceRows
 {
@@ -23,17 +23,20 @@ internal sealed class SourceWindow : IMdSourceRows
     private readonly TextEditor _editor;
     private readonly Func<int, int> _toShown;
     private readonly Func<int, int> _toDocument;
+    private readonly Func<int, (double Above, double Below)> _margins;
     private TextAnchor? _start;
     private TextAnchor? _end;
 
     /// <param name="editor">AvalonEdit редактора.</param>
     /// <param name="toShown">Строка документа с единицы — строка показанного текста с нуля.</param>
     /// <param name="toDocument">Строка показанного текста с нуля — строка документа с единицы.</param>
-    public SourceWindow(TextEditor editor, Func<int, int> toShown, Func<int, int> toDocument)
+    /// <param name="margins">Поля, которые распорка добавляет над текстом строки документа с единицы и под ним.</param>
+    public SourceWindow(TextEditor editor, Func<int, int> toShown, Func<int, int> toDocument, Func<int, (double Above, double Below)> margins)
     {
         _editor = editor;
         _toShown = toShown;
         _toDocument = toDocument;
+        _margins = margins;
 
         // BYDESIGN: высота — с самого начала: на холсте AvalonEdit без высоты раскладывает весь документ
         _editor.Height = 1;
@@ -104,6 +107,16 @@ internal sealed class SourceWindow : IMdSourceRows
     /// <summary>Низ строки документа — верх следующей; у последней строки — высота всего документа.</summary>
     public double LineBottom(int line)
         => line < _editor.Document.LineCount ? LineTop(line + 1) : _editor.TextArea.TextView.DocumentHeight;
+
+    /// <summary>Верх текста строки документа в раскладке AvalonEdit — под полем, которое добавила распорка.</summary>
+    public double TextTop(int line) => LineTop(line) + _margins(Math.Clamp(line, 1, _editor.Document.LineCount)).Above;
+
+    /// <summary>Высота текста строки документа — без полей распорки.</summary>
+    private double TextHeight(int line)
+    {
+        var (above, below) = _margins(Math.Clamp(line, 1, _editor.Document.LineCount));
+        return Math.Max(0, LineBottom(line) - LineTop(line) - above - below);
+    }
 
     /// <summary>Домеряет строки небольшого окна и ставит холсту высоту строк окна.</summary>
     public void Refit()
@@ -216,9 +229,9 @@ internal sealed class SourceWindow : IMdSourceRows
         var (first, last) = Lines;
         var whole = (int)Math.Floor(line);
         var documentLine = Math.Clamp(_toDocument(whole), first, last + 1);
-        var top = (documentLine <= last ? LineTop(documentLine) : LineBottom(last)) - LineTop(first);
+        var top = (documentLine <= last ? TextTop(documentLine) : LineBottom(last)) - LineTop(first);
         var part = line - whole;
-        return part > 0 && documentLine <= last ? top + part * (LineBottom(documentLine) - LineTop(documentLine)) : top;
+        return part > 0 && documentLine <= last ? top + part * TextHeight(documentLine) : top;
     }
 
     /// <inheritdoc/>
@@ -232,8 +245,8 @@ internal sealed class SourceWindow : IMdSourceRows
         var (first, last) = Lines;
         var visual = LineTop(first) + Math.Max(0, offset);
         var line = Math.Clamp(_editor.TextArea.TextView.GetDocumentLineByVisualTop(visual).LineNumber, first, last);
-        var top = LineTop(line);
-        var height = LineBottom(line) - top;
+        var top = TextTop(line);
+        var height = TextHeight(line);
         return _toShown(line) + (height > 0 ? Math.Clamp((visual - top) / height, 0, 1) : 0);
     }
 
@@ -250,7 +263,11 @@ internal sealed class SourceWindow : IMdSourceRows
         var origin = LineTop(first);
         return view.VisualLines
             .Where(line => line.FirstDocumentLine.LineNumber >= first && line.FirstDocumentLine.LineNumber <= last)
-            .Select(line => (_toShown(line.FirstDocumentLine.LineNumber), line.VisualTop - origin, line.TextLines[0].Height))
+            .Select(line => (Line: line, Margins: _margins(line.FirstDocumentLine.LineNumber)))
+            .Select(entry => (
+                _toShown(entry.Line.FirstDocumentLine.LineNumber),
+                entry.Line.VisualTop - origin + entry.Margins.Above,
+                Math.Max(0, entry.Line.TextLines[0].Height - entry.Margins.Above - entry.Margins.Below)))
             .ToList();
     }
 }

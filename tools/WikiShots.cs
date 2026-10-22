@@ -6,6 +6,7 @@
 
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -64,6 +65,10 @@ var thread = new Thread(() =>
 {
     var app = new App();
     app.InitializeComponent();
+
+    // BYDESIGN: запуск по StartupUri снят в обход сеттера, который не берёт null: конструктор Application ставит
+    // запуск в очередь, и первый же её разбор открыл бы на экране вторую витрину, обычную и с фокусом.
+    typeof(Application).GetField("_startupUri", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(app, null);
     app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
     var loader = new ShotLoader();
     var resolver = new ShotResolver();

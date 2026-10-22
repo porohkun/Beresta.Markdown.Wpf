@@ -1108,6 +1108,27 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     }
 
     /// <summary>
+    /// Lets the element of <see cref="SetSourceWindow"/> go before it moves to other lines: the document does
+    /// not scroll after it; <see cref="HoldSourceWindow"/> keeps it again at the new place.
+    /// </summary>
+    protected void ReleaseSourceWindow()
+    {
+        if (_window?.Element is not { } element || !element.IsDescendantOf(this))
+        {
+            BlockPanel?.LetWindowGo();
+            return;
+        }
+
+        for (var node = VisualTreeHelper.GetParent(element); node is not null && !ReferenceEquals(node, this); node = VisualTreeHelper.GetParent(node))
+        {
+            if (node is MdBlockPanel panel)
+            {
+                panel.LetWindowGo();
+            }
+        }
+    }
+
+    /// <summary>
     /// Levels of editable units around a source line, from the top one to the deepest: at the top —
     /// the blocks; inside a quote, a callout and a collapsible block — their blocks; in a list — its
     /// items; in an item — its blocks after the first one. A collapsed block is not entered.

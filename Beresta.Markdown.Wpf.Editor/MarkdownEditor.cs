@@ -75,6 +75,7 @@ public sealed class MarkdownEditor : MarkdownViewer
     private readonly DispatcherTimer _autoScroll;
     private readonly Dictionary<string, LookStyle> _styles = [];
     private SourceLookIndex? _look;
+    private Dictionary<int, (double Above, double Below)>? _fits;
     private List<(int FirstLine, int LastLine)> _windowContainers = [];
     private readonly Dictionary<string, List<double>> _cellWidths = [];
     private Dictionary<int, IReadOnlyList<(int Offset, double Before, double After)>>? _separators;
@@ -146,7 +147,7 @@ public sealed class MarkdownEditor : MarkdownViewer
         _autoScroll.Tick += (_, _) => AutoScroll();
 
         SetUpTextEditor();
-        _window = new(_editor, ToShownLine, ToDocumentLine);
+        _window = new(_editor, ToShownLine, ToDocumentLine, MarginsOf);
         _window.Element.SetResourceReference(Panel.BackgroundProperty, "Md.Source.Background");
 
         _document = _editor.Document;
@@ -165,7 +166,7 @@ public sealed class MarkdownEditor : MarkdownViewer
                 area.TextView.Redraw();
             }
         };
-        area.TextView.LineTransformers.Add(new SourceColorizer(PiecesOn));
+        area.TextView.LineTransformers.Insert(0, new SourceColorizer(PiecesOn, () => area.Selection.Segments));
         area.TextView.BackgroundRenderers.Add(new SourceBackground(LooksAt));
         CommandManager.AddPreviewExecutedHandler(area, OnTextAreaCommand);
         area.AddHandler(CommandManager.ExecutedEvent, new ExecutedRoutedEventHandler(OnTextAreaCommandDone), handledEventsToo: true);
@@ -388,6 +389,7 @@ public sealed class MarkdownEditor : MarkdownViewer
     {
         DocumentApplied?.Invoke();
         _look = null;
+        _fits = null;
         _styles.Clear();
         _separators = null;
         _cellWidths.Clear();
@@ -1180,15 +1182,16 @@ public sealed class MarkdownEditor : MarkdownViewer
     }
 
     /// <summary>
-    /// Окно встаёт на новые строки: вьюер рисует прежние блоки и прячет новые, строка курсора
-    /// возвращается на своё место экрана, и окно держится там, пока высоты вокруг уточняются. Текст
-    /// уходит сразу — прежние блоки рисуются уже по нему.
+    /// Окно встаёт на новые строки: вьюер рисует прежние блоки и прячет новые, ближайшая к курсору строка,
+    /// показанная до перехода и после одинаково, остаётся на своём месте экрана, и окно держится там, пока
+    /// высоты вокруг уточняются. Текст уходит сразу — прежние блоки рисуются уже по нему.
     /// </summary>
     private void MoveWindow((int First, int Last) lines)
     {
-        var caretLine = _editor.TextArea.Caret.Line;
-        var before = LineViewportTop(caretLine);
+        var steady = SteadyLine(_editor.TextArea.Caret.Line, _window.IsOpen ? _window.Lines : null, lines);
+        var before = steady is { } line ? LineViewportTop(line) : null;
         var moved = _window.IsOpen;
+        ReleaseSourceWindow();
         _window.Open(lines.First, lines.Last);
         ShowWindow();
         UpdateLayout();
@@ -1198,9 +1201,7 @@ public sealed class MarkdownEditor : MarkdownViewer
 
         if (Scroller is { } scroller
             && before is { } screen
-            && screen >= 0
-            && screen <= scroller.ViewportHeight
-            && LineViewportTop(caretLine) is { } after
+            && LineViewportTop(steady!.Value) is { } after
             && Math.Abs(after - screen) > 0.5)
         {
             scroller.ScrollToVerticalOffset(scroller.VerticalOffset + after - screen);
@@ -1216,6 +1217,29 @@ public sealed class MarkdownEditor : MarkdownViewer
         {
             CommitText();
         }
+    }
+
+    /// <summary>
+    /// Ближайшая к строке курсора строка документа, которую переход окна со строк <paramref name="old"/> на
+    /// <paramref name="next"/> показывает одинаково: в окне оба раза или нарисованной оба раза.
+    /// </summary>
+    private int? SteadyLine(int caret, (int First, int Last)? old, (int First, int Last) next)
+    {
+        for (var distance = 0; distance < _document.LineCount; distance++)
+        {
+            int[] candidates = distance == 0 ? [caret] : [caret - distance, caret + distance];
+            foreach (var line in candidates)
+            {
+                if (line >= 1 && line <= _document.LineCount && Inside(old, line) == Inside(next, line))
+                {
+                    return line;
+                }
+            }
+        }
+
+        return null;
+
+        static bool Inside((int First, int Last)? lines, int line) => lines is { } range && line >= range.First && line <= range.Last;
     }
 
     /// <summary>Отдаёт окно вьюеру строками того текста, который он показывает.</summary>
@@ -1360,7 +1384,7 @@ public sealed class MarkdownEditor : MarkdownViewer
         }
     }
 
-    /// <summary>Верх строки документа в видимой области прокрутки: в окне — по AvalonEdit, вне его — по отрисовке.</summary>
+    /// <summary>Верх текста строки документа в видимой области прокрутки: в окне — по AvalonEdit, вне его — по отрисовке.</summary>
     private double? LineViewportTop(int line)
     {
         if (Scroller is not { } scroller || !IsDescendantOf(scroller))
@@ -1370,7 +1394,7 @@ public sealed class MarkdownEditor : MarkdownViewer
 
         if (_window.IsOpen && _window.Element.IsDescendantOf(scroller) && line >= _window.Lines.First && line <= _window.Lines.Last)
         {
-            return _window.Element.TranslatePoint(new(0, _window.LineTop(line) - _window.LineTop(_window.Lines.First)), scroller).Y;
+            return _window.Element.TranslatePoint(new(0, _window.TextTop(line) - _window.LineTop(_window.Lines.First)), scroller).Y;
         }
 
         return GetSourceLineOffset(ToShownLine(line)) is { } y ? TranslatePoint(new(0, y), scroller).Y : null;
@@ -1420,11 +1444,17 @@ public sealed class MarkdownEditor : MarkdownViewer
             : 0;
     }
 
+    /// <summary>Распорка строки документа: высота над базовой линией и под ней; не нужна — <c>null</c>.</summary>
+    private (double Ascent, double Descent)? StrutOf(DocumentLine line) => Strut(line) is { } strut ? (strut.Ascent, strut.Descent) : null;
+
+    /// <summary>Поля, которые распорка добавляет над текстом строки документа с единицы и под ним.</summary>
+    private (double Above, double Below) MarginsOf(int line) => Strut(_document.GetLineByNumber(line)) is { } strut ? (strut.Above, strut.Below) : default;
+
     /// <summary>
-    /// Распорка строки документа: строка заголовка поднимается на его поля, а строки с видом, у которого
-    /// есть поля, — на верхнее у первой строки и нижнее у последней. Распорки не нужно — <c>null</c>.
+    /// Распорка строки документа: высота строки в отрисовке по полям заголовка и видов, шапке, отступу тела,
+    /// высоте пустой строки и полям кода и таблиц; не нужна — <c>null</c>.
     /// </summary>
-    private (double Ascent, double Descent)? StrutOf(DocumentLine line)
+    private (double Ascent, double Descent, double Above, double Below)? Strut(DocumentLine line)
     {
         var look = _look ??= new(GetSourceLook(), ShownMarkdown, _shownLines);
         var text = look.Text;
@@ -1443,20 +1473,84 @@ public sealed class MarkdownEditor : MarkdownViewer
                 (top, bottom) = (margin.Top, margin.Bottom);
                 (family, size) = (heading.FontFamily ?? family, heading.FontSize ?? size);
             }
+            else if (name == "CodeBlock" && StyleOf(name) is var code)
+            {
+                (family, size) = (code.FontFamily ?? family, code.FontSize ?? size);
+            }
         }
 
+        double? blank = null;
+        var header = 0.0;
         foreach (var (first, last, name) in look.LooksAt(shownLine))
         {
-            if (!_windowContainers.Contains((first, last)) && StyleOf(name) is { Margin: { } margin })
+            if (_windowContainers.Contains((first, last)))
+            {
+                continue;
+            }
+
+            var style = StyleOf(name);
+            if (style.Margin is { } margin)
             {
                 top = shownLine == first ? Math.Max(top, margin.Top) : top;
                 bottom = shownLine == last ? Math.Max(bottom, margin.Bottom) : bottom;
             }
+
+            if (style.BodyMargin is { } body && shownLine == first + 1)
+            {
+                top = Math.Max(top, body.Top);
+            }
+
+            if (style.Header is { } least && shownLine == first)
+            {
+                header = Math.Max(header, least);
+            }
+
+            if (style.Height is { } height && string.IsNullOrWhiteSpace(_document.GetText(line)))
+            {
+                blank = Math.Max(blank ?? 0, height);
+            }
+        }
+
+        // Шапка в отрисовке — не ниже значка и с округлением раскладки
+        if (header > 0)
+        {
+            var title = family.LineSpacing * size;
+            bottom += Rounded(Math.Max(header, title)) - title;
+        }
+
+        _fits ??= new SourceFit(
+                key => TryFindResource(key),
+                _editor.FontFamily,
+                _editor.FontSize,
+                _editor.TextArea.TextView.DefaultLineHeight,
+                Rounded)
+            .Of(look, _shownLines);
+        var (above, below) = _fits.GetValueOrDefault(shownLine);
+        top += above;
+        bottom += below;
+
+        if (blank is { } blankHeight)
+        {
+            var view = _editor.TextArea.TextView;
+            var ascent = Math.Clamp(view.DefaultBaseline - ((view.DefaultLineHeight - blankHeight) / 2), 0, blankHeight);
+            return (ascent + top, blankHeight - ascent + bottom, top, bottom);
         }
 
         return top > 0 || bottom > 0
-            ? ((family.Baseline * size) + top, ((family.LineSpacing - family.Baseline) * size) + bottom)
+            ? ((family.Baseline * size) + top, ((family.LineSpacing - family.Baseline) * size) + bottom, top, bottom)
             : null;
+    }
+
+    /// <summary>Размер, каким его ставит раскладка отрисовки: с округлением раскладки — до точки экрана.</summary>
+    private double Rounded(double value)
+    {
+        if (!UseLayoutRounding)
+        {
+            return value;
+        }
+
+        var scale = VisualTreeHelper.GetDpi(this).DpiScaleY;
+        return Math.Round(value * scale) / scale;
     }
 
     /// <summary>Разделители столбцов строки документа с местом до и после них; строка не в таблице — пусто.</summary>

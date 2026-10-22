@@ -34,7 +34,7 @@ public sealed class SourceLookTests
             (At("c]"), 1, "Link"),
             (At("d`"), 1, "InlineCode"),
             (At("code"), 4, "CodeBlock")]);
-        look.Lines.Should().Contain([(4, 4, "Quote"), (8, 10, "CodeBlock")]);
+        look.Lines.Should().Contain([(4, 4, "Quote"), (8, 10, "CodeBlock"), (1, 1, "BlankLine"), (11, 11, "BlankLine")]);
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public sealed class SourceLookTests
         var look = Describe(text, widgets);
 
         look.Pieces.Should().BeEmpty();
-        look.Lines.Should().BeEmpty();
+        look.Lines.Should().Equal((3, 3, "BlankLine"));
     }
 
     [Fact]
@@ -130,6 +130,25 @@ public sealed class SourceLookTests
             Run(editor, "## ").ForegroundBrush.Should().BeSameAs(editor.FindResource("Md.Source.Markup.Foreground"));
             Run(editor, "](http").ForegroundBrush.Should().BeSameAs(editor.FindResource("Md.Source.Markup.Foreground"));
             Run(editor, "[ ]").ForegroundBrush.Should().BeSameAs(Brushes.Purple);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Выделенный_кусок_без_своего_фона_и_цветом_выделения()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var editor = new MarkdownEditor { Markdown = Text, EditMode = MdEditMode.Full };
+            var window = WpfHost.Show(new ScrollViewer { Content = editor });
+            Run(editor, "d`").BackgroundBrush.Should().NotBeNull();
+
+            editor.SelectSource(At("d`"), 1);
+            WpfHost.Settle(window);
+
+            Run(editor, "d`").BackgroundBrush.Should().BeNull();
+            Run(editor, "d`").ForegroundBrush.Should().BeSameAs(editor.TextEditor.TextArea.SelectionForeground);
+            Run(editor, "code").BackgroundBrush.Should().NotBeNull();
             window.Close();
         });
     }

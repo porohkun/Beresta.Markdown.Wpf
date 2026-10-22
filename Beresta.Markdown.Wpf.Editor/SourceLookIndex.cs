@@ -9,7 +9,7 @@ using Extensions;
 internal sealed class SourceLookIndex
 {
     private readonly List<(int Start, int End, string Look)>?[] _pieces;
-    private readonly IReadOnlyList<(int FirstLine, int LastLine, string Look)> _lines;
+    private readonly List<(int FirstLine, int LastLine, string Look)>?[] _lines;
     private readonly Dictionary<int, int> _indents = [];
 
     public SourceLookIndex(MdSourceLook look, string text, TextLines lines)
@@ -30,7 +30,15 @@ internal sealed class SourceLookIndex
             }
         }
 
-        _lines = look.Lines;
+        _lines = new List<(int FirstLine, int LastLine, string Look)>?[_pieces.Length];
+        foreach (var entry in look.Lines)
+        {
+            for (var line = Math.Max(0, entry.FirstLine); line <= entry.LastLine && line < _lines.Length; line++)
+            {
+                (_lines[line] ??= []).Add(entry);
+            }
+        }
+
         Columns = look.Columns;
         foreach (var (line, length) in look.Indents)
         {
@@ -52,6 +60,14 @@ internal sealed class SourceLookIndex
     public int IndentOn(int line) => _indents.GetValueOrDefault(line);
 
     /// <summary>Виды строки с нуля и строки, которым их дали.</summary>
-    public IEnumerable<(int FirstLine, int LastLine, string Look)> LooksAt(int line)
-        => _lines.Where(entry => entry.FirstLine <= line && line <= entry.LastLine);
+    public IReadOnlyList<(int FirstLine, int LastLine, string Look)> LooksAt(int line)
+        => line >= 0 && line < _lines.Length ? _lines[line] ?? [] : [];
+
+    /// <summary>Строки, которым дан вид <paramref name="look"/>: первая и последняя с нуля.</summary>
+    public IEnumerable<(int FirstLine, int LastLine)> RangesOf(string look)
+        => _lines
+            .SelectMany(entries => entries ?? [])
+            .Where(entry => entry.Look == look)
+            .Select(entry => (entry.FirstLine, entry.LastLine))
+            .Distinct();
 }

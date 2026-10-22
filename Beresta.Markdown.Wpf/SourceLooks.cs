@@ -53,6 +53,9 @@ internal static partial class SourceLooks
                 case ThematicBreakVm:
                     context.Markup.Mark(span.Start, span.Length, Markup);
                     return;
+                case BlankLineVm:
+                    context.Look.MarkLines(span.StartLine, span.EndLine, "BlankLine");
+                    return;
                 case HeadingVm heading:
                     context.Look.Mark(span.Start, span.Length, "Heading" + Math.Clamp(heading.Level, 1, 6));
                     break;

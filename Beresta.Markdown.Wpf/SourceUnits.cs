@@ -141,17 +141,26 @@ internal static class SourceUnits
         var parts = new List<BlockVm>();
         if (before.Count > 0)
         {
-            parts.Add(list with { Items = before });
+            parts.Add(list with { Items = before, Source = Between(list.Source, before[^1].Source, list.Source) });
         }
 
         parts.Add(window);
         if (after.Count > 0)
         {
-            parts.Add(list with { Items = after, NodeId = before.Count > 0 ? SourceWindowVm.AfterListId : list.NodeId });
+            parts.Add(list with
+            {
+                Items = after,
+                NodeId = before.Count > 0 ? SourceWindowVm.AfterListId : list.NodeId,
+                Source = Between(after[0].Source, list.Source, list.Source)
+            });
         }
 
         return parts;
     }
+
+    /// <summary>Место от начала <paramref name="from"/> до конца <paramref name="to"/>; без одного из них — <paramref name="whole"/>.</summary>
+    private static MdSourceSpan Between(MdSourceSpan from, MdSourceSpan to, MdSourceSpan whole)
+        => from.IsEmpty || to.IsEmpty ? whole : new(from.Start, to.End - from.Start, from.StartLine, to.EndLine);
 
     /// <summary>Блоки с окном вместо тех, что задевают его строки; окно встаёт на место первого из них.</summary>
     private static List<BlockVm> Replace(IReadOnlyList<BlockVm> blocks, SourceWindowVm window)
@@ -192,7 +201,7 @@ internal static class SourceUnits
 
     /// <summary>
     /// Первая строка единиц контейнера: у плашки и сворачиваемого блока первая строка — их собственная,
-    /// даже если на ней начинается первый ребёнок, как абзац в оповещении <c>&gt; [!NOTE]</c>.
+    /// даже если на ней начинается первый ребёнок.
     /// </summary>
     private static int FirstChildLine(NodeVm container, List<NodeVm> children)
         => container is CalloutVm or DetailsVm

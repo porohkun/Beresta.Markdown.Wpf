@@ -50,7 +50,7 @@ public sealed class MdSourceLook
 
     /// <summary>
     /// Gives source lines from <paramref name="firstLine"/> to <paramref name="lastLine"/> a look:
-    /// <c>CodeBlock</c>, <c>Quote</c> or a name of your own.
+    /// <c>CodeBlock</c>, <c>Quote</c>, <c>BlankLine</c> or a name of your own.
     /// </summary>
     public void MarkLines(int firstLine, int lastLine, string look)
     {
