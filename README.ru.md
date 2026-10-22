@@ -33,7 +33,9 @@
   README — из коробки; синтаксис GitHub, GitLab, Obsidian, MkDocs, Docusaurus, HackMD и чатов —
   готовыми расширениями, по одному или наборами, [Что поддерживается](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Supported-Markdown-ru).
 - **Редактор в том же рисунке.** Блоки под кареткой показывают свой Markdown в AvalonEdit, остальной
-  документ остаётся нарисованным — [Редактор](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor-ru).
+  документ остаётся нарисованным; исходник сохраняет вид отрисовки — от таблиц столбцами до подсвеченного
+  кода, — а редактор ищет и заменяет, вставляет HTML Markdown-ом и правит front matter по типам —
+  [Редактор](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor-ru).
 
 ## Установка
 
@@ -122,7 +124,8 @@ dotnet add package Beresta.Markdown.Wpf.Editor
 </ScrollViewer>
 ```
 
-Режимы, клавиши, отмена и front matter — [Редактор](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor-ru).
+Режимы, клавиши, отмена, front matter и вставка с форматированием — [Редактор](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor-ru);
+поиск и замена — [Пометки и поиск](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Search-Highlighting-ru#поиск-и-замена-в-редакторе).
 
 ## Документация
 

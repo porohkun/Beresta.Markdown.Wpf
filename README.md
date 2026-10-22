@@ -33,7 +33,9 @@ streamed chat answers, lets you select text across blocks, and is fully themeabl
   READMEs out of the box; the syntax of GitHub, GitLab, Obsidian, MkDocs, Docusaurus, HackMD and chats
   as ready-made extensions, one by one or as sets — [Supported Markdown](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Supported-Markdown).
 - **An editor in the same drawing.** The blocks under the caret show their Markdown in AvalonEdit, the
-  rest of the document stays drawn — [Editor](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor).
+  rest of the document stays drawn; the source keeps the look of the drawing, from tables in columns to
+  highlighted code, and the editor finds and replaces, pastes HTML as Markdown and edits front matter by
+  type — [Editor](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor).
 
 ## Install
 
@@ -122,7 +124,8 @@ dotnet add package Beresta.Markdown.Wpf.Editor
 </ScrollViewer>
 ```
 
-Modes, keys, undo and front matter — [Editor](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor).
+Modes, keys, undo, front matter and pasting with formatting — [Editor](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor);
+search and replace — [Marks and Search](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Search-Highlighting#search-and-replace-in-the-editor).
 
 ## Documentation
 
