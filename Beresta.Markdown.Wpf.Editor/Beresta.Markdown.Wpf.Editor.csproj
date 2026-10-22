@@ -17,7 +17,7 @@
 		<PackageId>Beresta.Markdown.Wpf.Editor</PackageId>
 		<Title>Beresta.Markdown.Wpf.Editor</Title>
 		<Authors>Porohkun</Authors>
-		<Copyright>Copyright (c) 2026 Pavel</Copyright>
+		<Copyright>Copyright (c) 2026 Porohkun</Copyright>
 		<Description>Markdown editor for WPF on Beresta.Markdown.Wpf: edits the source right inside the rendered document, block by block or all at once, with AvalonEdit doing the typing.</Description>
 		<PackageIcon>icon512.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
