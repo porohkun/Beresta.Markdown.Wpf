@@ -19,6 +19,7 @@ public sealed class MdTextMap
     private readonly Dictionary<string, MdTextRange> _anchors;
     private readonly SourceLines? _lines;
     private Dictionary<long, (BlockVm Block, MdTextRange Range)>? _byId;
+    private List<(BlockVm Block, MdTextRange Range)>? _bySource;
     private LinesIndex? _byLine;
 
     private MdTextMap(Builder builder, string? source)
@@ -309,6 +310,62 @@ public sealed class MdTextMap
         return block.Source.IsEmpty ? null : block.Source.StartLine;
     }
 
+    /// <summary>
+    /// The place in the source text under a position of the map: in text the source has as it is — the
+    /// same character, otherwise the start of the inline; in a code block — the same line and column.
+    /// <c>null</c> — the position is in no block.
+    /// </summary>
+    public int? SourceOffsetOf(int position)
+    {
+        if (Innermost(position, _ => true) is not { Block: var block })
+        {
+            return null;
+        }
+
+        if (block is CodeBlockVm code && TryGetRange(code.Runs, out var codeRange) && CodeOffset(code, position - codeRange.Start) is { } inCode)
+        {
+            return inCode;
+        }
+
+        foreach (var inlines in InlinesOf(block))
+        {
+            if (OffsetIn(inlines, position) is { } offset)
+            {
+                return offset;
+            }
+        }
+
+        return block.Source.IsEmpty ? null : block.Source.Start;
+    }
+
+    /// <summary>
+    /// The position of the map at a place of the source text, the reverse of <see cref="SourceOffsetOf"/>:
+    /// in text the source has as it is — before the same character, otherwise the start of the inline;
+    /// in a code block — the same line and column. <c>null</c> — the place is not drawn.
+    /// </summary>
+    public int? PositionOfSource(int offset)
+    {
+        if (BlockAtSource(offset) is not { Block: var block })
+        {
+            return null;
+        }
+
+        if (block is CodeBlockVm code)
+        {
+            return TryGetRange(code.Runs, out var codeRange) && CodeIndex(code, offset) is { } index ? codeRange.Start + index : null;
+        }
+
+        foreach (var inlines in InlinesOf(block))
+        {
+            if (PositionIn(inlines, offset) is { } position)
+            {
+                return position;
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>The text of a piece for copying: indivisible elements give their text for copying or nothing.</summary>
     public string GetText(MdTextRange range)
     {
@@ -453,6 +510,221 @@ public sealed class MdTextMap
         }
 
         return null;
+    }
+
+    /// <summary>Списки инлайнов блока, на которых может стоять позиция.</summary>
+    private static IEnumerable<IReadOnlyList<InlineVm>> InlinesOf(BlockVm block) => block switch
+    {
+        ParagraphVm paragraph => [paragraph.Inlines],
+        HeadingVm heading => [heading.Inlines],
+        FigureCaptionVm caption => [caption.Inlines],
+        CalloutVm callout => [callout.Title],
+        DetailsVm details => [details.Summary],
+        DefinitionListVm definitions => definitions.Items.Select(item => item.Terms),
+        TableVm table => table.Rows.SelectMany(row => row.Cells).Select(cell => cell.Inlines),
+        _ => []
+    };
+
+    /// <summary>Место исходника позиции внутри списка инлайнов; позиция вне него — <c>null</c>.</summary>
+    private int? OffsetIn(IReadOnlyList<InlineVm> inlines, int position)
+    {
+        if (!TryGetRange(inlines, out var range) || position < range.Start || position > range.End)
+        {
+            return null;
+        }
+
+        var start = range.Start;
+        for (var i = 0; i < inlines.Count; i++)
+        {
+            var length = TextOf(inlines[i]).Length;
+            if (position < start + length || i == inlines.Count - 1)
+            {
+                return OffsetIn(inlines[i], position - start);
+            }
+
+            start += length;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Место исходника знака инлайна: у текста, который исходник хранит как есть, — тот же знак, у кода
+    /// строкой — за обратными кавычками; иначе — начало инлайна.
+    /// </summary>
+    private int? OffsetIn(InlineVm inline, int offset)
+    {
+        var span = inline.Source;
+        if (span.IsEmpty)
+        {
+            return null;
+        }
+
+        if (inline is RunVm run && _lines is { Text: var text } && span.End <= text.Length)
+        {
+            var source = text.AsSpan(span.Start, span.Length);
+            var from = run.Code ? CodeContent(source, run.Text) : TextContent(source, run.Text);
+            if (from is { } start)
+            {
+                return span.Start + start + Math.Clamp(offset, 0, run.Text.Length);
+            }
+        }
+
+        return span.Start;
+    }
+
+    /// <summary>Где в исходнике куска начинается его текст: исходник — тот же текст, может быть, с пробелами по краям.</summary>
+    private static int? TextContent(ReadOnlySpan<char> source, string text)
+    {
+        if (source.SequenceEqual(text))
+        {
+            return 0;
+        }
+
+        var trimmed = source.TrimStart();
+        return trimmed.TrimEnd().SequenceEqual(text) ? source.Length - trimmed.Length : null;
+    }
+
+    /// <summary>Где в исходнике кода строкой начинается его текст: после обратных кавычек и, может быть, пробела.</summary>
+    private static int? CodeContent(ReadOnlySpan<char> source, string text)
+    {
+        var open = 0;
+        while (open < source.Length && source[open] == '`')
+        {
+            open++;
+        }
+
+        for (var from = open; from <= open + 1 && from + text.Length <= source.Length; from++)
+        {
+            if (source.Slice(from, text.Length).SequenceEqual(text))
+            {
+                return from;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Место исходника знака блока кода: та же строка, столбец — после отступа, срезанного у кода;
+    /// строку кода в исходнике не узнать — её начало.
+    /// </summary>
+    private int? CodeOffset(CodeBlockVm code, int offset)
+    {
+        if (_lines is not { } lines)
+        {
+            return null;
+        }
+
+        var inCode = Math.Clamp(offset, 0, code.Code.Length);
+        var lineStart = inCode == 0 ? 0 : code.Code.LastIndexOf('\n', inCode - 1) + 1;
+        var next = code.Code.IndexOf('\n', lineStart);
+        var lineEnd = next < 0 ? code.Code.Length : next;
+        var line = code.CodeFirstLine + CharCount.In(code.Code.AsSpan(0, lineStart), '\n');
+        if (line >= lines.Count || lines.TextOf(line) is not { } text)
+        {
+            return null;
+        }
+
+        var codeLine = code.Code.AsSpan(lineStart, lineEnd - lineStart);
+        return text.AsSpan().EndsWith(codeLine)
+            ? lines.StartOf(line) + text.Length - codeLine.Length + inCode - lineStart
+            : lines.StartOf(line);
+    }
+
+    /// <summary>
+    /// Самый глубокий блок, место которого в исходнике покрывает <paramref name="offset"/>, считая его конец;
+    /// среди блоков с одним началом глубже тот, что короче.
+    /// </summary>
+    private (BlockVm Block, MdTextRange Range)? BlockAtSource(int offset)
+    {
+        _bySource ??= _blocks
+            .Where(entry => !entry.Block.Source.IsEmpty)
+            .OrderBy(entry => entry.Block.Source.Start)
+            .ThenByDescending(entry => entry.Block.Source.Length)
+            .ToList();
+        for (var i = FirstWhere(_bySource.Count, i => _bySource[i].Block.Source.Start > offset) - 1; i >= 0; i--)
+        {
+            if (offset <= _bySource[i].Block.Source.End)
+            {
+                return _bySource[i];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Позиция карты на месте исходника внутри списка инлайнов; место на конце инлайна за его текстом —
+    /// у следующего, а у последнего — его конец. Места нет ни у одного инлайна — <c>null</c>.
+    /// </summary>
+    private int? PositionIn(IReadOnlyList<InlineVm> inlines, int offset)
+    {
+        if (!TryGetRange(inlines, out var range))
+        {
+            return null;
+        }
+
+        var start = range.Start;
+        int? end = null;
+        foreach (var inline in inlines)
+        {
+            var span = inline.Source;
+            var length = TextOf(inline).Length;
+            if (!span.IsEmpty && offset >= span.Start && offset <= span.End)
+            {
+                if (inline is RunVm run && _lines is { Text: var text } && span.End <= text.Length)
+                {
+                    var source = text.AsSpan(span.Start, span.Length);
+                    if ((run.Code ? CodeContent(source, run.Text) : TextContent(source, run.Text)) is { } from
+                        && offset >= span.Start + from
+                        && offset <= span.Start + from + run.Text.Length)
+                    {
+                        return start + offset - span.Start - from;
+                    }
+                }
+
+                if (offset < span.End)
+                {
+                    return start;
+                }
+
+                end = start + length;
+            }
+            else if (end is not null)
+            {
+                return end;
+            }
+
+            start += length;
+        }
+
+        return end;
+    }
+
+    /// <summary>
+    /// Место в тексте блока кода на месте его исходника: та же строка и столбец после отступа, срезанного у
+    /// кода; ограждение и срезанный отступ — <c>null</c>.
+    /// </summary>
+    private int? CodeIndex(CodeBlockVm code, int offset)
+    {
+        if (_lines is not { } lines || offset > lines.Text.Length)
+        {
+            return null;
+        }
+
+        var line = lines.LineOf(offset);
+        var codeLines = code.Code.Split('\n');
+        var index = line - code.CodeFirstLine;
+        if (index < 0 || index >= codeLines.Length || lines.TextOf(line) is not { } text || !text.EndsWith(codeLines[index], StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var column = offset - (lines.StartOf(line) + text.Length - codeLines[index].Length);
+        return column >= 0 && column <= codeLines[index].Length
+            ? codeLines.Take(index).Sum(codeLine => codeLine.Length + 1) + column
+            : null;
     }
 
     /// <summary>Кусок карты блока; блока в карте нет — <c>null</c>.</summary>

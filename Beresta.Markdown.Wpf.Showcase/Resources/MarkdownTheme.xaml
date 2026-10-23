@@ -1,6 +1,7 @@
 ﻿<!-- Ключи вьюера от цветов HandyControl -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:md="https://github.com/porohkun/Beresta.Markdown.Wpf">
 
     <!-- Текст и ссылки -->
     <SolidColorBrush x:Key="Md.Paragraph.Foreground" Color="{DynamicResource PrimaryTextColor}" />
@@ -18,6 +19,16 @@
     <SolidColorBrush x:Key="Md.CodeBlock.BorderBrush" Color="{DynamicResource BorderColor}" />
     <SolidColorBrush x:Key="Md.CodeBlock.LineNumberForeground" Color="{DynamicResource ThirdlyTextColor}" />
     <SolidColorBrush x:Key="Md.CodeBlock.HeaderForeground" Color="{DynamicResource ThirdlyTextColor}" />
+    <SolidColorBrush x:Key="Md.Code.Keyword.Foreground" Color="{DynamicResource DangerColor}" />
+    <SolidColorBrush x:Key="Md.Code.Type.Foreground" Color="{DynamicResource WarningColor}" />
+    <SolidColorBrush x:Key="Md.Code.String.Foreground" Color="{DynamicResource SuccessColor}" />
+    <SolidColorBrush x:Key="Md.Code.Number.Foreground" Color="{DynamicResource PrimaryColor}" />
+    <SolidColorBrush x:Key="Md.Code.Comment.Foreground" Color="{DynamicResource SecondaryTextColor}" />
+    <SolidColorBrush x:Key="Md.Code.Preprocessor.Foreground" Color="{DynamicResource VioletColor}" />
+    <SolidColorBrush x:Key="Md.Code.Tag.Foreground" Color="{DynamicResource SuccessColor}" />
+    <SolidColorBrush x:Key="Md.Code.Attribute.Foreground" Color="{DynamicResource PrimaryColor}" />
+    <SolidColorBrush x:Key="Md.Code.Inserted.Foreground" Color="{DynamicResource SuccessColor}" />
+    <SolidColorBrush x:Key="Md.Code.Deleted.Foreground" Color="{DynamicResource DangerColor}" />
 
     <!-- Клавиши, картинки, задачи, сноски -->
     <SolidColorBrush x:Key="Md.Kbd.Foreground" Color="{DynamicResource PrimaryTextColor}" />
@@ -63,5 +74,38 @@
     <SolidColorBrush x:Key="Md.Chip.Success.Background" Color="{DynamicResource SuccessColor}" Opacity="0.16" />
     <SolidColorBrush x:Key="Md.Chip.Warning.Background" Color="{DynamicResource WarningColor}" Opacity="0.16" />
     <SolidColorBrush x:Key="Md.Chip.Danger.Background" Color="{DynamicResource DangerColor}" Opacity="0.16" />
+
+    <!-- Карточка свойств: поля в стиле HandyControl высотой со строку текста, флажок без правки виден целиком -->
+    <Style TargetType="{x:Type md:MdPropertiesPresenter}" BasedOn="{StaticResource {x:Type md:MdPropertiesPresenter}}">
+        <Style.Resources>
+            <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxBaseStyle}">
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="Height" Value="22" />
+                <Setter Property="Padding" Value="4,0" />
+            </Style>
+            <Style TargetType="{x:Type md:MdPropertyBox}" BasedOn="{StaticResource TextBoxBaseStyle}">
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="Height" Value="22" />
+                <Setter Property="Padding" Value="4,0" />
+            </Style>
+            <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource ComboBoxBaseStyle}">
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="Height" Value="22" />
+                <Setter Property="Padding" Value="4,0" />
+            </Style>
+            <Style TargetType="{x:Type md:MdPropertyDatePicker}" BasedOn="{StaticResource DatePickerBaseStyle}">
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="Height" Value="22" />
+                <Setter Property="Padding" Value="4,0" />
+            </Style>
+            <Style TargetType="{x:Type CheckBox}" BasedOn="{StaticResource CheckBoxBaseStyle}">
+                <Style.Triggers>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="1" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+        </Style.Resources>
+    </Style>
 
 </ResourceDictionary>

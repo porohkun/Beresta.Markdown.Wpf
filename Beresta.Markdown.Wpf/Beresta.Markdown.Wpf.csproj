@@ -15,10 +15,9 @@
 	<PropertyGroup>
 		<IsPackable>true</IsPackable>
 		<PackageId>Beresta.Markdown.Wpf</PackageId>
-		<VersionPrefix>0.8.0</VersionPrefix>
 		<Title>Beresta.Markdown.Wpf</Title>
 		<Authors>Porohkun</Authors>
-		<Copyright>Copyright (c) 2026 Pavel</Copyright>
+		<Copyright>Copyright (c) 2026 Porohkun</Copyright>
 		<Description>Fast native Markdown viewer for WPF, no browser or FlowDocument: virtualized for huge documents, live updates for previews and streamed answers, selection across blocks, themeable and extensible. On Markdig.</Description>
 		<PackageIcon>icon512.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -46,6 +45,6 @@
 		<InternalsVisibleTo Include="Beresta.Markdown.Wpf.Tests" />
 	</ItemGroup>
 
-	<Import Project="Docs\Documentation.targets" />
+	<Import Project="..\build\Documentation.targets" />
 
 </Project>

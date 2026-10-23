@@ -55,6 +55,8 @@ internal sealed partial class ModelBuilder
     private readonly ExtensionGuard _guard;
     private readonly IDictionary<object, MdExtension>? _owners;
     private readonly bool _joinSoftLineBreaks;
+    private readonly IMdCodeHighlighter? _highlighter;
+    private readonly CodeHighlights? _highlights;
 
     private int _depth;
     private int _inlineDepth;
@@ -66,7 +68,9 @@ internal sealed partial class ModelBuilder
         IReadOnlyDictionary<SmartyPantType, string>? smartyPants,
         ExtensionGuard guard,
         IDictionary<object, MdExtension>? owners,
-        bool joinSoftLineBreaks = false)
+        bool joinSoftLineBreaks = false,
+        IMdCodeHighlighter? highlighter = null,
+        CodeHighlights? highlights = null)
     {
         _source = source;
         _lineStarts = FindLineStarts(source);
@@ -76,6 +80,8 @@ internal sealed partial class ModelBuilder
         _guard = guard;
         _owners = owners;
         _joinSoftLineBreaks = joinSoftLineBreaks;
+        _highlighter = highlighter;
+        _highlights = highlights;
     }
 
     /// <summary>
@@ -95,7 +101,8 @@ internal sealed partial class ModelBuilder
     /// разборов запоминает этот разбор, только когда её <see cref="ModelIdentity.Commit"/> вызовут отдельно.
     /// Код расширений идёт через <paramref name="guard"/>; <paramref name="owners"/> получает, какое
     /// расширение создало каждую его вьюмодель. С <paramref name="joinSoftLineBreaks"/> мягкий перенос
-    /// строки становится пробелом.
+    /// строки становится пробелом. С <paramref name="highlighter"/> блоки кода подсвечиваются, а
+    /// <paramref name="highlights"/> помнит их подсветку между разборами.
     /// </summary>
     public static IReadOnlyList<BlockVm> Parse(
         string markdown,
@@ -106,7 +113,9 @@ internal sealed partial class ModelBuilder
         bool commit = true,
         ExtensionGuard? guard = null,
         IDictionary<object, MdExtension>? owners = null,
-        bool joinSoftLineBreaks = false)
+        bool joinSoftLineBreaks = false,
+        IMdCodeHighlighter? highlighter = null,
+        CodeHighlights? highlights = null)
     {
         markdown ??= string.Empty;
         identity ??= new();
@@ -117,7 +126,16 @@ internal sealed partial class ModelBuilder
         frontMatter = document is [YamlFrontMatterBlock yaml, ..] ? yaml.Lines.ToString() : null;
 
         var smartyPants = pipeline.Extensions.Find<SmartyPantsExtension>()?.Options.Mapping;
-        var builder = new ModelBuilder(markdown, extensions ?? [], identity, smartyPants, guard ?? ExtensionGuard.Silent, owners, joinSoftLineBreaks);
+        var builder = new ModelBuilder(
+            markdown,
+            extensions ?? [],
+            identity,
+            smartyPants,
+            guard ?? ExtensionGuard.Silent,
+            owners,
+            joinSoftLineBreaks,
+            highlighter,
+            highlighter is null ? null : highlights ?? new());
         var blocks = builder.ConvertBlocks(document, listDepth: 0);
         if (commit)
         {
@@ -182,6 +200,19 @@ internal sealed partial class ModelBuilder
             ? (GetLineAt(start), GetLineAt(end))
             : GetLines(block);
 
+        // Абзац оповещения начат на строке его вида, а текст рисует со следующей
+        if (node is ParagraphBlock { Parent: AlertBlock alert } && startLine == alert.Line && endLine > startLine)
+        {
+            var column = start - _lineStarts[startLine];
+            startLine++;
+            start = _lineStarts[startLine];
+            var prefixEnd = Math.Min(start + column, end);
+            while (start < prefixEnd && _source[start] is ' ' or '\t' or '>')
+            {
+                start++;
+            }
+        }
+
         return new(start, end - start + 1, startLine, endLine);
     }
 
@@ -190,10 +221,18 @@ internal sealed partial class ModelBuilder
         return GetSourceText(node is Block block ? new(node.Span.Start, EndOf(block)) : node.Span);
     }
 
-    private static CodeBlockVm ConvertCodeBlock(CodeBlock block)
+    /// <summary>Блок кода; с подсветчиком код блока со знакомым языком режется на подсвеченные куски.</summary>
+    private CodeBlockVm ConvertCodeBlock(CodeBlock block)
     {
         var info = (block as FencedCodeBlock)?.Info;
-        return new(info, ParseLanguage(info), CodeOf(block)) { IsFenced = block is FencedCodeBlock };
+        var language = ParseLanguage(info);
+        var code = new CodeBlockVm(info, language, CodeOf(block)) { IsFenced = block is FencedCodeBlock };
+        return _highlighter is { } highlighter
+               && _highlights is { } highlights
+               && !string.IsNullOrEmpty(language)
+               && highlights.Runs(language, code.Code, highlighter, _guard) is { } runs
+            ? code.WithRuns(runs)
+            : code;
     }
 
     private static InlineState ApplyEmphasis(InlineState state, EmphasisInline emphasis)
@@ -227,7 +266,8 @@ internal sealed partial class ModelBuilder
         return state;
     }
 
-    private static List<int> FindLineStarts(string text)
+    /// <summary>Начала строк текста: перевод строки — <c>\n</c>, <c>\r\n</c> или одиночный <c>\r</c>, как у Markdig.</summary>
+    internal static List<int> FindLineStarts(string text)
     {
         var starts = new List<int> { 0 };
 

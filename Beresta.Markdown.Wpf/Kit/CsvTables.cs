@@ -32,6 +32,49 @@ public sealed class CsvTables : MdExtension
         return new TableVm(columns, rows);
     }
 
+    /// <inheritdoc/>
+    public override void DescribeSource(NodeVm node, MdSourceLook look)
+    {
+        if (node is not TableVm { Source: { IsEmpty: false } span } table || span.End > look.Text.Length)
+        {
+            return;
+        }
+
+        var fence = look.Text.AsSpan(span.Start, span.Length);
+        var info = fence[..Math.Max(0, fence.IndexOfAny('\r', '\n'))].TrimStart().TrimStart("`~").Trim();
+        if (DelimiterOf(info.ToString()) is not { } delimiter)
+        {
+            return;
+        }
+
+        var rows = new List<(int Line, IReadOnlyList<int> Separators)>();
+        foreach (var row in table.Rows)
+        {
+            if (row.Source is not { IsEmpty: false } record || record.StartLine != record.EndLine || record.End > look.Text.Length)
+            {
+                continue;
+            }
+
+            var separators = new List<int>();
+            var quoted = false;
+            for (var at = record.Start; at < record.End; at++)
+            {
+                if (look.Text[at] == '"')
+                {
+                    quoted = !quoted;
+                }
+                else if (look.Text[at] == delimiter && !quoted)
+                {
+                    separators.Add(at);
+                }
+            }
+
+            rows.Add((record.StartLine, separators));
+        }
+
+        look.MarkColumns(rows, []);
+    }
+
     private static char? DelimiterOf(string? language)
         => language?.ToLowerInvariant() switch
         {

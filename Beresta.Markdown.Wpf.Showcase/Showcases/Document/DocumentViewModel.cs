@@ -9,4 +9,11 @@ public sealed class DocumentViewModel : ShowcaseViewModel
     }
 
     public string Text => Samples.Document;
+
+    /// <summary>Флажки задач и сворачивание правят текст документа.</summary>
+    public bool AreControlsEditable
+    {
+        get;
+        set => Set(ref field, value);
+    }
 }

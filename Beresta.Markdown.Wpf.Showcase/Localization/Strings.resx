@@ -165,6 +165,9 @@
   <data name="Document.Back" xml:space="preserve">
     <value>Back (Shift+Enter)</value>
   </data>
+  <data name="Document.ControlsEditable" xml:space="preserve">
+    <value>Controls edit the source</value>
+  </data>
   <data name="Document.Find" xml:space="preserve">
     <value>Find:</value>
   </data>
@@ -194,6 +197,45 @@
   </data>
   <data name="Document.WholeWord" xml:space="preserve">
     <value>Whole word</value>
+  </data>
+  <data name="Editor.Characters" xml:space="preserve">
+    <value>Characters in Markdown:</value>
+  </data>
+  <data name="Editor.Header" xml:space="preserve">
+    <value>MarkdownEditor from the Beresta.Markdown.Wpf.Editor package: the viewer that edits the source of its document. «Blocks» — a click on the drawing puts the caret there, and the blocks under the caret show their source in AvalonEdit; Esc closes them. «Whole text» — the whole source in place of the drawing. «Controls only» — task boxes and folding write into the text. Ctrl+Z and Ctrl+Y undo and redo; the text reaches Markdown a second after the last edit.</value>
+  </data>
+  <data name="Editor.Mode" xml:space="preserve">
+    <value>Mode:</value>
+  </data>
+  <data name="Editor.Mode.Blocks" xml:space="preserve">
+    <value>Blocks</value>
+  </data>
+  <data name="Editor.Mode.Controls" xml:space="preserve">
+    <value>Controls only</value>
+  </data>
+  <data name="Editor.Mode.Full" xml:space="preserve">
+    <value>Whole text</value>
+  </data>
+  <data name="Editor.Mode.View" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="Editor.Redo" xml:space="preserve">
+    <value>Redo</value>
+  </data>
+  <data name="Editor.Replace" xml:space="preserve">
+    <value>Replace</value>
+  </data>
+  <data name="Editor.ReplaceAll" xml:space="preserve">
+    <value>Replace all</value>
+  </data>
+  <data name="Editor.ReplaceWith" xml:space="preserve">
+    <value>Replace with</value>
+  </data>
+  <data name="Editor.Title" xml:space="preserve">
+    <value>Editor</value>
+  </data>
+  <data name="Editor.Undo" xml:space="preserve">
+    <value>Undo</value>
   </data>
   <data name="Extensions.Header" xml:space="preserve">
     <value>Your own syntax on MdExtension: a :::note note with its own state, an @name mention with its own parsing, and ::text:: chips — styled text, not a widget. Each extension is connected on its own, as a line in Extensions of the viewer; sets are in the Sets showcase.</value>
@@ -233,6 +275,9 @@
   </data>
   <data name="MarginButtons.Title" xml:space="preserve">
     <value>Margin buttons</value>
+  </data>
+  <data name="Options.CodeHighlighting" xml:space="preserve">
+    <value>Code highlighting</value>
   </data>
   <data name="Options.CodeLineNumbers" xml:space="preserve">
     <value>Code line numbers</value>

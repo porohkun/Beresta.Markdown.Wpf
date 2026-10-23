@@ -59,6 +59,25 @@ public sealed partial class WikiEmbeds : MdExtension
         ];
     }
 
+    /// <inheritdoc/>
+    public override void DescribeSource(NodeVm node, MdSourceLook look)
+    {
+        if (node is RunVm { Source: { IsEmpty: false } link })
+        {
+            WikiLinks.DescribeLink(link, look);
+        }
+        else if (node is ImageVm { Source: { IsEmpty: false } span } && span.End <= look.Text.Length)
+        {
+            var text = look.Text.AsSpan(span.Start, span.Length);
+            if (text.StartsWith("![[") && text.EndsWith("]]"))
+            {
+                var size = text.IndexOf('|') is var pipe and >= 0 ? text.Length - 2 - pipe : 0;
+                look.Mark(span.Start, 3, "Source.Markup");
+                look.Mark(span.End - 2 - size, size + 2, "Source.Markup");
+            }
+        }
+    }
+
     [GeneratedRegex(@"^(?<width>\d+)(?:x(?<height>\d+))?$")]
     private static partial Regex Size();
 }

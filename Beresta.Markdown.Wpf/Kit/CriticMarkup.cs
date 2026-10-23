@@ -47,4 +47,13 @@ public sealed class CriticMarkup : MdExtension
         => item is CriticCommentVm && container is FrameworkElement element
             ? element.TryFindResource("Md.Critic.Comment.Template") as DataTemplate
             : null;
+
+    /// <inheritdoc/>
+    public override void DescribeSource(NodeVm node, MdSourceLook look)
+    {
+        if (node is CriticCommentVm { Source: { IsEmpty: false } span })
+        {
+            look.Mark(span.Start, span.Length, "Source.Markup");
+        }
+    }
 }

@@ -7,8 +7,8 @@ using ViewModels;
 
 /// <summary>
 /// Строки исходника созданных блоков, у которых есть своё место на экране: верх и высота экранной
-/// строки в координатах элемента. Текст и код знают свои строки сами; блок без своих строк отдаёт
-/// первую строку у верха рамки. Из мест, налезающих друг на друга, остаётся одно.
+/// строки в координатах элемента. Текст, код и окно наследника знают свои строки сами; блок без
+/// своих строк отдаёт первую строку у верха рамки. Из мест, налезающих друг на друга, остаётся одно.
 /// </summary>
 internal static class ScreenRows
 {
@@ -83,6 +83,16 @@ internal static class ScreenRows
             ContentControl control => control.Content,
             _ => null
         };
+
+        if (content is SourceWindowVm window)
+        {
+            if (window.Element.IsDescendantOf(node))
+            {
+                RememberRows(places, window.Element, window.Rows.VisibleRows().Select(row => (row.Line, new Rect(0, row.Top, 0, row.Height))), relativeTo);
+            }
+
+            return;
+        }
 
         if (node is FrameworkElement { ActualHeight: > 0 } element
             && content is NodeVm { Source.IsEmpty: false } model and not InlineVm

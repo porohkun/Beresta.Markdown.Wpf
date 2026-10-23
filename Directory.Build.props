@@ -8,4 +8,9 @@
 		<CheckEolTargetFramework>false</CheckEolTargetFramework>
 	</PropertyGroup>
 
+	<!-- Version of both packages -->
+	<PropertyGroup>
+		<VersionPrefix>0.9.0</VersionPrefix>
+	</PropertyGroup>
+
 </Project>

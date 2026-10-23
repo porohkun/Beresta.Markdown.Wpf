@@ -8,10 +8,23 @@ using ViewModels;
 
 /// <summary>
 /// Obsidian callouts: <c>&gt; [!kind] Title</c>; <c>-</c> or <c>+</c> after the kind makes a
-/// collapsible callout, <c>-</c> a collapsed one.
+/// collapsible callout, <c>-</c> a collapsed one; expanding and collapsing write the sign back.
 /// </summary>
 public sealed partial class ObsidianCallouts : MdExtension
 {
+    /// <inheritdoc/>
+    public override MdSourceEdit? EditSource(NodeVm node, object? state, MdSourceContext context)
+    {
+        if (node is not CalloutVm { IsFoldable: true } callout || state is not MdFoldState fold || callout.Source.IsEmpty)
+        {
+            return null;
+        }
+
+        var sign = fold.IsExpanded ? "+" : "-";
+        var mark = FoldMark().Match(context.Text, callout.Source.Start, callout.Source.Length).Groups["fold"];
+        return mark.Success && mark.Value != sign ? new(mark.Index, mark.Length, sign) : null;
+    }
+
     /// <inheritdoc/>
     public override BlockVm? ConvertBlock(Block block, MdConvertContext context)
     {
@@ -50,7 +63,7 @@ public sealed partial class ObsidianCallouts : MdExtension
         var body = lineEnd < 0 ? [] : rest.GetRange(lineEnd + 1, rest.Count - lineEnd - 1);
         if (body.Count > 0)
         {
-            blocks[0] = first with { Inlines = body };
+            blocks[0] = first with { Inlines = body, Source = BodySpan(first.Source, body) };
         }
         else
         {
@@ -64,6 +77,12 @@ public sealed partial class ObsidianCallouts : MdExtension
             IsFolded = fold == "-"
         };
     }
+
+    /// <summary>Место абзаца без строки заголовка: от первого инлайна содержимого с местом.</summary>
+    private static MdSourceSpan BodySpan(MdSourceSpan paragraph, List<InlineVm> body)
+        => body.FirstOrDefault(inline => !inline.Source.IsEmpty) is { Source: var start } && start.Start > paragraph.Start && start.Start < paragraph.End
+            ? new(start.Start, paragraph.End - start.Start, start.StartLine, paragraph.EndLine)
+            : paragraph;
 
     /// <summary>Инлайны без первых <paramref name="count"/> знаков текста.</summary>
     private static List<InlineVm> Skip(IReadOnlyList<InlineVm> inlines, int count)
@@ -107,4 +126,7 @@ public sealed partial class ObsidianCallouts : MdExtension
 
     [GeneratedRegex(@"^\[!(?<kind>[A-Za-z][\w-]*)\](?<fold>[+-]?)(?:[ \t]+(?<title>\S.*))?[ \t]*$")]
     private static partial Regex Marker();
+
+    [GeneratedRegex(@"\A[ \t]*(?:>[ \t]?)+\[![A-Za-z][\w-]*\](?<fold>[+-]?)")]
+    private static partial Regex FoldMark();
 }

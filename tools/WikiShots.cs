@@ -6,6 +6,7 @@
 
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -18,6 +19,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Beresta.Markdown.Wpf;
+using Beresta.Markdown.Wpf.Editor;
 using Beresta.Markdown.Wpf.Extensions;
 using Beresta.Markdown.Wpf.Kit;
 using Beresta.Markdown.Wpf.Scrolling;
@@ -63,6 +65,10 @@ var thread = new Thread(() =>
 {
     var app = new App();
     app.InitializeComponent();
+
+    // BYDESIGN: запуск по StartupUri снят в обход сеттера, который не берёт null: конструктор Application ставит
+    // запуск в очередь, и первый же её разбор открыл бы на экране вторую витрину, обычную и с фокусом.
+    typeof(Application).GetField("_startupUri", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(app, null);
     app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
     var loader = new ShotLoader();
     var resolver = new ShotResolver();
@@ -155,6 +161,18 @@ var thread = new Thread(() =>
                     copy.Visibility = Visibility.Visible;
                 }
             });
+        }
+
+        // Подсветка кода подсветчиком AvalonEdit
+        if (Wanted("code-highlight.png"))
+        {
+            Shot(russian, "code-highlight.png", new MarkdownViewer
+            {
+                Markdown = "```csharp\n" + L("// A note with a rating", "// Заметка с оценкой") + "\npublic sealed record Note(string Title, int Stars = 5);\n\n"
+                    + "var note = new Note(" + L("\"Hello\"", "\"Привет\"") + ");\nConsole.WriteLine($\"{note.Title}: {note.Stars}\");\n```\n\n"
+                    + "```xml\n<md:MarkdownViewer Markdown=\"{Binding Text}\" ShowCodeLineNumbers=\"True\" />\n```",
+                CodeHighlighter = MdAvalonCodeHighlighter.Instance
+            }, 640);
         }
 
         if (Wanted("widgets.png"))
@@ -383,6 +401,93 @@ var thread = new Thread(() =>
                         .ToList()
                 });
             });
+        }
+
+        // Редактор: блочный режим с курсором в абзаце и в пункте списка, весь текст и «только контролы» с полями карточки
+        var notes = L("""
+            ---
+            title: Release notes
+            tags: [editor, markdown]
+            ---
+
+            ## What's new
+
+            The **editor** shows the block under the caret as its source,
+            and the rest of the document stays drawn.
+
+            - [x] Blocks under the caret
+            - [ ] The whole text in place
+            """, """
+            ---
+            title: Заметки к выпуску
+            tags: [редактор, markdown]
+            ---
+
+            ## Что нового
+
+            **Редактор** показывает блок под курсором исходником,
+            а остальной документ остаётся нарисованным.
+
+            - [x] Блоки под курсором
+            - [ ] Весь текст на месте
+            """).ReplaceLineEndings("\n");
+        foreach (var (name, mode) in new[] { ("editor-blocks.png", MdEditMode.Blocks), ("editor-item.png", MdEditMode.Blocks), ("editor-full.png", MdEditMode.Full), ("editor-controls.png", MdEditMode.Controls) })
+        {
+            if (!Wanted(name))
+            {
+                continue;
+            }
+
+            var editor = new MarkdownEditor { Markdown = notes, EditMode = mode };
+            editor.Extensions.Add(new PropertiesCard());
+            Shot(russian, name, editor, 640, () =>
+            {
+                if (name == "editor-item.png")
+                {
+                    editor.SourceCaretOffset = notes.IndexOf(L("The whole text", "Весь текст"), StringComparison.Ordinal) + 4;
+                }
+                else if (mode == MdEditMode.Blocks)
+                {
+                    editor.SourceCaretOffset = notes.IndexOf(L("The **editor**", "**Редактор**"), StringComparison.Ordinal) + 4;
+                }
+            });
+        }
+
+        // Карточка свойств по типам: флажок, дата, чипы списка, крестики строк и строка добавления
+        if (Wanted("properties-types.png"))
+        {
+            var card = new PropertiesCard();
+            card.Fields.Add(new MdPropertyField { Key = "author" });
+            var viewer = new MarkdownViewer
+            {
+                Markdown = L(
+                    "---\ntitle: Release notes\ndraft: false\ndate: 2026-10-22\ntags: [release, wpf]\n---\n",
+                    "---\ntitle: Заметки к выпуску\ndraft: false\ndate: 2026-10-22\ntags: [выпуск, wpf]\n---\n"),
+                AreControlsEditable = true,
+                IsFrontMatterEditable = true,
+                Language = XmlLanguage.GetLanguage(russian ? "ru-RU" : "en-US")
+            };
+            viewer.Extensions.Add(card);
+            Shot(russian, "properties-types.png", viewer, 640);
+        }
+
+        // Редактор: таблица исходником стоит столбцами
+        if (Wanted("editor-table.png"))
+        {
+            var table = L("""
+                | Mode | What is edited | Count |
+                |---|:---:|---:|
+                | View | nothing | 0 |
+                | **Controls** | tasks and `folding` | 12 |
+                | Blocks | the blocks under the caret | 345 |
+                """, """
+                | Режим | Что правится | Сколько |
+                |---|:---:|---:|
+                | Просмотр | ничего | 0 |
+                | **Контролы** | задачи и `сворачивание` | 12 |
+                | Блоки | блоки под кареткой | 345 |
+                """).ReplaceLineEndings("\n");
+            Shot(russian, "editor-table.png", new MarkdownEditor { Markdown = table, EditMode = MdEditMode.Full }, 640, () => { });
         }
 
         // Готовые расширения

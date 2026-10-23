@@ -43,6 +43,23 @@ public sealed class SourcePositionTests
     }
 
     [Fact]
+    public void Строка_вида_оповещения_стоит_над_его_текстом()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "Intro\n\n> [!WARNING]\n> A callout body" };
+            var window = WpfHost.Show(new ScrollViewer { Content = viewer });
+
+            var title = viewer.GetSourceLineOffset(2)!.Value;
+            var body = viewer.GetSourceLineOffset(3)!.Value;
+
+            body.Should().BeGreaterThan(title + 10);
+            Math.Floor(viewer.GetSourceLineAt((title + body) / 2)!.Value).Should().Be(2);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Прокрутка_к_далёкой_строке_ставит_её_в_точку_привязки()
     {
         WpfHost.Invoke(() =>

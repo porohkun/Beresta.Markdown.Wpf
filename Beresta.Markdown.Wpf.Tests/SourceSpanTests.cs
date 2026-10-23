@@ -65,6 +65,17 @@ public sealed class SourceSpanTests
         code.Source.EndLine.Should().Be(3);
     }
 
+    [Theory]
+    [InlineData("> [!WARNING]\n> First line\n> Second line", "First line\n> Second line")]
+    [InlineData("> [!NOTE]\nLazy first line", "Lazy first line")]
+    public void Абзац_оповещения_начинается_со_строки_своего_текста(string text, string expected)
+    {
+        var paragraph = ((CalloutVm)ModelBuilder.Parse(text)[0]).Blocks[0];
+
+        paragraph.Source.StartLine.Should().Be(1);
+        Slice(text, paragraph.Source).Should().Be(expected);
+    }
+
     [Fact]
     public void Отступ_знает_свою_пустую_строку()
     {

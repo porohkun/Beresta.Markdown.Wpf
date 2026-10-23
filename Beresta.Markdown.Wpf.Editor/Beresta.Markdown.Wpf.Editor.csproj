@@ -1,0 +1,60 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net7.0-windows;net8.0-windows;net9.0-windows;net10.0-windows</TargetFrameworks>
+		<RootNamespace>Beresta.Markdown.Wpf.Editor</RootNamespace>
+	</PropertyGroup>
+
+	<!-- Documentation -->
+	<PropertyGroup>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
+	</PropertyGroup>
+
+	<!-- Package -->
+	<PropertyGroup>
+		<IsPackable>true</IsPackable>
+		<PackageId>Beresta.Markdown.Wpf.Editor</PackageId>
+		<Title>Beresta.Markdown.Wpf.Editor</Title>
+		<Authors>Porohkun</Authors>
+		<Copyright>Copyright (c) 2026 Porohkun</Copyright>
+		<Description>Markdown editor for WPF on Beresta.Markdown.Wpf: edits the source right inside the rendered document, block by block or all at once, with AvalonEdit doing the typing.</Description>
+		<PackageIcon>icon512.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageProjectUrl>https://github.com/porohkun/Beresta.Markdown.Wpf</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/porohkun/Beresta.Markdown.Wpf</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageTags>markdown;wpf;xaml;editor;avalonedit;control;markdig;commonmark;gfm;obsidian</PackageTags>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="\" Visible="false" />
+		<None Include="..\icon512.png" Pack="true" PackagePath="\" Visible="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+		<PackageReference Include="ReverseMarkdown" Version="6.2.1" />
+	</ItemGroup>
+
+	<!-- BYDESIGN: AngleSharp из ReverseMarkdown под .NET 7 берёт сборку netstandard2.0, а её зависимость пакет для .NET 7 не объявляет -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net7.0-windows'">
+		<PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Beresta.Markdown.Wpf\Beresta.Markdown.Wpf.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Beresta.Markdown.Wpf.Tests" />
+	</ItemGroup>
+
+	<Import Project="..\build\Documentation.targets" />
+
+</Project>

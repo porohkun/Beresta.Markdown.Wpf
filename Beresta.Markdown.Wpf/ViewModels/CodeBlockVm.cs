@@ -26,4 +26,7 @@ public sealed record CodeBlockVm(string? InfoString, string? Syntax, string Code
 
     /// <summary>Строка исходника, с которой начинается сам код, без ограждения.</summary>
     internal int CodeFirstLine => Source.StartLine + (IsFenced ? 1 : 0);
+
+    /// <summary>Тот же блок с кодом, разрезанным на куски подсветки.</summary>
+    internal CodeBlockVm WithRuns(IReadOnlyList<InlineVm> runs) => this with { Runs = runs };
 }

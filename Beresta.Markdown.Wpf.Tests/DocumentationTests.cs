@@ -5,26 +5,27 @@ using System.IO;
 using System.Reflection;
 using System.Xml.Linq;
 
-/// <summary>Доки публичного API: английские в коде и русский перевод отдельным файлом.</summary>
+/// <summary>Доки публичного API обоих пакетов: английские в коде и русский перевод отдельным файлом.</summary>
 public sealed class DocumentationTests
 {
-    private static readonly string EnglishFile = Path.Combine(AppContext.BaseDirectory, "Beresta.Markdown.Wpf.xml");
-    private static readonly string RussianFile = Path.Combine(AppContext.BaseDirectory, "Docs", "Beresta.Markdown.Wpf.ru.xml");
+    public static TheoryData<Type> Packages => new() { typeof(MarkdownViewer), typeof(Editor.MarkdownEditor) };
 
-    [Fact]
-    public void Русский_файл_переводит_ровно_публичный_API()
+    [Theory]
+    [MemberData(nameof(Packages))]
+    public void Русский_файл_переводит_ровно_публичный_API(Type package)
     {
-        var visible = PublicIds(typeof(MarkdownViewer).Assembly);
-        var expected = Members(EnglishFile).Keys.Where(visible.Contains);
+        var visible = PublicIds(package.Assembly);
+        var expected = Members(EnglishFile(package)).Keys.Where(visible.Contains);
 
-        Members(RussianFile).Keys.Should().BeEquivalentTo(expected);
+        Members(RussianFile(package)).Keys.Should().BeEquivalentTo(expected);
     }
 
-    [Fact]
-    public void Перевод_повторяет_устройство_английской_доки()
+    [Theory]
+    [MemberData(nameof(Packages))]
+    public void Перевод_повторяет_устройство_английской_доки(Type package)
     {
-        var english = Members(EnglishFile);
-        var mismatches = Members(RussianFile)
+        var english = Members(EnglishFile(package));
+        var mismatches = Members(RussianFile(package))
             .Where(pair => english.TryGetValue(pair.Key, out var original) && Shape(original) != Shape(pair.Value))
             .Select(pair => $"{pair.Key}: {Shape(english[pair.Key])} | {Shape(pair.Value)}")
             .ToList();
@@ -32,19 +33,26 @@ public sealed class DocumentationTests
         mismatches.Should().BeEmpty();
     }
 
-    [Fact]
-    public void У_каждого_публичного_члена_есть_описание()
+    [Theory]
+    [MemberData(nameof(Packages))]
+    public void У_каждого_публичного_члена_есть_описание(Type package)
     {
-        var visible = PublicIds(typeof(MarkdownViewer).Assembly);
-        var empty = Members(EnglishFile)
+        var visible = PublicIds(package.Assembly);
+        var empty = Members(EnglishFile(package))
             .Where(pair => visible.Contains(pair.Key))
-            .Concat(Members(RussianFile))
+            .Concat(Members(RussianFile(package)))
             .Where(pair => pair.Value.Element("inheritdoc") is null && string.IsNullOrWhiteSpace(pair.Value.Element("summary")?.Value))
             .Select(pair => pair.Key)
             .ToList();
 
         empty.Should().BeEmpty();
     }
+
+    private static string EnglishFile(Type package)
+        => Path.Combine(AppContext.BaseDirectory, package.Assembly.GetName().Name + ".xml");
+
+    private static string RussianFile(Type package)
+        => Path.Combine(AppContext.BaseDirectory, "Docs", package.Assembly.GetName().Name + ".ru.xml");
 
     private static Dictionary<string, XElement> Members(string path)
     {

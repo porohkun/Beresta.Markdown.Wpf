@@ -6,6 +6,7 @@ using Showcases.Chat;
 using Showcases.Copying;
 using Showcases.CustomLook;
 using Showcases.Document;
+using Showcases.Editor;
 using Showcases.Extensions;
 using Showcases.Kit;
 using Showcases.LargeDocument;
@@ -33,6 +34,7 @@ public sealed class MainWindowViewModel : BindableBase
             new ChatViewModel(Options),
             new StreamingViewModel(Options),
             new PreviewViewModel(Options),
+            new EditorViewModel(Options),
             new CopyingViewModel(Options),
             new AboutViewModel(Options)
         ];

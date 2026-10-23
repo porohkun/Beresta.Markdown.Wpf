@@ -26,7 +26,7 @@ using ViewModels;
 [TemplatePart(Name = GutterPart, Type = typeof(MdLineGutter))]
 [TemplatePart(Name = RowMarksPart, Type = typeof(MdRowMarks))]
 [TemplatePart(Name = ThemeHintPart, Type = typeof(UIElement))]
-public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
+public class MarkdownViewer : ItemsControl, IMdScrollSide
 {
     /// <summary>The text of the document.</summary>
     public static readonly DependencyProperty MarkdownProperty =
@@ -162,6 +162,16 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(MarkdownViewer),
             new FrameworkPropertyMetadata(MdImagePolicy.Default, FrameworkPropertyMetadataOptions.Inherits, OnImagePolicyChanged));
 
+    /// <summary>
+    /// Highlights code blocks by their language; inherited. None — the code is drawn in one color.
+    /// </summary>
+    public static readonly DependencyProperty CodeHighlighterProperty =
+        DependencyProperty.RegisterAttached(
+            nameof(CodeHighlighter),
+            typeof(IMdCodeHighlighter),
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, OnCodeHighlighterChanged));
+
     /// <summary>The address of the document: relative addresses of images are resolved against it.</summary>
     public static readonly DependencyProperty BaseUriProperty =
         DependencyProperty.Register(
@@ -212,6 +222,45 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
             typeof(bool),
             typeof(MarkdownViewer),
             new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits, OnJoinSoftLineBreaksChanged));
+
+    /// <summary>
+    /// Task boxes and collapsible blocks ask to change the source through
+    /// <see cref="SourceEditRequestedEvent"/>; off — they only show. Inherited.
+    /// </summary>
+    public static readonly DependencyProperty AreControlsEditableProperty =
+        DependencyProperty.RegisterAttached(
+            nameof(AreControlsEditable),
+            typeof(bool),
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
+
+    /// <summary>
+    /// Values of the properties card are edited in input fields while
+    /// <see cref="AreControlsEditable"/> is on; off — the card only shows. Inherited.
+    /// </summary>
+    public static readonly DependencyProperty IsFrontMatterEditableProperty =
+        DependencyProperty.RegisterAttached(
+            nameof(IsFrontMatterEditable),
+            typeof(bool),
+            typeof(MarkdownViewer),
+            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
+
+    /// <summary>
+    /// A control of the document asks to change the source; not handled — the viewer applies the
+    /// change to <see cref="Markdown"/> itself.
+    /// </summary>
+    public static readonly RoutedEvent SourceEditRequestedEvent =
+        EventManager.RegisterRoutedEvent(
+            nameof(SourceEditRequested),
+            RoutingStrategy.Bubble,
+            typeof(MdSourceEditRequestedEventHandler),
+            typeof(MarkdownViewer));
+
+    /// <summary>
+    /// A widget is pressed: the viewer asks its extension what to write into the source; the
+    /// parameter is the model of the widget.
+    /// </summary>
+    public static readonly RoutedCommand ActivateWidgetCommand = new(nameof(ActivateWidgetCommand), typeof(MarkdownViewer));
 
     private static readonly DependencyPropertyKey SelectionStartPropertyKey =
         DependencyProperty.RegisterReadOnly(
@@ -277,6 +326,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     private readonly SourcePositions _positions;
     private readonly WidgetStates _states;
     private readonly ModelIdentity _identity = new();
+    private readonly CodeHighlights _highlights = new();
     private readonly ModelCollection<BlockVm> _blocks = [];
     private readonly MdMarkLayer _decorationLayer = new("Decorations");
     private readonly ThemeBrushes _themeBrushes;
@@ -286,6 +336,11 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     private bool _updatingMarks;
     private IReadOnlyList<MdExtension> _activeExtensions = [];
     private IReadOnlyDictionary<object, MdExtension> _owners = new Dictionary<object, MdExtension>();
+    private IReadOnlyList<BlockVm> _parsedBlocks = [];
+    private List<int>? _lineStarts;
+    private (int FirstLine, int LastLine, FrameworkElement Element, IMdSourceRows Rows)? _windowRequest;
+    private SourceWindowVm? _window;
+    private readonly HashSet<long> _windowPath = [];
     private MarkdownPipeline? _pipeline;
     private Task<ParsedDocument>? _parsing;
     private bool _rebuildQueued;
@@ -326,6 +381,13 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
                 MarkdownLink.ActivateCommand,
                 (sender, e) => MarkdownLink.Activate(ElementOf(e.OriginalSource) ?? (UIElement)sender, (string)e.Parameter),
                 (sender, e) => e.CanExecute = e.Parameter is string { Length: > 0 }));
+
+        CommandManager.RegisterClassCommandBinding(
+            typeof(MarkdownViewer),
+            new(
+                ActivateWidgetCommand,
+                (sender, e) => ((MarkdownViewer)sender).RequestSourceEdit((NodeVm)e.Parameter, null),
+                (sender, e) => e.CanExecute = sender is MarkdownViewer { AreControlsEditable: true } && e.Parameter is NodeVm));
     }
 
     /// <summary>Creates an empty viewer.</summary>
@@ -334,7 +396,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         Guard = new(
             (exception, extension) => Dispatcher.BeginInvoke(() => RenderFailed?.Invoke(this, new(exception, extension, isBackground: false))),
             widget => _owners.GetValueOrDefault(widget));
-        _states = new(() => ActiveExtensions, Guard);
+        _states = new(() => ActiveExtensions, Guard, () => AreControlsEditable, RequestSourceEdit);
         SetValue(MdWidget.StatesProperty, _states);
 
         _themeBrushes = new(AddLogicalChild);
@@ -370,6 +432,13 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     /// exception and showed what it could.
     /// </summary>
     public event EventHandler<MdRenderFailedEventArgs>? RenderFailed;
+
+    /// <inheritdoc cref="SourceEditRequestedEvent"/>
+    public event MdSourceEditRequestedEventHandler SourceEditRequested
+    {
+        add => AddHandler(SourceEditRequestedEvent, value);
+        remove => RemoveHandler(SourceEditRequestedEvent, value);
+    }
 
     /// <summary>Новый текст лёг в документ: прежняя карта и новая.</summary>
     internal event Action<MdTextMap, MdTextMap>? TextMapChanged;
@@ -478,6 +547,13 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         set => SetValue(ImagePolicyProperty, value);
     }
 
+    /// <inheritdoc cref="CodeHighlighterProperty"/>
+    public IMdCodeHighlighter? CodeHighlighter
+    {
+        get => (IMdCodeHighlighter?)GetValue(CodeHighlighterProperty);
+        set => SetValue(CodeHighlighterProperty, value);
+    }
+
     /// <inheritdoc cref="BaseUriProperty"/>
     public Uri? BaseUri
     {
@@ -504,6 +580,20 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     {
         get => (bool)GetValue(JoinSoftLineBreaksProperty);
         set => SetValue(JoinSoftLineBreaksProperty, value);
+    }
+
+    /// <inheritdoc cref="AreControlsEditableProperty"/>
+    public bool AreControlsEditable
+    {
+        get => (bool)GetValue(AreControlsEditableProperty);
+        set => SetValue(AreControlsEditableProperty, value);
+    }
+
+    /// <inheritdoc cref="IsFrontMatterEditableProperty"/>
+    public bool IsFrontMatterEditable
+    {
+        get => (bool)GetValue(IsFrontMatterEditableProperty);
+        set => SetValue(IsFrontMatterEditableProperty, value);
     }
 
     /// <inheritdoc cref="ShowCodeCopyButtonProperty"/>
@@ -533,7 +623,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     public string SelectedText => TextMap.GetText(Selection.Range);
 
     /// <summary>The selection written as Markdown with its own formatting; computed on request.</summary>
-    public string SelectedMarkdown => MdMarkdownWriter.Write(_blocks, TextMap, Source, Selection.Range, Guard);
+    public string SelectedMarkdown => MdMarkdownWriter.Write(_parsedBlocks, TextMap, Source, Selection.Range, Guard);
 
     /// <summary>Свои расширения, следом общие — в порядке опроса.</summary>
     internal IReadOnlyList<MdExtension> ActiveExtensions => _activeExtensions;
@@ -552,6 +642,25 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 
     internal MdRowMarks? RowMarks { get; private set; }
 
+    /// <summary>Окно наследника, которое стоит в документе; окна нет — <c>null</c>.</summary>
+    internal SourceWindowVm? ShownWindow => _window;
+
+    /// <summary>Номер раскладки блоков с окном: меняется с каждой новой, и панели заново ищут, что держать созданным.</summary>
+    internal int WindowVersion { get; private set; }
+
+    /// <summary>
+    /// Places of the top-level blocks of the last parse, the blocks under the element of
+    /// <see cref="SetSourceWindow"/> included.
+    /// </summary>
+    protected IReadOnlyList<MdSourceSpan> TopBlockSpans { get; private set; } = [];
+
+    /// <summary>
+    /// The text of the shown document — the last one parsed and laid on it: places of the model and
+    /// of edits are in it. While a long text is parsed in the background, it lags behind
+    /// <see cref="Markdown"/>.
+    /// </summary>
+    protected string ShownMarkdown => Source;
+
     // BYDESIGN: кисти пометок — логические потомки вьюера: иначе смена темы до них не доходит.
     /// <inheritdoc/>
     protected override IEnumerator LogicalChildren => WithThemeBrushes(base.LogicalChildren, _themeBrushes.All);
@@ -563,6 +672,14 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     /// <inheritdoc cref="ImagePolicyProperty"/>
     public static void SetImagePolicy(DependencyObject element, MdImagePolicy value)
         => element.SetValue(ImagePolicyProperty, value);
+
+    /// <inheritdoc cref="CodeHighlighterProperty"/>
+    public static IMdCodeHighlighter? GetCodeHighlighter(DependencyObject element)
+        => (IMdCodeHighlighter?)element.GetValue(CodeHighlighterProperty);
+
+    /// <inheritdoc cref="CodeHighlighterProperty"/>
+    public static void SetCodeHighlighter(DependencyObject element, IMdCodeHighlighter? value)
+        => element.SetValue(CodeHighlighterProperty, value);
 
     /// <inheritdoc cref="SharedExtensionsProperty"/>
     public static MdExtensionCollection? GetSharedExtensions(DependencyObject element)
@@ -595,6 +712,22 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     /// <inheritdoc cref="JoinSoftLineBreaksProperty"/>
     public static void SetJoinSoftLineBreaks(DependencyObject element, bool value)
         => element.SetValue(JoinSoftLineBreaksProperty, value);
+
+    /// <inheritdoc cref="AreControlsEditableProperty"/>
+    public static bool GetAreControlsEditable(DependencyObject element)
+        => (bool)element.GetValue(AreControlsEditableProperty);
+
+    /// <inheritdoc cref="AreControlsEditableProperty"/>
+    public static void SetAreControlsEditable(DependencyObject element, bool value)
+        => element.SetValue(AreControlsEditableProperty, value);
+
+    /// <inheritdoc cref="IsFrontMatterEditableProperty"/>
+    public static bool GetIsFrontMatterEditable(DependencyObject element)
+        => (bool)element.GetValue(IsFrontMatterEditableProperty);
+
+    /// <inheritdoc cref="IsFrontMatterEditableProperty"/>
+    public static void SetIsFrontMatterEditable(DependencyObject element, bool value)
+        => element.SetValue(IsFrontMatterEditableProperty, value);
 
     /// <summary>
     /// The position of a source line in the coordinates of the viewer; the fraction is a part of
@@ -911,6 +1044,126 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         return MdClipboard.Approve(this, data) ? data : null;
     }
 
+    /// <summary>
+    /// Puts an element of the derived control into the document in place of the blocks on the source
+    /// lines from <paramref name="firstLine"/> to <paramref name="lastLine"/>, counting from zero: on the
+    /// deepest level of <see cref="SourceLevelsAt"/> where the lines lie on units of one container; a
+    /// block that sticks out of these lines goes under the element as a whole. <paramref name="rows"/>
+    /// tells where the lines are inside the element.
+    /// </summary>
+    protected void SetSourceWindow(int firstLine, int lastLine, FrameworkElement element, IMdSourceRows rows)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        ArgumentNullException.ThrowIfNull(rows);
+        if (!ReferenceEquals(_windowRequest?.Rows, rows))
+        {
+            if (_windowRequest is { } old)
+            {
+                old.Rows.RowsChanged -= OnWindowRowsChanged;
+            }
+
+            rows.RowsChanged += OnWindowRowsChanged;
+        }
+
+        _windowRequest = (firstLine, lastLine, element, rows);
+        ShowBlocks();
+    }
+
+    /// <summary>
+    /// Takes the element of <see cref="SetSourceWindow"/> out of the document: the blocks under it are
+    /// shown again.
+    /// </summary>
+    protected void ClearSourceWindow()
+    {
+        if (_windowRequest is not { } request)
+        {
+            return;
+        }
+
+        request.Rows.RowsChanged -= OnWindowRowsChanged;
+        _windowRequest = null;
+        BlockPanel?.ReleaseWindow();
+        ShowBlocks();
+    }
+
+    /// <summary>
+    /// Keeps the element of <see cref="SetSourceWindow"/> where it stands on the screen while heights
+    /// in the document change, until someone else scrolls.
+    /// </summary>
+    protected void HoldSourceWindow()
+    {
+        if (_window?.Element is not { } element || !element.IsDescendantOf(this))
+        {
+            BlockPanel?.HoldWindow();
+            return;
+        }
+
+        for (var node = VisualTreeHelper.GetParent(element); node is not null && !ReferenceEquals(node, this); node = VisualTreeHelper.GetParent(node))
+        {
+            if (node is MdBlockPanel panel)
+            {
+                panel.HoldWindow();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Lets the element of <see cref="SetSourceWindow"/> go before it moves to other lines: the document does
+    /// not scroll after it; <see cref="HoldSourceWindow"/> keeps it again at the new place.
+    /// </summary>
+    protected void ReleaseSourceWindow()
+    {
+        if (_window?.Element is not { } element || !element.IsDescendantOf(this))
+        {
+            BlockPanel?.LetWindowGo();
+            return;
+        }
+
+        for (var node = VisualTreeHelper.GetParent(element); node is not null && !ReferenceEquals(node, this); node = VisualTreeHelper.GetParent(node))
+        {
+            if (node is MdBlockPanel panel)
+            {
+                panel.LetWindowGo();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Levels of editable units around a source line, from the top one to the deepest: at the top —
+    /// the blocks; inside a quote, a callout and a collapsible block — their blocks; in a list — its
+    /// items; in an item — its blocks after the first one. A collapsed block is not entered.
+    /// </summary>
+    protected IReadOnlyList<MdSourceLevel> SourceLevelsAt(int line)
+    {
+        var starts = _lineStarts ??= ModelBuilder.FindLineStarts(Source);
+        return SourceUnits.LevelsAt(_parsedBlocks, line, new(0, Source.Length, 0, Math.Max(0, starts.Count - 1)), starts, IsFolded);
+    }
+
+    /// <summary>A new parse has been laid on the document: its blocks, text map and <see cref="TopBlockSpans"/>.</summary>
+    protected virtual void OnDocumentApplied()
+    {
+    }
+
+    /// <summary>
+    /// How the source of the shown document looks: built-in elements by their kind, markup — the place
+    /// of an element without the places of its children — and the widgets of extensions as they
+    /// describe them.
+    /// </summary>
+    protected MdSourceLook GetSourceLook()
+        => SourceLooks.Describe(_parsedBlocks, Source, _lineStarts ??= ModelBuilder.FindLineStarts(Source), node => _owners.GetValueOrDefault(node), Guard);
+
+    /// <summary>
+    /// Applies an edit of the source that no handler of <see cref="SourceEditRequested"/> took: by
+    /// default to <see cref="Markdown"/>, if it holds <see cref="ShownMarkdown"/>.
+    /// </summary>
+    protected virtual void ApplySourceEdit(MdSourceEdit edit)
+    {
+        if (string.Equals(Markdown ?? string.Empty, Source, StringComparison.Ordinal))
+        {
+            SetCurrentValue(MarkdownProperty, edit.ApplyTo(Source));
+        }
+    }
+
     /// <inheritdoc/>
     protected override AutomationPeer OnCreateAutomationPeer() => new MdDocumentAutomationPeer(this);
 
@@ -1082,6 +1335,42 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Контрол просит правку исходника — его нажали (<paramref name="state"/> — <c>null</c>) или
+    /// сменилось его состояние. Что записать, решает хозяин элемента модели. Правку никто не взял —
+    /// её применяет <see cref="ApplySourceEdit"/>.
+    /// </summary>
+    internal void RequestSourceEdit(NodeVm node, object? state)
+    {
+        if (!AreControlsEditable || EditFor(node, state) is not { } edit)
+        {
+            return;
+        }
+
+        var request = new MdSourceEditRequestedEventArgs(SourceEditRequestedEvent, this, edit, node);
+        RaiseEvent(request);
+        if (!request.Handled)
+        {
+            ApplySourceEdit(edit);
+        }
+    }
+
+    /// <summary>Правка от элемента модели: у виджета расширения — от расширения, у встроенного контрола — своя.</summary>
+    private MdSourceEdit? EditFor(NodeVm node, object? state)
+    {
+        if (_owners.GetValueOrDefault(node) is { } owner)
+        {
+            return Guard.Call(owner, () => owner.EditSource(node, state, new(Source)), null);
+        }
+
+        return (node, state) switch
+        {
+            (TaskVm task, null) => SourceEdits.ToggleTask(task, Source),
+            (DetailsVm details, MdFoldState fold) => SourceEdits.SetDetailsOpen(details, fold.IsExpanded, Source),
+            _ => null
+        };
     }
 
     private static void OnSharedExtensionsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -1383,25 +1672,34 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         var pipeline = GetPipeline();
         var extensions = ActiveExtensions;
         var joinSoftLineBreaks = JoinSoftLineBreaks;
+        var highlighter = CodeHighlighter;
         if (BackgroundParseThreshold <= 0
             || markdown.Length < BackgroundParseThreshold
+            || highlighter is not (null or IMdBackgroundSafe)
             || !extensions.All(extension => Guard.Call(extension, () => extension.AllowsBackgroundParse, false)))
         {
-            ParseHere(markdown, pipeline, extensions, joinSoftLineBreaks);
+            ParseHere(markdown, pipeline, extensions, joinSoftLineBreaks, highlighter);
             return;
         }
 
-        var parsing = Task.Run(() => Parse(markdown, pipeline, extensions, joinSoftLineBreaks));
+        var parsing = Task.Run(() => Parse(markdown, pipeline, extensions, joinSoftLineBreaks, highlighter));
         _parsing = parsing;
         parsing.ContinueWith(_ => Dispatcher.BeginInvoke(() => FinishParse(parsing)), TaskScheduler.Default);
     }
 
     /// <summary>Разбирает и кладёт текст в потоке интерфейса.</summary>
-    private void ParseHere(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions, bool joinSoftLineBreaks)
+    private void ParseHere(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions, bool joinSoftLineBreaks, IMdCodeHighlighter? highlighter)
     {
-        var document = Parse(markdown, pipeline, extensions, joinSoftLineBreaks);
-        _identity.Commit();
+        var document = Parse(markdown, pipeline, extensions, joinSoftLineBreaks, highlighter);
+        Commit();
         Apply(document);
+    }
+
+    /// <summary>Разбор лёг: память разборов и подсветка блоков кода помнят его.</summary>
+    private void Commit()
+    {
+        _identity.Commit();
+        _highlights.Retain();
     }
 
     /// <summary>
@@ -1424,8 +1722,8 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 
         if (failed && !queued)
         {
-            var document = Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions, JoinSoftLineBreaks);
-            _identity.Commit();
+            var document = Parse(Markdown ?? string.Empty, GetPipeline(), ActiveExtensions, JoinSoftLineBreaks, CodeHighlighter);
+            Commit();
             Apply(document);
             if (document.Failures.Count == 0)
             {
@@ -1437,7 +1735,7 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
 
         if (!failed && !discard)
         {
-            _identity.Commit();
+            Commit();
             Apply(parsing.Result);
         }
 
@@ -1448,14 +1746,14 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
     }
 
     /// <summary>Разбирает текст; упавший код расширения отдаёт узел встроенному разбору, упавший Markdig — запасному документу из строк исходника.</summary>
-    private ParsedDocument Parse(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions, bool joinSoftLineBreaks)
+    private ParsedDocument Parse(string markdown, MarkdownPipeline pipeline, IReadOnlyList<MdExtension> extensions, bool joinSoftLineBreaks, IMdCodeHighlighter? highlighter)
     {
         var failures = new List<(Exception Exception, MdExtension? Extension)>();
         var owners = new Dictionary<object, MdExtension>(ReferenceEqualityComparer.Instance);
         var guard = new ExtensionGuard((exception, extension) => failures.Add((exception, extension)), owners.GetValueOrDefault);
         try
         {
-            var blocks = ModelBuilder.Parse(markdown, pipeline, extensions, _identity, out var frontMatter, commit: false, guard, owners, joinSoftLineBreaks);
+            var blocks = ModelBuilder.Parse(markdown, pipeline, extensions, _identity, out var frontMatter, commit: false, guard, owners, joinSoftLineBreaks, highlighter, _highlights);
             return new(blocks, frontMatter, MdTextMap.Build(blocks, markdown, guard), markdown) { Failures = failures, Owners = owners };
         }
         catch (Exception exception)
@@ -1489,12 +1787,17 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         var following = TrackFollowingMarks();
 
         Source = document.Markdown;
+        _lineStarts = null;
         _owners = document.Owners;
         TextMap = document.TextMap;
         SetValue(FrontMatterPropertyKey, document.FrontMatter);
         _states.Retain(_identity.Contains);
-        _blocks.Apply(document.Blocks);
-        UpdateGapLayout();
+        _parsedBlocks = document.Blocks;
+        TopBlockSpans = document.Blocks
+            .Select(block => block.Source)
+            .Where(source => !source.IsEmpty)
+            .ToList();
+        ShowBlocks();
 
         if (_templatesChanged)
         {
@@ -1531,7 +1834,62 @@ public sealed class MarkdownViewer : ItemsControl, IMdScrollSide
         Gutter?.InvalidateVisual();
         RowMarks?.InvalidateVisual();
         RaiseRenderFailed(document.Failures, isBackground: false);
+        OnDocumentApplied();
     }
+
+    /// <summary>Строки внутри окна сдвинулись: поля и строки пометок рисуются заново.</summary>
+    private void OnWindowRowsChanged(object? sender, EventArgs e)
+    {
+        OnBlocksArranged();
+        OnViewportMaybeChanged();
+    }
+
+    /// <summary>Блоки последнего разбора — в список, а те, что на строках окна, — под элемент окна.</summary>
+    private void ShowBlocks()
+    {
+        _window = _windowRequest is { } request ? WindowOf(request.FirstLine, request.LastLine, request.Element, request.Rows) : null;
+        WindowVersion++;
+        _blocks.Apply(WithWindow(_parsedBlocks));
+        BlockPanel?.InvalidateMeasure();
+        UpdateGapLayout();
+    }
+
+    /// <summary>Вьюмодель окна на строках показанного текста; ничего не сменилось — прежняя.</summary>
+    private SourceWindowVm WindowOf(int firstLine, int lastLine, FrameworkElement element, IMdSourceRows rows)
+    {
+        var starts = _lineStarts ??= ModelBuilder.FindLineStarts(Source);
+        var first = Math.Clamp(firstLine, 0, starts.Count - 1);
+        var last = Math.Clamp(lastLine, first, starts.Count - 1);
+        var start = starts[first];
+        var end = last + 1 < starts.Count ? starts[last + 1] : Source.Length;
+
+        // BYDESIGN: окно на пустой последней строке — длиной в знак: место нулевой длины значит, что места нет
+        var span = new MdSourceSpan(start, Math.Max(1, end - start), first, last);
+        return _window is { } window && ReferenceEquals(window.Element, element) && ReferenceEquals(window.Rows, rows) && window.Source == span
+            ? window
+            : new SourceWindowVm(element, rows) { NodeId = SourceWindowVm.Id, Source = span };
+    }
+
+    /// <summary>Блоки с окном на самом глубоком уровне, где оно укладывается в единицы одного контейнера.</summary>
+    private IReadOnlyList<BlockVm> WithWindow(IReadOnlyList<BlockVm> blocks)
+    {
+        _windowPath.Clear();
+        return _window is { } window ? SourceUnits.Place(blocks, window, IsFolded, _windowPath) : blocks;
+    }
+
+    private static void OnCodeHighlighterChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is MarkdownViewer viewer)
+        {
+            viewer.Rebuild(discardRunning: true);
+        }
+    }
+
+    /// <summary>Свёрнутый блок: внутрь него окно не встаёт.</summary>
+    private bool IsFolded(NodeVm node) => _states.StateOf(node) is MdFoldState { IsExpanded: false };
+
+    /// <summary>Элемент списка блоков стоит на пути к окну: его контейнер держится созданным.</summary>
+    internal bool HoldsWindow(object item) => item is NodeVm { NodeId: not 0 } node && _windowPath.Contains(node.NodeId);
 
     /// <summary>Разобранный текст: блоки, front matter, текстовая карта, сбои разбора и какое расширение создало какую вьюмодель.</summary>
     private sealed record ParsedDocument(IReadOnlyList<BlockVm> Blocks, string? FrontMatter, MdTextMap TextMap, string Markdown)

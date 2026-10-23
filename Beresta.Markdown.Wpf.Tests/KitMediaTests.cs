@@ -279,7 +279,7 @@ public sealed class KitMediaTests
                 .SelectMany(text => text.Runs?.OfType<RunVm>() ?? [])
                 .Select(run => run.Text)
                 .Should().Contain(["title", "Hello"]);
-            foreach (var card in Visuals.Descendants<Button>(viewer).ToList())
+            foreach (var card in Visuals.Descendants<Button>(viewer).Where(button => button.Command == MarkdownLink.ActivateCommand).ToList())
             {
                 ((IInvokeProvider)new ButtonAutomationPeer(card).GetPattern(PatternInterface.Invoke)).Invoke();
             }

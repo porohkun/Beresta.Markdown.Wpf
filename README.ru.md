@@ -1,4 +1,4 @@
-# Beresta.Markdown.Wpf v0.8.0
+# Beresta.Markdown.Wpf v0.9.0
 
 [![NuGet](https://img.shields.io/nuget/v/Beresta.Markdown.Wpf)](https://www.nuget.org/packages/Beresta.Markdown.Wpf)
 [![Загрузки](https://img.shields.io/nuget/dt/Beresta.Markdown.Wpf)](https://www.nuget.org/packages/Beresta.Markdown.Wpf)
@@ -11,7 +11,8 @@
 Быстрый нативный вьюер Markdown для WPF — без браузера и без FlowDocument внутри: документ рисуется
 настоящими контролами и шаблонами WPF. Огромные документы виртуализируются, предпросмотр и потоковые
 ответы чата обновляются на лету, текст выделяется сквозь блоки, а оформление и синтаксис полностью
-настраиваются и расширяются. Текст разбирает [Markdig](https://github.com/xoofx/markdig).
+настраиваются и расширяются. Текст разбирает [Markdig](https://github.com/xoofx/markdig). Второй
+пакет, `Beresta.Markdown.Wpf.Editor`, правит исходник прямо там, где он нарисован.
 
 ![Вьюер в теме витрины](https://raw.githubusercontent.com/wiki/porohkun/Beresta.Markdown.Wpf/images/overview-ru.png)
 
@@ -31,6 +32,10 @@
 - **Много элементов разметки — подключаешь только нужные.** CommonMark, расширения Markdig и HTML из
   README — из коробки; синтаксис GitHub, GitLab, Obsidian, MkDocs, Docusaurus, HackMD и чатов —
   готовыми расширениями, по одному или наборами, [Что поддерживается](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Supported-Markdown-ru).
+- **Редактор в том же рисунке.** Блоки под кареткой показывают свой Markdown в AvalonEdit, остальной
+  документ остаётся нарисованным; исходник сохраняет вид отрисовки — от таблиц столбцами до подсвеченного
+  кода, — а редактор ищет и заменяет, вставляет HTML Markdown-ом и правит front matter по типам —
+  [Редактор](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor-ru).
 
 ## Установка
 
@@ -96,6 +101,32 @@ dotnet add package Beresta.Markdown.Wpf
 </md:MarkdownViewer>
 ```
 
+## Правка Markdown
+
+Второй пакет правит исходник прямо там, где он нарисован. Он приносит вьюер той же версии, AvalonEdit и
+ReverseMarkdown для вставки HTML Markdown-ом.
+
+```bash
+dotnet add package Beresta.Markdown.Wpf.Editor
+```
+
+`App.xaml`, после темы вьюера:
+
+```xml
+<ResourceDictionary Source="pack://application:,,,/Beresta.Markdown.Wpf.Editor;component/Themes/Generic.xaml" />
+```
+
+`MainWindow.xaml`:
+
+```xml
+<ScrollViewer>
+    <md:MarkdownEditor Markdown="{Binding Text, Mode=TwoWay}" EditMode="Blocks" Margin="24,16" />
+</ScrollViewer>
+```
+
+Режимы, клавиши, отмена, front matter и вставка с форматированием — [Редактор](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor-ru);
+поиск и замена — [Пометки и поиск](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Search-Highlighting-ru#поиск-и-замена-в-редакторе).
+
 ## Документация
 
 В [вики](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Home-ru) каждая возможность описана с рабочим примером; все настройки и места перехвата
@@ -123,6 +154,7 @@ dotnet add package Beresta.Markdown.Wpf
   [Строки исходника и две панели](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Source-Lines-and-Two-Panes-ru),
   [Координаты](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Coordinates-ru),
   [Живой предпросмотр](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Live-Preview-ru).
+- **Правка:** [Редактор](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Editor-ru).
 - **Свой синтаксис:** [Расширения](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Extensions-ru).
 - **Готовые расширения:** [Наборы](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Kit-Sets-ru),
   [Плашки и сворачиваемое](https://github.com/porohkun/Beresta.Markdown.Wpf/wiki/Kit-Callouts-ru),

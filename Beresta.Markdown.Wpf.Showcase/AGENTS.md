@@ -8,8 +8,9 @@
 
 ## Зависимости
 
-[`Beresta.Markdown.Wpf`](../Beresta.Markdown.Wpf/AGENTS.md) ссылкой на проект, пакет HandyControls и
-его русский языковой пакет HandyControls.Lang.ru.
+[`Beresta.Markdown.Wpf`](../Beresta.Markdown.Wpf/AGENTS.md) и
+[`Beresta.Markdown.Wpf.Editor`](../Beresta.Markdown.Wpf.Editor/AGENTS.md) ссылками на проекты, пакет
+HandyControls и его русский языковой пакет HandyControls.Lang.ru.
 
 ## Состав
 

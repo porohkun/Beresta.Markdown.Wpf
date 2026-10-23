@@ -53,4 +53,18 @@ public abstract class MdExtension
     /// The template gets it through <see cref="MdWidget.StateProperty"/>; <c>null</c> — no state.
     /// </summary>
     public virtual object? CreateState(NodeVm node) => null;
+
+    /// <summary>
+    /// What to write into the source when your widget is pressed (<paramref name="state"/> is
+    /// <c>null</c>) or its state changed (the new state); <c>null</c> — nothing.
+    /// </summary>
+    public virtual MdSourceEdit? EditSource(NodeVm node, object? state, MdSourceContext context) => null;
+
+    /// <summary>
+    /// How your widget looks in the source of an editor: marks its pieces and lines with looks. They are
+    /// drawn over the default look: nested inlines and blocks as elsewhere, the text around them as markup.
+    /// </summary>
+    public virtual void DescribeSource(NodeVm node, MdSourceLook look)
+    {
+    }
 }

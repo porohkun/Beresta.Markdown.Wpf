@@ -52,6 +52,9 @@
                         <Run Text="{loc:Text Document.Selected}" />
                         <Run Text="{Binding SelectionLength, ElementName=Viewer, Mode=OneWay}" />
                     </TextBlock>
+                    <CheckBox Content="{loc:Text Document.ControlsEditable}"
+                              IsChecked="{Binding DataContext.AreControlsEditable, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              Margin="16,0,0,0" />
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -80,6 +83,7 @@
         <ScrollViewer>
             <mdv:MarkdownViewer x:Name="Viewer"
                                 Markdown="{Binding Text}"
+                                AreControlsEditable="{Binding AreControlsEditable}"
                                 ViewportChanged="OnViewportChanged"
                                 Margin="24,16" />
         </ScrollViewer>

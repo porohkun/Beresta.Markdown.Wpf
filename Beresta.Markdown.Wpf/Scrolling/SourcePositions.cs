@@ -8,9 +8,9 @@ using ViewModels;
 
 /// <summary>
 /// Строки исходника и вертикальные позиции во вьюере, в обе стороны. Между блоками — по их
-/// позициям в панели, внутри созданного блока — по самому глубокому элементу с известными строками.
-/// Внутри элемента строки делят его высоту поровну, а пустое место между ними стоит целиком перед
-/// своей строкой.
+/// позициям в панели, внутри созданного блока — по самому глубокому элементу с известными строками,
+/// внутри окна наследника — по его строкам. Внутри элемента строки делят его высоту поровну, а
+/// пустое место между ними стоит целиком перед своей строкой.
 /// </summary>
 internal sealed class SourcePositions
 {
@@ -143,13 +143,18 @@ internal sealed class SourcePositions
     /// <summary>Строка исходника в позиции вьюера.</summary>
     public double? LineAt(double offset)
     {
-        if (_viewer.BlockPanel is not { ItemCount: > 0 } panel || _viewer.ItemsSource is not IReadOnlyList<BlockVm> items)
+        if (_viewer.BlockPanel is not { ItemCount: > 0 } panel || _viewer.ItemsSource is not IReadOnlyList<BlockVm> { Count: > 0 } items)
         {
             return null;
         }
 
         var panelOffset = _viewer.TranslatePoint(new(0, offset), panel).Y;
         var index = Math.Clamp(panel.IndexAtOffset(panelOffset), 0, Math.Min(items.Count, panel.ItemCount) - 1);
+
+        if (LineInWindow(offset) is { } inside)
+        {
+            return inside;
+        }
 
         var gaps = Layout().Gaps;
         if (Deepest(Spans(index).Where(span => span.Bounds.Top <= offset && offset < span.Bounds.Bottom)) is { } best)
@@ -162,6 +167,33 @@ internal sealed class SourcePositions
         var height = panel.GetItemBottom(index) - top;
         return LineIn(top, height, source.StartLine, source.EndLine + 1, Math.Clamp(panelOffset, top, top + height), gaps);
     }
+
+    /// <summary>Строка исходника в позиции вьюера, если позиция — в окне наследника, где бы оно ни стояло.</summary>
+    private double? LineInWindow(double offset)
+    {
+        if (_viewer.ShownWindow is not { } window || !window.Element.IsDescendantOf(_viewer))
+        {
+            return null;
+        }
+
+        var local = _viewer.TranslatePoint(new(0, offset), window.Element).Y;
+        return local >= 0 && local < window.Element.ActualHeight && window.Rows.GetSourceLineAt(local) is { } inside
+            ? Math.Clamp(inside, window.Source.StartLine, window.Source.EndLine + 1)
+            : null;
+    }
+
+    /// <summary>
+    /// Позиция строки исходника во вьюере, если строка — в окне наследника, где бы оно ни стояло; строка
+    /// за окном — уже в своём блоке.
+    /// </summary>
+    private double? OffsetInWindow(double line)
+        => _viewer.ShownWindow is { } window
+           && window.Element.IsDescendantOf(_viewer)
+           && line >= window.Source.StartLine
+           && line < window.Source.EndLine + 1
+           && window.Rows.GetSourceLineOffset(line) is { } inside
+            ? window.Element.TranslatePoint(new(0, inside), _viewer).Y
+            : null;
 
     /// <summary>Позиция строки в блоке <paramref name="index"/>; созданные элементы блока берутся один раз на проход.</summary>
     private double? OffsetIn(
@@ -180,6 +212,11 @@ internal sealed class SourcePositions
         if (line >= item.EndLine + 1)
         {
             return ToViewer(panel, panel.GetItemBottom(index));
+        }
+
+        if (OffsetInWindow(line) is { } inside)
+        {
+            return inside;
         }
 
         var gaps = Layout().Gaps;

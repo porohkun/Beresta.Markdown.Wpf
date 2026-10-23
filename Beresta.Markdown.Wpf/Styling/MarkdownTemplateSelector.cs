@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using Presenters;
 using ViewModels;
 
 /// <summary>
@@ -24,6 +25,9 @@ public sealed class MarkdownTemplateSelector : DataTemplateSelector
     {
         if (item is null)
             return null;
+
+        if (item is SourceWindowVm)
+            return SourceWindowHost.Template;
 
         var viewer = GetOrFindViewer(container);
         if (viewer is null)
