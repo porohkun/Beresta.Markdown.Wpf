@@ -94,7 +94,7 @@ public sealed class MdTaskMark : FrameworkElement
         var corner = size / 6;
         if (!IsChecked)
         {
-            drawingContext.DrawRoundedRectangle(null, new Pen(Brush, 1), new(0.5, 0.5, size - 1, size - 1), corner, corner);
+            drawingContext.DrawRoundedRectangle(Brushes.Transparent, new Pen(Brush, 1), new(0.5, 0.5, size - 1, size - 1), corner, corner);
             if (Glyph is { } glyph)
             {
                 drawingContext.PushTransform(new ScaleTransform(size / 16, size / 16));

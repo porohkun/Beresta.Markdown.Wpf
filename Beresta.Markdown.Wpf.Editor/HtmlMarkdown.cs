@@ -24,7 +24,8 @@ internal static partial class HtmlMarkdown
 
     /// <summary>
     /// Фрагмент данных <c>HTML Format</c>: между метками <c>StartFragment</c> и <c>EndFragment</c>, а без
-    /// них — по смещениям в байтах из заголовка; без заголовка — весь текст.
+    /// них — по смещениям в байтах из заголовка, при негодных смещениях — разметка после заголовка; без
+    /// заголовка — весь текст.
     /// </summary>
     private static string Fragment(string data)
     {
@@ -40,12 +41,16 @@ internal static partial class HtmlMarkdown
         if (Offset().Match(data) is { Success: true } header)
         {
             var bytes = Encoding.UTF8.GetBytes(data);
-            var first = int.Parse(header.Groups["start"].Value);
-            var last = int.Parse(header.Groups["end"].Value);
-            if (first >= 0 && last > first && last <= bytes.Length)
+            if (int.TryParse(header.Groups["start"].Value, out var first)
+                && int.TryParse(header.Groups["end"].Value, out var last)
+                && last > first
+                && last <= bytes.Length)
             {
                 return Encoding.UTF8.GetString(bytes, first, last - first);
             }
+
+            var markup = data.IndexOf('<');
+            return markup >= 0 ? data[markup..] : string.Empty;
         }
 
         return data;

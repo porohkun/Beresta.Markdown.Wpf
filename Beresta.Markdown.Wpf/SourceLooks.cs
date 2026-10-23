@@ -55,6 +55,7 @@ internal static partial class SourceLooks
                     return;
                 case BlankLineVm:
                     context.Look.MarkLines(span.StartLine, span.EndLine, "BlankLine");
+                    Gap(span.Start, span.End, context);
                     return;
                 case HeadingVm heading:
                     context.Look.Mark(span.Start, span.Length, "Heading" + Math.Clamp(heading.Level, 1, 6));

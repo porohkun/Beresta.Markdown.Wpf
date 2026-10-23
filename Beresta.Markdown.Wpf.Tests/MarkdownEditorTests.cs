@@ -1,5 +1,6 @@
 ﻿namespace Beresta.Markdown.Wpf.Tests;
 
+using System.Windows.Input;
 using Editor;
 using Presenters;
 
@@ -23,6 +24,25 @@ public sealed class MarkdownEditorTests
             Visuals.Descendants<MdBlockItem>(editor).Count().Should().Be(Visuals.Descendants<MdBlockItem>(viewer).Count());
             viewerWindow.Close();
             editorWindow.Close();
+        });
+    }
+
+    [Theory]
+    [InlineData(MdEditMode.View)]
+    [InlineData(MdEditMode.Controls)]
+    [InlineData(MdEditMode.Blocks)]
+    public void Над_текстом_отрисовки_курсор_текста(MdEditMode mode)
+    {
+        WpfHost.Invoke(() =>
+        {
+            var editor = new MarkdownEditor { Markdown = Document, EditMode = mode };
+            var window = WpfHost.Show(editor);
+            var query = new QueryCursorEventArgs(Mouse.PrimaryDevice, 0) { RoutedEvent = Mouse.QueryCursorEvent };
+
+            Visuals.Descendants<MdTextBlock>(editor).First().RaiseEvent(query);
+
+            query.Cursor.Should().Be(Cursors.IBeam);
+            window.Close();
         });
     }
 }

@@ -2373,7 +2373,10 @@
             <summary>Добавляет текст из параметра пунктом в список строки, откуда пришла команда.</summary>
         </member>
         <member name="P:Beresta.Markdown.Wpf.Presenters.MdPropertiesPresenter.RemoveItemCommand">
-            <summary>Убирает пункт из параметра из списка строки, откуда пришла команда.</summary>
+            <summary>
+            Убирает пункт из списка строки, откуда пришла команда: пункт фишки, из которой она пришла, а иначе —
+            пункт из параметра.
+            </summary>
         </member>
         <member name="P:Beresta.Markdown.Wpf.Presenters.MdPropertiesPresenter.RemoveCommand">
             <summary>Удаляет свойство строки, откуда пришла команда, — все его строки.</summary>

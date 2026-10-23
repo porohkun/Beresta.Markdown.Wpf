@@ -183,6 +183,20 @@ public sealed class MarkupTests
     }
 
     [Fact]
+    public void Пустой_флажок_задачи_ловит_мышь_и_внутри_рамки()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var viewer = new MarkdownViewer { Markdown = "- [ ] todo" };
+            var window = WpfHost.Show(viewer);
+            var mark = Visuals.Descendants<MdTaskMark>(viewer).Single();
+
+            mark.InputHitTest(new(mark.ActualWidth / 2, mark.ActualHeight / 2)).Should().BeSameAs(mark);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void Флажок_задачи_для_автоматизации_недоступный_флажок_с_её_состоянием()
     {
         WpfHost.Invoke(() =>

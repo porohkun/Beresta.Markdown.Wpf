@@ -110,6 +110,12 @@
         <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.OnIsKeyboardFocusWithinChanged(System.Windows.DependencyPropertyChangedEventArgs)">
             <inheritdoc/>
         </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.OnDpiChanged(System.Windows.DpiScale,System.Windows.DpiScale)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.OnQueryCursor(System.Windows.Input.QueryCursorEventArgs)">
+            <inheritdoc/>
+        </member>
         <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.OnPreviewMouseLeftButtonDown(System.Windows.Input.MouseButtonEventArgs)">
             <inheritdoc/>
         </member>

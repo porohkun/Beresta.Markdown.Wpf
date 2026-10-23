@@ -2,6 +2,7 @@
 
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows.Threading;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Rendering;
 using Selection;
@@ -19,11 +20,13 @@ public sealed class MdSourceSearch : INotifyPropertyChanged, IDisposable
 
     private readonly MarkdownEditor _editor;
     private readonly SearchBackground _background;
+    private readonly DispatcherTimer _research;
     private string _query = string.Empty;
     private bool _matchCase;
     private bool _wholeWord;
     private IReadOnlyList<MdSourceSpan> _matches = [];
     private int _current = -1;
+    private int _near;
     private bool _replacing;
 
     /// <summary>Puts its mark layer over the layers of the editor and its background under the source.</summary>
@@ -31,6 +34,8 @@ public sealed class MdSourceSearch : INotifyPropertyChanged, IDisposable
     {
         _editor = editor;
         _background = new(this);
+        _research = new(DispatcherPriority.Background, editor.Dispatcher) { Interval = TimeSpan.FromMilliseconds(250) };
+        _research.Tick += (_, _) => Flush();
         editor.MarkLayers.Add(Layer);
         editor.TextEditor.TextArea.TextView.BackgroundRenderers.Add(_background);
         editor.SourceChanged += OnSourceChanged;
@@ -92,6 +97,7 @@ public sealed class MdSourceSearch : INotifyPropertyChanged, IDisposable
     public bool Replace(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
+        Flush();
         if (_editor.EditMode == MdEditMode.View || Current is not { } current)
         {
             return false;
@@ -109,6 +115,7 @@ public sealed class MdSourceSearch : INotifyPropertyChanged, IDisposable
     public int ReplaceAll(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
+        Flush();
         var matches = _matches;
         if (_editor.EditMode == MdEditMode.View || matches.Count == 0)
         {
@@ -133,6 +140,7 @@ public sealed class MdSourceSearch : INotifyPropertyChanged, IDisposable
     /// <summary>Removes its layer and background from the editor.</summary>
     public void Dispose()
     {
+        _research.Stop();
         _editor.SourceChanged -= OnSourceChanged;
         _editor.DocumentApplied -= UpdateMarks;
         _editor.MarkLayers.Remove(Layer);
@@ -168,35 +176,70 @@ public sealed class MdSourceSearch : INotifyPropertyChanged, IDisposable
         }
     }
 
-    /// <summary>Исходник изменился: совпадения ищутся заново, текущим остаётся совпадение на прежнем месте или после него.</summary>
+    /// <summary>
+    /// Исходник изменился: совпадения сдвигаются вслед за правкой, задетые ею уходят, а заново они ищутся после
+    /// паузы в правках. Текущим остаётся совпадение на прежнем месте или после него.
+    /// </summary>
     private void OnSourceChanged(object? sender, MdSourceChangedEventArgs e)
     {
-        if (_replacing)
+        if (_replacing || _query.Length == 0)
         {
             return;
         }
 
-        var near = Current is { Start: var start } ? start : 0;
         var change = e.Change;
-        if (near >= change.Start + change.Length)
+        var delta = change.Text.Length - change.Length;
+        var near = _research.IsEnabled ? _near : Current is { Start: var start } ? start : 0;
+        _near = near >= change.Start + change.Length ? near + delta : Math.Min(near, change.Start);
+
+        var document = _editor.TextEditor.Document;
+        var current = Current;
+        var shifted = new List<MdSourceSpan>(_matches.Count);
+        _current = -1;
+        foreach (var match in _matches)
         {
-            near += change.Text.Length - change.Length;
-        }
-        else if (near > change.Start)
-        {
-            near = change.Start;
+            if (change.Length == 0 ? match.Start < change.Start && match.End > change.Start : match.Start < change.Start + change.Length && match.End > change.Start)
+            {
+                continue;
+            }
+
+            if (Equals(match, current))
+            {
+                _current = shifted.Count;
+            }
+
+            shifted.Add(match.Start >= change.Start ? Span(document, match.Start + delta, match.Length) : match);
         }
 
-        Search(near, show: false);
+        _matches = shifted;
+        _research.Stop();
+        _research.Start();
+        _editor.TextEditor.TextArea.TextView.InvalidateLayer(KnownLayer.Selection);
+        Notify(nameof(Matches));
+        Notify(nameof(Count));
+        NotifyCurrent();
+    }
+
+    /// <summary>Поиск после паузы в правках, если он ждёт, — сейчас.</summary>
+    private void Flush()
+    {
+        if (_research.IsEnabled)
+        {
+            _research.Stop();
+            Search(_near, show: false);
+        }
     }
 
     /// <summary>Ищет заново; текущим становится первое совпадение с места <paramref name="near"/> или после него.</summary>
     private void Search(int near, bool show)
     {
+        _research.Stop();
         var document = _editor.TextEditor.Document;
-        _matches = SourceMatches.Find(document.Text, _query, _matchCase, _wholeWord)
-            .Select(match => Span(document, match.Start, match.Length))
-            .ToList();
+        _matches = _query.Length == 0
+            ? []
+            : SourceMatches.Find(document.Text, _query, _matchCase, _wholeWord)
+                .Select(match => Span(document, match.Start, match.Length))
+                .ToList();
         _current = _matches.Count == 0 ? -1 : FirstFrom(near);
         UpdateMarks();
         Notify(nameof(Matches));
@@ -211,6 +254,7 @@ public sealed class MdSourceSearch : INotifyPropertyChanged, IDisposable
 
     private bool Move(int step)
     {
+        Flush();
         if (_matches.Count == 0)
         {
             return false;

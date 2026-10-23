@@ -44,7 +44,7 @@ jobs:
             exit 1
           }
 
-          foreach ($readme in 'README.md', 'README.ru.md') {
+          foreach ($readme in 'README.md', 'README.ru.md', 'Beresta.Markdown.Wpf.Editor/README.md', 'Beresta.Markdown.Wpf.Editor/README.ru.md') {
             if ((Get-Content $readme -TotalCount 1) -notmatch " v$([regex]::Escape($prefix))$") {
               "::error file=$readme::Версия в заголовке не совпадает с VersionPrefix $prefix"
               exit 1

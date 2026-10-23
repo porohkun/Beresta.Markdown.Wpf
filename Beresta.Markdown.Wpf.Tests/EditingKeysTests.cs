@@ -30,9 +30,36 @@ public sealed class EditingKeysTests
         => Check(before, after, editor => editor.TextEditor.TextArea.PerformTextInput("\n"));
 
     [Theory]
+    [InlineData("> - one|", "> - one\n> - |")]
+    [InlineData("> > 1. one|", "> > 1. one\n> > 2. |")]
+    [InlineData("> [!NOTE]\n> - [x] done|", "> [!NOTE]\n> - [x] done\n> - [ ] |")]
+    [InlineData("> - one\n> - |", "> - one\n> |")]
+    [InlineData("> 1. a|\n> 2. b", "> 1. a\n> 2. |\n> 3. b")]
+    public void Enter_продолжает_список_в_цитате(string before, string after)
+        => Check(before, after, editor => editor.TextEditor.TextArea.PerformTextInput("\n"));
+
+    [Theory]
+    [InlineData("> - a\n> - b|", false, "> - a\n>   - b|")]
+    [InlineData("> - a\n>   - b|", true, "> - a\n> - b|")]
+    [InlineData("> 1. a\n> 2. b|\n> 3. c", false, "> 1. a\n>    2. b|\n> 2. c")]
+    public void Tab_сдвигает_пункт_в_цитате(string before, bool outdent, string after)
+        => Check(before, after, editor => (outdent ? EditingCommands.TabBackward : EditingCommands.TabForward).Execute(null, editor.TextEditor.TextArea));
+
+    [Theory]
     [InlineData("text|", "text\n|")]
     [InlineData("```\n- code|\n```", "```\n- code\n|\n```")]
+    [InlineData("- item\n    - nested\n        ```\n        - code|\n        ```", "- item\n    - nested\n        ```\n        - code\n        |\n        ```")]
     public void Enter_вне_пункта_и_в_коде_только_переводит_строку(string before, string after)
+        => Check(before, after, editor => editor.TextEditor.TextArea.PerformTextInput("\n"));
+
+    [Theory]
+    [InlineData("> text|", "> text\n> |")]
+    [InlineData("> te|xt", "> te\n> |xt")]
+    [InlineData("> text\n> |", "> text\n|")]
+    [InlineData("> > text\n> > |", "> > text\n> |")]
+    [InlineData("> ```\n> - code|\n> ```", "> ```\n> - code\n> |\n> ```")]
+    [InlineData("> ```\n> |\n> ```", "> ```\n> \n> |\n> ```")]
+    public void Enter_в_цитате_продолжает_её_знаки(string before, string after)
         => Check(before, after, editor => editor.TextEditor.TextArea.PerformTextInput("\n"));
 
     [Theory]
@@ -50,14 +77,46 @@ public sealed class EditingKeysTests
     public void Shift_Tab_возвращает_пункт_к_родителю(string before, string after)
         => Check(before, after, editor => EditingCommands.TabBackward.Execute(null, editor.TextEditor.TextArea));
 
+    [Theory]
+    [InlineData("- a\n- b\n  - b1\n- c\n- d", 5, false, "- a\n  - b\n    - b1\n  - c\n- d")]
+    [InlineData("1. a\n2. b\n3. c\n4. d", 4, false, "1. a\n   2. b\n   3. c\n2. d")]
+    [InlineData("- a\n  - b\n    - b1\n  - c\n- d", 5, true, "- a\n- b\n  - b1\n- c\n- d")]
+    public void Tab_на_выделении_сдвигает_каждый_пункт(string text, int until, bool outdent, string expected)
+    {
+        WpfHost.Invoke(() =>
+        {
+            var editor = new MarkdownEditor { Markdown = text, EditMode = MdEditMode.Full };
+            var document = editor.TextEditor.Document;
+            var start = document.GetLineByNumber(2).Offset;
+            editor.TextEditor.Select(start, document.GetLineByNumber(until).Offset - start);
+
+            (outdent ? EditingCommands.TabBackward : EditingCommands.TabForward).Execute(null, editor.TextEditor.TextArea);
+
+            editor.TextEditor.Text.Replace("\r\n", "\n").Should().Be(expected);
+            editor.TextEditor.Document.UndoStack.Undo();
+            editor.TextEditor.Text.Replace("\r\n", "\n").Should().Be(text);
+        });
+    }
+
     [Fact]
     public void Tab_вне_пункта_работает_как_в_AvalonEdit()
         => Check("text|", "text\t|", editor => EditingCommands.TabForward.Execute(null, editor.TextEditor.TextArea));
 
     [Theory]
+    [InlineData("```|\n```", "````|\n````")]
+    [InlineData("````|\ncode\n````\n\ntext", "`````|\ncode\n`````\n\ntext")]
+    [InlineData("~~~|\n~~~", "~~~~|\n~~~~")]
+    [InlineData("```|\n````", "````|\n````")]
+    [InlineData("```|\n```cs", "````|\n```cs")]
+    public void Закрывающее_ограждение_растёт_вместе_с_открывающим(string before, string after)
+        => Check(before, after, editor => editor.TextEditor.TextArea.PerformTextInput(before.Contains('~') ? "~" : "`"));
+
+    [Theory]
     [InlineData("``|", "```|\n```")]
     [InlineData("``|\n\n```cs\ncode\n```", "```|\n```\n\n```cs\ncode\n```")]
     [InlineData("~~|", "~~~|\n~~~")]
+    [InlineData("> ``|", "> ```|\n> ```")]
+    [InlineData("- item\n    - nested\n        ``|", "- item\n    - nested\n        ```|\n        ```")]
     public void Набранное_ограждение_закрывается_строкой_ниже(string before, string after)
         => Check(before, after, editor => editor.TextEditor.TextArea.PerformTextInput(before.Contains('~') ? "~" : "`"));
 

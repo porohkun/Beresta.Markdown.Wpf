@@ -153,6 +153,47 @@ public sealed class SourceLookTests
         });
     }
 
+    [Theory]
+    [InlineData("```\ncode\n```", 4)]
+    [InlineData("```\ncode\n```", 8)]
+    [InlineData("```\ncode\n\n```", 9)]
+    public void Набранное_в_строке_кода_сразу_шрифтом_кода(string markdown, int at)
+    {
+        WpfHost.Invoke(() =>
+        {
+            var editor = new MarkdownEditor { Markdown = markdown, EditMode = MdEditMode.Full };
+            var window = WpfHost.Show(new ScrollViewer { Content = editor });
+            editor.SourceCaretOffset = at;
+
+            editor.TextEditor.TextArea.PerformTextInput("x");
+
+            var view = editor.TextEditor.TextArea.TextView;
+            var line = view.GetOrConstructVisualLine(editor.TextEditor.Document.GetLineByOffset(at));
+            var column = at - line.FirstDocumentLine.Offset;
+            line.Elements
+                .First(element => element.RelativeTextOffset <= column && column < element.RelativeTextOffset + element.DocumentLength)
+                .TextRunProperties.Typeface.FontFamily.Should().Be(editor.FindResource("Md.CodeBlock.FontFamily"));
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Новое_значение_ключа_темы_перекрашивает_исходник()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var editor = new MarkdownEditor { Markdown = Text, EditMode = MdEditMode.Full };
+            var window = WpfHost.Show(new ScrollViewer { Content = editor });
+            Run(editor, "code").BackgroundBrush.Should().NotBeSameAs(Brushes.Red);
+
+            editor.Resources["Md.CodeBlock.Background"] = Brushes.Red;
+            WpfHost.Settle(window);
+
+            Run(editor, "code").BackgroundBrush.Should().BeSameAs(Brushes.Red);
+            window.Close();
+        });
+    }
+
     private static int At(string piece) => Text.IndexOf(piece, StringComparison.Ordinal);
 
     private static MdSourceLook Describe(string text, params MdExtension[] extensions)

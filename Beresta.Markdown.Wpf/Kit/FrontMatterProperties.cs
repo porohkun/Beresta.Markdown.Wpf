@@ -16,12 +16,12 @@ internal static partial class FrontMatterProperties
     private const string Indicators = "-?:,[]{}#&*!|>'\"%@`";
 
     /// <summary>
-    /// Свойства по порядку: ключ, значение текстом, номера первой и последней строки свойства и место
-    /// значения; значение, которое только показывается, места не имеет.
+    /// Свойства по порядку: ключ, значение текстом, номера первой и последней строки свойства, место
+    /// значения и пункты списка; значение, которое только показывается, места не имеет, не список — пунктов.
     /// </summary>
-    public static List<(string Key, string Value, int First, int Last, FrontMatterValue? Place)> Read(IReadOnlyList<string> lines)
+    public static List<(string Key, string Value, int First, int Last, FrontMatterValue? Place, IReadOnlyList<string>? Items)> Read(IReadOnlyList<string> lines)
     {
-        var properties = new List<(string Key, string Value, int First, int Last, FrontMatterValue? Place)>();
+        var properties = new List<(string Key, string Value, int First, int Last, FrontMatterValue? Place, IReadOnlyList<string>? Items)>();
         var index = 0;
         while (index < lines.Count)
         {
@@ -43,8 +43,8 @@ internal static partial class FrontMatterProperties
 
             nested = nested.GetRange(0, last - first);
             properties.Add(Property().Match(line) is { Success: true } match
-                ? (Unquote(match.Groups["key"].Value), Value(match.Groups["value"].Value, nested), first, last, PlaceOf(lines, first, last, match, nested))
-                : (string.Empty, string.Join("\n", [line.Trim(), .. Dedent(nested)]), first, last, null));
+                ? (Unquote(match.Groups["key"].Value), Value(match.Groups["value"].Value, nested), first, last, PlaceOf(lines, first, last, match, nested), ItemsOf(match.Groups["value"].Value, nested))
+                : (string.Empty, string.Join("\n", [line.Trim(), .. Dedent(nested)]), first, last, null, null));
         }
 
         return properties;
@@ -58,17 +58,23 @@ internal static partial class FrontMatterProperties
     /// <param name="span">Место значения в исходнике.</param>
     /// <param name="text">Новое значение, как в поле.</param>
     /// <param name="source">Исходник: из него берётся перевод строки.</param>
-    public static MdSourceEdit? Write(FrontMatterValue place, MdSourceSpan span, string text, string source)
+    /// <param name="items">Пункты нового списка; нет их — пункты из текста через запятую.</param>
+    public static MdSourceEdit? Write(FrontMatterValue place, MdSourceSpan span, string text, string source, IReadOnlyList<string>? items = null)
     {
         var newLine = source.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
-        var old = Elements(place.Kind == MdValueKind.BlockList ? BlockItems(place.Raw) : place.Raw.Trim('[', ']'));
+        var old = place.Kind == MdValueKind.BlockList
+            ? BlockItems(place.Raw)
+            : Items(place.Raw.Trim('[', ']'))
+                .Select(item => item.Trim())
+                .ToList();
+        var listed = items ?? Elements(text);
         var value = place.Kind switch
         {
             MdValueKind.Plain => text.Length == 0 ? string.Empty : " " + Scalar(text, place.Raw, flow: false),
             MdValueKind.SingleQuoted => " " + (text.Contains('\n') ? Quote(text) : "'" + text.Replace("'", "''") + "'"),
             MdValueKind.DoubleQuoted => " " + Quote(text),
-            MdValueKind.FlowList => " [" + string.Join(", ", Elements(text).Select((item, index) => Scalar(item, old.ElementAtOrDefault(index), flow: true))) + "]",
-            MdValueKind.BlockList => string.Concat(Elements(text).Select((item, index) => newLine + place.Indent + "- " + Scalar(item, old.ElementAtOrDefault(index), flow: false))),
+            MdValueKind.FlowList => " [" + string.Join(", ", listed.Select((item, index) => Scalar(item, old.ElementAtOrDefault(index), flow: true))) + "]",
+            MdValueKind.BlockList => string.Concat(listed.Select((item, index) => newLine + place.Indent + "- " + Scalar(item, old.ElementAtOrDefault(index), flow: false))),
             _ => null
         };
 
@@ -258,9 +264,36 @@ internal static partial class FrontMatterProperties
             .Where(item => item.Length > 0)
             .ToList();
 
-    /// <summary>Пункты списка строками через запятую — для сравнения с новыми.</summary>
-    private static string BlockItems(string raw)
-        => string.Join(", ", raw.Split('\n').Select(line => line.TrimStart()[1..].Trim()));
+    /// <summary>Пункты списка строками как написаны — для сравнения с новыми.</summary>
+    private static List<string> BlockItems(string raw)
+        => raw.Split('\n')
+            .Select(line => line.TrimStart()[1..].Trim())
+            .ToList();
+
+    /// <summary>Пункты списка в скобках или строками; значение не список — <c>null</c>.</summary>
+    private static List<string>? ItemsOf(string value, List<string> nested)
+    {
+        var meaningful = nested
+            .Where(line => line.Trim() is { Length: > 0 } text && !text.StartsWith('#'))
+            .ToList();
+        var list = Comment().Replace(value.Trim(), string.Empty);
+        if (list.StartsWith('[') && list.EndsWith(']') && meaningful.Count == 0)
+        {
+            return Items(list[1..^1])
+                .Select(Scalar)
+                .Where(item => item.Length > 0)
+                .ToList();
+        }
+
+        return list.Length == 0
+               && meaningful.Count > 0
+               && meaningful.Select(line => line.Length - line.TrimStart().Length).Distinct().Count() == 1
+               && meaningful.All(line => line.TrimStart() is "-" || line.TrimStart().StartsWith("- ", StringComparison.Ordinal))
+            ? meaningful
+                .Select(line => Scalar(line.TrimStart()[1..].Trim()))
+                .ToList()
+            : null;
+    }
 
     /// <summary>Строка принадлежит свойству выше: пустая, с отступом или пункт списка без отступа.</summary>
     private static bool IsNested(string line)

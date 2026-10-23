@@ -267,7 +267,7 @@ internal sealed class SourceWindow : IMdSourceRows
             .Select(entry => (
                 _toShown(entry.Line.FirstDocumentLine.LineNumber),
                 entry.Line.VisualTop - origin + entry.Margins.Above,
-                Math.Max(0, entry.Line.TextLines[0].Height - entry.Margins.Above - entry.Margins.Below)))
+                Math.Max(0, entry.Line.TextLines[0].Height - entry.Margins.Above - (entry.Line.TextLines.Count == 1 ? entry.Margins.Below : 0))))
             .ToList();
     }
 }

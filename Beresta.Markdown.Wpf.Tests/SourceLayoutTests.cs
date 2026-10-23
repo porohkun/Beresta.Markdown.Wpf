@@ -20,6 +20,7 @@ public sealed class SourceLayoutTests
     [InlineData("A plain paragraph")]
     [InlineData("> [!WARNING]\n> A callout body")]
     [InlineData("> [!NOTE]\n> First line of the body\n> Second line of the body")]
+    [InlineData("> [!NOTE]\n> First paragraph\n>\n> Second paragraph")]
     [InlineData("```\nvar x = 1;\n```")]
     [InlineData("```csharp\nvar x = 1;\nvar y = 2;\n```")]
     [InlineData("    indented code")]
@@ -38,6 +39,28 @@ public sealed class SourceLayoutTests
             WpfHost.Settle(window);
 
             editor.WindowElement.ActualHeight.Should().BeApproximately(drawn, 2);
+            window.Close();
+        });
+    }
+
+    [Theory]
+    [InlineData("> First paragraph\n>\n> Second paragraph")]
+    [InlineData("> First paragraph\n> \n> Second paragraph")]
+    [InlineData("> > First paragraph\n> >\n> > Second paragraph")]
+    public void Цитата_с_пустой_строкой_исходником_той_же_высоты(string block)
+    {
+        WpfHost.Invoke(() =>
+        {
+            var markdown = $"Intro\n\n{block}\n\nOutro";
+            var editor = new MarkdownEditor { Markdown = markdown, EditMode = MdEditMode.Blocks };
+            var window = WpfHost.Show(new ScrollViewer { Content = editor });
+            var drawn = ((FrameworkElement)editor.ItemContainerGenerator.ContainerFromIndex(2)).ActualHeight;
+
+            editor.SelectSource(markdown.IndexOf(block, StringComparison.Ordinal), block.Length);
+            WpfHost.Settle(window);
+
+            editor.WindowLines.Should().Be((3, 5));
+            ((FrameworkElement)editor.ItemContainerGenerator.ContainerFromIndex(2)).ActualHeight.Should().BeApproximately(drawn, 0.5);
             window.Close();
         });
     }
@@ -186,6 +209,28 @@ public sealed class SourceLayoutTests
             var caret = area.Caret.CalculateCaretRectangle();
             var visual = area.TextView.GetOrConstructVisualLine(editor.TextEditor.Document.GetLineByNumber(2));
             ((caret.Top + caret.Bottom) / 2).Should().BeApproximately(visual.VisualTop + (visual.Height / 2), 0.5);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void Поля_перенесённой_строки_над_первым_рядом_и_под_последним()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var body = string.Concat(Enumerable.Repeat("long words in the body ", 20));
+            var markdown = $"Intro\n\n> [!NOTE]\n> {body}\n\nOutro";
+            var editor = new MarkdownEditor { Markdown = markdown, EditMode = MdEditMode.Blocks, Width = 400 };
+            var window = WpfHost.Show(new ScrollViewer { Content = editor });
+            editor.SourceCaretOffset = markdown.IndexOf("[!NOTE]", StringComparison.Ordinal);
+            WpfHost.Settle(window);
+
+            var rows = editor.TextEditor.TextArea.TextView.GetOrConstructVisualLine(editor.TextEditor.Document.GetLineByNumber(4)).TextLines;
+            var top = ((Thickness)editor.FindResource("Md.Callout.ContentMargin")).Top;
+            var bottom = ((Thickness)editor.FindResource("Md.Callout.Margin")).Bottom + ((Thickness)editor.FindResource("Md.Callout.Padding")).Bottom;
+            rows.Should().HaveCountGreaterThan(2);
+            rows[0].Height.Should().BeApproximately(rows[1].Height + top, 0.5);
+            rows[^1].Height.Should().BeApproximately(rows[1].Height + bottom, 0.5);
             window.Close();
         });
     }

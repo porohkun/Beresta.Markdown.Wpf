@@ -1,12 +1,13 @@
 ﻿namespace Beresta.Markdown.Wpf.Tests;
 
+using System.Diagnostics;
 using System.Windows.Controls;
 using Editor;
 using ICSharpCode.AvalonEdit.Rendering;
 
 /// <summary>
 /// Поиск и замена в исходнике редактора: совпадения — в документе, видны в окне и в отрисовке, заменяются по
-/// одному и все сразу одним шагом отмены.
+/// одному и все сразу одним шагом отмены; после правки ищутся заново, когда правки на миг стихнут.
 /// </summary>
 public sealed class SourceSearchTests
 {
@@ -80,6 +81,7 @@ public sealed class SourceSearchTests
             search.Count.Should().Be(0);
 
             editor.Undo();
+            Pause(window);
             editor.TextEditor.Text.Should().Be(Text);
             search.Count.Should().Be(4);
             window.Close();
@@ -113,7 +115,9 @@ public sealed class SourceSearchTests
             editor.SelectSource(0, 0);
 
             editor.TextEditor.TextArea.PerformTextInput("two ");
-            search.Count.Should().Be(2);
+            search.Matches.Select(match => match.Start).Should().Equal(8);
+            Pause(window);
+            search.Matches.Select(match => match.Start).Should().Equal(0, 8);
             editor.CommitText();
             WpfHost.Settle(window);
 
@@ -153,6 +157,34 @@ public sealed class SourceSearchTests
             editor.TextEditor.TextArea.TextView.BackgroundRenderers.Should().HaveCount(renderers);
             window.Close();
         });
+    }
+
+    [Fact]
+    public void Совпадение_внутри_правки_уходит_до_нового_поиска()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var (editor, window) = Show("one two two", MdEditMode.Full);
+            using var search = new MdSourceSearch(editor) { Query = "two" };
+            editor.SelectSource(5, 1);
+
+            editor.TextEditor.TextArea.PerformTextInput("x");
+            search.Matches.Select(match => match.Start).Should().Equal(8);
+            Pause(window);
+            search.Matches.Select(match => match.Start).Should().Equal(8);
+            window.Close();
+        });
+    }
+
+    /// <summary>Правки стихли: поиск успевает найти заново.</summary>
+    private static void Pause(System.Windows.Window window)
+    {
+        var watch = Stopwatch.StartNew();
+        while (watch.ElapsedMilliseconds < 400)
+        {
+            WpfHost.Settle(window);
+            Thread.Sleep(10);
+        }
     }
 
     private static (MarkdownEditor Editor, System.Windows.Window Window) Show(string markdown, MdEditMode mode)

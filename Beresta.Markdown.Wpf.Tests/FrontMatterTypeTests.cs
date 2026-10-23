@@ -93,6 +93,18 @@ public sealed class FrontMatterTypeTests
         => Edit(property, property.Contains('#') ? "date: 2025-01-02 # comment" : "date: 2025-01-02", viewer => Visuals.Descendants<MdPropertyDatePicker>(viewer).Single().SelectedDate = new DateTime(2025, 1, 2));
 
     [Theory]
+    [InlineData("---\ntags: [\"Doe, John\", Smith]\n---\n")]
+    [InlineData("---\ntags:\n  - Doe, John\n  - Smith\n---\n")]
+    public void Пункт_с_запятой_остаётся_одним_пунктом(string markdown)
+        => Rows(markdown).Single().Items.Should().Equal("Doe, John", "Smith");
+
+    [Fact]
+    public void Крестик_чипа_убирает_свой_пункт_из_одинаковых()
+        => Edit("tags: [a, b, a]", "tags: [a, b]", viewer => MdPropertiesPresenter.RemoveItemCommand.Execute(
+            "a",
+            Visuals.Descendants<Button>(viewer).Last(button => button.Command == MdPropertiesPresenter.RemoveItemCommand && Equals(button.CommandParameter, "a"))));
+
+    [Theory]
     [InlineData("tags: [a, b]", "a", "tags: [b]")]
     [InlineData("tags: [a, b]", "b", "tags: [a]")]
     [InlineData("tags:\n  - a\n  - b", "a", "tags:\n  - b")]
@@ -108,6 +120,8 @@ public sealed class FrontMatterTypeTests
     [InlineData("tags:\n  - a\n  - b", "c", "tags:\n  - a\n  - b\n  - c")]
     [InlineData("tags:\n- a", "c", "tags:\n- a\n- c")]
     [InlineData("tags: []", "c", "tags: [c]")]
+    [InlineData("tags: [\"Doe, John\", b]", "c", "tags: [\"Doe, John\", b, c]")]
+    [InlineData("tags:\n  - Doe, John\n  - b", "c", "tags:\n  - Doe, John\n  - b\n  - c")]
     public void Поле_чипов_добавляет_пункт(string property, string item, string expected)
         => Edit(property, expected, viewer =>
         {

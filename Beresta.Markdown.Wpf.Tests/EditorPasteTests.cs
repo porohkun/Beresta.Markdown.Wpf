@@ -1,5 +1,6 @@
 ﻿namespace Beresta.Markdown.Wpf.Tests;
 
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,6 +31,14 @@ public sealed class EditorPasteTests
     [Fact]
     public void Без_HTML_вставляется_текст()
         => Check(Data(null, "plain *text*"), "Before plain *text* after");
+
+    [Fact]
+    public void Данные_которые_не_прочесть_ничего_не_вставляют()
+        => Check(new Unreadable(), "Before PASTE after");
+
+    [Fact]
+    public void Неверные_смещения_заголовка_HTML_не_роняют_вставку()
+        => Check(Data("Version:0.9\r\nStartFragment:99999999999\r\nEndFragment:99999999999\r\n<b>x</b>", "plain"), "Before **x** after");
 
     [Fact]
     public void Вставка_отменяется_одним_шагом()
@@ -112,5 +121,33 @@ public sealed class EditorPasteTests
         var end = start + Encoding.UTF8.GetByteCount(fragment);
         var total = end + Encoding.UTF8.GetByteCount(after);
         return string.Format(header, length, total, start, end) + before + fragment + after;
+    }
+
+    /// <summary>Данные, которые не прочесть: буфер обмена занят другой программой.</summary>
+    private sealed class Unreadable : IDataObject
+    {
+        public object GetData(string format) => throw new COMException("The clipboard is busy");
+
+        public object GetData(Type format) => throw new COMException("The clipboard is busy");
+
+        public object GetData(string format, bool autoConvert) => throw new COMException("The clipboard is busy");
+
+        public bool GetDataPresent(string format) => true;
+
+        public bool GetDataPresent(Type format) => true;
+
+        public bool GetDataPresent(string format, bool autoConvert) => true;
+
+        public string[] GetFormats() => [DataFormats.Html, DataFormats.UnicodeText];
+
+        public string[] GetFormats(bool autoConvert) => GetFormats();
+
+        public void SetData(object data) => throw new NotSupportedException();
+
+        public void SetData(string format, object data) => throw new NotSupportedException();
+
+        public void SetData(Type format, object data) => throw new NotSupportedException();
+
+        public void SetData(string format, object data, bool autoConvert) => throw new NotSupportedException();
     }
 }

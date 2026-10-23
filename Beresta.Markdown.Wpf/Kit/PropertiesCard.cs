@@ -38,7 +38,7 @@ public sealed class PropertiesCard : MdExtension
         var lines = KitLines.Of(yaml.Lines);
         var properties = FrontMatterProperties.Read(lines.Select(line => line.ToString()).ToList());
         var items = properties
-            .Select(property => Property(property.Key, property.Value, property.Place) with
+            .Select(property => Property(property.Key, property.Value, property.Place, property.Items) with
             {
                 Source = KitLines.SpanOf(lines[property.First], lines[property.Last]),
                 ValueSource = property.Place is { } place ? SpanOf(lines, place) : default
@@ -60,7 +60,7 @@ public sealed class PropertiesCard : MdExtension
         => (node, state) switch
         {
             (PropertiesVm, PropertyEdit { Property: { Place: { } place } property } edit)
-                => FrontMatterProperties.Write(WrittenAs(property, place), property.ValueSource, edit.Text, context.Text),
+                => FrontMatterProperties.Write(WrittenAs(property, place), property.ValueSource, edit.Text, context.Text, edit.Items),
             (PropertiesVm, PropertyRemoval { Property.Source: { IsEmpty: false } span }) => FrontMatterProperties.Remove(span, context.Text),
             (PropertiesVm { Source: { IsEmpty: false } span } card, PropertyAddition { Key: var key })
                 when card.Items.All(item => item.KeyText != key.Trim()) => FrontMatterProperties.Add(span, key, context.Text),
@@ -80,8 +80,11 @@ public sealed class PropertiesCard : MdExtension
             : property.Type == MdPropertyType.List && place.Kind is not (MdValueKind.FlowList or MdValueKind.BlockList) ? place with { Kind = MdValueKind.FlowList }
             : place;
 
-    /// <summary>Строка карточки: значение по типу поля приложения, а без поля — по догадке по значению.</summary>
-    private PropertyVm Property(string key, string value, FrontMatterValue? place)
+    /// <summary>
+    /// Строка карточки: значение по типу поля приложения, а без поля — по догадке по значению; пункты
+    /// списка — как написаны, а у значения, которое списком не записано, — через запятую.
+    /// </summary>
+    private PropertyVm Property(string key, string value, FrontMatterValue? place, IReadOnlyList<string>? items)
     {
         var type = place is null ? MdPropertyType.Text : Fields.LastOrDefault(field => field.Key == key)?.Type ?? FrontMatterProperties.TypeOf(place, value);
         return new PropertyVm(KitLines.Runs(key), KitLines.Runs(value))
@@ -91,7 +94,7 @@ public sealed class PropertiesCard : MdExtension
             Place = place,
             KeyText = key,
             Type = type,
-            Items = type == MdPropertyType.List ? FrontMatterProperties.Elements(value) : [],
+            Items = type == MdPropertyType.List ? items ?? FrontMatterProperties.Elements(value) : [],
             IsChecked = type == MdPropertyType.Bool && FrontMatterProperties.IsOn(value),
             Date = type == MdPropertyType.Date ? FrontMatterProperties.DateOf(value) : null
         };

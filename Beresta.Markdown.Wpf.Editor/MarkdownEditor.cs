@@ -1,7 +1,9 @@
 ﻿namespace Beresta.Markdown.Wpf.Editor;
 
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -67,6 +69,9 @@ public sealed class MarkdownEditor : MarkdownViewer
     /// <summary>Дальше этого страница за мышью за один шаг не прокручивается.</summary>
     private const double AutoScrollStep = 80;
 
+    /// <summary>Свойства, через которые редактор следит за ключами темы, — по одному на ключ.</summary>
+    private static readonly ConcurrentDictionary<string, DependencyProperty> Watchers = new();
+
     private readonly TextEditor _editor = new();
     private readonly SourceVersions _versions = new();
     private readonly TextLines _shownLines = new();
@@ -76,6 +81,9 @@ public sealed class MarkdownEditor : MarkdownViewer
     private readonly Dictionary<string, LookStyle> _styles = [];
     private SourceLookIndex? _look;
     private Dictionary<int, (double Above, double Below)>? _fits;
+    private readonly HashSet<string> _watched = [];
+    private bool _watching;
+    private bool _themeQueued;
     private List<(int FirstLine, int LastLine)> _windowContainers = [];
     private readonly Dictionary<string, List<double>> _cellWidths = [];
     private Dictionary<int, IReadOnlyList<(int Offset, double Before, double After)>>? _separators;
@@ -134,7 +142,7 @@ public sealed class MarkdownEditor : MarkdownViewer
             typeof(MarkdownEditor),
             new(
                 PasteFormattedCommand,
-                (sender, _) => ((MarkdownEditor)sender).PasteFormatted(Clipboard.GetDataObject()),
+                (sender, _) => ((MarkdownEditor)sender).PasteFormatted(ClipboardData()),
                 (sender, e) => e.CanExecute = ((MarkdownEditor)sender).EditsText));
     }
 
@@ -155,7 +163,7 @@ public sealed class MarkdownEditor : MarkdownViewer
         _editor.DocumentChanged += (_, _) => Reattach();
 
         var area = _editor.TextArea;
-        area.TextView.ElementGenerators.Insert(0, new LineStruts(StrutOf));
+        area.TextView.ElementGenerators.Insert(0, new LineStruts(Strut));
         area.TextView.ElementGenerators.Insert(1, new LineMarkers(MarkerOf));
         area.TextView.ElementGenerators.Insert(2, new TableColumns(SeparatorsOf));
         area.TextView.SizeChanged += (_, e) =>
@@ -536,6 +544,24 @@ public sealed class MarkdownEditor : MarkdownViewer
         }
     }
 
+    /// <inheritdoc/>
+    protected override void OnQueryCursor(QueryCursorEventArgs e)
+    {
+        base.OnQueryCursor(e);
+        if (!e.Handled && EditMode == MdEditMode.Blocks && e.OriginalSource is TextElement or MdTextBlock)
+        {
+            e.Cursor = Cursors.IBeam;
+            e.Handled = true;
+        }
+    }
+
+    /// <inheritdoc/>
+    protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+    {
+        base.OnDpiChanged(oldDpi, newDpi);
+        QueueThemeChange();
+    }
+
     private static void OnMarkdownChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownEditor)d).Take((string?)e.NewValue ?? string.Empty);
 
@@ -782,6 +808,19 @@ public sealed class MarkdownEditor : MarkdownViewer
         var from = TextMap.PositionOfSource(_versions.ToText(shown, start, _document, AnchorMovementType.AfterInsertion));
         var to = TextMap.PositionOfSource(_versions.ToText(shown, end, _document, AnchorMovementType.BeforeInsertion));
         return from is { } a && to is { } b && b > a ? new MdTextRange(a, b - a) : null;
+    }
+
+    /// <summary>Данные буфера обмена; буфер занят другой программой — <c>null</c>.</summary>
+    private static IDataObject? ClipboardData()
+    {
+        try
+        {
+            return Clipboard.GetDataObject();
+        }
+        catch (ExternalException)
+        {
+            return null;
+        }
     }
 
     /// <summary>Вставка с форматированием из данных буфера обмена; данных нет — ничего.</summary>
@@ -1400,18 +1439,44 @@ public sealed class MarkdownEditor : MarkdownViewer
         return GetSourceLineOffset(ToShownLine(line)) is { } y ? TranslatePoint(new(0, y), scroller).Y : null;
     }
 
-    /// <summary>Куски строки документа с видами — по описанию исходника последнего разбора, места переведены на нынешний текст.</summary>
+    /// <summary>
+    /// Куски строки документа с видами — по описанию исходника последнего разбора, места переведены на
+    /// нынешний текст. Кусок во всю строку и пустая строка кода берут строку целиком — с набранным у краёв.
+    /// </summary>
     private IEnumerable<(int Start, int End, LookStyle Style)> PiecesOn(DocumentLine line)
     {
         var look = _look ??= new(GetSourceLook(), ShownMarkdown, _shownLines);
         var text = look.Text;
         var from = _versions.ToText(text, line.Offset, _document, AnchorMovementType.AfterInsertion);
         var to = _versions.ToText(text, line.EndOffset, _document, AnchorMovementType.BeforeInsertion);
+        var first = _shownLines.LineAt(text, from);
         var last = _shownLines.LineAt(text, to);
-        for (var shown = _shownLines.LineAt(text, from); shown <= last; shown++)
+        for (var shown = first; shown <= last; shown++)
         {
-            foreach (var (start, end, name) in look.PiecesOn(shown))
+            var (lineStart, lineEnd) = (_shownLines.StartOf(text, shown), _shownLines.EndOf(text, shown));
+            var pieces = look.PiecesOn(shown);
+            if (first == last && lineStart == lineEnd && pieces.Count == 0 && look.LooksAt(shown).Any(entry => entry.Look == "CodeBlock"))
             {
+                if (line.Length > 0)
+                {
+                    yield return (line.Offset, line.EndOffset, StyleOf("CodeBlock"));
+                }
+
+                continue;
+            }
+
+            foreach (var (start, end, name) in pieces)
+            {
+                if (first == last && start <= lineStart && end >= lineEnd && lineEnd > lineStart)
+                {
+                    if (line.Length > 0)
+                    {
+                        yield return (line.Offset, line.EndOffset, StyleOf(name));
+                    }
+
+                    continue;
+                }
+
                 if (end <= from
                     || start >= to
                     || _versions.Map(text, Math.Max(start, from), _document, AnchorMovementType.AfterInsertion) is not { } a
@@ -1430,22 +1495,37 @@ public sealed class MarkdownEditor : MarkdownViewer
         }
     }
 
-    /// <summary>Длина маркера строки документа — пункта, цитаты; маркера нет или строку не узнать — 0.</summary>
-    private int MarkerOf(DocumentLine line)
+    /// <summary>
+    /// Маркер строки документа — пункта, цитаты: его длина, а у пустой строки цитаты, которая стоит в
+    /// отрисовке отступом, — вся строка; маркера нет или строку не узнать — 0.
+    /// </summary>
+    private (int Length, bool Gap) MarkerOf(DocumentLine line)
     {
         var look = _look ??= new(GetSourceLook(), ShownMarkdown, _shownLines);
         var text = look.Text;
         var shownLine = ToShownLine(line.LineNumber);
         var start = _shownLines.StartOf(text, shownLine);
+        if (_versions.Map(text, start, _document, AnchorMovementType.BeforeInsertion) != line.Offset)
+        {
+            return (0, false);
+        }
+
+        var own = _document.GetText(line);
+        if (own.Contains('>')
+            && IsGapText(own)
+            && look.LooksAt(shownLine).Any(entry => !_windowContainers.Contains((entry.FirstLine, entry.LastLine)) && StyleOf(entry.Look).Height is not null))
+        {
+            return (line.Length, true);
+        }
+
         return look.IndentOn(shownLine) is > 0 and var length
-               && _versions.Map(text, start, _document, AnchorMovementType.BeforeInsertion) == line.Offset
                && _versions.Map(text, start + length, _document, AnchorMovementType.BeforeInsertion) is { } end
-            ? Math.Clamp(end - line.Offset, 0, line.Length)
-            : 0;
+            ? (Math.Clamp(end - line.Offset, 0, line.Length), false)
+            : (0, false);
     }
 
-    /// <summary>Распорка строки документа: высота над базовой линией и под ней; не нужна — <c>null</c>.</summary>
-    private (double Ascent, double Descent)? StrutOf(DocumentLine line) => Strut(line) is { } strut ? (strut.Ascent, strut.Descent) : null;
+    /// <summary>Строка из одних пробелов и знаков цитаты — в отрисовке на её месте отступ.</summary>
+    private static bool IsGapText(string text) => text.All(symbol => symbol == '>' || char.IsWhiteSpace(symbol));
 
     /// <summary>Поля, которые распорка добавляет над текстом строки документа с единицы и под ним.</summary>
     private (double Above, double Below) MarginsOf(int line) => Strut(_document.GetLineByNumber(line)) is { } strut ? (strut.Above, strut.Below) : default;
@@ -1505,7 +1585,7 @@ public sealed class MarkdownEditor : MarkdownViewer
                 header = Math.Max(header, least);
             }
 
-            if (style.Height is { } height && string.IsNullOrWhiteSpace(_document.GetText(line)))
+            if (style.Height is { } height && IsGapText(_document.GetText(line)))
             {
                 blank = Math.Max(blank ?? 0, height);
             }
@@ -1519,7 +1599,7 @@ public sealed class MarkdownEditor : MarkdownViewer
         }
 
         _fits ??= new SourceFit(
-                key => TryFindResource(key),
+                FindWatched,
                 _editor.FontFamily,
                 _editor.FontSize,
                 _editor.TextArea.TextView.DefaultLineHeight,
@@ -1730,10 +1810,63 @@ public sealed class MarkdownEditor : MarkdownViewer
     {
         if (!_styles.TryGetValue(look, out var style))
         {
-            _styles[look] = style = LookStyle.Resolve(look, key => TryFindResource(key));
+            _styles[look] = style = LookStyle.Resolve(look, FindWatched);
         }
 
         return style;
+    }
+
+    /// <summary>Ресурс по ключу темы; ключ остаётся под присмотром, и новое значение перечитывает виды исходника.</summary>
+    private object? FindWatched(string key)
+    {
+        if (_watched.Add(key))
+        {
+            var watcher = Watchers.GetOrAdd(
+                key,
+                name => DependencyProperty.RegisterAttached("Watched:" + name, typeof(object), typeof(MarkdownEditor), new PropertyMetadata(null, OnWatchedChanged)));
+            _watching = true;
+            try
+            {
+                SetResourceReference(watcher, key);
+            }
+            finally
+            {
+                _watching = false;
+            }
+        }
+
+        return TryFindResource(key);
+    }
+
+    private static void OnWatchedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is MarkdownEditor { _watching: false } editor)
+        {
+            editor.QueueThemeChange();
+        }
+    }
+
+    /// <summary>Тема или масштаб экрана сменились: виды, поля и столбцы исходника считаются заново.</summary>
+    private void QueueThemeChange()
+    {
+        if (_themeQueued)
+        {
+            return;
+        }
+
+        _themeQueued = true;
+        Dispatcher.BeginInvoke(
+            DispatcherPriority.Normal,
+            () =>
+            {
+                _themeQueued = false;
+                _styles.Clear();
+                _fits = null;
+                _separators = null;
+                _cellWidths.Clear();
+                _editor.TextArea.TextView.Redraw();
+                QueueRefit();
+            });
     }
 
     /// <summary>Строка показанного текста с нуля — строка документа с единицы, где теперь её начало.</summary>

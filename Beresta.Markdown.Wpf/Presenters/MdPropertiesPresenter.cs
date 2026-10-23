@@ -38,7 +38,7 @@ public sealed class MdPropertiesPresenter : ItemsControl
         DefaultStyleKeyProperty.OverrideMetadata(typeof(MdPropertiesPresenter), new FrameworkPropertyMetadata(typeof(MdPropertiesPresenter)));
         Bind(SetValueCommand, (presenter, e) => presenter.Request(e.OriginalSource, property => e.Parameter is string text && property.Place is not null ? new PropertyEdit(property, text) : null));
         Bind(AddItemCommand, (presenter, e) => presenter.Request(e.OriginalSource, property => AddItem(property, e.Parameter as string), clear: true));
-        Bind(RemoveItemCommand, (presenter, e) => presenter.Request(e.OriginalSource, property => RemoveItem(property, e.Parameter as string)));
+        Bind(RemoveItemCommand, (presenter, e) => presenter.Request(e.OriginalSource, property => RemoveItem(property, ItemIndexOf(e.OriginalSource), e.Parameter as string)));
         Bind(RemoveCommand, (presenter, e) => presenter.Request(e.OriginalSource, property => new PropertyRemoval(property)));
         Bind(AddCommand, (presenter, e) => presenter.Add(e.Parameter as string));
         EventManager.RegisterClassHandler(typeof(MdPropertiesPresenter), ToggleButton.CheckedEvent, new RoutedEventHandler(OnToggled));
@@ -51,7 +51,10 @@ public sealed class MdPropertiesPresenter : ItemsControl
     /// <summary>Adds the text in the parameter as an item to the list of the row the command comes from.</summary>
     public static RoutedCommand AddItemCommand { get; } = new(nameof(AddItemCommand), typeof(MdPropertiesPresenter));
 
-    /// <summary>Removes the item in the parameter from the list of the row the command comes from.</summary>
+    /// <summary>
+    /// Removes an item from the list of the row the command comes from: the item of the chip it comes from,
+    /// or else the item in the parameter.
+    /// </summary>
     public static RoutedCommand RemoveItemCommand { get; } = new(nameof(RemoveItemCommand), typeof(MdPropertiesPresenter));
 
     /// <summary>Removes the property of the row the command comes from, all its lines.</summary>
@@ -77,15 +80,37 @@ public sealed class MdPropertiesPresenter : ItemsControl
 
     private static PropertyEdit? AddItem(PropertyVm property, string? item)
         => property.Place is not null && item?.Trim() is { Length: > 0 } text
-            ? new(property, string.Join(", ", [.. property.Items, text]))
+            ? ListEdit(property, [.. property.Items, text])
             : null;
 
-    private static PropertyEdit? RemoveItem(PropertyVm property, string? item)
+    /// <summary>Пункт под номером <paramref name="index"/>, а без номера — первый с текстом <paramref name="item"/> уходит из списка.</summary>
+    private static PropertyEdit? RemoveItem(PropertyVm property, int index, string? item)
     {
-        var index = item is null ? -1 : property.Items.ToList().IndexOf(item);
-        return property.Place is not null && index >= 0
-            ? new(property, string.Join(", ", property.Items.Where((_, at) => at != index)))
+        index = index >= 0 ? index : item is null ? -1 : property.Items.ToList().IndexOf(item);
+        return property.Place is not null && index >= 0 && index < property.Items.Count
+            ? ListEdit(property, property.Items.Where((_, at) => at != index).ToList())
             : null;
+    }
+
+    /// <summary>Правка списка: новые пункты и они же текстом через запятую.</summary>
+    private static PropertyEdit ListEdit(PropertyVm property, IReadOnlyList<string> items)
+        => new(property, string.Join(", ", items), items);
+
+    /// <summary>Номер пункта списка, из фишки которого пришла команда; не из фишки — -1.</summary>
+    private static int ItemIndexOf(object source)
+    {
+        for (var node = source as DependencyObject; node is not null; node = VisualTreeHelper.GetParent(node))
+        {
+            switch (ItemsControl.ItemsControlFromItemContainer(node))
+            {
+                case MdPropertiesPresenter:
+                    return -1;
+                case { } list:
+                    return list.ItemContainerGenerator.IndexFromContainer(node);
+            }
+        }
+
+        return -1;
     }
 
     /// <summary>Флажок строки с флагом переключили: значение пишется словом прежнего.</summary>

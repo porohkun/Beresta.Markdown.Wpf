@@ -6,8 +6,8 @@ using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Rendering;
 
 /// <summary>
-/// Распорка в начале строки: нулевой ширины и без текста документа, поднимает строку до высоты над и
-/// под базовой линией.
+/// Распорка в начале или в конце строки: нулевой ширины и без текста документа, поднимает свой ряд до
+/// высоты над и под базовой линией.
 /// </summary>
 internal sealed class StrutElement(double ascent, double descent) : VisualLineElement(1, 0)
 {

@@ -1,6 +1,7 @@
 ﻿namespace Beresta.Markdown.Wpf.Editor;
 
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows;
 using ICSharpCode.AvalonEdit.Document;
@@ -18,8 +19,8 @@ internal static partial class EditingKeys
     private const int TabWidth = 4;
 
     /// <summary>
-    /// Enter в пункте списка: новый пункт с той же разметкой, а в пункте, где только маркер, — выход из
-    /// списка. Не пункт — <c>false</c>: перевод строки делает AvalonEdit.
+    /// Enter в пункте списка и в строке цитаты: новая строка с той же разметкой; пункт с одним маркером выходит
+    /// из списка, а пустая строка цитаты — на уровень выше. Иначе — <c>false</c>: перевод строки делает AvalonEdit.
     /// </summary>
     public static bool Enter(TextArea area)
     {
@@ -30,19 +31,22 @@ internal static partial class EditingKeys
         }
 
         var line = document.GetLineByOffset(area.Caret.Offset);
-        if (Item().Match(document.GetText(line)) is not { Success: true } item
-            || area.Caret.Offset < line.Offset + item.Groups["body"].Index
-            || InCode(document, line.LineNumber))
+        var text = document.GetText(line);
+        var (depth, quotes) = QuotesOf(text);
+        var inCode = InCode(document, line.LineNumber);
+        if (Item().Match(text[quotes..]) is not { Success: true } item
+            || area.Caret.Offset < line.Offset + quotes + item.Groups["body"].Index
+            || inCode)
         {
-            return false;
+            return depth > 0 && area.Caret.Offset >= line.Offset + quotes && Quote(area, line, text, depth, quotes, inCode);
         }
 
         using (document.RunUpdate())
         {
             if (string.IsNullOrWhiteSpace(item.Groups["body"].Value))
             {
-                document.Remove(line.Offset, line.Length);
-                area.Caret.Offset = line.Offset;
+                document.Replace(line.Offset, line.Length, text[..quotes]);
+                area.Caret.Offset = line.Offset + quotes;
                 return true;
             }
 
@@ -50,12 +54,38 @@ internal static partial class EditingKeys
                 ? NextNumber(document, line.LineNumber, item).ToString(CultureInfo.InvariantCulture) + item.Groups["delimiter"].Value
                 : item.Groups["marker"].Value;
             var task = item.Groups["task"].Success ? "[ ]" + item.Groups["after"].Value : string.Empty;
-            var prefix = item.Groups["indent"].Value + marker + item.Groups["space"].Value + task;
+            var prefix = text[..quotes] + item.Groups["indent"].Value + marker + item.Groups["space"].Value + task;
             var caret = area.Caret.Offset;
             var newLine = TextUtilities.GetNewLineFromDocument(document, line.LineNumber);
             document.Insert(caret, newLine + prefix);
             area.Caret.Offset = caret + newLine.Length + prefix.Length;
             Renumber(document, line.LineNumber + 1);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Enter в строке цитаты: новая строка — с теми же знаками, а пустая строка цитаты вне кода теряет
+    /// последний знак и выходит на уровень выше.
+    /// </summary>
+    private static bool Quote(TextArea area, DocumentLine line, string text, int depth, int quotes, bool inCode)
+    {
+        var document = area.Document;
+        using (document.RunUpdate())
+        {
+            if (!inCode && IsBlank(text))
+            {
+                var outer = text.Length - Inside(text, depth - 1)!.Length;
+                document.Replace(line.Offset, line.Length, text[..outer]);
+                area.Caret.Offset = line.Offset + outer;
+                return true;
+            }
+
+            var caret = area.Caret.Offset;
+            var newLine = TextUtilities.GetNewLineFromDocument(document, line.LineNumber) + text[..quotes];
+            document.Insert(caret, newLine);
+            area.Caret.Offset = caret + newLine.Length;
         }
 
         return true;
@@ -70,52 +100,80 @@ internal static partial class EditingKeys
     }
 
     /// <summary>
-    /// Tab и Shift+Tab в пункте: пункт со всеми его строками встаёт туда, где начинается содержимое
-    /// предыдущего пункта того же уровня, или туда, где начинается его родитель. Не пункт —
-    /// <c>false</c>: Tab делает AvalonEdit.
+    /// Tab и Shift+Tab в пункте и в выделенных пунктах: пункт со всеми строками встаёт к содержимому
+    /// предыдущего пункта того же уровня или к началу родителя. Не пункт — <c>false</c>: Tab делает AvalonEdit.
     /// </summary>
     public static bool Shift(TextArea area, bool outdent)
     {
         var document = area.Document;
-        var first = document.GetLineByOffset(area.Selection.IsEmpty ? area.Caret.Offset : area.Selection.SurroundingSegment.Offset);
-        if (Item().Match(document.GetText(first)) is not { Success: true } item || InCode(document, first.LineNumber))
+        var selection = area.Selection.IsEmpty ? null : area.Selection.SurroundingSegment;
+        var first = document.GetLineByOffset(selection?.Offset ?? area.Caret.Offset);
+        var (depth, quotes) = QuotesOf(document.GetText(first));
+        if (!Item().IsMatch(document.GetText(first)[quotes..]) || InCode(document, first.LineNumber))
         {
             return false;
         }
 
-        var indent = Width(item.Groups["indent"].Value);
-        var target = outdent ? ParentIndent(document, first.LineNumber, indent) : SiblingText(document, first.LineNumber, indent);
-        if (target is not { } column || column == indent)
-        {
-            return true;
-        }
-
-        var last = ItemEnd(document, first.LineNumber, indent);
+        var end = selection is null ? first : document.GetLineByOffset(selection.EndOffset);
+        var last = end.LineNumber > first.LineNumber && end.Offset == selection!.EndOffset ? end.LineNumber - 1 : end.LineNumber;
+        var moved = new List<(int First, int Last, int Indent)>();
         using (document.RunUpdate())
         {
             for (var number = first.LineNumber; number <= last; number++)
             {
-                var line = document.GetLineByNumber(number);
-                var text = document.GetText(line);
-                if (string.IsNullOrWhiteSpace(text))
+                if (Inside(document.GetText(document.GetLineByNumber(number)), depth) is { } rest && Item().Match(rest) is { Success: true } item)
                 {
-                    continue;
-                }
+                    var indent = Width(item.Groups["indent"].Value);
+                    var itemEnd = ItemEnd(document, number, depth, indent);
+                    if (ShiftItem(document, number, itemEnd, depth, indent, outdent))
+                    {
+                        moved.Add((number, itemEnd, indent));
+                    }
 
-                if (column > indent)
-                {
-                    document.Insert(line.Offset, new string(' ', column - indent));
-                }
-                else
-                {
-                    document.Remove(line.Offset, LeadingChars(text, indent - column));
+                    number = itemEnd;
                 }
             }
 
-            Renumber(document, first.LineNumber);
-            if (NextAtIndent(document, last + 1, indent) is { } next)
+            // Перенумеровка: сдвинутые пункты — в новом списке, а в прежнем — пункты после них
+            foreach (var (number, itemEnd, indent) in moved)
             {
-                Renumber(document, next);
+                Renumber(document, number);
+                if (NextAtIndent(document, itemEnd + 1, depth, indent) is { } next)
+                {
+                    Renumber(document, next);
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>Сдвигает пункт со строки <paramref name="number"/> по <paramref name="last"/> за знаками цитаты; сдвигать некуда — <c>false</c>.</summary>
+    private static bool ShiftItem(TextDocument document, int number, int last, int depth, int indent, bool outdent)
+    {
+        var target = outdent ? ParentIndent(document, number, depth, indent) : SiblingText(document, number, depth, indent);
+        if (target is not { } column || column == indent)
+        {
+            return false;
+        }
+
+        for (var current = number; current <= last; current++)
+        {
+            var line = document.GetLineByNumber(current);
+            var text = document.GetText(line);
+            if (Inside(text, depth) is not { } rest || string.IsNullOrWhiteSpace(rest))
+            {
+                continue;
+            }
+
+            var at = line.Offset + text.Length - rest.Length;
+            if (column > indent)
+            {
+                document.Insert(at, new string(' ', column - indent));
+            }
+            else
+            {
+                document.Remove(at, LeadingChars(rest, indent - column));
             }
         }
 
@@ -130,7 +188,7 @@ internal static partial class EditingKeys
     {
         var document = area.Document;
         var number = document.GetLineByOffset(area.Caret.Offset).LineNumber;
-        while (number < document.LineCount && string.IsNullOrWhiteSpace(document.GetText(document.GetLineByNumber(number))))
+        while (number < document.LineCount && IsBlank(document.GetText(document.GetLineByNumber(number))))
         {
             number++;
         }
@@ -214,21 +272,29 @@ internal static partial class EditingKeys
     private static void Number(TextDocument document, int number, long value)
     {
         var line = document.GetLineByNumber(number);
-        var item = Item().Match(document.GetText(line));
+        var quotes = QuotesOf(document.GetText(line)).Length;
+        var item = Item().Match(document.GetText(line)[quotes..]);
         var digits = item.Groups["number"];
         var space = item.Groups["space"];
         var text = value.ToString(CultureInfo.InvariantCulture);
         var spaces = space.Value.Contains('\t') ? space.Value : new string(' ', Math.Max(1, digits.Length + space.Length - text.Length));
-        document.Replace(line.Offset + digits.Index, space.Index + space.Length - digits.Index, text + item.Groups["delimiter"].Value + spaces);
+        document.Replace(line.Offset + quotes + digits.Index, space.Index + space.Length - digits.Index, text + item.Groups["delimiter"].Value + spaces);
     }
 
     /// <summary>
-    /// Нумерованные пункты списка на строке <paramref name="number"/> того же уровня и с тем же
-    /// разделителем, сверху вниз; на строке не нумерованный пункт — пусто.
+    /// Нумерованные пункты списка на строке <paramref name="number"/> того же уровня, с тем же разделителем и
+    /// за теми же знаками цитаты, сверху вниз; на строке не нумерованный пункт — пусто.
     /// </summary>
     private static List<(int Line, long Number)> Siblings(TextDocument document, int number)
     {
-        if (number < 1 || number > document.LineCount || Item().Match(document.GetText(document.GetLineByNumber(number))) is not { Success: true } item || !item.Groups["number"].Success)
+        if (number < 1 || number > document.LineCount)
+        {
+            return [];
+        }
+
+        var text = document.GetText(document.GetLineByNumber(number));
+        var (depth, quotes) = QuotesOf(text);
+        if (Item().Match(text[quotes..]) is not { Success: true } item || !item.Groups["number"].Success)
         {
             return [];
         }
@@ -236,7 +302,7 @@ internal static partial class EditingKeys
         var indent = Width(item.Groups["indent"].Value);
         var delimiter = item.Groups["delimiter"].Value;
         var siblings = new List<(int Line, long Number)> { (number, long.Parse(item.Groups["number"].Value, CultureInfo.InvariantCulture)) };
-        for (var current = number - 1; current >= 1 && SiblingAt(document, current, indent, delimiter) is var found and not -1L; current--)
+        for (var current = number - 1; current >= 1 && SiblingAt(document, current, depth, indent, delimiter) is var found and not -1L; current--)
         {
             if (found is { } value)
             {
@@ -244,7 +310,7 @@ internal static partial class EditingKeys
             }
         }
 
-        for (var current = number + 1; current <= document.LineCount && SiblingAt(document, current, indent, delimiter) is var found and not -1L; current++)
+        for (var current = number + 1; current <= document.LineCount && SiblingAt(document, current, depth, indent, delimiter) is var found and not -1L; current++)
         {
             if (found is { } value)
             {
@@ -257,11 +323,15 @@ internal static partial class EditingKeys
 
     /// <summary>
     /// Строка рядом со списком: номер пункта того же уровня и разделителя; пустая строка или вложенное —
-    /// <c>null</c>, список здесь кончается — <c>-1</c>.
+    /// <c>null</c>, список здесь кончается, в том числе вместе с цитатой, — <c>-1</c>.
     /// </summary>
-    private static long? SiblingAt(TextDocument document, int number, int indent, string delimiter)
+    private static long? SiblingAt(TextDocument document, int number, int depth, int indent, string delimiter)
     {
-        var text = document.GetText(document.GetLineByNumber(number));
+        if (Inside(document.GetText(document.GetLineByNumber(number)), depth) is not { } text)
+        {
+            return -1;
+        }
+
         if (string.IsNullOrWhiteSpace(text))
         {
             return null;
@@ -278,12 +348,16 @@ internal static partial class EditingKeys
             : -1;
     }
 
-    /// <summary>Первая непустая строка с <paramref name="number"/> и ниже, если это пункт с отступом <paramref name="indent"/>.</summary>
-    private static int? NextAtIndent(TextDocument document, int number, int indent)
+    /// <summary>Первая непустая строка с <paramref name="number"/> и ниже, если это пункт с отступом <paramref name="indent"/> за теми же знаками цитаты.</summary>
+    private static int? NextAtIndent(TextDocument document, int number, int depth, int indent)
     {
         for (var current = number; current <= document.LineCount; current++)
         {
-            var text = document.GetText(document.GetLineByNumber(current));
+            if (Inside(document.GetText(document.GetLineByNumber(current)), depth) is not { } text)
+            {
+                return null;
+            }
+
             if (!string.IsNullOrWhiteSpace(text))
             {
                 return Item().IsMatch(text) && Width(LeadingWhitespace(text)) == indent ? current : null;
@@ -467,49 +541,58 @@ internal static partial class EditingKeys
         var document = area.Document;
         var line = document.GetLineByOffset(area.Caret.Offset);
         var text = document.GetText(line);
+        var (depth, quotes) = QuotesOf(text);
         if (area.Caret.Offset != line.EndOffset
-            || Fence().Match(text) is not { Success: true } fence
-            || fence.Length != text.Length
+            || FenceAt(document, line.LineNumber) is not { } fence
+            || quotes + fence.Length != text.Length
             || InCode(document, line.LineNumber))
         {
             return;
         }
 
         var mark = fence.Groups["fence"].Value;
-        var below = 0;
+        var below = new List<(DocumentLine Line, Match Fence)>();
         for (var number = line.LineNumber + 1; number <= document.LineCount; number++)
         {
-            if (Fence().Match(document.GetText(document.GetLineByNumber(number))) is { Success: true } other
-                && other.Groups["fence"].Value[0] == mark[0])
+            var other = document.GetLineByNumber(number);
+            if (QuotesOf(document.GetText(other)).Depth == depth && FenceAt(document, number) is { } found && found.Groups["fence"].Value[0] == mark[0])
             {
-                below++;
+                below.Add((other, found));
             }
         }
 
-        if (below % 2 == 1)
+        if (below.Count % 2 == 1)
         {
+            // Блок уже закрыт ниже: ограждение, которое на знак короче набранного, растёт вместе с ним
+            var (closer, closing) = below[0];
+            var at = closer.Offset + QuotesOf(document.GetText(closer)).Length + closing.Length;
+            if (closing.Groups["fence"].Length == mark.Length - 1 && document.GetText(closer).TrimEnd().Length == at - closer.Offset)
+            {
+                using (document.RunUpdate())
+                {
+                    document.Insert(at, mark[..1]);
+                }
+            }
+
             return;
         }
 
         var caret = area.Caret.Offset;
         using (document.RunUpdate())
         {
-            document.Insert(line.EndOffset, TextUtilities.GetNewLineFromDocument(document, line.LineNumber) + fence.Groups["indent"].Value + mark);
+            document.Insert(line.EndOffset, TextUtilities.GetNewLineFromDocument(document, line.LineNumber) + text[..quotes] + fence.Groups["indent"].Value + mark);
         }
 
         area.Caret.Offset = caret;
     }
 
     /// <summary>
-    /// Вставка с форматированием: HTML из данных — Markdown на месте выделения, без HTML — текст, как
-    /// обычной вставкой; одним шагом отмены.
+    /// Вставка с форматированием: HTML из данных — Markdown на месте выделения, без HTML или с HTML, который не
+    /// перевести, — текст, как обычной вставкой; одним шагом отмены. Данные не прочесть — ничего.
     /// </summary>
     public static void PasteFormatted(TextArea area, IDataObject data)
     {
-        var text = data.GetDataPresent(DataFormats.Html) && data.GetData(DataFormats.Html) is string { Length: > 0 } html
-            ? HtmlMarkdown.Convert(html)
-            : data.GetData(DataFormats.UnicodeText) as string;
-        if (string.IsNullOrEmpty(text))
+        if (TextOf(data) is not { Length: > 0 } text)
         {
             return;
         }
@@ -518,6 +601,36 @@ internal static partial class EditingKeys
         using (document.RunUpdate())
         {
             area.Selection.ReplaceSelectionWithText(TextUtilities.NormalizeNewLines(text, TextUtilities.GetNewLineFromDocument(document, area.Caret.Line)));
+        }
+    }
+
+    /// <summary>Markdown из HTML данных, а без HTML или с HTML, который не перевести, — их текст; данные не прочесть — <c>null</c>.</summary>
+    private static string? TextOf(IDataObject data)
+    {
+        try
+        {
+            return data.GetDataPresent(DataFormats.Html) && data.GetData(DataFormats.Html) is string { Length: > 0 } html && Markdown(html) is { } markdown
+                ? markdown
+                : data.GetData(DataFormats.UnicodeText) as string;
+        }
+        catch (ExternalException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Markdown из HTML; перевод упал — <c>null</c>.</summary>
+    private static string? Markdown(string html)
+    {
+        try
+        {
+            return HtmlMarkdown.Convert(html);
+        }
+
+        // BYDESIGN: перевод чужой библиотекой может упасть на любом HTML из буфера — тогда вставляется текст
+        catch (Exception)
+        {
+            return null;
         }
     }
 
@@ -542,17 +655,99 @@ internal static partial class EditingKeys
     [GeneratedRegex(@"^(?:[ \t]*>[ \t]?)*[ \t]*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+(?:\[[ xX]\][ \t]+)?|#{1,6}[ \t]+)?")]
     private static partial Regex LinePrefix();
 
-    /// <summary>Строка ограждения кода: до трёх пробелов, три и больше обратных кавычек или тильд и сведения о языке.</summary>
-    [GeneratedRegex(@"^(?<indent> {0,3})(?<fence>`{3,}|~{3,})")]
+    /// <summary>Строка ограждения кода за знаками цитаты: отступ, три и больше обратных кавычек или тильд и сведения о языке.</summary>
+    [GeneratedRegex(@"^(?<indent>[ \t]*)(?<fence>`{3,}|~{3,})")]
     private static partial Regex Fence();
 
-    /// <summary>Строка — внутри ограждённого блока кода: ограждения выше открыли блок и не закрыли.</summary>
+    /// <summary>Знак цитаты с этого места: до трёх пробелов, <c>&gt;</c> и пробел после него.</summary>
+    [GeneratedRegex(@"\G[ \t]{0,3}>[ \t]?")]
+    private static partial Regex QuoteMark();
+
+    /// <summary>Знаки цитаты в начале строки: сколько их и сколько знаков текста они занимают.</summary>
+    private static (int Depth, int Length) QuotesOf(string text)
+    {
+        var (depth, at) = (0, 0);
+        while (QuoteMark().Match(text, at) is { Success: true } mark)
+        {
+            depth++;
+            at += mark.Length;
+        }
+
+        return (depth, at);
+    }
+
+    /// <summary>Текст строки за <paramref name="depth"/> знаками цитаты; знаков меньше — <c>null</c>: строка вне этой цитаты.</summary>
+    private static string? Inside(string text, int depth)
+    {
+        var at = 0;
+        for (var level = 0; level < depth; level++)
+        {
+            if (QuoteMark().Match(text, at) is not { Success: true } mark)
+            {
+                return null;
+            }
+
+            at += mark.Length;
+        }
+
+        return text[at..];
+    }
+
+    /// <summary>Строка пустая или из одних знаков цитаты и пробелов.</summary>
+    private static bool IsBlank(string text) => string.IsNullOrWhiteSpace(text[QuotesOf(text).Length..]);
+
+    /// <summary>
+    /// Ограждение кода на строке за её знаками цитаты: с отступом до трёх пробелов, а глубже — только в
+    /// содержимом пункта, от его начала и до трёх пробелов дальше. Не ограждение — <c>null</c>.
+    /// </summary>
+    private static Match? FenceAt(TextDocument document, int number)
+    {
+        var text = document.GetText(document.GetLineByNumber(number));
+        var (depth, quotes) = QuotesOf(text);
+        if (Fence().Match(text[quotes..]) is not { Success: true } fence)
+        {
+            return null;
+        }
+
+        var indent = Width(fence.Groups["indent"].Value);
+        return indent <= 3 || ContentColumn(document, number, depth, indent) is { } column && indent >= column && indent <= column + 3 ? fence : null;
+    }
+
+    /// <summary>Где начинается содержимое пункта, внутри которого стоит строка с отступом <paramref name="indent"/>; строка не в пункте — <c>null</c>.</summary>
+    private static int? ContentColumn(TextDocument document, int number, int depth, int indent)
+    {
+        for (var current = number - 1; current >= 1; current--)
+        {
+            if (Inside(document.GetText(document.GetLineByNumber(current)), depth) is not { } text)
+            {
+                return null;
+            }
+
+            var width = Width(LeadingWhitespace(text));
+            if (string.IsNullOrWhiteSpace(text) || width >= indent)
+            {
+                continue;
+            }
+
+            return Item().Match(text) is { Success: true } item ? Width(text[..ContentStart(item)]) : null;
+        }
+
+        return null;
+    }
+
+    /// <summary>Строка — внутри ограждённого блока кода: ограждения выше открыли блок и не закрыли; блок в цитате кончается вместе с ней.</summary>
     private static bool InCode(TextDocument document, int number)
     {
-        string? open = null;
+        (string Mark, int Depth)? open = null;
         for (var current = 1; current < number; current++)
         {
-            if (Fence().Match(document.GetText(document.GetLineByNumber(current))) is not { Success: true } fence)
+            var depth = QuotesOf(document.GetText(document.GetLineByNumber(current))).Depth;
+            if (open is { } block && depth < block.Depth)
+            {
+                open = null;
+            }
+
+            if (FenceAt(document, current) is not { } fence)
             {
                 continue;
             }
@@ -560,9 +755,9 @@ internal static partial class EditingKeys
             var mark = fence.Groups["fence"].Value;
             if (open is null)
             {
-                open = mark;
+                open = (mark, depth);
             }
-            else if (mark[0] == open[0] && mark.Length >= open.Length)
+            else if (depth == open.Value.Depth && mark[0] == open.Value.Mark[0] && mark.Length >= open.Value.Mark.Length)
             {
                 open = null;
             }
@@ -571,12 +766,19 @@ internal static partial class EditingKeys
         return open is not null;
     }
 
-    /// <summary>Где начинается содержимое предыдущего пункта того же уровня; такого нет — <c>null</c>.</summary>
-    private static int? SiblingText(TextDocument document, int number, int indent)
+    /// <summary>Где в строке пункта начинается его содержимое: флажок задачи или текст.</summary>
+    private static int ContentStart(Match item) => item.Groups["task"].Success ? item.Groups["task"].Index : item.Groups["body"].Index;
+
+    /// <summary>Где начинается содержимое предыдущего пункта того же уровня за теми же знаками цитаты; такого нет — <c>null</c>.</summary>
+    private static int? SiblingText(TextDocument document, int number, int depth, int indent)
     {
         for (var current = number - 1; current >= 1; current--)
         {
-            var text = document.GetText(document.GetLineByNumber(current));
+            if (Inside(document.GetText(document.GetLineByNumber(current)), depth) is not { } text)
+            {
+                return null;
+            }
+
             if (string.IsNullOrWhiteSpace(text))
             {
                 continue;
@@ -585,8 +787,7 @@ internal static partial class EditingKeys
             var width = Width(LeadingWhitespace(text));
             if (Item().Match(text) is { Success: true } item && width <= indent)
             {
-                var content = item.Groups["task"].Success ? item.Groups["task"].Index : item.Groups["body"].Index;
-                return width == indent ? Width(text[..content]) : null;
+                return width == indent ? Width(text[..ContentStart(item)]) : null;
             }
 
             if (width < indent)
@@ -598,12 +799,16 @@ internal static partial class EditingKeys
         return null;
     }
 
-    /// <summary>Отступ пункта-родителя — ближайшего пункта выше с меньшим отступом; родителя нет — <c>null</c>.</summary>
-    private static int? ParentIndent(TextDocument document, int number, int indent)
+    /// <summary>Отступ пункта-родителя — ближайшего пункта выше с меньшим отступом за теми же знаками цитаты; родителя нет — <c>null</c>.</summary>
+    private static int? ParentIndent(TextDocument document, int number, int depth, int indent)
     {
         for (var current = number - 1; current >= 1; current--)
         {
-            var text = document.GetText(document.GetLineByNumber(current));
+            if (Inside(document.GetText(document.GetLineByNumber(current)), depth) is not { } text)
+            {
+                return null;
+            }
+
             if (Item().Match(text) is { Success: true } && Width(LeadingWhitespace(text)) < indent)
             {
                 return Width(LeadingWhitespace(text));
@@ -613,13 +818,17 @@ internal static partial class EditingKeys
         return null;
     }
 
-    /// <summary>Последняя строка пункта: следом идут строки с отступом больше, чем у пункта, и пустые между ними.</summary>
-    private static int ItemEnd(TextDocument document, int number, int indent)
+    /// <summary>Последняя строка пункта: следом идут строки с отступом больше, чем у пункта, и пустые между ними, за теми же знаками цитаты.</summary>
+    private static int ItemEnd(TextDocument document, int number, int depth, int indent)
     {
         var last = number;
         for (var current = number + 1; current <= document.LineCount; current++)
         {
-            var text = document.GetText(document.GetLineByNumber(current));
+            if (Inside(document.GetText(document.GetLineByNumber(current)), depth) is not { } text)
+            {
+                break;
+            }
+
             if (string.IsNullOrWhiteSpace(text))
             {
                 continue;

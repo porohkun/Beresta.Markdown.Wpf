@@ -612,6 +612,14 @@ var thread = new Thread(() =>
                 break;
             }
 
+            // Ресурс по ключу у редактора: тот же ли объект, заморожен ли, его цвет
+            case "resource":
+            {
+                var found = Editor(window).TryFindResource(value);
+                Console.WriteLine($"resource {value}: #{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(found)} {found?.GetType().Name} frozen {(found as Freezable)?.IsFrozen} {(found as SolidColorBrush)?.Color}");
+                break;
+            }
+
             // Выделение в исходнике редактора: строки документа с единицы первая-последняя целиком
             case "sourceselect":
             {
