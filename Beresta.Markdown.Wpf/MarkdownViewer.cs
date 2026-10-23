@@ -34,7 +34,7 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
             nameof(Markdown),
             typeof(string),
             typeof(MarkdownViewer),
-            new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.None, OnMarkdownChanged));
+            new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.None, OnMarkdownPropertyChanged));
 
     /// <summary>
     /// A ready Markdig pipeline; not set — the extended default one. With extensions of the viewer
@@ -1145,6 +1145,15 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
     }
 
     /// <summary>
+    /// A new <see cref="Markdown"/> came: by default the viewer parses it at once; an override may leave it to
+    /// a later <see cref="ParseMarkdown"/>.
+    /// </summary>
+    protected virtual void OnMarkdownChanged() => Rebuild();
+
+    /// <summary>Parses <see cref="Markdown"/> anew, as a new text is parsed: short at once, long in the background.</summary>
+    protected void ParseMarkdown() => Rebuild();
+
+    /// <summary>
     /// How the source of the shown document looks: built-in elements by their kind, markup — the place
     /// of an element without the places of its children — and the widgets of extensions as they
     /// describe them.
@@ -1236,8 +1245,8 @@ public class MarkdownViewer : ItemsControl, IMdScrollSide
         }
     }
 
-    private static void OnMarkdownChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        => ((MarkdownViewer)d).Rebuild();
+    private static void OnMarkdownPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        => ((MarkdownViewer)d).OnMarkdownChanged();
 
     private static void OnPipelineChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownViewer)d).ResetPipeline();

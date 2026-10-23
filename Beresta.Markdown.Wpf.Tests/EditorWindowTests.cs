@@ -273,6 +273,24 @@ public sealed class EditorWindowTests
     }
 
     [Fact]
+    public void Полный_режим_после_удаления_всего_текста_не_рисует_прежний_разбор()
+    {
+        WpfHost.Invoke(() =>
+        {
+            var editor = new MarkdownEditor { Markdown = "one\n\ntwo\n\nthree", EditMode = MdEditMode.Full, CommitDelay = TimeSpan.FromSeconds(30) };
+            var window = WpfHost.Show(new ScrollViewer { Content = editor });
+
+            editor.SelectSource(0, editor.TextEditor.Document.TextLength);
+            editor.InsertText(string.Empty);
+            WpfHost.Settle(window);
+
+            editor.Source.Should().Be("one\n\ntwo\n\nthree");
+            Rendered(editor).Should().BeEmpty();
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void В_блочном_режиме_окна_нет_пока_курсор_не_поставили()
     {
         WpfHost.Invoke(() =>

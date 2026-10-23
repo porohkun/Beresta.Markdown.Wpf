@@ -522,6 +522,14 @@ var thread = new Thread(() =>
                 break;
             }
 
+            // Сколько знаков у Markdown редактора и у текстовой карты его отрисовки
+            case "lengths":
+            {
+                var editor = Editor(window);
+                Console.WriteLine($"lengths: Markdown {editor.Markdown?.Length ?? 0} знаков, карта {editor.TextMap.Length}");
+                break;
+            }
+
             // Набор в AvalonEdit редактора; \n — перевод строки
             case "type":
                 Editor(window).TextEditor.TextArea.PerformTextInput(value.Replace("\\n", "\n"));

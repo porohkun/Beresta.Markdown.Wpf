@@ -7,8 +7,8 @@
         <member name="T:Beresta.Markdown.Wpf.Editor.MarkdownEditor">
             <summary>
             Редактор Markdown: вьюер, который ещё и правит исходник своего документа. Исходник живёт в
-            AvalonEdit и уходит в <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.Markdown"/> вскоре после последней правки;
-            правимые блоки показывают его вместо своей отрисовки.
+            AvalonEdit и уходит в <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.Markdown"/> после каждой правки, а отрисовка догоняет
+            его вскоре после последней; правимые блоки показывают исходник вместо своей отрисовки.
             </summary>
         </member>
         <member name="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.EditModeProperty">
@@ -62,11 +62,35 @@
             <see cref="F:Beresta.Markdown.Wpf.Editor.MdEditMode.Blocks"/> его блок становится правимым.
             </summary>
         </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.SourceSelectionStartProperty">
+            <summary>Начало выделения в исходнике; без выделения — курсор. По умолчанию привязывается в обе стороны.</summary>
+        </member>
         <member name="P:Beresta.Markdown.Wpf.Editor.MarkdownEditor.SourceSelectionStart">
-            <summary>Начало выделения в исходнике.</summary>
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.SourceSelectionStartProperty"/>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.SourceSelectionLengthProperty">
+            <summary>Длина выделения в исходнике; 0 — ничего не выделено. По умолчанию привязывается в обе стороны.</summary>
         </member>
         <member name="P:Beresta.Markdown.Wpf.Editor.MarkdownEditor.SourceSelectionLength">
-            <summary>Длина выделения в исходнике; 0 — ничего не выделено.</summary>
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.SourceSelectionLengthProperty"/>
+        </member>
+        <member name="E:Beresta.Markdown.Wpf.Editor.MarkdownEditor.SourceSelectionChanged">
+            <summary>Курсор или выделение в исходнике сдвинулись.</summary>
+        </member>
+        <member name="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.MergeExternalTextProperty">
+            <summary>
+            Новый <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.Markdown"/> извне ложится одной правкой того, что отличается: один
+            шаг отмены, курсор и выделение остаются на своём тексте. По умолчанию он заменяет исходник.
+            </summary>
+        </member>
+        <member name="P:Beresta.Markdown.Wpf.Editor.MarkdownEditor.MergeExternalText">
+            <inheritdoc cref="F:Beresta.Markdown.Wpf.Editor.MarkdownEditor.MergeExternalTextProperty"/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.ReplaceSource(System.Int32,System.Int32,System.String)">
+            <summary>
+            Заменяет <paramref name="length"/> знаков исходника с <paramref name="start"/> текстом одним шагом
+            отмены; курсор и выделение остаются на своём тексте, а страница за курсором не идёт.
+            </summary>
         </member>
         <member name="P:Beresta.Markdown.Wpf.Editor.MarkdownEditor.TextEditor">
             <summary>AvalonEdit, в котором живёт исходник: его документ, настройки и вид.</summary>
@@ -78,10 +102,7 @@
             <summary>Ставит текст вместо выделенного в исходнике или у курсора.</summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.CommitText">
-            <summary>
-            Отдаёт правленый исходник в <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.Markdown"/> сразу, не дожидаясь:
-            перед сохранением, перед тем как читать текст снаружи.
-            </summary>
+            <summary>Рисует правленый исходник сразу, не дожидаясь паузы после последней правки.</summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.Undo">
             <summary>Отменяет последнюю правку исходника; курсор встаёт на её место.</summary>
@@ -90,6 +111,9 @@
             <summary>Возвращает последнюю отменённую правку исходника; курсор встаёт на её место.</summary>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.OnDocumentApplied">
+            <inheritdoc/>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.OnMarkdownChanged">
             <inheritdoc/>
         </member>
         <member name="M:Beresta.Markdown.Wpf.Editor.MarkdownEditor.OnPreviewMouseMove(System.Windows.Input.MouseEventArgs)">
