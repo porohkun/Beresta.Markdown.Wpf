@@ -1772,6 +1772,15 @@
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.OnDocumentApplied">
             <summary>Новый разбор лёг на документ: его блоки, текстовая карта и <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.TopBlockSpans"/>.</summary>
         </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.OnMarkdownChanged">
+            <summary>
+            Пришёл новый <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.Markdown"/>: по умолчанию вьюер сразу его разбирает; наследник может
+            оставить разбор на потом — на <see cref="M:Beresta.Markdown.Wpf.MarkdownViewer.ParseMarkdown"/>.
+            </summary>
+        </member>
+        <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.ParseMarkdown">
+            <summary>Разбирает <see cref="P:Beresta.Markdown.Wpf.MarkdownViewer.Markdown"/> заново, как новый текст: короткий — сразу, длинный — в фоне.</summary>
+        </member>
         <member name="M:Beresta.Markdown.Wpf.MarkdownViewer.GetSourceLook">
             <summary>
             Как выглядит исходник показанного документа: встроенные элементы — по своему виду, знаки

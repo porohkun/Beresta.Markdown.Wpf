@@ -1,4 +1,4 @@
-﻿# Beresta.Markdown.Wpf.Editor v0.9.0
+﻿# Beresta.Markdown.Wpf.Editor v0.9.1
 
 [![NuGet](https://img.shields.io/nuget/v/Beresta.Markdown.Wpf.Editor)](https://www.nuget.org/packages/Beresta.Markdown.Wpf.Editor)
 [![Downloads](https://img.shields.io/nuget/dt/Beresta.Markdown.Wpf.Editor)](https://www.nuget.org/packages/Beresta.Markdown.Wpf.Editor)
@@ -81,14 +81,8 @@ ReverseMarkdown для вставки HTML как Markdown.
 </Window>
 ```
 
-Правленый текст уходит в `Markdown` через секунду после последней правки; `CommitText()` отдаёт его сразу.
-
-`MainWindow.xaml.cs`, перед сохранением файла:
-
-```csharp
-Editor.CommitText();
-File.WriteAllText(path, Editor.Markdown);
-```
+Правленый текст уходит в `Markdown` после каждой правки, и привязка сразу отдаёт его модели
+представления; отрисовка догоняет его через секунду после последней правки.
 
 ## Документация
 

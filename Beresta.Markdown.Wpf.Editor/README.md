@@ -1,4 +1,4 @@
-﻿# Beresta.Markdown.Wpf.Editor v0.9.0
+﻿# Beresta.Markdown.Wpf.Editor v0.9.1
 
 [![NuGet](https://img.shields.io/nuget/v/Beresta.Markdown.Wpf.Editor)](https://www.nuget.org/packages/Beresta.Markdown.Wpf.Editor)
 [![Downloads](https://img.shields.io/nuget/dt/Beresta.Markdown.Wpf.Editor)](https://www.nuget.org/packages/Beresta.Markdown.Wpf.Editor)
@@ -81,14 +81,8 @@ The editor has no scroll bars of its own: put it into a `ScrollViewer`, like the
 </Window>
 ```
 
-The edited text goes to `Markdown` a second after the last edit; `CommitText()` hands it over at once.
-
-`MainWindow.xaml.cs`, before saving the file:
-
-```csharp
-Editor.CommitText();
-File.WriteAllText(path, Editor.Markdown);
-```
+The edited text goes to `Markdown` after every edit, and the binding hands it to your view model at
+once; the drawing catches up a second after the last edit.
 
 ## Documentation
 

@@ -23,8 +23,8 @@ using ViewModels;
 
 /// <summary>
 /// A Markdown editor: the viewer that also edits the source of its document. The source lives in
-/// AvalonEdit and goes to <see cref="MarkdownViewer.Markdown"/> a moment after the last edit; the
-/// blocks being edited show it in place of their drawing.
+/// AvalonEdit and goes to <see cref="MarkdownViewer.Markdown"/> after every edit, the drawing follows a
+/// moment after the last one; the blocks being edited show the source in place of their drawing.
 /// </summary>
 public sealed class MarkdownEditor : MarkdownViewer
 {
@@ -45,6 +45,33 @@ public sealed class MarkdownEditor : MarkdownViewer
             typeof(MarkdownEditor),
             new FrameworkPropertyMetadata(MdFrontMatterEditing.Text, OnFrontMatterEditingChanged),
             value => value is MdFrontMatterEditing editing && Enum.IsDefined(editing));
+
+    /// <summary>The start of the selection in the source; with nothing selected — the caret. Binds both ways by default.</summary>
+    public static readonly DependencyProperty SourceSelectionStartProperty =
+        DependencyProperty.Register(
+            nameof(SourceSelectionStart),
+            typeof(int),
+            typeof(MarkdownEditor),
+            new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnSourceSelectionChanged));
+
+    /// <summary>The length of the selection in the source; 0 — nothing is selected. Binds both ways by default.</summary>
+    public static readonly DependencyProperty SourceSelectionLengthProperty =
+        DependencyProperty.Register(
+            nameof(SourceSelectionLength),
+            typeof(int),
+            typeof(MarkdownEditor),
+            new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnSourceSelectionChanged));
+
+    /// <summary>
+    /// A new <see cref="MarkdownViewer.Markdown"/> from outside lands as one edit of the part that differs: one
+    /// step of undo, the caret and the selection stay on their text. By default it replaces the source.
+    /// </summary>
+    public static readonly DependencyProperty MergeExternalTextProperty =
+        DependencyProperty.Register(
+            nameof(MergeExternalText),
+            typeof(bool),
+            typeof(MarkdownEditor),
+            new FrameworkPropertyMetadata(false));
 
     private static readonly DependencyPropertyKey CanUndoPropertyKey =
         DependencyProperty.RegisterReadOnly(
@@ -92,6 +119,11 @@ public sealed class MarkdownEditor : MarkdownViewer
     private bool _dirty;
     private long _dirtySince;
     private bool _taking;
+    private bool _quiet;
+    private bool _syncingSelection;
+    private bool _selectionHeld;
+    private bool _selectionPending;
+    private (int Start, int Length) _selection;
     private bool _stepping;
     private bool _typed;
     private bool _caretMoved;
@@ -105,7 +137,6 @@ public sealed class MarkdownEditor : MarkdownViewer
 
     static MarkdownEditor()
     {
-        MarkdownProperty.OverrideMetadata(typeof(MarkdownEditor), new FrameworkPropertyMetadata(OnMarkdownChanged));
         CodeHighlighterProperty.OverrideMetadata(
             typeof(MarkdownEditor),
             new FrameworkPropertyMetadata(MdAvalonCodeHighlighter.Instance, FrameworkPropertyMetadataOptions.Inherits));
@@ -201,6 +232,9 @@ public sealed class MarkdownEditor : MarkdownViewer
     /// <summary>The source changed: typing, an undo, a control, a new text.</summary>
     public event EventHandler<MdSourceChangedEventArgs>? SourceChanged;
 
+    /// <summary>The caret or the selection in the source moved.</summary>
+    public event EventHandler? SourceSelectionChanged;
+
     /// <summary>Новый разбор лёг на документ: его текстовая карта — для показанного текста.</summary>
     internal event Action? DocumentApplied;
 
@@ -225,6 +259,13 @@ public sealed class MarkdownEditor : MarkdownViewer
         set => SetValue(FrontMatterEditingProperty, value);
     }
 
+    /// <inheritdoc cref="MergeExternalTextProperty"/>
+    public bool MergeExternalText
+    {
+        get => (bool)GetValue(MergeExternalTextProperty);
+        set => SetValue(MergeExternalTextProperty, value);
+    }
+
     /// <inheritdoc cref="CanUndoProperty"/>
     public bool CanUndo => (bool)GetValue(CanUndoProperty);
 
@@ -245,19 +286,27 @@ public sealed class MarkdownEditor : MarkdownViewer
         }
     }
 
-    /// <summary>The start of the selection in the source.</summary>
-    public int SourceSelectionStart => _editor.SelectionStart;
+    /// <inheritdoc cref="SourceSelectionStartProperty"/>
+    public int SourceSelectionStart
+    {
+        get => (int)GetValue(SourceSelectionStartProperty);
+        set => SetValue(SourceSelectionStartProperty, value);
+    }
 
-    /// <summary>The length of the selection in the source; 0 — nothing is selected.</summary>
-    public int SourceSelectionLength => _editor.SelectionLength;
+    /// <inheritdoc cref="SourceSelectionLengthProperty"/>
+    public int SourceSelectionLength
+    {
+        get => (int)GetValue(SourceSelectionLengthProperty);
+        set => SetValue(SourceSelectionLengthProperty, value);
+    }
 
     /// <summary>The AvalonEdit that holds the source: its document, options and look.</summary>
     public TextEditor TextEditor => _editor;
 
-    /// <summary>Сколько текст ждёт после последней правки, прежде чем уйти в <see cref="MarkdownViewer.Markdown"/>.</summary>
+    /// <summary>Сколько отрисовка ждёт после последней правки, прежде чем разобрать текст заново.</summary>
     internal TimeSpan CommitDelay { get; set; } = TimeSpan.FromSeconds(1);
 
-    /// <summary>Дольше этого правленый текст не ждёт, даже если правки идут без перерыва.</summary>
+    /// <summary>Дольше этого отрисовка не ждёт, даже если правки идут без перерыва.</summary>
     internal TimeSpan CommitLimit { get; set; } = TimeSpan.FromSeconds(5);
 
     /// <summary>Строки окна в документе, с единицы; окна нет — <c>null</c>.</summary>
@@ -275,7 +324,19 @@ public sealed class MarkdownEditor : MarkdownViewer
     public void SelectSource(int start, int length)
     {
         WantWindow();
-        _editor.Select(start, length);
+
+        // BYDESIGN: AvalonEdit ставит выделение раньше курсора — свойства и событие получают только итог
+        _selectionHeld = true;
+        try
+        {
+            _editor.Select(start, length);
+        }
+        finally
+        {
+            _selectionHeld = false;
+        }
+
+        SyncSelection();
     }
 
     /// <summary>Puts text in place of the selection in the source, or at the caret.</summary>
@@ -287,9 +348,34 @@ public sealed class MarkdownEditor : MarkdownViewer
     }
 
     /// <summary>
-    /// Hands the edited source to <see cref="MarkdownViewer.Markdown"/> at once, without waiting:
-    /// before saving, before reading the text from outside.
+    /// Replaces <paramref name="length"/> characters of the source from <paramref name="start"/> with text in one step
+    /// of undo; the caret and the selection stay on their text, and the page does not follow the caret.
     /// </summary>
+    public void ReplaceSource(int start, int length, string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (start < 0 || start > _document.TextLength)
+        {
+            throw new ArgumentOutOfRangeException(nameof(start));
+        }
+
+        if (length < 0 || start + length > _document.TextLength)
+        {
+            throw new ArgumentOutOfRangeException(nameof(length));
+        }
+
+        _quiet = true;
+        try
+        {
+            _document.Replace(start, length, text);
+        }
+        finally
+        {
+            _quiet = false;
+        }
+    }
+
+    /// <summary>Draws the edited source at once, without waiting for the pause after the last edit.</summary>
     public void CommitText()
     {
         _commit.Stop();
@@ -299,10 +385,7 @@ public sealed class MarkdownEditor : MarkdownViewer
         }
 
         _dirty = false;
-        var text = _document.Text;
-        _given = (text, _document.Version);
-        _versions.Remember(text, _document.Version);
-        SetCurrentValue(MarkdownProperty, text);
+        ParseMarkdown();
     }
 
     /// <summary>Undoes the last edit of the source; the caret goes to its place.</summary>
@@ -313,6 +396,29 @@ public sealed class MarkdownEditor : MarkdownViewer
 
     /// <summary>Строки вне окна, которые AvalonEdit показывает в своей видимой части.</summary>
     internal IReadOnlyList<int> ForeignLines() => _window.ForeignLines();
+
+    /// <summary>
+    /// Редактор потерял клавиатурный фокус — набор кончился: отрисовка догоняет текст сразу, а в блочном
+    /// режиме окно закрывается, если фокус не вернулся.
+    /// </summary>
+    internal void LoseFocus()
+    {
+        CommitText();
+
+        // BYDESIGN: решение — после раскладки: пересозданный контейнер окна возвращает AvalonEdit с фокусом
+        if (EditMode == MdEditMode.Blocks)
+        {
+            Dispatcher.BeginInvoke(
+                DispatcherPriority.Background,
+                () =>
+                {
+                    if (!IsKeyboardFocusWithin && EditMode == MdEditMode.Blocks)
+                    {
+                        CloseWindow();
+                    }
+                });
+        }
+    }
 
     /// <summary>Курсор виден в прокрутке, где стоит редактор.</summary>
     internal bool IsCaretVisible()
@@ -390,6 +496,16 @@ public sealed class MarkdownEditor : MarkdownViewer
         var old = area.Caret.Position;
         area.Caret.Offset = offset;
         area.Selection = area.Selection.StartSelectionOrSetEndpoint(old, area.Caret.Position);
+    }
+
+    /// <inheritdoc/>
+    protected override void OnMarkdownChanged()
+    {
+        // BYDESIGN: свой текст приходит на каждую правку — разбирает его отрисовка по таймеру
+        if (!Take(Markdown ?? string.Empty))
+        {
+            base.OnMarkdownChanged();
+        }
     }
 
     /// <inheritdoc/>
@@ -528,19 +644,9 @@ public sealed class MarkdownEditor : MarkdownViewer
     protected override void OnIsKeyboardFocusWithinChanged(DependencyPropertyChangedEventArgs e)
     {
         base.OnIsKeyboardFocusWithinChanged(e);
-
-        // BYDESIGN: решение — после раскладки: пересозданный контейнер окна возвращает AvalonEdit с фокусом
-        if (e.NewValue is false && EditMode == MdEditMode.Blocks)
+        if (e.NewValue is false)
         {
-            Dispatcher.BeginInvoke(
-                DispatcherPriority.Background,
-                () =>
-                {
-                    if (!IsKeyboardFocusWithin && EditMode == MdEditMode.Blocks)
-                    {
-                        CloseWindow();
-                    }
-                });
+            LoseFocus();
         }
     }
 
@@ -562,9 +668,6 @@ public sealed class MarkdownEditor : MarkdownViewer
         QueueThemeChange();
     }
 
-    private static void OnMarkdownChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        => ((MarkdownEditor)d).Take((string?)e.NewValue ?? string.Empty);
-
     private static void OnEditModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MarkdownEditor)d).SwitchMode((MdEditMode)e.OldValue, (MdEditMode)e.NewValue);
 
@@ -573,6 +676,20 @@ public sealed class MarkdownEditor : MarkdownViewer
         var editor = (MarkdownEditor)d;
         editor.UpdateFrontMatter();
         editor.QueueReconcile();
+    }
+
+    /// <summary>Выделение задали снаружи: оно ложится в AvalonEdit, прижатое к длине исходника.</summary>
+    private static void OnSourceSelectionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var editor = (MarkdownEditor)d;
+        if (editor._syncingSelection)
+        {
+            return;
+        }
+
+        var length = editor._document.TextLength;
+        var start = Math.Clamp(editor.SourceSelectionStart, 0, length);
+        editor.SelectSource(start, Math.Clamp(editor.SourceSelectionLength, 0, length - start));
     }
 
     /// <summary>Номер блока верхнего уровня, задевающего строку, а в промежутке между блоками — следующего.</summary>
@@ -660,30 +777,40 @@ public sealed class MarkdownEditor : MarkdownViewer
     }
 
     /// <summary>
-    /// Новое значение <see cref="MarkdownViewer.Markdown"/>: свой текст, вернувшийся без изменений,
-    /// ничего не делает, чужой ложится в документ так, как его принимает AvalonEdit, и закрывает окно.
+    /// Новое значение <see cref="MarkdownViewer.Markdown"/>: свой текст ничего не делает — <c>true</c>; чужой с
+    /// <see cref="MergeExternalText"/> ложится одной правкой того, что отличается, а без него — так, как его
+    /// принимает AvalonEdit, и закрывает окно.
     /// </summary>
-    private void Take(string text)
+    private bool Take(string text)
     {
         if (_given is { } given && string.Equals(text, given.Text, StringComparison.Ordinal))
         {
             _versions.Remember(text, given.Version);
-            return;
+            return true;
         }
 
         if (!string.Equals(text, _document.Text, StringComparison.Ordinal))
         {
             _taking = true;
+            _quiet = MergeExternalText;
             try
             {
-                _editor.Text = text;
+                if (MergeExternalText)
+                {
+                    Merge(text);
+                }
+                else
+                {
+                    _editor.Text = text;
+                }
             }
             finally
             {
                 _taking = false;
+                _quiet = false;
             }
 
-            if (_window.IsOpen)
+            if (_window.IsOpen && !MergeExternalText)
             {
                 _window.Close();
                 ClearSourceWindow();
@@ -695,9 +822,49 @@ public sealed class MarkdownEditor : MarkdownViewer
         _commit.Stop();
         _given = (text, _document.Version);
         _versions.Remember(text, _document.Version);
+        return false;
     }
 
-    /// <summary>Отмена или возврат правки: курсор встаёт туда, где документ поменялся, окно — на его блоки, а текст уходит сразу.</summary>
+    /// <summary>Текст документа уходит в <see cref="MarkdownViewer.Markdown"/>; разбор его ждёт отрисовки.</summary>
+    private void Push()
+    {
+        var text = _document.Text;
+        _given = (text, _document.Version);
+        _versions.Remember(text, _document.Version);
+        SetCurrentValue(MarkdownProperty, text);
+    }
+
+    /// <summary>Текст ложится в документ одной правкой между общими с ним началом и концом; суррогатные пары не режутся.</summary>
+    private void Merge(string text)
+    {
+        var current = _document.Text;
+        var limit = Math.Min(current.Length, text.Length);
+        var prefix = 0;
+        while (prefix < limit && current[prefix] == text[prefix])
+        {
+            prefix++;
+        }
+
+        if (prefix > 0 && char.IsHighSurrogate(text[prefix - 1]))
+        {
+            prefix--;
+        }
+
+        var suffix = 0;
+        while (suffix < limit - prefix && current[^(suffix + 1)] == text[^(suffix + 1)])
+        {
+            suffix++;
+        }
+
+        if (suffix > 0 && char.IsLowSurrogate(text[^suffix]))
+        {
+            suffix--;
+        }
+
+        _document.Replace(prefix, current.Length - prefix - suffix, text.Substring(prefix, text.Length - prefix - suffix));
+    }
+
+    /// <summary>Отмена или возврат правки: курсор встаёт туда, где документ поменялся, окно — на его блоки, а отрисовка догоняет её сразу.</summary>
     private void Step(bool redo)
     {
         var stack = _document.UndoStack;
@@ -738,7 +905,7 @@ public sealed class MarkdownEditor : MarkdownViewer
         CommitText();
     }
 
-    /// <summary>Правка документа: текст уйдёт через секунду после последней правки и не позже чем через пять после первой.</summary>
+    /// <summary>Правка документа: отрисовка догонит её через секунду после последней правки и не позже чем через пять после первой.</summary>
     private void OnDocumentChanged(object? sender, DocumentChangeEventArgs e)
     {
         if (!_taking)
@@ -754,7 +921,7 @@ public sealed class MarkdownEditor : MarkdownViewer
             _commit.Stop();
             _commit.Interval = TimeSpan.FromMilliseconds(Math.Max(0, due - now));
             _commit.Start();
-            _typed |= !_stepping;
+            _typed |= !_stepping && !_quiet;
             QueueReconcile();
         }
 
@@ -771,10 +938,59 @@ public sealed class MarkdownEditor : MarkdownViewer
         SourceChanged?.Invoke(this, new(new MdSourceEdit(e.Offset, e.RemovalLength, e.InsertedText.Text)));
     }
 
+    /// <summary>
+    /// Курсор или выделение сдвинулись: окно встанет на их блоки, а свойства выделения догонят AvalonEdit, когда
+    /// кончится правка документа. Сдвиг от правки, которая не набор, страницу к курсору не ведёт.
+    /// </summary>
     private void OnCaretMoved()
     {
-        _caretMoved = true;
+        _caretMoved |= !_quiet;
         QueueReconcile();
+        if (_document.IsInUpdate || _selectionHeld)
+        {
+            _selectionPending = true;
+        }
+        else
+        {
+            SyncSelection();
+        }
+    }
+
+    /// <summary>Правка документа кончилась: текст уходит в <see cref="MarkdownViewer.Markdown"/>, свойства выделения догоняют AvalonEdit.</summary>
+    private void OnUpdateFinished(object? sender, EventArgs e)
+    {
+        if (!_taking)
+        {
+            Push();
+        }
+
+        if (_selectionPending)
+        {
+            SyncSelection();
+        }
+    }
+
+    /// <summary>Свойства выделения — по AvalonEdit; начало или длина сдвинулись — событие.</summary>
+    private void SyncSelection()
+    {
+        _selectionPending = false;
+        var current = (Start: _editor.SelectionStart, Length: _editor.SelectionLength);
+        _syncingSelection = true;
+        try
+        {
+            SetCurrentValue(SourceSelectionStartProperty, current.Start);
+            SetCurrentValue(SourceSelectionLengthProperty, current.Length);
+        }
+        finally
+        {
+            _syncingSelection = false;
+        }
+
+        if (current != _selection)
+        {
+            _selection = current;
+            SourceSelectionChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     /// <summary>AvalonEdit прокрутился сам, вслед за курсором: пересчёт окна вернёт прокрутку до отрисовки.</summary>
@@ -891,7 +1107,7 @@ public sealed class MarkdownEditor : MarkdownViewer
         return command == EditingCommands.SelectUpByPage ? (-1, true) : null;
     }
 
-    /// <summary>Esc в блочном режиме закрывает окно: набранное остаётся и уходит в текст.</summary>
+    /// <summary>Esc в блочном режиме закрывает окно: набранное остаётся и сразу рисуется.</summary>
     private void OnTextAreaKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape && EditMode == MdEditMode.Blocks && _window.IsOpen)
@@ -1223,7 +1439,7 @@ public sealed class MarkdownEditor : MarkdownViewer
     /// <summary>
     /// Окно встаёт на новые строки: вьюер рисует прежние блоки и прячет новые, ближайшая к курсору строка,
     /// показанная до перехода и после одинаково, остаётся на своём месте экрана, и окно держится там, пока
-    /// высоты вокруг уточняются. Текст уходит сразу — прежние блоки рисуются уже по нему.
+    /// высоты вокруг уточняются. Отрисовка догоняет текст сразу — прежние блоки рисуются уже по нему.
     /// </summary>
     private void MoveWindow((int First, int Last) lines)
     {
@@ -1281,15 +1497,18 @@ public sealed class MarkdownEditor : MarkdownViewer
         static bool Inside((int First, int Last)? lines, int line) => lines is { } range && line >= range.First && line <= range.Last;
     }
 
-    /// <summary>Отдаёт окно вьюеру строками того текста, который он показывает.</summary>
+    /// <summary>
+    /// Отдаёт окно вьюеру строками того текста, который он показывает; окно с первой строки документа
+    /// начинается с его первой строки, а до последней — кончается его последней.
+    /// </summary>
     private void ShowWindow()
     {
         var (first, last) = _window.Lines;
         var shown = ShownMarkdown;
         var start = _versions.ToText(shown, _document.GetLineByNumber(first).Offset, _document, AnchorMovementType.AfterInsertion);
         var end = _versions.ToText(shown, _document.GetLineByNumber(last).EndOffset, _document, AnchorMovementType.BeforeInsertion);
-        var shownFirst = _shownLines.LineAt(shown, start);
-        var shownLast = Math.Max(shownFirst, _shownLines.LineAt(shown, end));
+        var shownFirst = first == 1 ? 0 : _shownLines.LineAt(shown, start);
+        var shownLast = last == _document.LineCount ? _shownLines.Count(shown) - 1 : Math.Max(shownFirst, _shownLines.LineAt(shown, end));
         PlaceInside(shownFirst, shownLast);
         SetSourceWindow(shownFirst, shownLast, _window.Element, _window);
     }
@@ -1347,7 +1566,7 @@ public sealed class MarkdownEditor : MarkdownViewer
             .WidthIncludingTrailingWhitespace;
     }
 
-    /// <summary>Окно закрывается: блоки снова нарисованы, набранное уходит в текст.</summary>
+    /// <summary>Окно закрывается: блоки снова нарисованы — уже по набранному.</summary>
     private void CloseWindow()
     {
         if (!_window.IsOpen)
@@ -1898,6 +2117,7 @@ public sealed class MarkdownEditor : MarkdownViewer
     private void Attach(TextDocument document)
     {
         document.Changed += OnDocumentChanged;
+        document.UpdateFinished += OnUpdateFinished;
         document.UndoStack.PropertyChanged += OnUndoStackChanged;
     }
 
@@ -1911,6 +2131,7 @@ public sealed class MarkdownEditor : MarkdownViewer
         }
 
         _document.Changed -= OnDocumentChanged;
+        _document.UpdateFinished -= OnUpdateFinished;
         _document.UndoStack.PropertyChanged -= OnUndoStackChanged;
         if (_window.IsOpen)
         {
@@ -1921,6 +2142,7 @@ public sealed class MarkdownEditor : MarkdownViewer
         _document = document;
         Attach(_document);
         UpdateUndo();
+        Push();
         _dirty = true;
         CommitText();
         QueueReconcile();
