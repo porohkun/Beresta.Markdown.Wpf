@@ -11,6 +11,7 @@ using Editor;
 using Presenters;
 
 /// <summary>Текст редактора живёт в AvalonEdit и уходит в Markdown; «только контролы» правят его с отменой.</summary>
+[Collection(Timing.Name)]
 public sealed class EditorTextTests
 {
     [Fact]
